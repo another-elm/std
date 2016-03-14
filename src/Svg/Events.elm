@@ -1,9 +1,10 @@
 module Svg.Events
-    ( onBegin, onEnd, onRepeat
-    , onAbort, onError, onResize, onScroll, onLoad, onUnload, onZoom
-    , onActivate, onClick, onFocusIn, onFocusOut, onMouseDown, onMouseMove
-    , onMouseOut, onMouseOver, onMouseUp
-    ) where
+  ( onBegin, onEnd, onRepeat
+  , onAbort, onError, onResize, onScroll, onLoad, onUnload, onZoom
+  , onActivate, onClick, onFocusIn, onFocusOut, onMouseDown, onMouseMove
+  , onMouseOut, onMouseOver, onMouseUp
+  )
+  where
 
 {-|
 
@@ -19,142 +20,144 @@ module Svg.Events
 
 -}
 
-import Svg exposing (Attribute)
 import Json.Decode as Json
-import Signal
+import Svg exposing (Attribute)
 import VirtualDom
 
 
 
 {-|-}
-on : String -> Json.Decoder a -> (a -> Signal.Message) -> Attribute
+on : String -> Json.Decoder msg -> Attribute msg
 on =
   VirtualDom.on
 
 
-messageOn : String -> Signal.Message -> Attribute
-messageOn name msg =
-  on name Json.value (always msg)
+simpleOn : String -> msg -> Attribute msg
+simpleOn name =
+  \msg -> on name (Json.succeed msg)
 
 
--- Animation event attributes
+
+-- ANIMATION
 
 
 {-|-}
-onBegin : Signal.Message -> Attribute
+onBegin : msg -> Attribute msg
 onBegin =
-  messageOn "begin"
+  simpleOn "begin"
 
 
 {-|-}
-onEnd : Signal.Message -> Attribute
+onEnd : msg -> Attribute msg
 onEnd =
-  messageOn "end"
+  simpleOn "end"
 
 
 {-|-}
-onRepeat : Signal.Message -> Attribute
+onRepeat : msg -> Attribute msg
 onRepeat =
-  messageOn "repeat"
+  simpleOn "repeat"
 
 
--- Document event attributes
+
+-- DOCUMENT
 
 
 {-|-}
-onAbort : Signal.Message -> Attribute
+onAbort : msg -> Attribute msg
 onAbort =
-  messageOn "abort"
+  simpleOn "abort"
 
 
 {-|-}
-onError : Signal.Message -> Attribute
+onError : msg -> Attribute msg
 onError =
-  messageOn "error"
+  simpleOn "error"
 
 
 {-|-}
-onResize : Signal.Message -> Attribute
+onResize : msg -> Attribute msg
 onResize =
-  messageOn "resize"
+  simpleOn "resize"
 
 
 {-|-}
-onScroll : Signal.Message -> Attribute
+onScroll : msg -> Attribute msg
 onScroll =
-  messageOn "scroll"
+  simpleOn "scroll"
 
 
 {-|-}
-onLoad : Signal.Message -> Attribute
+onLoad : msg -> Attribute msg
 onLoad =
-  messageOn "load"
+  simpleOn "load"
 
 
 {-|-}
-onUnload : Signal.Message -> Attribute
+onUnload : msg -> Attribute msg
 onUnload =
-  messageOn "unload"
+  simpleOn "unload"
 
 
 {-|-}
-onZoom : Signal.Message -> Attribute
+onZoom : msg -> Attribute msg
 onZoom =
-  messageOn "zoom"
+  simpleOn "zoom"
 
 
--- Graphical event attributes
+
+-- GRAPHICAL
 
 
 {-|-}
-onActivate : Signal.Message -> Attribute
+onActivate : msg -> Attribute msg
 onActivate =
-  messageOn "activate"
+  simpleOn "activate"
 
 
 {-|-}
-onClick : Signal.Message -> Attribute
+onClick : msg -> Attribute msg
 onClick =
-  messageOn "click"
+  simpleOn "click"
 
 
 {-|-}
-onFocusIn : Signal.Message -> Attribute
+onFocusIn : msg -> Attribute msg
 onFocusIn =
-  messageOn "focusin"
+  simpleOn "focusin"
 
 
 {-|-}
-onFocusOut : Signal.Message -> Attribute
+onFocusOut : msg -> Attribute msg
 onFocusOut =
-  messageOn "focusout"
+  simpleOn "focusout"
 
 
 {-|-}
-onMouseDown : Signal.Message -> Attribute
+onMouseDown : msg -> Attribute msg
 onMouseDown =
-  messageOn "mousedown"
+  simpleOn "mousedown"
 
 
 {-|-}
-onMouseMove : Signal.Message -> Attribute
+onMouseMove : msg -> Attribute msg
 onMouseMove =
-  messageOn "mousemove"
+  simpleOn "mousemove"
 
 
 {-|-}
-onMouseOut : Signal.Message -> Attribute
+onMouseOut : msg -> Attribute msg
 onMouseOut =
-  messageOn "mouseout"
+  simpleOn "mouseout"
 
 
 {-|-}
-onMouseOver : Signal.Message -> Attribute
+onMouseOver : msg -> Attribute msg
 onMouseOver =
-  messageOn "mouseover"
+  simpleOn "mouseover"
 
 
 {-|-}
-onMouseUp : Signal.Message -> Attribute
+onMouseUp : msg -> Attribute msg
 onMouseUp =
-  messageOn "mouseup"
+  simpleOn "mouseup"

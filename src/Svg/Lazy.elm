@@ -1,6 +1,7 @@
 module Svg.Lazy
-    ( lazy, lazy2, lazy3
-    ) where
+  ( lazy, lazy2, lazy3
+  )
+  where
 
 {-| Since all Elm functions are pure we have a guarantee that the same input
 will always result in the same output. This module gives us tools to be lazy
@@ -29,20 +30,20 @@ can check to see if `model` is referentially equal to the previous value used,
 and if so, we just stop. No need to build up the tree structure and diff it,
 we know if the input to `view` is the same, the output must be the same!
 -}
-lazy : (a -> Svg) -> a -> Svg
+lazy : (a -> Svg msg) -> a -> Svg msg
 lazy =
   VirtualDom.lazy
 
 
 {-| Same as `lazy` but checks on two arguments.
 -}
-lazy2 : (a -> b -> Svg) -> a -> b -> Svg
+lazy2 : (a -> b -> Svg msg) -> a -> b -> Svg msg
 lazy2 =
   VirtualDom.lazy2
 
 
 {-| Same as `lazy` but checks on three arguments.
 -}
-lazy3 : (a -> b -> c -> Svg) -> a -> b -> c -> Svg
+lazy3 : (a -> b -> c -> Svg msg) -> a -> b -> c -> Svg msg
 lazy3 =
   VirtualDom.lazy3

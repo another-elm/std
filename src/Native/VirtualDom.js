@@ -1,6 +1,6 @@
 //import Native.Json //
 
-var _evancz$virtual_dom$Native_VirtualDom = function() {
+var _elm_lang$virtual_dom$Native_VirtualDom = function() {
 
 var STYLE_KEY = 'STYLE';
 var EVENT_KEY = 'EVENT';

@@ -31,33 +31,10 @@ function node(tag)
 
 function nodeHelp(tag, factList, kidList)
 {
-	var virtualKey, namespace;
 
-	var children = [];
-	var descendantsCount = 0;
-	while (kidList.ctor !== '[]')
-	{
-		var kid = kidList._0;
-		descendantsCount += (kid.descendantsCount || 0);
-		children.push(kid);
-		kidList = kidList._1;
-	}
-	descendantsCount += children.length;
+	// ORGANIZE FACTS
 
-	return {
-		type: 'node',
-		tag: tag,
-		facts: gatherFacts(factList),
-		children: children,
-		namespace: namespace,
-		descendantsCount: descendantsCount
-	};
-}
-
-
-function gatherFacts(factList)
-{
-	var facts = {};
+	var namespace, facts = {};
 
 	while (factList.ctor !== '[]')
 	{
@@ -93,7 +70,31 @@ function gatherFacts(factList)
 		factList = factList._1;
 	}
 
-	return facts;
+
+	// ORGANIZE CHILDREN
+
+	var children = [];
+	var descendantsCount = 0;
+	while (kidList.ctor !== '[]')
+	{
+		var kid = kidList._0;
+		descendantsCount += (kid.descendantsCount || 0);
+		children.push(kid);
+		kidList = kidList._1;
+	}
+	descendantsCount += children.length;
+
+
+	// BUILD VIRTUAL NODE
+
+	return {
+		type: 'node',
+		tag: tag,
+		facts: facts,
+		children: children,
+		namespace: namespace,
+		descendantsCount: descendantsCount
+	};
 }
 
 

@@ -8,4 +8,4 @@ In the past, application developers needed to mess with the DOM by hand. This in
 
   * Touching the DOM is very error prone. By splitting your application’s state between the DOM and your program, you are more likely to lose track of what is going on and have bad emergent architecture.
 
- So **Virtual DOM** has you build up a representation of the DOM on each frame instead. With some pretty simple performance tricks, this ends up being quite a lot faster than naive hand-written code and lead to much better architecture overall.
+So **Virtual DOM** has you build up a representation of the DOM on each frame instead. With some pretty simple performance tricks, this ends up being quite a lot faster than naive hand-written code and lead to much better architecture overall.

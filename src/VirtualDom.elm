@@ -1,4 +1,4 @@
-module VirtualDom
+module VirtualDom exposing
   ( Node
   , text, node
   , Property, property, attribute, attributeNS
@@ -8,7 +8,6 @@ module VirtualDom
   , lazy, lazy2, lazy3
   , programWithFlags
   )
-  where
 
 {-| API to the core diffing algorithm. Can serve as a foundation for libraries
 that expose more helper functions for HTML or SVG.

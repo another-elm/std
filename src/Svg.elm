@@ -1,4 +1,4 @@
-module Svg
+module Svg exposing
   ( text, node, Svg, Attribute
   , svg, foreignObject
   , circle, ellipse, image, line, path, polygon, polyline, rect, use
@@ -17,7 +17,6 @@ module Svg
   , feDistantLight, fePointLight, feSpotLight
   , clipPath, colorProfile, cursor, filter, script, style, view
   )
-  where
 
 {-|
 

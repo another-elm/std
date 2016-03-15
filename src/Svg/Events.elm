@@ -1,10 +1,9 @@
-module Svg.Events
+module Svg.Events exposing
   ( onBegin, onEnd, onRepeat
   , onAbort, onError, onResize, onScroll, onLoad, onUnload, onZoom
   , onActivate, onClick, onFocusIn, onFocusOut, onMouseDown, onMouseMove
   , onMouseOut, onMouseOver, onMouseUp
   )
-  where
 
 {-|
 

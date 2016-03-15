@@ -1,7 +1,6 @@
-module Svg.Lazy
+module Svg.Lazy exposing
   ( lazy, lazy2, lazy3
   )
-  where
 
 {-| Since all Elm functions are pure we have a guarantee that the same input
 will always result in the same output. This module gives us tools to be lazy

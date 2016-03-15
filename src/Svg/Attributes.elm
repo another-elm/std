@@ -1,4 +1,4 @@
-module Svg.Attributes
+module Svg.Attributes exposing
   ( accentHeight, accelerate, accumulate, additive, alphabetic, allowReorder
   , amplitude, arabicForm, ascent, attributeName, attributeType, autoReverse
   , azimuth, baseFrequency, baseProfile, bbox, begin, bias, by, calcMode
@@ -41,7 +41,6 @@ module Svg.Attributes
   , textAnchor, textDecoration, textRendering, unicodeBidi, visibility
   , wordSpacing, writingMode
   )
-  where
 
 {-|
 

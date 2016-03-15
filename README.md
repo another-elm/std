@@ -1,5 +1,3 @@
-# HTML in Elm
+# NOT RELEASED YET
 
-The full documentation is available [here][docs].
-
-[docs]: http://package.elm-lang.org/packages/elm-lang/html/latest/
+Please stop poking around. You will hear about this when it is done through an official announcement on elm-discuss or elm-dev. For now, these are just experiments.

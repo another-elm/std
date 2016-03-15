@@ -1,27 +1,27 @@
-module Html.Attributes
-    ( style
-    , class, classList, id, title, hidden
-    , type', value, checked, placeholder, selected
-    , accept, acceptCharset, action, autocomplete, autofocus, autosave
-    , disabled, enctype, formaction, list, maxlength, minlength, method, multiple
-    , name, novalidate, pattern, readonly, required, size, for, form
-    , max, min, step
-    , cols, rows, wrap
-    , href, target, download, downloadAs, hreflang, media, ping, rel
-    , ismap, usemap, shape, coords
-    , src, height, width, alt
-    , autoplay, controls, loop, preload, poster, default, kind, srclang
-    , sandbox, seamless, srcdoc
-    , reversed, start
-    , align, colspan, rowspan, headers, scope
-    , async, charset, content, defer, httpEquiv, language, scoped
-    , accesskey, contenteditable, contextmenu, dir, draggable, dropzone
-    , itemprop, lang, spellcheck, tabindex
-    , challenge, keytype
-    , cite, datetime, pubdate, manifest
-    , property, attribute
-    )
-    where
+module Html.Attributes exposing
+  ( style
+  , class, classList, id, title, hidden
+  , type', value, checked, placeholder, selected
+  , accept, acceptCharset, action, autocomplete, autofocus, autosave
+  , disabled, enctype, formaction, list, maxlength, minlength, method, multiple
+  , name, novalidate, pattern, readonly, required, size, for, form
+  , max, min, step
+  , cols, rows, wrap
+  , href, target, download, downloadAs, hreflang, media, ping, rel
+  , ismap, usemap, shape, coords
+  , src, height, width, alt
+  , autoplay, controls, loop, preload, poster, default, kind, srclang
+  , sandbox, seamless, srcdoc
+  , reversed, start
+  , align, colspan, rowspan, headers, scope
+  , async, charset, content, defer, httpEquiv, language, scoped
+  , accesskey, contenteditable, contextmenu, dir, draggable, dropzone
+  , itemprop, lang, spellcheck, tabindex
+  , challenge, keytype
+  , cite, datetime, pubdate, manifest
+  , property, attribute
+  )
+
 {-| Helper functions for HTML attributes. They are organized roughly by
 category. Each attribute is labeled with the HTML tags it can be used with, so
 just search the page for `video` if you want video stuff.

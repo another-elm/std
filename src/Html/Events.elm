@@ -1,14 +1,14 @@
-module Html.Events
-    ( onClick, onDoubleClick
-    , onMouseDown, onMouseUp
-    , onMouseEnter, onMouseLeave
-    , onMouseOver, onMouseOut
-    , onInput, onCheck, onSubmit
-    , onBlur, onFocus
-    , on, onWithOptions, Options, defaultOptions
-    , targetValue, targetChecked, keyCode
-    )
-    where
+module Html.Events exposing
+  ( onClick, onDoubleClick
+  , onMouseDown, onMouseUp
+  , onMouseEnter, onMouseLeave
+  , onMouseOver, onMouseOut
+  , onInput, onCheck, onSubmit
+  , onBlur, onFocus
+  , on, onWithOptions, Options, defaultOptions
+  , targetValue, targetChecked, keyCode
+  )
+
 {-|
 It is often helpful to create an [Union Type][] so you can have many different kinds
 of events as seen in the [TodoMVC][] example.

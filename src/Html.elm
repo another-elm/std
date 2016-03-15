@@ -1,4 +1,4 @@
-module Html
+module Html exposing
   ( text, node, Html, Attribute
   , h1, h2, h3, h4, h5, h6
   , div, p, hr, pre, blockquote
@@ -17,7 +17,7 @@ module Html
   , mark, ruby, rt, rp, bdi, bdo, wbr
   , details, summary, menuitem, menu
   )
-  where
+
 {-| This file is organized roughly in order of popularity. The tags which you'd
 expect to use frequently will be closer to the top.
 

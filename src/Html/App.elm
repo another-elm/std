@@ -1,10 +1,9 @@
-module Html.App
+module Html.App exposing
   ( map
   , beginnerProgram
   , program
   , programWithFlags
   )
-  where
 
 {-| These functions will help you set up an Elm program that follows [the Elm
 Architecture][arch], a pattern for creating great code that *stays* great as

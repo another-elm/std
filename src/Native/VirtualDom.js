@@ -302,20 +302,20 @@ function render(vNode, eventNode)
 			return document.createTextNode(vNode.text);
 
 		case 'node':
-			var node = vNode.namespace
+			var domNode = vNode.namespace
 				? document.createElementNS(vNode.namespace, vNode.tag)
 				: document.createElement(vNode.tag);
 
-			applyFacts(node, eventNode, vNode.facts);
+			applyFacts(domNode, eventNode, vNode.facts);
 
 			var children = vNode.children;
 
 			for (var i = 0; i < children.length; i++)
 			{
-				node.appendChild(render(children[i], eventNode));
+				domNode.appendChild(render(children[i], eventNode));
 			}
 
-			return node;
+			return domNode;
 	}
 }
 

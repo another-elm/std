@@ -228,14 +228,14 @@ function renderer(parent, tagger, initialVirtualNode)
 	var currentVirtualNode = initialVirtualNode;
 	var nextVirtualNode = initialVirtualNode;
 
-	function registerVirtualNode(vnode)
+	function registerVirtualNode(vNode)
 	{
 		if (state === 'NO_REQUEST')
 		{
 			rAF(updateIfNeeded);
 		}
 		state = 'PENDING_REQUEST';
-		nextVirtualNode = vnode;
+		nextVirtualNode = vNode;
 	}
 
 	function updateIfNeeded()
@@ -278,37 +278,37 @@ var rAF =
 ////////////  RENDER  ////////////
 
 
-function render(vnode, eventNode)
+function render(vNode, eventNode)
 {
-	switch (vnode.type)
+	switch (vNode.type)
 	{
 		case 'thunk':
-			if (!vnode.node)
+			if (!vNode.node)
 			{
-				vnode.node = vnode.thunk();
+				vNode.node = vNode.thunk();
 			}
-			return render(vnode.node, eventNode);
+			return render(vNode.node, eventNode);
 
 		case 'tagger':
 			var subEventRoot = {
-				tagger: vnode.tagger,
+				tagger: vNode.tagger,
 				parent: eventNode
 			};
-			var domNode = render(vnode.node, subEventRoot);
+			var domNode = render(vNode.node, subEventRoot);
 			domNode.elm_event_node_ref = subEventRoot;
 			return domNode;
 
 		case 'text':
-			return document.createTextNode(vnode.text);
+			return document.createTextNode(vNode.text);
 
 		case 'node':
-			var node = vnode.namespace
-				? document.createElementNS(vnode.namespace, vnode.tag)
-				: document.createElement(vnode.tag);
+			var node = vNode.namespace
+				? document.createElementNS(vNode.namespace, vNode.tag)
+				: document.createElement(vNode.tag);
 
-			applyFacts(node, eventNode, vnode.facts);
+			applyFacts(node, eventNode, vNode.facts);
 
-			var children = vnode.children;
+			var children = vNode.children;
 
 			for (var i = 0; i < children.length; i++)
 			{
@@ -959,9 +959,9 @@ function programWithFlags(details)
 }
 
 
-function staticProgram(parent, vnode)
+function staticProgram(parent, vNode)
 {
-	var domNode = render(vnode, null);
+	var domNode = render(vNode, null);
 	parent.appendChild(domNode);
 }
 

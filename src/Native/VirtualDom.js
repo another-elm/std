@@ -488,6 +488,18 @@ function diff(a, b)
 }
 
 
+function makePatch(type, index, data)
+{
+	return {
+		index: index,
+		type: type,
+		data: data,
+		domNode: null,
+		eventNode: null
+	};
+}
+
+
 function diffHelp(a, b, patches, index)
 {
 	if (a === b)
@@ -502,13 +514,7 @@ function diffHelp(a, b, patches, index)
 	// structure has changed significantly and it's not worth a diff.
 	if (aType !== bType)
 	{
-		patches.push({
-			index: index,
-			type: 'p-redraw',
-			data: b,
-			domNode: null,
-			eventNode: null
-		});
+		patches.push(makePatch('p-redraw', index, b));
 		return;
 	}
 
@@ -532,13 +538,7 @@ function diffHelp(a, b, patches, index)
 			b.node = b.thunk();
 			var subPatches = [];
 			diffHelp(a.node, b.node, subPatches, 0);
-			patches.push({
-				index: index,
-				type: 'p-thunk',
-				data: subPatches,
-				domNode: null,
-				eventNode: null
-			});
+			patches.push(makePatch('p-thunk', index, subPatches));
 			return;
 
 		case 'tagger':
@@ -575,26 +575,14 @@ function diffHelp(a, b, patches, index)
 			// structure of the virtual DOM has changed.
 			if (nesting && aTaggers.length !== bTaggers.length)
 			{
-				patches.push({
-					index: index,
-					type: 'p-redraw',
-					data: b,
-					domNode: null,
-					eventNode: null
-				});
+				patches.push(makePatch('p-redraw', index, b));
 				return;
 			}
 
 			// check if taggers are "the same"
 			if (nesting ? !pairwiseRefEqual(aTaggers, bTaggers) : aTaggers !== bTaggers)
 			{
-				patches.push({
-					 index: index,
-					 type: 'p-tagger',
-					 data: bTaggers,
-					 domNode: null,
-					 eventNode: null
-				});
+				patches.push(makePatch('p-tagger', index, bTaggers));
 			}
 
 			// diff everything below the taggers
@@ -604,13 +592,7 @@ function diffHelp(a, b, patches, index)
 		case 'text':
 			if (a.text !== b.text)
 			{
-				patches.push({
-					index: index,
-					type: 'p-text',
-					data: b.text,
-					domNode: null,
-					eventNode: null
-				});
+				patches.push(makePatch('p-text', index, b.text));
 				return;
 			}
 
@@ -621,13 +603,7 @@ function diffHelp(a, b, patches, index)
 			// structural changes such that it's not worth it to diff.
 			if (a.tag !== b.tag || a.namespace !== b.namespace)
 			{
-				patches.push({
-					index: index,
-					type: 'p-redraw',
-					data: b,
-					domNode: null,
-					eventNode: null
-				});
+				patches.push(makePatch('p-redraw', index, b));
 				return;
 			}
 
@@ -635,13 +611,7 @@ function diffHelp(a, b, patches, index)
 
 			if (typeof factsDiff !== 'undefined')
 			{
-				patches.push({
-					index: index,
-					type: 'p-facts',
-					data: factsDiff,
-					domNode: null,
-					eventNode: null
-				});
+				patches.push(makePatch('p-facts', index, factsDiff));
 			}
 
 			diffChildren(a, b, patches, index);
@@ -755,23 +725,11 @@ function diffChildren(aParent, bParent, patches, rootIndex)
 
 	if (aLen > bLen)
 	{
-		patches.push({
-			index: rootIndex,
-			type: 'p-remove',
-			data: bLen - aLen,
-			domNode: null,
-			eventNode: null
-		});
+		patches.push(makePatch('p-remove', rootIndex, bLen - aLen));
 	}
 	else if (aLen < bLen)
 	{
-		patches.push({
-			index: rootIndex,
-			type: 'p-insert',
-			data: bChildren.slice(aLen),
-			domNode: null,
-			eventNode: null
-		});
+		patches.push(makePatch('p-insert', rootIndex, bChildren.slice(aLen)));
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE

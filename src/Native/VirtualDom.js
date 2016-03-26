@@ -367,24 +367,30 @@ function applyStyles(domNode, styles)
 
 function applyEvents(domNode, eventNode, events)
 {
+	var allHandlers = domNode.elm_handlers || {};
+
 	for (var key in events)
 	{
-		var onKey = 'on' + key;
+		var handler = allHandlers[key];
 		var value = events[key];
 
 		if (typeof value === 'undefined')
 		{
-			domNode[onKey] = null;
+			domNode.removeEventListener(key, handler);
 		}
-		else if (domNode[onKey])
+		else if (typeof handler === 'undefined')
 		{
-			domNode[onKey].info = value;
+			var handler = makeEventHandler(eventNode, value);
+			domNode.addEventListener(key, handler);
+			allHandlers[key] = handler;
 		}
 		else
 		{
-			domNode[onKey] = makeEventHandler(eventNode, value);
+			handler.info = value;
 		}
 	}
+
+	domNode.elm_handlers = allHandlers;
 }
 
 function makeEventHandler(eventNode, info)

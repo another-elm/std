@@ -316,6 +316,11 @@ function render(vNode, eventNode)
 			}
 
 			return domNode;
+
+		case 'custom':
+			var domNode = vNode.impl.render(vNode.model);
+			applyFacts(domNode, eventNode, vNode.facts);
+			return domNode;
 	}
 }
 
@@ -616,6 +621,28 @@ function diffHelp(a, b, patches, index)
 
 			diffChildren(a, b, patches, index);
 			return;
+
+		case 'custom':
+			if (a.impl !== b.impl)
+			{
+				patches.push(makePatch('p-redraw', index, b));
+				return;
+			}
+
+			var factsDiff = diffFacts(a.facts, b.facts);
+			if (typeof factsDiff !== 'undefined')
+			{
+				patches.push(makePatch('p-facts', index, factsDiff));
+			}
+
+			var patch = b.impl.diff(a,b);
+			if (patch)
+			{
+				patches.push(makePatch('p-custom', index, patch));
+				return;
+			}
+
+			return;
 	}
 }
 
@@ -882,6 +909,10 @@ function applyPatch(domNode, patch)
 				parentNode.appendChild(render(newNodes[i], patch.eventNode));
 			}
 			return domNode;
+
+		case 'p-custom':
+			var impl = patch.data;
+			return impl.applyPatch(domNode, impl.data);
 
 		default:
 			throw new Error('Ran into an unknown patch!');

@@ -752,7 +752,7 @@ function diffChildren(aParent, bParent, patches, rootIndex)
 
 	if (aLen > bLen)
 	{
-		patches.push(makePatch('p-remove', rootIndex, bLen - aLen));
+		patches.push(makePatch('p-remove', rootIndex, aLen - bLen));
 	}
 	else if (aLen < bLen)
 	{
@@ -762,7 +762,7 @@ function diffChildren(aParent, bParent, patches, rootIndex)
 	// PAIRWISE DIFF EVERYTHING ELSE
 
 	var index = rootIndex;
-	var minLen = aLen > bLen ? aLen : bLen;
+	var minLen = aLen < bLen ? aLen : bLen;
 	for (var i = 0; i < minLen; i++)
 	{
 		index++;
@@ -906,7 +906,7 @@ function applyPatch(domNode, patch)
 			var newNodes = patch.data;
 			for (var i = 0; i < newNodes.length; i++)
 			{
-				parentNode.appendChild(render(newNodes[i], patch.eventNode));
+				domNode.appendChild(render(newNodes[i], patch.eventNode));
 			}
 			return domNode;
 

@@ -31,47 +31,9 @@ function node(tag)
 
 function nodeHelp(tag, factList, kidList)
 {
-
-	// ORGANIZE FACTS
-
-	var namespace, facts = {};
-
-	while (factList.ctor !== '[]')
-	{
-		var entry = factList._0;
-		var key = entry.key;
-
-		if (key === ATTR_KEY || key === ATTR_NS_KEY || key === EVENT_KEY)
-		{
-			var subFacts = facts[key] || {};
-			subFacts[entry.realKey] = entry.value;
-			facts[key] = subFacts;
-		}
-		else if (key === STYLE_KEY)
-		{
-			var styles = facts[key] || {};
-			var styleList = entry.value;
-			while (styleList.ctor !== '[]')
-			{
-				var style = styleList._0;
-				styles[style._0] = style._1;
-				styleList = styleList._1;
-			}
-			facts[key] = styles;
-		}
-		else if (key === 'namespace')
-		{
-			namespace = entry.value;
-		}
-		else
-		{
-			facts[key] = entry.value;
-		}
-		factList = factList._1;
-	}
-
-
-	// ORGANIZE CHILDREN
+	var organized = organizeFacts(factList);
+	var namespace = organized.namespace;
+	var facts = organized.facts;
 
 	var children = [];
 	var descendantsCount = 0;
@@ -84,9 +46,6 @@ function nodeHelp(tag, factList, kidList)
 	}
 	descendantsCount += children.length;
 
-
-	// BUILD VIRTUAL NODE
-
 	return {
 		type: 'node',
 		tag: tag,
@@ -94,6 +53,19 @@ function nodeHelp(tag, factList, kidList)
 		children: children,
 		namespace: namespace,
 		descendantsCount: descendantsCount
+	};
+}
+
+
+function custom(factList, model, impl)
+{
+	var facts = organizeFacts(factList).facts;
+
+	return {
+		type: 'custom',
+		facts: facts,
+		model: model,
+		impl: impl
 	};
 }
 
@@ -139,6 +111,55 @@ function lazy3(fn, a, b, c)
 	return thunk(fn, [a,b,c], function() {
 		return A3(fn, a, b, c);
 	});
+}
+
+
+
+// FACTS
+
+
+function organizeFacts(factList)
+{
+	var namespace, facts = {};
+
+	while (factList.ctor !== '[]')
+	{
+		var entry = factList._0;
+		var key = entry.key;
+
+		if (key === ATTR_KEY || key === ATTR_NS_KEY || key === EVENT_KEY)
+		{
+			var subFacts = facts[key] || {};
+			subFacts[entry.realKey] = entry.value;
+			facts[key] = subFacts;
+		}
+		else if (key === STYLE_KEY)
+		{
+			var styles = facts[key] || {};
+			var styleList = entry.value;
+			while (styleList.ctor !== '[]')
+			{
+				var style = styleList._0;
+				styles[style._0] = style._1;
+				styleList = styleList._1;
+			}
+			facts[key] = styles;
+		}
+		else if (key === 'namespace')
+		{
+			namespace = entry.value;
+		}
+		else
+		{
+			facts[key] = entry.value;
+		}
+		factList = factList._1;
+	}
+
+	return {
+		facts: facts,
+		namespace: namespace
+	};
 }
 
 
@@ -958,6 +979,8 @@ function staticProgram(parent, vNode)
 return {
 	node: node,
 	text: text,
+
+	custom: custom,
 
 	map: F2(map),
 

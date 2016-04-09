@@ -969,13 +969,6 @@ function programWithFlags(details)
 }
 
 
-function staticProgram(parent, vNode)
-{
-	var domNode = render(vNode, null);
-	parent.appendChild(domNode);
-}
-
-
 return {
 	node: node,
 	text: text,
@@ -994,8 +987,7 @@ return {
 	lazy2: F3(lazy2),
 	lazy3: F4(lazy3),
 
-	programWithFlags: programWithFlags,
-	staticProgram: staticProgram
+	programWithFlags: programWithFlags
 };
 
 }();

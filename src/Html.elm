@@ -86,7 +86,7 @@ import VirtualDom
 
 
 {-| The core building block used to build up HTML. It is backed by
-`VirtualDom.Node` in `evancz/virtual-dom` but that is not a super crucial
+`VirtualDom.Node` in `elm-lang/virtual-dom` but that is not a super crucial
 detail.
 -}
 type alias Html msg = VirtualDom.Node msg

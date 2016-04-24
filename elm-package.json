@@ -9,8 +9,7 @@
     "exposed-modules": [
         "Svg",
         "Svg.Attributes",
-        "Svg.Events",
-        "Svg.Lazy"
+        "Svg.Events"
     ],
     "dependencies": {
         "elm-lang/core": "4.0.0 <= v < 5.0.0",

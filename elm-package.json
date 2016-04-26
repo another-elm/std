@@ -10,7 +10,8 @@
         "Html",
         "Html.App",
         "Html.Attributes",
-        "Html.Events"
+        "Html.Events",
+        "Html.Lazy"
     ],
     "dependencies": {
         "elm-lang/core": "4.0.0 <= v < 5.0.0",

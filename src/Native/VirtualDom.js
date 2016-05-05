@@ -703,11 +703,21 @@ function diffFacts(a, b, category)
 	// look for changes and removals
 	for (var aKey in a)
 	{
+		if (aKey === STYLE_KEY || aKey === EVENT_KEY || aKey === ATTR_KEY || aKey === ATTR_NS_KEY)
+		{
+			var subDiff = diffFacts(a[aKey], b[bKey] || {}, aKey);
+			if (subDiff)
+			{
+				diff = diff || {};
+				diff[aKey] = subDiff;
+			}
+			continue;
+		}
+
 		// remove if not in the new facts
 		if (!(aKey in b))
 		{
 			diff = diff || {};
-
 			diff[aKey] =
 				(typeof category === 'undefined')
 					? (typeof a[aKey] === 'string' ? '' : null)
@@ -735,26 +745,8 @@ function diffFacts(a, b, category)
 			continue;
 		}
 
-		// something must have changed
-		switch (aKey)
-		{
-			case STYLE_KEY:
-			case EVENT_KEY:
-			case ATTR_KEY:
-			case ATTR_NS_KEY:
-				var subDiff = diffFacts(aValue, bValue, aKey);
-				if (subDiff)
-				{
-					diff = diff || {};
-					diff[aKey] = subDiff;
-				}
-				break;
-
-			default:
-				diff = diff || {};
-				diff[aKey] = bValue;
-				break;
-		}
+		diff = diff || {};
+		diff[aKey] = bValue;
 	}
 
 	return diff;

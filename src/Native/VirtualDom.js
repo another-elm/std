@@ -564,7 +564,10 @@ function diffHelp(a, b, patches, index)
 			b.node = b.thunk();
 			var subPatches = [];
 			diffHelp(a.node, b.node, subPatches, 0);
-			patches.push(makePatch('p-thunk', index, subPatches));
+			if (subPatches.length > 0)
+			{
+				patches.push(makePatch('p-thunk', index, subPatches));
+			}
 			return;
 
 		case 'tagger':

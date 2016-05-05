@@ -705,7 +705,7 @@ function diffFacts(a, b, category)
 	{
 		if (aKey === STYLE_KEY || aKey === EVENT_KEY || aKey === ATTR_KEY || aKey === ATTR_NS_KEY)
 		{
-			var subDiff = diffFacts(a[aKey], b[bKey] || {}, aKey);
+			var subDiff = diffFacts(a[aKey], b[aKey] || {}, aKey);
 			if (subDiff)
 			{
 				diff = diff || {};

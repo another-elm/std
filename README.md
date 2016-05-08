@@ -1,3 +1,3 @@
-# NOT RELEASED
+# Virtual DOM for Elm
 
-Please stop poking around. You will hear about this when it is done through an official announcement on elm-discuss or elm-dev. For now, these are just experiments.
+A virtual DOM implementation that backs Elm's core libraries for [HTML](http://package.elm-lang.org/packages/elm-lang/html/latest/) and [SVG](http://package.elm-lang.org/packages/elm-lang/html/latest/). You should almost certainly use those higher-level libraries directly.

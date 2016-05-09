@@ -374,6 +374,13 @@ function applyFacts(domNode, eventNode, facts)
 				applyAttrsNS(domNode, value);
 				break;
 
+			case 'value':
+				if (domNode[key] !== value)
+				{
+					domNode[key] = value;
+				}
+				break;
+
 			default:
 				domNode[key] = value;
 				break;

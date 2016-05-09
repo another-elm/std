@@ -1,7 +1,7 @@
 module Html.Attributes exposing
   ( style
   , class, classList, id, title, hidden
-  , type', value, checked, placeholder, selected
+  , type', value, defaultValue, checked, placeholder, selected
   , accept, acceptCharset, action, autocomplete, autofocus, autosave
   , disabled, enctype, formaction, list, maxlength, minlength, method, multiple
   , name, novalidate, pattern, readonly, required, size, for, form
@@ -36,7 +36,7 @@ Attributes](#custom-attributes) section to learn how to create new helpers.
 @docs class, classList, id, title, hidden
 
 # Inputs
-@docs type', value, checked, placeholder, selected
+@docs type', value, defaultValue, checked, placeholder, selected
 
 ## Input Helpers
 @docs accept, acceptCharset, action, autocomplete, autofocus, autosave,
@@ -531,6 +531,15 @@ type' value =
 value : String -> Attribute msg
 value value =
   stringProperty "value" value
+
+
+{-| Defines an initial value which will be displayed in an `input` when that
+`input` is added to the DOM. Unlike `value`, altering `defaultValue` after the
+`input` element has been added to the DOM has no effect.
+-}
+defaultValue : String -> Attribute msg
+defaultValue value =
+  stringProperty "defaultValue" value
 
 
 {-| Indicates whether an `input` of type checkbox is checked. -}

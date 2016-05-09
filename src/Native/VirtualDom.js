@@ -700,16 +700,6 @@ function diffFacts(a, b, category)
 {
 	var diff;
 
-	// add new stuff
-	for (var bKey in b)
-	{
-		if (!(bKey in a))
-		{
-			diff = diff || {};
-			diff[bKey] = b[bKey];
-		}
-	}
-
 	// look for changes and removals
 	for (var aKey in a)
 	{
@@ -757,6 +747,16 @@ function diffFacts(a, b, category)
 
 		diff = diff || {};
 		diff[aKey] = bValue;
+	}
+
+	// add new stuff
+	for (var bKey in b)
+	{
+		if (!(bKey in a))
+		{
+			diff = diff || {};
+			diff[bKey] = b[bKey];
+		}
 	}
 
 	return diff;

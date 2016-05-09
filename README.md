@@ -1,3 +1,3 @@
-# NOT RELEASED YET
+# HTML for Elm
 
-Please stop poking around. You will hear about this when it is done through an official announcement on elm-discuss or elm-dev. For now, these are just experiments.
+The core HTML library for Elm. It is backed by [elm-lang/virtual-dom](http://package.elm-lang.org/packages/elm-lang/virtual-dom/latest/) which handles the dirty details of rendering things quickly.

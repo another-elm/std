@@ -740,7 +740,8 @@ function diffFacts(a, b, category)
 		var bValue = b[aKey];
 
 		// reference equal, so don't worry about it
-		if (aValue === bValue || (category === EVENT_KEY && equalEvents(aValue, bValue)))
+		if (aValue === bValue && aKey !== 'value'
+			|| category === EVENT_KEY && equalEvents(aValue, bValue))
 		{
 			continue;
 		}

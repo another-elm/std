@@ -96,7 +96,6 @@ explanation along with some examples!
 
 [program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program
 [tutorial]: https://github.com/evancz/elm-architecture-tutorial
-```
 
 -}
 beginnerProgram
@@ -166,6 +165,7 @@ var app = Elm.MyApp.fullscreen({
     userID: 'Tom',
     token: '12345'
 });
+```
 -}
 programWithFlags
   : { init : flags -> (model, Cmd msg)

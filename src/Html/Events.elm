@@ -223,7 +223,7 @@ defaultOptions =
 {-| A `Json.Decoder` for grabbing `event.target.value`. We use this to define
 `onInput` as follows:
 
-    import Json.Decoder as Json
+    import Json.Decode as Json
 
     onInput : (String -> msg) -> Attribute msg
     onInput tagger =
@@ -240,7 +240,7 @@ targetValue =
 {-| A `Json.Decoder` for grabbing `event.target.checked`. We use this to define
 `onCheck` as follows:
 
-    import Json.Decoder as Json
+    import Json.Decode as Json
 
     onCheck : (Bool -> msg) -> Attribute msg
     onCheck tagger =
@@ -254,7 +254,7 @@ targetChecked =
 {-| A `Json.Decoder` for grabbing `event.keyCode`. This helps you define
 keyboard listeners like this:
 
-    import Json.Decoder as Json
+    import Json.Decode as Json
 
     onKeyUp : (Int -> msg) -> Attribute msg
     onKeyUp tagger =

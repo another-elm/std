@@ -166,6 +166,7 @@ var app = Elm.MyApp.fullscreen({
     userID: 'Tom',
     token: '12345'
 });
+```
 -}
 programWithFlags
   : { init : flags -> (model, Cmd msg)

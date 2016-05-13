@@ -725,10 +725,7 @@ function diffFacts(a, b, category)
 				(category === STYLE_KEY)
 					? ''
 					:
-				(category === EVENT_KEY)
-					? null
-					:
-				(category === ATTR_KEY)
+				(category === EVENT_KEY || category === ATTR_KEY)
 					? undefined
 					:
 				{ namespace: a[aKey].namespace, value: undefined };

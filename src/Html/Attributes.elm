@@ -958,7 +958,7 @@ For `del`, `ins`, `time`.
 -}
 datetime : String -> Attribute msg
 datetime value =
-  stringProperty "datetime" value
+  attribute "datetime" value
 
 
 {-| Indicates whether this date and time is the date of the nearest `article`
@@ -966,7 +966,7 @@ ancestor element. For `time`.
 -}
 pubdate : String -> Attribute msg
 pubdate value =
-  stringProperty "pubdate" value
+  attribute "pubdate" value
 
 
 

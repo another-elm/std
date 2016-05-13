@@ -1,5 +1,6 @@
 module Svg.Events exposing
-  ( onBegin, onEnd, onRepeat
+  ( on
+  , onBegin, onEnd, onRepeat
   , onAbort, onError, onResize, onScroll, onLoad, onUnload, onZoom
   , onActivate, onClick, onFocusIn, onFocusOut, onMouseDown, onMouseMove
   , onMouseOut, onMouseOver, onMouseUp
@@ -17,6 +18,9 @@ module Svg.Events exposing
 @docs onActivate, onClick, onFocusIn, onFocusOut, onMouseDown, onMouseMove,
   onMouseOut, onMouseOver, onMouseUp
 
+# Custom Events
+@docs on
+
 -}
 
 import Json.Decode as Json
@@ -25,7 +29,19 @@ import VirtualDom
 
 
 
-{-|-}
+{-| Create a custom event listener.
+
+    import Json.Decode as Json
+
+    onClick : msg -> Property msg
+    onClick msg =
+      on "click" (Json.succeed msg)
+
+You first specify the name of the event in the same format as with JavaScript’s
+`addEventListener`. Next you give a JSON decoder, which lets you pull
+information out of the event object. If the decoder succeeds, it will produce
+a message and route it to your `update` function.
+-}
 on : String -> Json.Decoder msg -> Attribute msg
 on =
   VirtualDom.on

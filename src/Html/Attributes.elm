@@ -135,7 +135,7 @@ import VirtualDom
         , ("width", "100%")
         ]
 
-    greeting : Html
+    greeting : Html msg
     greeting =
       div [ myStyle ] [ text "Hello!" ]
 

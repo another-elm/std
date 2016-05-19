@@ -662,7 +662,7 @@ minlength n =
 -}
 maxlength : Int -> Attribute msg
 maxlength n =
-  stringProperty "maxLength" (toString n)
+  attribute "maxlength" (toString n)
 
 
 {-| Defines which HTTP method to use when submitting a `form`. Can be GET
@@ -998,7 +998,7 @@ For `td` and `th`.
 -}
 colspan : Int -> Attribute msg
 colspan n =
-  stringProperty "colSpan" (toString n)
+  attribute "colspan" (toString n)
 
 
 {-| A space separated list of element IDs indicating which `th` elements are
@@ -1014,7 +1014,7 @@ For `td` and `th`.
 -}
 rowspan : Int -> Attribute msg
 rowspan n =
-  stringProperty "rowSpan" (toString n)
+  attribute "rowspan" (toString n)
 
 
 {-| Specifies the scope of a header cell `th`. Possible values are: col, row,

@@ -972,10 +972,9 @@ function redraw(domNode, vNode, eventNode)
 	var parentNode = domNode.parentNode;
 	var newNode = render(vNode, eventNode);
 
-	var ref = domNode.elm_event_node_ref
-	if (typeof ref !== 'undefined')
+	if (typeof newNode.elm_event_node_ref === 'undefined')
 	{
-		newNode.elm_event_node_ref = ref;
+		newNode.elm_event_node_ref = domNode.elm_event_node_ref;
 	}
 
 	if (parentNode && newNode !== domNode)

@@ -33,7 +33,7 @@ import VirtualDom
 
     import Json.Decode as Json
 
-    onClick : msg -> Property msg
+    onClick : msg -> Attribute msg
     onClick msg =
       on "click" (Json.succeed msg)
 

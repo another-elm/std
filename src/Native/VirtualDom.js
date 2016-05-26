@@ -311,11 +311,24 @@ function render(vNode, eventNode)
 			return render(vNode.node, eventNode);
 
 		case 'tagger':
+			var subNode = vNode.node;
+			var tagger = vNode.tagger;
+		
+			while (subNode.type === 'tagger')
+			{
+				typeof tagger !== 'object'
+					? tagger = [tagger, subNode.tagger]
+					: tagger.push(subNode.tagger);
+
+				subNode = subNode.node;
+			}
+            
 			var subEventRoot = {
-				tagger: vNode.tagger,
+				tagger: tagger,
 				parent: eventNode
 			};
-			var domNode = render(vNode.node, subEventRoot);
+			
+			var domNode = render(subNode, subEventRoot);
 			domNode.elm_event_node_ref = subEventRoot;
 			return domNode;
 
@@ -841,7 +854,14 @@ function addDomNodesHelp(domNode, vNode, patches, i, low, high, eventNode)
 	switch (vNode.type)
 	{
 		case 'tagger':
-			return addDomNodesHelp(domNode, vNode.node, patches, i, low + 1, high, domNode.elm_event_node_ref);
+			var subNode = vNode.node;
+            
+			while (subNode.type === "tagger")
+			{
+				subNode = subNode.node;
+			}
+            
+			return addDomNodesHelp(domNode, subNode, patches, i, low + 1, high, domNode.elm_event_node_ref);
 
 		case 'node':
 			var vChildren = vNode.children;
@@ -953,10 +973,9 @@ function redraw(domNode, vNode, eventNode)
 	var parentNode = domNode.parentNode;
 	var newNode = render(vNode, eventNode);
 
-	var ref = domNode.elm_event_node_ref
-	if (typeof ref !== 'undefined')
+	if (typeof newNode.elm_event_node_ref === 'undefined')
 	{
-		newNode.elm_event_node_ref = ref;
+		newNode.elm_event_node_ref = domNode.elm_event_node_ref;
 	}
 
 	if (parentNode && newNode !== domNode)

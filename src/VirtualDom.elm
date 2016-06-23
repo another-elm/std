@@ -6,6 +6,7 @@ module VirtualDom exposing
   , on, onWithOptions, Options, defaultOptions
   , map
   , lazy, lazy2, lazy3
+  , keyedNode
   , programWithFlags
   )
 
@@ -28,7 +29,7 @@ that expose more helper functions for HTML or SVG.
 @docs map
 
 # Optimizations
-@docs lazy, lazy2, lazy3
+@docs lazy, lazy2, lazy3, keyedNode
 
 # Programs
 @docs programWithFlags
@@ -273,6 +274,16 @@ lazy2 =
 lazy3 : (a -> b -> c -> Node msg) -> a -> b -> c -> Node msg
 lazy3 =
   Native.VirtualDom.lazy3
+
+
+{-| Works just like `node`, but you add a unique identifier to each child
+node. You want this when you have a list of nodes that is changing: adding
+nodes, removing nodes, etc. In these cases, the unique identifiers help make
+the DOM modifications more efficient.
+-}
+keyedNode : String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
+keyedNode =
+  Native.VirtualDom.keyedNode
 
 
 

@@ -894,8 +894,6 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 
 	while (aIndex < aLen && bIndex < bLen)
 	{
-		index++;
-
 		var a = aChildren[aIndex];
 		var b = bChildren[bIndex];
 
@@ -908,6 +906,7 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 
 		if (aKey === bKey)
 		{
+			index++;
 			diffHelp(aNode, bNode, localPatches, index);
 			index += aNode.descendantsCount || 0;
 
@@ -941,10 +940,12 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 		// swap a and b
 		if (aLookAhead && bLookAhead && newMatch && oldMatch)
 		{
+			index++;
 			diffHelp(aNode, bNextNode, localPatches, index);
 			insertNode(changes, localPatches, aKey, bNode, bIndex, inserts);
 			index += aNode.descendantsCount || 0;
 
+			index++;
 			removeNode(changes, localPatches, aKey, aNextNode, index);
 			index += aNextNode.descendantsCount || 0;
 
@@ -956,6 +957,7 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 		// insert b
 		if (bLookAhead && newMatch)
 		{
+			index++;
 			insertNode(changes, localPatches, bKey, bNode, bIndex, inserts);
 			diffHelp(aNode, bNextNode, localPatches, index);
 			index += aNode.descendantsCount || 0;
@@ -968,9 +970,11 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 		// remove a
 		if (aLookAhead && oldMatch)
 		{
+			index++;
 			removeNode(changes, localPatches, aKey, aNode, index);
 			index += aNode.descendantsCount || 0;
 
+			index++;
 			diffHelp(aNextNode, bNode, localPatches, index);
 			index += aNextNode.descendantsCount || 0;
 
@@ -982,10 +986,12 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 		// remove a, insert b
 		if (aLookAhead && bLookAhead && aNextKey === bNextKey)
 		{
+			index++;
 			removeNode(changes, localPatches, aKey, aNode, index);
 			insertNode(changes, localPatches, bKey, bNode, bIndex, inserts);
 			index += aNode.descendantsCount || 0;
 
+			index++;
 			diffHelp(aNextNode, bNextNode, localPatches, index);
 			index += aNextNode.descendantsCount || 0;
 
@@ -994,16 +1000,7 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 			continue;
 		}
 
-		if (!aLookAhead || !bLookAhead)
-		{
-			break;
-		}
-
-		// difficult scenario
-		console.log(aChildren.map(function(child) { return child._0; }));
-		console.log(bChildren.map(function(child) { return child._0; }));
-
-		throw new Error('TODO - what to do when things get tough?');
+		break;
 	}
 
 	// eat up any remaining nodes with removeNode and insertNode
@@ -1018,18 +1015,21 @@ function diffKeyedChildren(aParent, bParent, patches, rootIndex)
 		aIndex++;
 	}
 
+	var endInserts;
 	while (bIndex < bLen)
 	{
+		endInserts = endInserts || [];
 		var b = bChildren[bIndex];
-		insertNode(changes, localPatches, b._0, b._1, undefined, inserts);
+		insertNode(changes, localPatches, b._0, b._1, undefined, endInserts);
 		bIndex++;
 	}
 
-	if (localPatches.length > 0 || inserts.length > 0)
+	if (localPatches.length > 0 || inserts.length > 0 || typeof endInserts !== 'undefined')
 	{
 		patches.push(makePatch('p-reorder', rootIndex, {
 			patches: localPatches,
-			inserts: inserts
+			inserts: inserts,
+			endInserts: endInserts
 		}));
 	}
 }
@@ -1052,7 +1052,7 @@ function insertNode(changes, localPatches, key, vnode, bIndex, inserts)
 		entry = {
 			tag: 'insert',
 			vnode: vnode,
-			index: undefined,
+			index: bIndex,
 			data: undefined
 		};
 
@@ -1070,6 +1070,7 @@ function insertNode(changes, localPatches, key, vnode, bIndex, inserts)
 		entry.tag = 'move';
 		var subPatches = [];
 		diffHelp(entry.vnode, vnode, subPatches, entry.index);
+		entry.index = bIndex;
 		entry.data.data = {
 			patches: subPatches,
 			entry: entry
@@ -1172,7 +1173,12 @@ function addDomNodesHelp(domNode, vNode, patches, i, low, high, eventNode)
 			var data = patch.data;
 			if (typeof data !== 'undefined')
 			{
-				addDomNodesHelp(domNode, vNode, data.patches, 0, low, high, eventNode);
+				data.entry.data = domNode;
+				var subPatches = data.patches;
+				if (subPatches.length > 0)
+				{
+					addDomNodesHelp(domNode, vNode, subPatches, 0, low, high, eventNode);
+				}
 			}
 		}
 		else
@@ -1317,32 +1323,71 @@ function applyPatch(domNode, patch)
 			return domNode;
 
 		case 'p-remove':
-			domNode.parentNode.removeChild(domNode);
 			var data = patch.data;
-			if (typeof data !== 'undefined')
+			if (typeof data === 'undefined')
 			{
-				data.entry.data = applyPatchesHelp(domNode, data.patches);
+				domNode.parentNode.removeChild(domNode);
+				return domNode;
 			}
+			var entry = data.entry;
+			if (typeof entry.index !== 'undefined')
+			{
+				domNode.parentNode.removeChild(domNode);
+			}
+			entry.data = applyPatchesHelp(domNode, data.patches);
 			return domNode;
 
 		case 'p-reorder':
 			var data = patch.data;
+
+			// end inserts
+			var endInserts = data.endInserts;
+			var end;
+			if (typeof endInserts !== 'undefined')
+			{
+				if (endInserts.length === 1)
+				{
+					var insert = endInserts[0];
+					var entry = insert.entry;
+					var end = entry.tag === 'move'
+						? entry.data
+						: render(entry.vnode, patch.eventNode);
+				}
+				else
+				{
+					end = document.createDocumentFragment();
+					for (var i = 0; i < endInserts.length; i++)
+					{
+						var insert = endInserts[i];
+						var entry = insert.entry;
+						var node = entry.tag === 'move'
+							? entry.data
+							: render(entry.vnode, patch.eventNode);
+						end.appendChild(node);
+					}
+				}
+			}
+
+			// removals
 			domNode = applyPatchesHelp(domNode, data.patches);
+
+			// inserts
 			var inserts = data.inserts;
 			for (var i = 0; i < inserts.length; i++)
 			{
 				var insert = inserts[i];
-
 				var entry = insert.entry;
 				var node = entry.tag === 'move'
 					? entry.data
 					: render(entry.vnode, patch.eventNode);
-
-				var index = insert.index;
-				typeof index === 'undefined'
-					? domNode.appendChild(node)
-					: domNode.insertBefore(node, domNode.childNodes[index]);
+				domNode.insertBefore(node, domNode.childNodes[insert.index]);
 			}
+
+			if (typeof end !== 'undefined')
+			{
+				domNode.appendChild(end);
+			}
+
 			return domNode;
 
 		case 'p-custom':

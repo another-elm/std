@@ -11,6 +11,7 @@
         "Html.App",
         "Html.Attributes",
         "Html.Events",
+        "Html.Keyed",
         "Html.Lazy"
     ],
     "dependencies": {

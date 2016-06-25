@@ -116,7 +116,7 @@ function thunk(func, args, thunk)
 		func: func,
 		args: args,
 		thunk: thunk,
-		node: null
+		node: undefined
 	};
 }
 
@@ -268,7 +268,7 @@ function equalEvents(a, b)
 
 function renderer(parent, tagger, initialVirtualNode)
 {
-	var eventNode = { tagger: tagger, parent: null };
+	var eventNode = { tagger: tagger, parent: undefined };
 
 	var domNode = render(initialVirtualNode, eventNode);
 	parent.appendChild(domNode);
@@ -585,8 +585,8 @@ function makePatch(type, index, data)
 		index: index,
 		type: type,
 		data: data,
-		domNode: null,
-		eventNode: null
+		domNode: undefined,
+		eventNode: undefined
 	};
 }
 

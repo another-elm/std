@@ -351,11 +351,7 @@ function render(vNode, eventNode)
 				subNode = subNode.node;
 			}
 
-			var subEventRoot = {
-				tagger: tagger,
-				parent: eventNode
-			};
-
+			var subEventRoot = { tagger: tagger, parent: eventNode };
 			var domNode = render(subNode, subEventRoot);
 			domNode.elm_event_node_ref = subEventRoot;
 			return domNode;
@@ -1303,7 +1299,14 @@ function applyPatch(domNode, patch)
 			return applyPatchesHelp(domNode, patch.data);
 
 		case 'p-tagger':
-			domNode.elm_event_node_ref.tagger = patch.data;
+			if (typeof domNode.elm_event_node_ref !== 'undefined')
+			{
+				domNode.elm_event_node_ref.tagger = patch.data;
+			}
+			else
+			{
+				domNode.elm_event_node_ref = { tagger: patch.data, parent: patch.eventNode };
+			}
 			return domNode;
 
 		case 'p-remove-last':
@@ -1425,6 +1428,110 @@ function applyPatchReorder(domNode, patch)
 
 
 
+////////////  FREEZE  ////////////
+
+
+function freeze(vNode)
+{
+	switch (vNode.type)
+	{
+		case 'thunk':
+			var node = vNode.thunk();
+			vNode.func = null;
+			vNode.args = args.map(function() { return 0; });
+			vNode.thunk = null;
+			vNode.node = node;
+			return freeze(node);
+
+		case 'tagger':
+			vNode.tagger = null;
+			return freeze(vNode.node);
+
+		case 'text':
+			return vNode.text
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#039;");
+
+		case 'node':
+			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
+				+ vNode.children.map(freeze).join('')
+				+ '</' + vNode.tag + '>';
+
+		case 'keyed-node':
+			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
+				+ vNode.children.map(function(kid) { return freeze(kid._1); }).join('')
+				+ '</' + vNode.tag + '>';
+
+		case 'custom':
+			vNode.facts = null;
+			vNode.model = null;
+			vNode.impl = null;
+			return '<div></div>';
+	}
+}
+
+
+function freezeFacts(facts)
+{
+	var string = '';
+
+	for (var key in facts)
+	{
+		var fact = facts[key];
+
+		switch (key)
+		{
+			case STYLE_KEY:
+				var styles = facts[key];
+				string += ' style="';
+				for (var prop in styles)
+				{
+					string += prop + ':' + styles[prop] + ';'
+				}
+				string += '"';
+				break;
+
+			case EVENT_KEY:
+				facts[key] = undefined;
+				break;
+
+			case ATTR_KEY:
+				string += freezeAttribute(fact.realKey, fact.value);
+				break;
+
+			case ATTR_NS_KEY:
+				var data = fact.value;
+				string += freezeAttribute(fact.realKey, data.value);
+				break;
+
+			default:
+				string += freezeAttribute(propertyToAttribute[key] || key, fact);
+				break;
+		}
+	}
+
+	return string;
+}
+
+
+function freezeAttribute(key, value)
+{
+	return ' ' + key + '="' + value + '"';
+}
+
+
+var propertyToAttribute = {
+	'className': 'class',
+    'htmlFor': 'for',
+    'httpEquiv': 'http-equiv',
+    'acceptCharset': 'accept-charset'
+};
+
+
+
 ////////////  PROGRAMS  ////////////
 
 
@@ -1459,7 +1566,9 @@ return {
 	lazy3: F4(lazy3),
 	keyedNode: F3(keyedNode),
 
-	programWithFlags: programWithFlags
+	programWithFlags: programWithFlags,
+
+	freeze: freeze
 };
 
 }();

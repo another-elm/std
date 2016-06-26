@@ -646,7 +646,7 @@ For `input`.
 -}
 list : String -> Attribute msg
 list value =
-  stringProperty "list" value
+  attribute "list" value
 
 
 {-| Defines the minimum number of characters allowed in an `input` or

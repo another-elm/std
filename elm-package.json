@@ -10,6 +10,7 @@
         "Svg",
         "Svg.Attributes",
         "Svg.Events",
+        "Svg.Keyed",
         "Svg.Lazy"
     ],
     "dependencies": {

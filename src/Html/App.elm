@@ -80,7 +80,7 @@ map =
 
 
 {-| Create a [`Program`][program] that specifies how your whole app should
-work. The essense of every Elm program is:
+work. The essence of every Elm program is:
 
   * **Model** &mdash; a nice representation of your application state.
   * **View** &mdash; a function that turns models into HTML.

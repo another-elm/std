@@ -1289,7 +1289,7 @@ function applyPatch(domNode, patch)
 	switch (patch.type)
 	{
 		case 'p-redraw':
-			return redraw(domNode, patch.data, patch.eventNode);
+			return applyPatchRedraw(domNode, patch.data, patch.eventNode);
 
 		case 'p-facts':
 			applyFacts(domNode, patch.eventNode, patch.data);
@@ -1400,7 +1400,7 @@ function applyPatch(domNode, patch)
 }
 
 
-function redraw(domNode, vNode, eventNode)
+function applyPatchRedraw(domNode, vNode, eventNode)
 {
 	var parentNode = domNode.parentNode;
 	var newNode = render(vNode, eventNode);

@@ -1702,7 +1702,7 @@ function makeStepper(domNode, initialVirtualNode, eventNode)
 var rAF =
 	typeof requestAnimationFrame !== 'undefined'
 		? requestAnimationFrame
-		: function(cb) { setTimeout(cb, 1000 / 60); };
+		: function(callback) { callback(); };
 
 
 return {

@@ -263,67 +263,6 @@ function equalEvents(a, b)
 
 
 
-////////////  RENDERER  ////////////
-
-
-function renderer(parent, tagger, initialVirtualNode)
-{
-	var eventNode = { tagger: tagger, parent: undefined };
-
-	var domNode = render(initialVirtualNode, eventNode);
-	parent.appendChild(domNode);
-
-	var state = 'NO_REQUEST';
-	var currentVirtualNode = initialVirtualNode;
-	var nextVirtualNode = initialVirtualNode;
-
-	function registerVirtualNode(vNode)
-	{
-		if (state === 'NO_REQUEST')
-		{
-			rAF(updateIfNeeded);
-		}
-		state = 'PENDING_REQUEST';
-		nextVirtualNode = vNode;
-	}
-
-	function updateIfNeeded()
-	{
-		switch (state)
-		{
-			case 'NO_REQUEST':
-				throw new Error(
-					'Unexpected draw callback.\n' +
-					'Please report this to <https://github.com/elm-lang/core/issues>.'
-				);
-
-			case 'PENDING_REQUEST':
-				rAF(updateIfNeeded);
-				state = 'EXTRA_REQUEST';
-
-				var patches = diff(currentVirtualNode, nextVirtualNode);
-				domNode = applyPatches(domNode, currentVirtualNode, patches, eventNode);
-				currentVirtualNode = nextVirtualNode;
-
-				return;
-
-			case 'EXTRA_REQUEST':
-				state = 'NO_REQUEST';
-				return;
-		}
-	}
-
-	return { update: registerVirtualNode };
-}
-
-
-var rAF =
-	typeof requestAnimationFrame !== 'undefined'
-		? requestAnimationFrame
-		: function(cb) { setTimeout(cb, 1000 / 60); };
-
-
-
 ////////////  RENDER  ////////////
 
 
@@ -1431,6 +1370,8 @@ function applyPatchReorder(domNode, patch)
 ////////////  FREEZE  ////////////
 
 
+var DATA_KEY = 'data-elm-node';
+
 function freeze(vNode)
 {
 	switch (vNode.type)
@@ -1535,16 +1476,233 @@ var propertyToAttribute = {
 ////////////  PROGRAMS  ////////////
 
 
-function programWithFlags(details)
+function program(impl)
 {
-	return {
-		init: details.init,
-		update: details.update,
-		subscriptions: details.subscriptions,
-		view: details.view,
-		renderer: renderer
+	return function(object, moduleName, flagDecoder)
+	{
+		setEverythingUp(impl, object, moduleName, function flagChecker(flags, domNode)
+		{
+			if (typeof flags === 'undefined')
+			{
+				return impl.init;
+			}
+
+			var errorMessage =
+				'The `' + moduleName + '` module does not need flags.\n'
+				+ 'Initialize it with no arguments and you should be all set!';
+
+			crash(errorMessage, domNode);
+		});
 	};
 }
+
+function programWithFlags(impl)
+{
+	return function(object, moduleName, flagDecoder)
+	{
+		setEverythingUp(impl, object, moduleName, function flagChecker(flags, domNode)
+		{
+			var result = A2(_elm_lang$core$Native_Json.run, flagDecoder, flags);
+			if (result.ctor === 'Ok')
+			{
+				return impl.init(result._0);
+			}
+
+			var errorMessage =
+				'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
+				+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
+				+ result._0;
+
+			crash(errorMessage, domNode);
+		});
+	};
+}
+
+function setEverythingUp(impl, object, moduleName, flagChecker)
+{
+	object['embed'] = function embed(node, flags)
+	{
+		var init = flagChecker(flags, node);
+
+		while (node.lastChild)
+		{
+			node.removeChild(node.lastChild);
+		}
+
+		return _elm_lang$core$Native_Platform.initialize(
+			init,
+			impl.update,
+			impl.subscriptions,
+			impl.view,
+			rendererNormal(node)
+		);
+	};
+
+	object['fullscreen'] = function fullscreen(flags)
+	{
+		var init = flagChecker(flags, document.body);
+
+		return _elm_lang$core$Native_Platform.initialize(
+			init,
+			impl.update,
+			impl.subscriptions,
+			impl.view,
+			rendererNormal(document.body)
+		);
+	};
+
+	object['freeze'] = function freeze(id, flags)
+	{
+		var model = flagChecker(flags, node)._0;
+		var vNode = impl.view(model);
+		var html = freeze(vNode);
+		return '<div id="' + id + '" '
+			+ DATA_KEY + '="' + JSON.stringify(vNode)
+			+ '">' + html + '</div>';
+	};
+
+	object['thaw'] = function thaw(id, flags)
+	{
+		return _elm_lang$core$Native_Platform.initialize(
+			init,
+			impl.update,
+			impl.subscriptions,
+			impl.view,
+			rendererThaw(moduleName, id)
+		);
+	};
+}
+
+function crash(errorMessage, domNode)
+{
+	if (domNode)
+	{
+		domNode.innerHTML =
+			'<div style="padding-left:1em;">'
+			+ '<h2 style="font-weight:normal;"><b>Oops!</b> Something went wrong when starting your Elm program.</h2>'
+			+ '<pre style="padding-left:1em;">' + errorMessage + '</pre>'
+			+ '</div>';
+	}
+
+	throw new Error(errorMessage);
+}
+
+
+////////////  RENDERER  ////////////
+
+
+function rendererNormal(parentNode)
+{
+	return function(tagger, initialVirtualNode)
+	{
+		var eventNode = { tagger: tagger, parent: undefined };
+		var domNode = render(initialVirtualNode, eventNode);
+		parentNode.appendChild(domNode);
+		return makeStepper(domNode, initialVirtualNode, eventNode);
+	};
+}
+
+function rendererThaw(moduleName, id)
+{
+	return function(tagger, initialVirtualNode)
+	{
+		// get id
+		if (typeof id !== 'string')
+		{
+			crash(
+				'To initialize a program with ' + moduleName
+				+ '.thaw(), the first argument must be the STRING id you used when you called '
+				+ moduleName + '.freeze() and the HTML that resulted from freeze must be embeded on this page.'
+			);
+		}
+
+		// get DOM node
+		var domNode = document.getElementById(id);
+		if (!domNode)
+		{
+			crash(
+				'You tried to initialize a frozen program with '
+				+ moduleName + '.thaw("' + id + '"), but I cannot find that ID in the DOM.\n'
+				+ 'Are you sure it is the same ID you used when calling ' + moduleName + '.freeze()?\n'
+				+ 'Are you sure you embedded the frozen HTML in this page?'
+			);
+		}
+
+		// get frozen node
+		try
+		{
+			var frozenVirtualNode = JSON.parse(domNode.getAttribute(DATA_KEY));
+			domNode.removeAttribute(DATA_KEY);
+		}
+		catch (e)
+		{
+			var errorMessage =
+				'You tried to initialize a frozen program with '
+				+ moduleName + '.thaw("' + id + '"), but some data has been corrupted.\n'
+				+ 'Calling freeze produces an HTML string containing a ' + DATA_KEY
+				+ ' attribute. That attribute SHOULD hold a JSON object that'
+				+ ' I use to get everything set up, but I ran into the\n'
+				+ ' following problem when trying to read it:\n\n'
+				+ e.message;
+
+			crash(errorMessage, domNode);
+		}
+
+		var eventNode = { tagger: tagger, parent: undefined };
+		var stepper = makeStepper(domNode, frozenVirtualNode, eventNode);
+		stepper(initialVirtualNode);
+		return stepper;
+	}
+}
+
+function makeStepper(domNode, initialVirtualNode, eventNode)
+{
+	var state = 'NO_REQUEST';
+	var currNode = initialVirtualNode;
+	var nextNode = initialVirtualNode;
+
+	function updateIfNeeded()
+	{
+		switch (state)
+		{
+			case 'NO_REQUEST':
+				throw new Error(
+					'Unexpected draw callback.\n' +
+					'Please report this to <https://github.com/elm-lang/virtual-dom/issues>.'
+				);
+
+			case 'PENDING_REQUEST':
+				rAF(updateIfNeeded);
+				state = 'EXTRA_REQUEST';
+
+				var patches = diff(currNode, nextNode);
+				domNode = applyPatches(domNode, currNode, patches, eventNode);
+				currNode = nextNode;
+
+				return;
+
+			case 'EXTRA_REQUEST':
+				state = 'NO_REQUEST';
+				return;
+		}
+	}
+
+	return function stepper(virtualNode)
+	{
+		if (state === 'NO_REQUEST')
+		{
+			rAF(updateIfNeeded);
+		}
+		state = 'PENDING_REQUEST';
+		nextNode = virtualNode;
+	};
+}
+
+
+var rAF =
+	typeof requestAnimationFrame !== 'undefined'
+		? requestAnimationFrame
+		: function(cb) { setTimeout(cb, 1000 / 60); };
 
 
 return {
@@ -1566,9 +1724,8 @@ return {
 	lazy3: F4(lazy3),
 	keyedNode: F3(keyedNode),
 
-	programWithFlags: programWithFlags,
-
-	freeze: freeze
+	program: program,
+	programWithFlags: programWithFlags
 };
 
 }();

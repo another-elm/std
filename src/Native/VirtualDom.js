@@ -1580,7 +1580,7 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 	object['thaw'] = function thaw(id, flags)
 	{
 		return _elm_lang$core$Native_Platform.initialize(
-			init,
+			flagChecker(flags),
 			impl.update,
 			impl.subscriptions,
 			impl.view,

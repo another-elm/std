@@ -1478,43 +1478,59 @@ var propertyToAttribute = {
 
 function program(impl)
 {
-	return function(object, moduleName, flagDecoder)
+	return function(flagDecoder)
 	{
-		setEverythingUp(impl, object, moduleName, function flagChecker(flags, domNode)
+		return function(object, moduleName)
 		{
-			if (typeof flags === 'undefined')
+			setEverythingUp(impl, object, moduleName, function(flags, domNode)
 			{
-				return impl.init;
-			}
+				if (typeof flags === 'undefined')
+				{
+					return impl.init;
+				}
 
-			var errorMessage =
-				'The `' + moduleName + '` module does not need flags.\n'
-				+ 'Initialize it with no arguments and you should be all set!';
+				var errorMessage =
+					'The `' + moduleName + '` module does not need flags.\n'
+					+ 'Initialize it with no arguments and you should be all set!';
 
-			crash(errorMessage, domNode);
-		});
+				crash(errorMessage, domNode);
+			});
+		};
 	};
 }
 
 function programWithFlags(impl)
 {
-	return function(object, moduleName, flagDecoder)
+	return function(flagDecoder)
 	{
-		setEverythingUp(impl, object, moduleName, function flagChecker(flags, domNode)
+		return function(object, moduleName)
 		{
-			var result = A2(_elm_lang$core$Native_Json.run, flagDecoder, flags);
-			if (result.ctor === 'Ok')
+			setEverythingUp(impl, object, moduleName, function(flags, domNode)
 			{
-				return impl.init(result._0);
-			}
+				if (typeof flagDecoder === 'undefined')
+				{
+					var errorMessage =
+						'Are you trying to sneak a Never value into Elm? Trickster!\n'
+						+ 'It looks like ' + moduleName + '.main is defined with `programWithFlags` but has type `Program Never`.\n'
+						+ 'Use `program` instead if you do not want flags.'
 
-			var errorMessage =
-				'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
-				+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
-				+ result._0;
+					crash(errorMessage, domNode);
+				}
 
-			crash(errorMessage, domNode);
-		});
+				var result = A2(_elm_lang$core$Native_Json.run, flagDecoder, flags);
+				if (result.ctor === 'Ok')
+				{
+					return impl.init(result._0);
+				}
+
+				var errorMessage =
+					'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
+					+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
+					+ result._0;
+
+				crash(errorMessage, domNode);
+			});
+		};
 	};
 }
 

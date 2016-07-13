@@ -105,8 +105,8 @@ beginnerProgram
     }
   -> Program Never
 beginnerProgram {model, view, update} =
-  programWithFlags
-    { init = \_ -> model ! []
+  program
+    { init = model ! []
     , update = \msg model -> update msg model ! []
     , view = view
     , subscriptions = \_ -> Sub.none
@@ -150,9 +150,8 @@ program
     , view : model -> Html msg
     }
   -> Program Never
-program app =
-  programWithFlags
-    { app | init = \_ -> app.init }
+program =
+  VirtualDom.program
 
 
 {-| Same as `program` but it lets you demand flags on initialization. So the

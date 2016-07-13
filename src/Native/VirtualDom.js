@@ -1370,7 +1370,7 @@ function applyPatchReorder(domNode, patch)
 ////////////  FREEZE  ////////////
 
 
-var DATA_KEY = 'data-elm-node';
+var DATA_KEY = 'data-vrep';
 
 function freezeNode(vNode)
 {

@@ -743,7 +743,7 @@ for value =
 -}
 form : String -> Attribute msg
 form value =
-  stringProperty "form" value
+  attribute "form" value
 
 
 

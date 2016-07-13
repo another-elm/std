@@ -1372,7 +1372,7 @@ function applyPatchReorder(domNode, patch)
 
 var DATA_KEY = 'data-elm-node';
 
-function freeze(vNode)
+function freezeNode(vNode)
 {
 	switch (vNode.type)
 	{
@@ -1382,11 +1382,11 @@ function freeze(vNode)
 			vNode.args = args.map(function() { return 0; });
 			vNode.thunk = null;
 			vNode.node = node;
-			return freeze(node);
+			return freezeNode(node);
 
 		case 'tagger':
 			vNode.tagger = null;
-			return freeze(vNode.node);
+			return freezeNode(vNode.node);
 
 		case 'text':
 			return vNode.text
@@ -1398,12 +1398,12 @@ function freeze(vNode)
 
 		case 'node':
 			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
-				+ vNode.children.map(freeze).join('')
+				+ vNode.children.map(freezeNode).join('')
 				+ '</' + vNode.tag + '>';
 
 		case 'keyed-node':
 			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
-				+ vNode.children.map(function(kid) { return freeze(kid._1); }).join('')
+				+ vNode.children.map(function(kid) { return freezeNode(kid._1); }).join('')
 				+ '</' + vNode.tag + '>';
 
 		case 'custom':
@@ -1571,10 +1571,10 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 	{
 		var model = flagChecker(flags, node)._0;
 		var vNode = impl.view(model);
-		var html = freeze(vNode);
+		var html = freezeNode(vNode);
 		return '<div id="' + id + '" '
-			+ DATA_KEY + '="' + JSON.stringify(vNode)
-			+ '">' + html + '</div>';
+			+ DATA_KEY + "='" + JSON.stringify(vNode)
+			+ "'>" + html + '</div>';
 	};
 
 	object['thaw'] = function thaw(id, flags)

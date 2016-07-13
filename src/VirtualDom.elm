@@ -7,7 +7,7 @@ module VirtualDom exposing
   , map
   , lazy, lazy2, lazy3
   , keyedNode
-  , programWithFlags
+  , program, programWithFlags
   )
 
 {-| API to the core diffing algorithm. Can serve as a foundation for libraries
@@ -32,7 +32,7 @@ that expose more helper functions for HTML or SVG.
 @docs lazy, lazy2, lazy3, keyedNode
 
 # Programs
-@docs programWithFlags
+@docs program, programWithFlags
 
 -}
 
@@ -290,12 +290,26 @@ keyedNode =
 -- PROGRAMS
 
 
-{-| The most generic way to create a [`Program`][program]. It is the primitive
-behind things like `beginnerProgram` and `program` in [the `Html.App` module][app].
-Read about it there if you'd like to learn more about this.
+{-| Check out the docs for [`Html.App.program`][prog].
+It works exactly the same way.
 
-[program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program
-[app]: http://package.elm-lang.org/packages/elm-lang/html/latest/Html-App
+[prog]: http://package.elm-lang.org/packages/elm-lang/html/latest/Html-App#program
+-}
+program
+  : { init : (model, Cmd msg)
+    , update : msg -> model -> (model, Cmd msg)
+    , subscriptions : model -> Sub msg
+    , view : model -> Node msg
+    }
+  -> Program Never
+program =
+  Native.VirtualDom.program
+
+
+{-| Check out the docs for [`Html.App.programWithFlags`][prog].
+It works exactly the same way.
+
+[prog]: http://package.elm-lang.org/packages/elm-lang/html/latest/Html-App#programWithFlags
 -}
 programWithFlags
   : { init : flags -> (model, Cmd msg)

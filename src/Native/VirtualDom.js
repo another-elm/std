@@ -1569,7 +1569,7 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 
 	object['freeze'] = function freeze(id, flags)
 	{
-		var model = flagChecker(flags, node)._0;
+		var model = flagChecker(flags)._0;
 		var vNode = impl.view(model);
 		var html = freezeNode(vNode);
 		return '<div id="' + id + '" '

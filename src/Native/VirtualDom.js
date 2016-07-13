@@ -1665,7 +1665,7 @@ function rendererThaw(moduleName, id)
 		}
 
 		var eventNode = { tagger: tagger, parent: undefined };
-		var stepper = makeStepper(domNode, frozenVirtualNode, eventNode);
+		var stepper = makeStepper(domNode.firstChild, frozenVirtualNode, eventNode);
 		stepper(initialVirtualNode);
 		return stepper;
 	}

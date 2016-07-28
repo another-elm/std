@@ -4,7 +4,7 @@ module Html exposing
   , div, p, hr, pre, blockquote
   , span, a, code, em, strong, i, b, u, sub, sup, br
   , ol, ul, li, dl, dt, dd
-  , img, iframe, canvas, svg, math
+  , img, iframe, canvas, math
   , form, input, textarea, button, select, option
   , section, nav, article, aside, header, footer, address, main', body
   , figure, figcaption
@@ -37,7 +37,7 @@ expect to use frequently will be closer to the top.
 @docs ol, ul, li, dl, dt, dd
 
 # Emdedded Content
-@docs img, iframe, canvas, svg, math
+@docs img, iframe, canvas, math
 
 # Inputs
 @docs form, input, textarea, button, select, option
@@ -630,12 +630,6 @@ area =
 node "area"
 
 --}
-
-{-| Defines an embedded vectorial image. -}
-svg : List (Attribute msg) -> List (Html msg) -> Html msg
-svg =
-  node "svg"
-
 
 {-| Defines a mathematical formula. -}
 math : List (Attribute msg) -> List (Html msg) -> Html msg

@@ -103,7 +103,7 @@ beginnerProgram
     , view : model -> Html msg
     , update : msg -> model -> model
     }
-  -> Program Never
+  -> Program Never model msg
 beginnerProgram {model, view, update} =
   program
     { init = model ! []
@@ -149,7 +149,7 @@ program
     , subscriptions : model -> Sub msg
     , view : model -> Html msg
     }
-  -> Program Never
+  -> Program Never model msg
 program =
   VirtualDom.program
 
@@ -172,6 +172,6 @@ programWithFlags
     , subscriptions : model -> Sub msg
     , view : model -> Html msg
     }
-  -> Program flags
+  -> Program flags model msg
 programWithFlags =
   VirtualDom.programWithFlags

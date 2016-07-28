@@ -301,7 +301,7 @@ program
     , subscriptions : model -> Sub msg
     , view : model -> Node msg
     }
-  -> Program Never
+  -> Program Never model msg
 program =
   Native.VirtualDom.program
 
@@ -317,7 +317,7 @@ programWithFlags
     , subscriptions : model -> Sub msg
     , view : model -> Node msg
     }
-  -> Program flags
+  -> Program flags model msg
 programWithFlags =
   Native.VirtualDom.programWithFlags
 

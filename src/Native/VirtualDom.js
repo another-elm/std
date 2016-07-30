@@ -1549,8 +1549,7 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 			init,
 			impl.update,
 			impl.subscriptions,
-			impl.view,
-			rendererNormal(node)
+			normalRenderer(node, impl.view)
 		);
 	};
 
@@ -1562,8 +1561,7 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 			init,
 			impl.update,
 			impl.subscriptions,
-			impl.view,
-			rendererNormal(document.body)
+			normalRenderer(document.body, impl.view)
 		);
 	};
 
@@ -1583,8 +1581,7 @@ function setEverythingUp(impl, object, moduleName, flagChecker)
 			flagChecker(flags),
 			impl.update,
 			impl.subscriptions,
-			impl.view,
-			rendererThaw(moduleName, id)
+			thawRenderer(moduleName, id, impl.view)
 		);
 	};
 }
@@ -1607,20 +1604,21 @@ function crash(errorMessage, domNode)
 ////////////  RENDERER  ////////////
 
 
-function rendererNormal(parentNode)
+function normalRenderer(parentNode, view)
 {
-	return function(tagger, initialVirtualNode)
+	return function(tagger, initialModel)
 	{
 		var eventNode = { tagger: tagger, parent: undefined };
+		var initialVirtualNode = view(initialModel);
 		var domNode = render(initialVirtualNode, eventNode);
 		parentNode.appendChild(domNode);
-		return makeStepper(domNode, initialVirtualNode, eventNode);
+		return makeStepper(domNode, view, initialVirtualNode, eventNode);
 	};
 }
 
-function rendererThaw(moduleName, id)
+function thawRenderer(moduleName, id, view)
 {
-	return function(tagger, initialVirtualNode)
+	return function(tagger, initialModel)
 	{
 		// get id
 		if (typeof id !== 'string')
@@ -1665,17 +1663,17 @@ function rendererThaw(moduleName, id)
 		}
 
 		var eventNode = { tagger: tagger, parent: undefined };
-		var stepper = makeStepper(domNode.firstChild, frozenVirtualNode, eventNode);
-		stepper(initialVirtualNode);
+		var stepper = makeStepper(domNode.firstChild, view, frozenVirtualNode, eventNode);
+		stepper(initialModel);
 		return stepper;
 	}
 }
 
-function makeStepper(domNode, initialVirtualNode, eventNode)
+function makeStepper(domNode, view, initialVirtualNode, eventNode)
 {
 	var state = 'NO_REQUEST';
 	var currNode = initialVirtualNode;
-	var nextNode = initialVirtualNode;
+	var nextModel;
 
 	function updateIfNeeded()
 	{
@@ -1691,6 +1689,7 @@ function makeStepper(domNode, initialVirtualNode, eventNode)
 				rAF(updateIfNeeded);
 				state = 'EXTRA_REQUEST';
 
+				var nextNode = view(nextModel);
 				var patches = diff(currNode, nextNode);
 				domNode = applyPatches(domNode, currNode, patches, eventNode);
 				currNode = nextNode;
@@ -1703,14 +1702,14 @@ function makeStepper(domNode, initialVirtualNode, eventNode)
 		}
 	}
 
-	return function stepper(virtualNode)
+	return function stepper(model)
 	{
 		if (state === 'NO_REQUEST')
 		{
 			rAF(updateIfNeeded);
 		}
 		state = 'PENDING_REQUEST';
-		nextNode = virtualNode;
+		nextModel = model;
 	};
 }
 

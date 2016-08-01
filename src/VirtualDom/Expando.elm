@@ -125,12 +125,7 @@ view : Maybe String -> Value -> Node Msg
 view maybeKey value =
   case value of
     Primitive stringRep ->
-      case maybeKey of
-        Nothing ->
-          div [] [ text stringRep ]
-
-        Just key ->
-          div [] [ text (key ++ " = " ++ stringRep) ]
+      div [ leftPad maybeKey ] (expando maybeKey Nothing stringRep)
 
     Sequence seqType isClosed valueList ->
       viewSequence maybeKey seqType isClosed valueList
@@ -143,30 +138,54 @@ view maybeKey value =
         name =
           Maybe.withDefault "TUPLE" maybeName
       in
-        case maybeKey of
-          Nothing ->
-            div [] [ text name ]
-
-          Just key ->
-            div [] [ text (key ++ " = " ++ name) ]
+        div [ leftPad maybeKey ] (expando maybeKey Nothing name)
 
 
-expando : Maybe String -> Bool -> String
-expando maybeKey isClosed =
+expando : Maybe String -> Maybe Bool -> String -> List (Node msg)
+expando maybeKey maybeIsClosed description =
   let
     arrow =
-      if isClosed then "▸" else "▾"
-  in
-    case maybeKey of
-      Nothing ->
-        arrow
+      case maybeIsClosed of
+        Nothing ->
+          makeArrow ""
 
-      Just key ->
-        arrow ++ key ++ " ="
+        Just True ->
+          makeArrow "▸"
+
+        Just False ->
+          makeArrow "▾"
+
+    info =
+      case maybeKey of
+        Nothing ->
+          description
+
+        Just key ->
+          key ++ " = " ++ description
+  in
+    [ arrow, text (" " ++ info) ]
+
+
+makeArrow arrow =
+  span [ VirtualDom.style [("color", "#333"), ("width", "1em"), ("display", "inline-block")] ] [ text arrow ]
+
+
+leftPad : Maybe a -> VirtualDom.Property msg
+leftPad maybeKey =
+  case maybeKey of
+    Nothing ->
+      VirtualDom.style []
+
+    Just _ ->
+      VirtualDom.style [("padding-left", "20px")]
 
 
 div =
   VirtualDom.node "div"
+
+
+span =
+  VirtualDom.node "span"
 
 
 onClick msg =
@@ -183,8 +202,8 @@ viewSequence maybeKey seqType isClosed valueList =
     starter =
       seqTypeToString (List.length valueList) seqType
   in
-    div []
-      [ div [ onClick Toggle ] [ text (expando maybeKey isClosed ++ " " ++ starter) ]
+    div [ leftPad maybeKey ]
+      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) starter)
       , if isClosed then
           text ""
 
@@ -199,8 +218,8 @@ viewSequence maybeKey seqType isClosed valueList =
 
 viewRecord : Maybe String -> Bool -> Dict String Value -> Node Msg
 viewRecord maybeKey isClosed record =
-  div []
-    [ div [ onClick Toggle ] [ text (expando maybeKey isClosed ++ " Record " ++ viewTinyRecord record) ]
+  div [ leftPad maybeKey ]
+    [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) ("Record " ++ viewTinyRecord record))
     , if isClosed then
         text ""
 

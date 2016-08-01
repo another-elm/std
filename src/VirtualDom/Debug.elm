@@ -226,6 +226,7 @@ body {
   width: 100%;
   margin: 0;
   overflow: scroll;
+  cursor: default;
 }
 
 #messages {

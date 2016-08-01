@@ -126,7 +126,7 @@ view : Maybe String -> Value -> Node Msg
 view maybeKey value =
   case value of
     Primitive stringRep ->
-      div [ leftPad maybeKey ] (expando maybeKey Nothing stringRep)
+      div [ leftPad maybeKey ] (expando maybeKey Nothing [span [red] [text stringRep]])
 
     Sequence seqType isClosed valueList ->
       viewSequence maybeKey seqType isClosed valueList
@@ -138,7 +138,7 @@ view maybeKey value =
       viewConstructor maybeKey maybeName isClosed valueList
 
 
-expando : Maybe String -> Maybe Bool -> String -> List (Node msg)
+expando : Maybe String -> Maybe Bool -> List (Node msg) -> List (Node msg)
 expando maybeKey maybeIsClosed description =
   let
     arrow =
@@ -151,20 +151,17 @@ expando maybeKey maybeIsClosed description =
 
         Just False ->
           makeArrow "▾"
-
-    info =
-      case maybeKey of
-        Nothing ->
-          description
-
-        Just key ->
-          key ++ " = " ++ description
   in
-    [ arrow, text (" " ++ info) ]
+    case maybeKey of
+      Nothing ->
+        arrow :: description
+
+      Just key ->
+        arrow :: span [purple] [text key] :: text " = " :: description
 
 
 makeArrow arrow =
-  span [ VirtualDom.style [("color", "#777"), ("width", "0.6em"), ("display", "inline-block")] ] [ text arrow ]
+  span [ VirtualDom.style [("color", "#777"), ("width", "1em"), ("display", "inline-block")] ] [ text arrow ]
 
 
 leftPad : Maybe a -> VirtualDom.Property msg
@@ -189,6 +186,16 @@ onClick msg =
   VirtualDom.on "click" (Json.succeed msg)
 
 
+red : VirtualDom.Property msg
+red =
+  VirtualDom.style [("color", "rgb(196, 26, 22)")]
+
+
+purple : VirtualDom.Property msg
+purple =
+  VirtualDom.style [("color", "rgb(136, 19, 145)")]
+
+
 
 -- VIEW SEQUENCE
 
@@ -200,7 +207,7 @@ viewSequence maybeKey seqType isClosed valueList =
       seqTypeToString (List.length valueList) seqType
   in
     div [ leftPad maybeKey ]
-      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) starter)
+      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
       , if isClosed then
           text ""
 
@@ -239,15 +246,17 @@ viewConstructor : Maybe String -> Maybe String -> Bool -> List Value -> Node Msg
 viewConstructor maybeKey maybeName isClosed valueList =
   let
     tinyArgs =
-      List.map viewTiny valueList
+      List.map viewExtraTiny valueList
 
     description =
       case maybeName of
         Nothing ->
-          "( " ++ String.join ", " tinyArgs ++ " )"
+          text "( " ::
+            List.foldr (\args rest -> span [] args :: text ", " :: rest) [text " )"] tinyArgs
 
         Just name ->
-          name ++ " " ++ String.join " " tinyArgs
+          text (name ++ " ") ::
+            List.foldr (\args rest -> span [] args :: text " " :: rest) [] tinyArgs
 
     (maybeIsClosed, openHtml) =
       case valueList of
@@ -299,74 +308,80 @@ viewConstructorEntry index value =
 -- TINY VIEW
 
 
-viewTiny : Value -> String
+viewTiny : Value -> List (Node msg)
 viewTiny value =
   case value of
     Primitive stringRep ->
-      stringRep
+      [ span [red] [text stringRep] ]
 
     Sequence seqType _ valueList ->
-      seqTypeToString (List.length valueList) seqType
+      [ text (seqTypeToString (List.length valueList) seqType) ]
 
     Record _ record ->
       viewTinyRecord record
 
     Constructor maybeName _ [] ->
-      Maybe.withDefault "Unit" maybeName
+      [ text (Maybe.withDefault "Unit" maybeName) ]
 
     Constructor maybeName _ valueList ->
       case maybeName of
         Nothing ->
-          "Tuple (" ++ toString (List.length valueList) ++ ")"
+          [ text ("Tuple (" ++ toString (List.length valueList) ++ ")") ]
 
         Just name ->
-          name ++ " …"
+          [ text (name ++ " …") ]
 
 
-viewTinyRecord : Dict String Value -> String
+viewTinyRecord : Dict String Value -> List (Node msg)
 viewTinyRecord record =
   if Dict.isEmpty record then
-    "{}"
+    [ text "{}" ]
 
   else
-    viewTinyRecordHelp 4 "{ " (Dict.toList record) ++ " }"
+    viewTinyRecordHelp 4 "{ " (Dict.toList record)
 
 
-viewTinyRecordHelp : Int -> String -> List (String, Value) -> String
+viewTinyRecordHelp : Int -> String -> List (String, Value) -> List (Node msg)
 viewTinyRecordHelp n starter entries =
   case entries of
     [] ->
-      ""
+      [ text " }" ]
 
     (key, value) :: rest ->
       if n == 0 then
-        starter ++ "…"
+        [ text ", … }" ]
 
       else
-        starter ++ key ++ " = " ++ viewExtraTiny value ++ viewTinyRecordHelp (n - 1) ", " rest
+        text starter
+        :: span [purple] [text key]
+        :: text " = "
+        :: span [] (viewExtraTiny value)
+        :: viewTinyRecordHelp (n - 1) ", " rest
 
 
-viewExtraTiny : Value -> String
+viewExtraTiny : Value -> List (Node msg)
 viewExtraTiny value =
   case value of
     Record _ record ->
-      viewExtraTinyRecord 4 "{" (Dict.keys record) ++ "}"
+      viewExtraTinyRecord 4 "{" (Dict.keys record)
 
     _ ->
       viewTiny value
 
 
-viewExtraTinyRecord : Int -> String -> List String -> String
+viewExtraTinyRecord : Int -> String -> List String -> List (Node msg)
 viewExtraTinyRecord n starter entries =
   case entries of
     [] ->
-      ""
+      [ text "}" ]
 
     key :: rest ->
       if n == 0 then
-        starter ++ "…"
+        [ text "…}" ]
 
       else
-        starter ++ key ++ viewExtraTinyRecord (n - 1) "," rest
+        text starter
+        :: span [purple] [text key]
+        :: viewExtraTinyRecord (n - 1) "," rest
 
 

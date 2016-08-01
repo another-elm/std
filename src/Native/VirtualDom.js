@@ -1720,6 +1720,117 @@ var rAF =
 		: function(callback) { callback(); };
 
 
+// DEBUG
+
+function debug(impl)
+{
+	return function(flagDecoder)
+	{
+		return function(object, moduleName)
+		{
+			object['fullscreen'] = function fullscreen(flags)
+			{
+				return _elm_lang$core$Native_Platform.initialize(
+					impl.init,
+					impl.update,
+					impl.subscriptions,
+					debugRenderer(moduleName, document.body, impl.view, impl.viewIn, impl.viewOut)
+				);
+			};
+		};
+	};
+}
+
+function debugRenderer(moduleName, parentNode, view, viewIn, viewOut)
+{
+	return function(tagger, initialModel)
+	{
+		var eventNode = { tagger: tagger, parent: undefined };
+
+		var appNode = view(initialModel);
+		var domNode = render(appNode, eventNode);
+		parentNode.appendChild(domNode);
+		var appStepper = makeStepper(domNode, view, appNode, eventNode);
+
+		var debugStepper = makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel, eventNode);
+
+		return function stepper(model)
+		{
+			appStepper(model);
+			debugStepper(model);
+		}
+	};
+}
+
+function makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel, eventNode)
+{
+	var curr, domNode, isIn, debugWindow;
+	var model = initialModel;
+
+	function tagger()
+	{
+		parentNode.removeChild(domNode);
+		isIn = false;
+		curr = viewOut(model);
+		domNode = render(curr, eventNode);
+		openDebugWindow(moduleName, makeButton, domNode);
+	}
+
+	var clickEventNode = { tagger: tagger, parent: undefined };
+
+	function makeButton()
+	{
+		isIn = true;
+		curr = viewIn(model);
+		domNode = render(curr, clickEventNode);
+		parentNode.appendChild(domNode);
+	}
+
+	makeButton();
+
+	return function stepper(model)
+	{
+		var next = (isIn ? viewIn : viewOut)(model);
+		var patches = diff(curr, next);
+		domNode = applyPatches(domNode, curr, patches, eventNode);
+		curr = next;
+	};
+}
+
+
+function openDebugWindow(moduleName, makeButton, domNode)
+{
+	var w = 900;
+	var h = 360;
+	var x = screen.width - w;
+	var y = screen.height - h;
+	var debugWindow = window.open('', '', 'width=' + w + ',height=' + h + ',left=' + x + ',top=' + y);
+
+	var doc = debugWindow.document;
+	doc.title = 'Debugger - ' + moduleName;
+	doc.body.style.margin = '0';
+	doc.body.style.padding = '0';
+	doc.body.appendChild(domNode);
+
+	doc.addEventListener('keydown', function(event) {
+		if (event.metaKey && event.which === 82)
+		{
+			window.location.reload();
+		}
+	});
+
+	function close()
+	{
+		debugWindow.close();
+	}
+	window.addEventListener('unload', close);
+	debugWindow.addEventListener('unload', function() {
+		window.removeEventListener('unload', close);
+		makeButton();
+	});
+}
+
+
 return {
 	node: node,
 	text: text,
@@ -1739,6 +1850,7 @@ return {
 	lazy3: F4(lazy3),
 	keyedNode: F3(keyedNode),
 
+	debug: debug,
 	program: program,
 	programWithFlags: programWithFlags
 };

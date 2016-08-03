@@ -54,13 +54,70 @@ function init(value)
 {
 	var type = typeof value;
 
+	if (type === 'boolean')
+	{
+		return primitive(value ? 'True' : 'False');
+	}
+
 	if (type === 'number')
 	{
 		return primitive(value + '');
 	}
 
+	if (type === 'string')
+	{
+		return primitive('"' + addSlashes(value, false) + '"');
+	}
+
+	if (value instanceof String)
+	{
+		return "'" + addSlashes(value, true) + "'";
+	}
+
 	if (type === 'object' && 'ctor' in value)
 	{
+		var ctor = value.ctor;
+
+		if (ctor === '::' || ctor === '[]')
+		{
+			return {
+				ctor: 'Sequence',
+				_0: {ctor: 'ListSeq'},
+				_1: true,
+				_2: A2(_elm_lang$core$List$map, init, value)
+			};
+		}
+
+		if (ctor === 'Set_elm_builtin')
+		{
+			return {
+				ctor: 'Sequence',
+				_0: {ctor: 'SetSeq'},
+				_1: true,
+				_2: A3(_elm_lang$core$Set$foldr, initCons, _elm_lang$core$Native_List.Nil, value)
+			};
+		}
+
+		if (ctor === '_Array')
+		{
+			return {
+				ctor: 'Sequence',
+				_0: {ctor: 'ArraySeq'},
+				_1: true,
+				_2: A3(_elm_lang$core$Array$foldr, initCons, _elm_lang$core$Native_List.Nil, value)
+			};
+		}
+
+		if (ctor === '<decoder>')
+		{
+			return primitive('Decoder');
+		}
+
+		if (ctor === '_Process')
+		{
+			return primitive('Process');
+		}
+
 		var list = _elm_lang$core$Native_List.Nil;
 		for (var i in value)
 		{
@@ -69,7 +126,7 @@ function init(value)
 		}
 		return {
 			ctor: 'Constructor',
-			_0: _elm_lang$core$Maybe$Just(value.ctor),
+			_0: _elm_lang$core$Maybe$Just(ctor),
 			_1: true,
 			_2: _elm_lang$core$List$reverse(list)
 		};
@@ -85,7 +142,14 @@ function init(value)
 		return { ctor: 'Record', _0: true, _1: dict };
 	}
 
-	return primitive('TODO');
+	return primitive('XXX');
+}
+
+var initCons = F2(initConsHelp);
+
+function initConsHelp(value, list)
+{
+	return _elm_lang$core$Native_List.Cons(init(value), list);
 }
 
 function addSlashes(str, isChar)

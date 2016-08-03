@@ -161,7 +161,7 @@ expando maybeKey maybeIsClosed description =
 
 
 makeArrow arrow =
-  span [ VirtualDom.style [("color", "#777"), ("width", "1em"), ("display", "inline-block")] ] [ text arrow ]
+  span [ VirtualDom.style [("color", "#777"), ("width", "2ch"), ("display", "inline-block")] ] [ text arrow ]
 
 
 leftPad : Maybe a -> VirtualDom.Property msg
@@ -171,7 +171,7 @@ leftPad maybeKey =
       VirtualDom.style []
 
     Just _ ->
-      VirtualDom.style [("padding-left", "20px")]
+      VirtualDom.style [("padding-left", "2ch")]
 
 
 div =
@@ -208,12 +208,13 @@ viewSequence maybeKey seqType isClosed valueList =
   in
     div [ leftPad maybeKey ]
       [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
-      , if isClosed then
-          text ""
-
-        else
-          text "OPEN"
+      , if isClosed then text "" else viewSequenceOpen valueList
       ]
+
+
+viewSequenceOpen : List Value -> Node Msg
+viewSequenceOpen values =
+  div [] (List.indexedMap viewConstructorEntry values)
 
 
 
@@ -268,9 +269,9 @@ viewConstructor maybeKey maybeName isClosed valueList =
             Primitive _ ->
               ( Nothing, div [] [] )
 
-            Sequence _ _ _ ->
+            Sequence _ _ subValueList ->
               ( Just isClosed
-              , if isClosed then div [] [] else Debug.crash "TODO"
+              , if isClosed then div [] [] else VirtualDom.map (Index 0) (viewSequenceOpen subValueList)
               )
 
             Record _ record ->

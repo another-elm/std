@@ -74,6 +74,11 @@ function init(value)
 		return "'" + addSlashes(value, true) + "'";
 	}
 
+	if (value instanceof Date)
+	{
+		return '<' + v.toString() + '>';
+	}
+
 	if (type === 'object' && 'ctor' in value)
 	{
 		var ctor = value.ctor;
@@ -98,6 +103,15 @@ function init(value)
 			};
 		}
 
+		if (ctor === 'RBNode_elm_builtin' || ctor == 'RBEmpty_elm_builtin')
+		{
+			return {
+				ctor: 'Dictionary',
+				_0: true,
+				_1: A3(_elm_lang$core$Dict$foldr, initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
+			};
+		}
+
 		if (ctor === '_Array')
 		{
 			return {
@@ -110,12 +124,12 @@ function init(value)
 
 		if (ctor === '<decoder>')
 		{
-			return primitive('Decoder');
+			return primitive(ctor);
 		}
 
 		if (ctor === '_Process')
 		{
-			return primitive('Process');
+			return primitive('<process>');
 		}
 
 		var list = _elm_lang$core$Native_List.Nil;
@@ -150,6 +164,16 @@ var initCons = F2(initConsHelp);
 function initConsHelp(value, list)
 {
 	return _elm_lang$core$Native_List.Cons(init(value), list);
+}
+
+var initKeyValueCons = F3(initKeyValueConsHelp);
+
+function initKeyValueConsHelp(key, value, list)
+{
+	return _elm_lang$core$Native_List.Cons(
+		_elm_lang$core$Native_Utils.Tuple2(init(key), init(value)),
+		list
+	);
 }
 
 function addSlashes(str, isChar)

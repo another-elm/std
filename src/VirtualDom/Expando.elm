@@ -20,6 +20,7 @@ import VirtualDom exposing (Node, text)
 type Value
   = Primitive String
   | Sequence SeqType Bool (List Value)
+  | Dictionary Bool (List (Value, Value))
   | Record Bool (Dict String Value)
   | Constructor (Maybe String) Bool (List Value)
 
@@ -51,8 +52,11 @@ init =
 
 type Msg
   = Toggle
-  | Index Int Msg
-  | Key String Msg
+  | Index Redirect Int Msg
+  | Field String Msg
+
+
+type Redirect = None | Key | Value
 
 
 update : Msg -> Value -> Value
@@ -66,50 +70,79 @@ update msg value =
         Toggle ->
           Sequence seqType (not isClosed) valueList
 
-        Index index subMsg ->
-          Sequence seqType isClosed (updateIndex index subMsg valueList)
+        Index None index subMsg ->
+          Sequence seqType isClosed <|
+            updateIndex index (update subMsg) valueList
 
-        Key _ _ ->
-          Debug.crash "No key on sequences"
+        Index _ _ _ ->
+          Debug.crash "No redirected indexes on sequences"
+
+        Field _ _ ->
+          Debug.crash "No field on sequences"
+
+    Dictionary isClosed keyValuePairs ->
+      case msg of
+        Toggle ->
+          Dictionary (not isClosed) keyValuePairs
+
+        Index redirect index subMsg ->
+          case redirect of
+            None ->
+              Debug.crash "must have redirect for dictionaries"
+
+            Key ->
+              Dictionary isClosed <|
+                updateIndex index (\(k,v) -> (update subMsg k, v)) keyValuePairs
+
+            Value ->
+              Dictionary isClosed <|
+                updateIndex index (\(k,v) -> (k, update subMsg v)) keyValuePairs
+
+        Field _ _ ->
+          Debug.crash "no field for dictionaries"
 
     Record isClosed valueDict ->
       case msg of
         Toggle ->
           Record (not isClosed) valueDict
 
-        Index _ _ ->
+        Index _ _ _ ->
           Debug.crash "No index for records"
 
-        Key key subMsg ->
-          Record isClosed (Dict.update key (updateKey subMsg) valueDict)
+        Field field subMsg ->
+          Record isClosed (Dict.update field (updateField subMsg) valueDict)
 
     Constructor maybeName isClosed valueList ->
       case msg of
         Toggle ->
           Constructor maybeName (not isClosed) valueList
 
-        Index index subMsg ->
-          Constructor maybeName isClosed (updateIndex index subMsg valueList)
+        Index None index subMsg ->
+          Constructor maybeName isClosed <|
+            updateIndex index (update subMsg) valueList
 
-        Key _ _ ->
-          Debug.crash "No key for constructors"
+        Index _ _ _ ->
+          Debug.crash "No redirected indexes on sequences"
+
+        Field _ _ ->
+          Debug.crash "No field for constructors"
 
 
-updateIndex : Int -> Msg -> List Value -> List Value
-updateIndex n msg list =
+updateIndex : Int -> (a -> a) -> List a -> List a
+updateIndex n func list =
   case list of
     [] ->
       []
 
     x :: xs ->
       if n <= 0 then
-        update msg x :: xs
+        func x :: xs
       else
-        x :: updateIndex (n-1) msg xs
+        x :: updateIndex (n-1) func xs
 
 
-updateKey : Msg -> Maybe Value -> Maybe Value
-updateKey msg maybeValue =
+updateField : Msg -> Maybe Value -> Maybe Value
+updateField msg maybeValue =
   case maybeValue of
     Nothing ->
       Debug.crash "key does not exist"
@@ -130,6 +163,9 @@ view maybeKey value =
 
     Sequence seqType isClosed valueList ->
       viewSequence maybeKey seqType isClosed valueList
+
+    Dictionary isClosed keyValuePairs ->
+      viewDictionary maybeKey isClosed keyValuePairs
 
     Record isClosed valueDict ->
       viewRecord maybeKey isClosed valueDict
@@ -218,6 +254,40 @@ viewSequenceOpen values =
 
 
 
+-- VIEW DICTIONARY
+
+
+viewDictionary : Maybe String -> Bool -> List (Value, Value) -> Node Msg
+viewDictionary maybeKey isClosed keyValuePairs =
+  let
+    starter =
+      "Dict (" ++ toString (List.length keyValuePairs) ++ ")"
+  in
+    div [ leftPad maybeKey ]
+      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
+      , if isClosed then text "" else viewDictionaryOpen keyValuePairs
+      ]
+
+
+viewDictionaryOpen : List (Value, Value) -> Node Msg
+viewDictionaryOpen keyValuePairs =
+  div [] (List.indexedMap viewDictionaryEntry keyValuePairs)
+
+
+viewDictionaryEntry : Int -> (Value, Value) -> Node Msg
+viewDictionaryEntry index (key, value) =
+  case key of
+    Primitive stringRep ->
+      VirtualDom.map (Index Value index) (view (Just stringRep) value)
+
+    _ ->
+        div []
+          [ VirtualDom.map (Index Key index) (view (Just "key") key)
+          , VirtualDom.map (Index Value index) (view (Just "value") value)
+          ]
+
+
+
 -- VIEW RECORD
 
 
@@ -235,8 +305,8 @@ viewRecordOpen record =
 
 
 viewRecordEntry : (String, Value) -> Node Msg
-viewRecordEntry (key, value) =
-  VirtualDom.map (Key key) (view (Just key) value)
+viewRecordEntry (field, value) =
+  VirtualDom.map (Field field) (view (Just field) value)
 
 
 
@@ -271,17 +341,22 @@ viewConstructor maybeKey maybeName isClosed valueList =
 
             Sequence _ _ subValueList ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index 0) (viewSequenceOpen subValueList)
+              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewSequenceOpen subValueList)
+              )
+
+            Dictionary _ keyValuePairs ->
+              ( Just isClosed
+              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewDictionaryOpen keyValuePairs)
               )
 
             Record _ record ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index 0) (viewRecordOpen record)
+              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewRecordOpen record)
               )
 
             Constructor _ _ subValueList ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index 0) (viewConstructorOpen subValueList)
+              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewConstructorOpen subValueList)
               )
 
         _ ->
@@ -302,7 +377,7 @@ viewConstructorOpen valueList =
 
 viewConstructorEntry : Int -> Value -> Node Msg
 viewConstructorEntry index value =
-  VirtualDom.map (Index index) (view (Just (toString index)) value)
+  VirtualDom.map (Index None index) (view (Just (toString index)) value)
 
 
 
@@ -317,6 +392,9 @@ viewTiny value =
 
     Sequence seqType _ valueList ->
       [ text (seqTypeToString (List.length valueList) seqType) ]
+
+    Dictionary _ keyValuePairs ->
+      [ text ("Dict (" ++ toString (List.length keyValuePairs) ++ ")") ]
 
     Record _ record ->
       viewTinyRecord record
@@ -348,13 +426,13 @@ viewTinyRecordHelp n starter entries =
     [] ->
       [ text " }" ]
 
-    (key, value) :: rest ->
+    (field, value) :: rest ->
       if n == 0 then
         [ text ", … }" ]
 
       else
         text starter
-        :: span [purple] [text key]
+        :: span [purple] [text field]
         :: text " = "
         :: span [] (viewExtraTiny value)
         :: viewTinyRecordHelp (n - 1) ", " rest
@@ -376,13 +454,13 @@ viewExtraTinyRecord n starter entries =
     [] ->
       [ text "}" ]
 
-    key :: rest ->
+    field :: rest ->
       if n == 0 then
         [ text "…}" ]
 
       else
         text starter
-        :: span [purple] [text key]
+        :: span [purple] [text field]
         :: viewExtraTinyRecord (n - 1) "," rest
 
 

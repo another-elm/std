@@ -56,7 +56,12 @@ function init(value)
 
 	if (type === 'boolean')
 	{
-		return primitive(value ? 'True' : 'False');
+		return {
+			ctor: 'Constructor',
+			_0: _elm_lang$core$Maybe$Just(value ? 'True' : 'False'),
+			_1: true,
+			_2: _elm_lang$core$Native_List.Nil
+		};
 	}
 
 	if (type === 'number')
@@ -66,12 +71,12 @@ function init(value)
 
 	if (type === 'string')
 	{
-		return primitive('"' + addSlashes(value, false) + '"');
+		return { ctor: 'S', _0: '"' + addSlashes(value, false) + '"' };
 	}
 
 	if (value instanceof String)
 	{
-		return "'" + addSlashes(value, true) + "'";
+		return { ctor: 'S', _0: "'" + addSlashes(value, true) + "'" };
 	}
 
 	if (value instanceof Date)
@@ -122,6 +127,12 @@ function init(value)
 			};
 		}
 
+		var ctorStarter = value.ctor.substring(0, 5);
+		if (ctorStarter === '_Task')
+		{
+			return '<task>'
+		}
+
 		if (ctor === '<decoder>')
 		{
 			return primitive(ctor);
@@ -140,7 +151,7 @@ function init(value)
 		}
 		return {
 			ctor: 'Constructor',
-			_0: _elm_lang$core$Maybe$Just(ctor),
+			_0: ctorStarter === '_Tupl' ? _elm_lang$core$Maybe$Nothing : _elm_lang$core$Maybe$Just(ctor),
 			_1: true,
 			_2: _elm_lang$core$List$reverse(list)
 		};

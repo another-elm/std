@@ -18,7 +18,8 @@ import VirtualDom exposing (Node, text)
 
 
 type Value
-  = Primitive String
+  = S String
+  | Primitive String
   | Sequence SeqType Bool (List Value)
   | Dictionary Bool (List (Value, Value))
   | Record Bool (Dict String Value)
@@ -32,13 +33,13 @@ seqTypeToString : Int -> SeqType -> String
 seqTypeToString n seqType =
   case seqType of
     ListSeq ->
-      "List (" ++ toString n ++ ")"
+      "List(" ++ toString n ++ ")"
 
     SetSeq ->
-      "Set (" ++ toString n ++ ")"
+      "Set(" ++ toString n ++ ")"
 
     ArraySeq ->
-      "Array (" ++ toString n ++ ")"
+      "Array(" ++ toString n ++ ")"
 
 
 init : a -> Value
@@ -62,7 +63,10 @@ type Redirect = None | Key | Value
 update : Msg -> Value -> Value
 update msg value =
   case value of
-    Primitive stringRep ->
+    S _ ->
+      Debug.crash "No messages for primitives"
+
+    Primitive _ ->
       Debug.crash "No messages for primitives"
 
     Sequence seqType isClosed valueList ->
@@ -158,8 +162,11 @@ updateField msg maybeValue =
 view : Maybe String -> Value -> Node Msg
 view maybeKey value =
   case value of
-    Primitive stringRep ->
+    S stringRep ->
       div [ leftPad maybeKey ] (expando maybeKey Nothing [span [red] [text stringRep]])
+
+    Primitive stringRep ->
+      div [ leftPad maybeKey ] (expando maybeKey Nothing [span [blue] [text stringRep]])
 
     Sequence seqType isClosed valueList ->
       viewSequence maybeKey seqType isClosed valueList
@@ -227,6 +234,11 @@ red =
   VirtualDom.style [("color", "rgb(196, 26, 22)")]
 
 
+blue : VirtualDom.Property msg
+blue =
+  VirtualDom.style [("color", "rgb(28, 0, 207)")]
+
+
 purple : VirtualDom.Property msg
 purple =
   VirtualDom.style [("color", "rgb(136, 19, 145)")]
@@ -261,7 +273,7 @@ viewDictionary : Maybe String -> Bool -> List (Value, Value) -> Node Msg
 viewDictionary maybeKey isClosed keyValuePairs =
   let
     starter =
-      "Dict (" ++ toString (List.length keyValuePairs) ++ ")"
+      "Dict(" ++ toString (List.length keyValuePairs) ++ ")"
   in
     div [ leftPad maybeKey ]
       [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
@@ -277,6 +289,9 @@ viewDictionaryOpen keyValuePairs =
 viewDictionaryEntry : Int -> (Value, Value) -> Node Msg
 viewDictionaryEntry index (key, value) =
   case key of
+    S stringRep ->
+      VirtualDom.map (Index Value index) (view (Just stringRep) value)
+
     Primitive stringRep ->
       VirtualDom.map (Index Value index) (view (Just stringRep) value)
 
@@ -320,14 +335,22 @@ viewConstructor maybeKey maybeName isClosed valueList =
       List.map viewExtraTiny valueList
 
     description =
-      case maybeName of
-        Nothing ->
-          text "( " ::
-            List.foldr (\args rest -> span [] args :: text ", " :: rest) [text " )"] tinyArgs
+      case (maybeName, tinyArgs) of
+        (Nothing, []) ->
+          [ text "()" ]
 
-        Just name ->
-          text (name ++ " ") ::
-            List.foldr (\args rest -> span [] args :: text " " :: rest) [] tinyArgs
+        (Nothing, x :: xs) ->
+          text "( "
+            :: span [] x
+            :: List.foldr (\args rest -> text ", " :: span [] args :: rest) [text " )"] xs
+
+        (Just name, []) ->
+          [ text name ]
+
+        (Just name, x :: xs) ->
+          text (name ++ " ")
+            :: span [] x
+            :: List.foldr (\args rest -> text " " :: span [] args :: rest) [] xs
 
     (maybeIsClosed, openHtml) =
       case valueList of
@@ -336,6 +359,9 @@ viewConstructor maybeKey maybeName isClosed valueList =
 
         [entry] ->
           case entry of
+            S _ ->
+              ( Nothing, div [] [] )
+
             Primitive _ ->
               ( Nothing, div [] [] )
 
@@ -387,14 +413,17 @@ viewConstructorEntry index value =
 viewTiny : Value -> List (Node msg)
 viewTiny value =
   case value of
-    Primitive stringRep ->
+    S stringRep ->
       [ span [red] [text stringRep] ]
+
+    Primitive stringRep ->
+      [ span [blue] [text stringRep] ]
 
     Sequence seqType _ valueList ->
       [ text (seqTypeToString (List.length valueList) seqType) ]
 
     Dictionary _ keyValuePairs ->
-      [ text ("Dict (" ++ toString (List.length keyValuePairs) ++ ")") ]
+      [ text ("Dict(" ++ toString (List.length keyValuePairs) ++ ")") ]
 
     Record _ record ->
       viewTinyRecord record
@@ -405,7 +434,7 @@ viewTiny value =
     Constructor maybeName _ valueList ->
       case maybeName of
         Nothing ->
-          [ text ("Tuple (" ++ toString (List.length valueList) ++ ")") ]
+          [ text ("Tuple(" ++ toString (List.length valueList) ++ ")") ]
 
         Just name ->
           [ text (name ++ " …") ]

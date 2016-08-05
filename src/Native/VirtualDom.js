@@ -1791,7 +1791,7 @@ function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, in
 		isIn = false;
 		curr = viewOut(currentModel);
 		domNode = render(curr, eventNode);
-		openDebugWindow(moduleName, popoutRef, makeButton, domNode);
+		openDebugWindow(moduleName, popoutRef, eventNode.tagger, makeButton, domNode);
 	}
 
 	var clickEventNode = { tagger: tagger, parent: undefined };
@@ -1817,7 +1817,7 @@ function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, in
 }
 
 
-function openDebugWindow(moduleName, popoutRef, makeButton, domNode)
+function openDebugWindow(moduleName, popoutRef, tagger, makeButton, domNode)
 {
 	var w = 900;
 	var h = 360;
@@ -1836,6 +1836,14 @@ function openDebugWindow(moduleName, popoutRef, makeButton, domNode)
 		if (event.metaKey && event.which === 82)
 		{
 			window.location.reload();
+		}
+		if (event.which === 38)
+		{
+			tagger({ ctor: 'Up' });
+		}
+		if (event.which === 40)
+		{
+			tagger({ ctor: 'Down' });
 		}
 	});
 

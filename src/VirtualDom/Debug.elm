@@ -71,6 +71,8 @@ type Msg msg
   | ExpandoMsg Expando.Msg
   | Play
   | Jump Int
+  | Up
+  | Down
 
 
 wrapUpdate
@@ -113,6 +115,32 @@ wrapUpdate userUpdate scrollTask msg model =
         , expando = Expando.merge indexModel model.expando
         }
           ! []
+
+    Up ->
+      let
+        index =
+          case model.state of
+            Paused index _ _ ->
+              index
+
+            Running _ ->
+              History.size model.history
+      in
+        if index > 0 then
+          wrapUpdate userUpdate scrollTask (Jump (index - 1)) model
+        else
+          model ! []
+
+    Down ->
+      case model.state of
+        Running _ ->
+          model ! []
+
+        Paused index _ userModel ->
+          if index == History.size model.history - 1 then
+            wrapUpdate userUpdate scrollTask Play model
+          else
+            wrapUpdate userUpdate scrollTask (Jump (index + 1)) model
 
 
 

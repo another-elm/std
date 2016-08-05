@@ -187,9 +187,12 @@ wrapSubs userSubscriptions {state} =
 
 wrapView : (model -> Node msg) -> Model model msg -> Node (Msg msg)
 wrapView userView { state } =
-  getLatestModel state
-    |> userView
-    |> VDom.map UserMsg
+  case state of
+    Running model ->
+      VDom.map UserMsg (userView model)
+
+    Paused _ oldModel _ ->
+      VDom.map UserMsg (userView oldModel)
 
 
 
@@ -298,14 +301,14 @@ body {
 .debugger-sidebar {
   background-color: rgb(61, 61, 61);
   height: 100%;
-  width: 300px;
+  width: 240px;
   display: flex;
   flex-direction: column;
 }
 
 .debugger-sidebar-play {
   background-color: rgb(50, 50, 50);
-  width: 300px;
+  width: 240px;
   cursor: pointer;
   color: white;
   padding: 8px 0;
@@ -313,7 +316,7 @@ body {
 }
 
 .debugger-sidebar-messages {
-  width: 300px;
+  width: 240px;
   overflow-y: scroll;
   flex: 1;
 }

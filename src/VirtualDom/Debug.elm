@@ -3,10 +3,13 @@ module VirtualDom.Debug exposing (program)
 @docs program
 -}
 
-import Json.Decode as Json
+import Json.Decode as Decode
+import Json.Encode as Encode
+import Native.Debug
 import Native.VirtualDom
+import Task
 import VirtualDom as VDom exposing (Node)
-import VirtualDom.Expando as Expando
+import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.History as History exposing (History)
 
 
@@ -21,7 +24,7 @@ program
     , subscriptions : model -> Sub msg
     , view : model -> Node msg
     }
-  -> Program Never (State model msg) (Msg msg)
+  -> Program Never (Model model msg) (Msg msg)
 program { init, update, subscriptions, view } =
   Native.VirtualDom.debug
     { init = wrapInit init
@@ -37,23 +40,25 @@ program { init, update, subscriptions, view } =
 -- MODEL
 
 
-type alias State model msg =
-  { userModel : model
-  , history : History model msg
-  , debugState : DebugState
+type alias Model model msg =
+  { history : History model msg
+  , state : State model
+  , expando : Expando
   }
 
 
-type DebugState
-  = Latest Expando.Value
-  | At Int Expando.Value
+type State model
+  = Running model
+  | Paused Int model model
 
 
-wrapInit : ( model, Cmd msg ) -> ( State model msg, Cmd (Msg msg) )
-wrapInit ( model, cmds ) =
-  ( State model (History.empty model) (Latest (Expando.init model))
-  , Cmd.map (UserMsg (Just 0)) cmds
-  )
+wrapInit : ( model, Cmd msg ) -> ( Model model msg, Cmd (Msg msg) )
+wrapInit ( userModel, userCommands ) =
+  { history = History.empty userModel
+  , state = Running userModel
+  , expando = Expando.init userModel
+  }
+    ! [ Cmd.map UserMsg userCommands ]
 
 
 
@@ -61,96 +66,138 @@ wrapInit ( model, cmds ) =
 
 
 type Msg msg
-  = UserMsg (Maybe Int) msg
-  | DebugMsg Expando.Msg
+  = NoOp
+  | UserMsg msg
+  | ExpandoMsg Expando.Msg
+  | Play
   | Jump Int
 
 
 wrapUpdate
   : (msg -> model -> (model, Cmd msg))
   -> Msg msg
-  -> State model msg
-  -> (State model msg, Cmd (Msg msg))
-wrapUpdate userUpdate msg { userModel, history, debugState } =
+  -> Model model msg
+  -> (Model model msg, Cmd (Msg msg))
+wrapUpdate userUpdate msg model =
   case msg of
-    UserMsg _ userMsg ->
-      let
-        newHistory =
-          History.add userMsg userModel history
+    NoOp ->
+      model ! []
 
-        index =
-          History.size newHistory
+    UserMsg userMsg ->
+      updateUserMsg userUpdate userMsg model
 
-        (newUserModel, cmds) =
-          userUpdate userMsg userModel
+    ExpandoMsg eMsg ->
+      { model | expando = Expando.update eMsg model.expando }
+        ! []
 
-        newDebugState =
-          case debugState of
-            Latest _ ->
-              Latest (Expando.init newUserModel)
+    Play ->
+      case model.state of
+        Running _ ->
+          model ! []
 
-            At _ _ ->
-              debugState
-      in
-        ( State newUserModel newHistory newDebugState
-        , Cmd.map (UserMsg (Just index)) cmds
-        )
-
-    DebugMsg debugMsg ->
-      let
-        newDebugState =
-          case debugState of
-            Latest value ->
-              Latest (Expando.update debugMsg value)
-
-            At index value ->
-              At index (Expando.update debugMsg value)
-      in
-        ( State userModel history newDebugState
-        , Cmd.none
-        )
+        Paused _ _ userModel ->
+          { history = model.history
+          , state = Running userModel
+          , expando = Expando.merge userModel model.expando
+          }
+            ! [ scrollMessages ]
 
     Jump index ->
       let
-        (model, msg) =
-          History.get userUpdate index history
+        (indexModel, indexMsg) =
+          History.get userUpdate index model.history
       in
-        ( State userModel history (At index (Expando.init model))
-        , Cmd.none
-        )
+        { history = model.history
+        , state = Paused index indexModel (getLatestModel model.state)
+        , expando = Expando.merge indexModel model.expando
+        }
+          ! []
+
+
+
+-- UPDATE - USER MESSAGES
+
+
+updateUserMsg
+  : (msg -> model -> (model, Cmd msg))
+  -> msg
+  -> Model model msg
+  -> (Model model msg, Cmd (Msg msg))
+updateUserMsg userUpdate userMsg { history, state, expando } =
+  let
+    userModel =
+      getLatestModel state
+
+    newHistory =
+      History.add userMsg userModel history
+
+    (newUserModel, userCmds) =
+      userUpdate userMsg userModel
+
+    commands =
+      Cmd.map UserMsg userCmds
+  in
+    case state of
+      Running _ ->
+        { history = newHistory
+        , state = Running newUserModel
+        , expando = Expando.merge newUserModel expando
+        }
+          ! [ commands, scrollMessages ]
+
+      Paused index indexModel _ ->
+        { history = newHistory
+        , state = Paused index indexModel newUserModel
+        , expando = expando
+        }
+          ! [ commands ]
+
+
+scrollMessages : Cmd (Msg msg)
+scrollMessages =
+  Cmd.none -- TODO
+
+
+getLatestModel : State model -> model
+getLatestModel state =
+  case state of
+    Running model ->
+      model
+
+    Paused _ _ model ->
+      model
 
 
 
 -- SUBSCRIPTIONS
 
 
-wrapSubs : (model -> Sub msg) -> State model msg -> Sub (Msg msg)
-wrapSubs userSubscriptions { userModel } =
-  Sub.map toMsg (userSubscriptions userModel)
+wrapSubs : (model -> Sub msg) -> Model model msg -> Sub (Msg msg)
+wrapSubs userSubscriptions {state} =
+  getLatestModel state
+    |> userSubscriptions
+    |> Sub.map UserMsg
 
 
 
 -- VIEW
 
 
-wrapView : (model -> Node msg) -> State model msg -> Node (Msg msg)
-wrapView userView { userModel, history } =
-  VDom.map toMsg (userView userModel)
-
-
-toMsg : msg -> Msg msg
-toMsg =
-  UserMsg Nothing
+wrapView : (model -> Node msg) -> Model model msg -> Node (Msg msg)
+wrapView userView { state } =
+  getLatestModel state
+    |> userView
+    |> VDom.map UserMsg
 
 
 
--- DEBUG VIEW
+-- SMALL DEBUG VIEW
 
 
-viewIn : State model msg -> Node ()
-viewIn { userModel, history, debugState } =
+viewIn : Model model msg -> Node ()
+viewIn { history } =
   div
-    [ VDom.on "click" (Json.succeed ())
+    [ VDom.on "click" (Decode.succeed ())
     , VDom.style
         [ ("width", "40px")
         , ("height", "40px")
@@ -170,24 +217,37 @@ viewIn { userModel, history, debugState } =
     ]
 
 
-viewOut : State model msg -> Node (Msg msg)
-viewOut { userModel, history, debugState } =
-  let
-    (currentIndex, currentValue) =
-      case debugState of
-        Latest value ->
-          (-1, value)
 
-        At index value ->
-          (index, value)
-  in
+-- BIG DEBUG VIEW
+
+
+viewOut : Model model msg -> Node (Msg msg)
+viewOut { history, state, expando } =
     div
       [ VDom.attribute "id" "debugger" ]
       [ styles
-      , VDom.map Jump (History.view currentIndex history)
-      , VDom.map DebugMsg <|
-          div [ VDom.attribute "id" "values" ] [ Expando.view Nothing currentValue ]
+      , viewMessages state history
+      , VDom.map ExpandoMsg <|
+          div [ VDom.attribute "id" "values" ] [ Expando.view Nothing expando ]
       ]
+
+
+viewMessages state history =
+  case state of
+    Running _ ->
+      div [ class "debugger-sidebar" ]
+        [ VDom.map Jump (History.view Nothing history)
+        ]
+
+    Paused index _ _ ->
+      div [ class "debugger-sidebar" ]
+        [ VDom.map Jump (History.view (Just index) history)
+        , div
+            [ class "debugger-sidebar-play"
+            , VDom.on "click" (Decode.succeed Play)
+            ]
+            [ VDom.text "Play" ]
+        ]
 
 
 div =
@@ -197,6 +257,9 @@ div =
 id =
   VDom.attribute "id"
 
+
+class name =
+  VDom.property "className" (Encode.string name)
 
 
 -- STYLE
@@ -219,6 +282,7 @@ body {
 #debugger {
   display: flex;
   font-family: monospace;
+  height: 100%;
 }
 
 #values {
@@ -229,12 +293,27 @@ body {
   cursor: default;
 }
 
-#messages {
+.debugger-sidebar {
   background-color: rgb(61, 61, 61);
   height: 100%;
   width: 300px;
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.debugger-sidebar-play {
+  background-color: rgb(50, 50, 50);
+  width: 300px;
+  cursor: pointer;
+  color: white;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.debugger-sidebar-messages {
+  width: 300px;
   overflow-y: scroll;
+  flex: 1;
 }
 
 .messages-entry {

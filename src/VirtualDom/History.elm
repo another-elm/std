@@ -146,20 +146,27 @@ undone getResult =
 -- VIEW
 
 
-view : Int -> History model msg -> Node Int
-view index { snapshots, recent, numMessages } =
+view : Maybe Int -> History model msg -> Node Int
+view maybeIndex { snapshots, recent, numMessages } =
   let
+    index =
+      Maybe.withDefault -1 maybeIndex
+
     oldStuff =
       VDom.lazy2 viewSnapshots index snapshots
 
     newStuff =
       snd <| List.foldl (consMsg index) (numMessages - 1, []) recent.messages
   in
-    div [ VDom.attribute "id" "messages" ] (oldStuff :: newStuff)
+    div [ class "debugger-sidebar-messages" ] (oldStuff :: newStuff)
 
 
 div =
   VDom.node "div"
+
+
+class name =
+  VDom.property "className" (Encode.string name)
 
 
 
@@ -218,7 +225,7 @@ viewMessage currentIndex index msg =
         "messages-entry"
   in
     div
-      [ VDom.property "className" (Encode.string className)
+      [ class className
       , VDom.on "click" (Decode.succeed index)
       ]
       [ VDom.text (Native.Debug.messageToString msg)

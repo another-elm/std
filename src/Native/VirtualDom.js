@@ -1730,18 +1730,36 @@ function debug(impl)
 		{
 			object['fullscreen'] = function fullscreen(flags)
 			{
+				var popoutRef = { doc: undefined };
 				return _elm_lang$core$Native_Platform.initialize(
 					impl.init,
-					impl.update,
+					impl.update(scrollTask(popoutRef)),
 					impl.subscriptions,
-					debugRenderer(moduleName, document.body, impl.view, impl.viewIn, impl.viewOut)
+					debugRenderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
 				);
 			};
 		};
 	};
 }
 
-function debugRenderer(moduleName, parentNode, view, viewIn, viewOut)
+function scrollTask(popoutRef)
+{
+	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	{
+		var doc = popoutRef.doc;
+		if (doc)
+		{
+			var msgs = doc.getElementsByClassName('debugger-sidebar-messages')[0];
+			if (msgs)
+			{
+				msgs.scrollTop = msgs.scrollHeight;
+			}
+		}
+	callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+	});
+}
+
+function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
@@ -1752,7 +1770,7 @@ function debugRenderer(moduleName, parentNode, view, viewIn, viewOut)
 		parentNode.appendChild(domNode);
 		var appStepper = makeStepper(domNode, view, appNode, eventNode);
 
-		var debugStepper = makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel, eventNode);
+		var debugStepper = makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, initialModel, eventNode);
 
 		return function stepper(model)
 		{
@@ -1762,7 +1780,7 @@ function debugRenderer(moduleName, parentNode, view, viewIn, viewOut)
 	};
 }
 
-function makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel, eventNode)
+function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, initialModel, eventNode)
 {
 	var curr, domNode, isIn, debugWindow;
 	var model = initialModel;
@@ -1773,7 +1791,7 @@ function makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel,
 		isIn = false;
 		curr = viewOut(model);
 		domNode = render(curr, eventNode);
-		openDebugWindow(moduleName, makeButton, domNode);
+		openDebugWindow(moduleName, popoutRef, makeButton, domNode);
 	}
 
 	var clickEventNode = { tagger: tagger, parent: undefined };
@@ -1798,7 +1816,7 @@ function makeDebugStepper(moduleName, parentNode, viewIn, viewOut, initialModel,
 }
 
 
-function openDebugWindow(moduleName, makeButton, domNode)
+function openDebugWindow(moduleName, popoutRef, makeButton, domNode)
 {
 	var w = 900;
 	var h = 360;
@@ -1807,6 +1825,7 @@ function openDebugWindow(moduleName, makeButton, domNode)
 	var debugWindow = window.open('', '', 'width=' + w + ',height=' + h + ',left=' + x + ',top=' + y);
 
 	var doc = debugWindow.document;
+	popoutRef.doc = doc;
 	doc.title = 'Debugger - ' + moduleName;
 	doc.body.style.margin = '0';
 	doc.body.style.padding = '0';
@@ -1821,6 +1840,7 @@ function openDebugWindow(moduleName, makeButton, domNode)
 
 	function close()
 	{
+		popoutRef.doc = undefined;
 		debugWindow.close();
 	}
 	window.addEventListener('unload', close);

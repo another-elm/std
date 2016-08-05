@@ -7,7 +7,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
 import Native.VirtualDom
-import Task
+import Task exposing (Task)
 import VirtualDom as VDom exposing (Node)
 import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.History as History exposing (History)
@@ -75,16 +75,17 @@ type Msg msg
 
 wrapUpdate
   : (msg -> model -> (model, Cmd msg))
+  -> Task Never ()
   -> Msg msg
   -> Model model msg
   -> (Model model msg, Cmd (Msg msg))
-wrapUpdate userUpdate msg model =
+wrapUpdate userUpdate scrollTask msg model =
   case msg of
     NoOp ->
       model ! []
 
     UserMsg userMsg ->
-      updateUserMsg userUpdate userMsg model
+      updateUserMsg userUpdate scrollTask userMsg model
 
     ExpandoMsg eMsg ->
       { model | expando = Expando.update eMsg model.expando }
@@ -100,7 +101,7 @@ wrapUpdate userUpdate msg model =
           , state = Running userModel
           , expando = Expando.merge userModel model.expando
           }
-            ! [ scrollMessages ]
+            ! [ run scrollTask ]
 
     Jump index ->
       let
@@ -120,10 +121,11 @@ wrapUpdate userUpdate msg model =
 
 updateUserMsg
   : (msg -> model -> (model, Cmd msg))
+  -> Task Never ()
   -> msg
   -> Model model msg
   -> (Model model msg, Cmd (Msg msg))
-updateUserMsg userUpdate userMsg { history, state, expando } =
+updateUserMsg userUpdate scrollTask userMsg { history, state, expando } =
   let
     userModel =
       getLatestModel state
@@ -143,7 +145,7 @@ updateUserMsg userUpdate userMsg { history, state, expando } =
         , state = Running newUserModel
         , expando = Expando.merge newUserModel expando
         }
-          ! [ commands, scrollMessages ]
+          ! [ commands, run scrollTask ]
 
       Paused index indexModel _ ->
         { history = newHistory
@@ -153,9 +155,9 @@ updateUserMsg userUpdate userMsg { history, state, expando } =
           ! [ commands ]
 
 
-scrollMessages : Cmd (Msg msg)
-scrollMessages =
-  Cmd.none -- TODO
+run : Task Never () -> Cmd (Msg msg)
+run task =
+  Task.perform (always NoOp) (always NoOp) task
 
 
 getLatestModel : State model -> model
@@ -223,13 +225,13 @@ viewIn { history } =
 
 viewOut : Model model msg -> Node (Msg msg)
 viewOut { history, state, expando } =
-    div
-      [ VDom.attribute "id" "debugger" ]
-      [ styles
-      , viewMessages state history
-      , VDom.map ExpandoMsg <|
-          div [ VDom.attribute "id" "values" ] [ Expando.view Nothing expando ]
-      ]
+  div
+    [ VDom.attribute "id" "debugger" ]
+    [ styles
+    , viewMessages state history
+    , VDom.map ExpandoMsg <|
+        div [ VDom.attribute "id" "values" ] [ Expando.view Nothing expando ]
+    ]
 
 
 viewMessages state history =

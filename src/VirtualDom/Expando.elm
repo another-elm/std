@@ -1,6 +1,7 @@
 module VirtualDom.Expando exposing
-  ( Value
+  ( Expando
   , init
+  , merge
   , Msg, update
   , view
   )
@@ -17,13 +18,13 @@ import VirtualDom exposing (Node, text)
 -- MODEL
 
 
-type Value
+type Expando
   = S String
   | Primitive String
-  | Sequence SeqType Bool (List Value)
-  | Dictionary Bool (List (Value, Value))
-  | Record Bool (Dict String Value)
-  | Constructor (Maybe String) Bool (List Value)
+  | Sequence SeqType Bool (List Expando)
+  | Dictionary Bool (List (Expando, Expando))
+  | Record Bool (Dict String Expando)
+  | Constructor (Maybe String) Bool (List Expando)
 
 
 type SeqType = ListSeq | SetSeq | ArraySeq
@@ -42,9 +43,14 @@ seqTypeToString n seqType =
       "Array(" ++ toString n ++ ")"
 
 
-init : a -> Value
+init : a -> Expando
 init =
   Native.Debug.init
+
+
+merge : a -> Expando -> Expando
+merge value expando =
+  init value
 
 
 
@@ -60,7 +66,7 @@ type Msg
 type Redirect = None | Key | Value
 
 
-update : Msg -> Value -> Value
+update : Msg -> Expando -> Expando
 update msg value =
   case value of
     S _ ->
@@ -145,28 +151,28 @@ updateIndex n func list =
         x :: updateIndex (n-1) func xs
 
 
-updateField : Msg -> Maybe Value -> Maybe Value
-updateField msg maybeValue =
-  case maybeValue of
+updateField : Msg -> Maybe Expando -> Maybe Expando
+updateField msg maybeExpando =
+  case maybeExpando of
     Nothing ->
       Debug.crash "key does not exist"
 
-    Just value ->
-      Just (update msg value)
+    Just expando ->
+      Just (update msg expando)
 
 
 
 -- VIEW
 
 
-view : Maybe String -> Value -> Node Msg
-view maybeKey value =
-  case value of
+view : Maybe String -> Expando -> Node Msg
+view maybeKey expando =
+  case expando of
     S stringRep ->
-      div [ leftPad maybeKey ] (expando maybeKey Nothing [span [red] [text stringRep]])
+      div [ leftPad maybeKey ] (lineStarter maybeKey Nothing [span [red] [text stringRep]])
 
     Primitive stringRep ->
-      div [ leftPad maybeKey ] (expando maybeKey Nothing [span [blue] [text stringRep]])
+      div [ leftPad maybeKey ] (lineStarter maybeKey Nothing [span [blue] [text stringRep]])
 
     Sequence seqType isClosed valueList ->
       viewSequence maybeKey seqType isClosed valueList
@@ -181,8 +187,8 @@ view maybeKey value =
       viewConstructor maybeKey maybeName isClosed valueList
 
 
-expando : Maybe String -> Maybe Bool -> List (Node msg) -> List (Node msg)
-expando maybeKey maybeIsClosed description =
+lineStarter : Maybe String -> Maybe Bool -> List (Node msg) -> List (Node msg)
+lineStarter maybeKey maybeIsClosed description =
   let
     arrow =
       case maybeIsClosed of
@@ -248,19 +254,19 @@ purple =
 -- VIEW SEQUENCE
 
 
-viewSequence : Maybe String -> SeqType -> Bool -> List Value -> Node Msg
+viewSequence : Maybe String -> SeqType -> Bool -> List Expando -> Node Msg
 viewSequence maybeKey seqType isClosed valueList =
   let
     starter =
       seqTypeToString (List.length valueList) seqType
   in
     div [ leftPad maybeKey ]
-      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
+      [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) [text starter])
       , if isClosed then text "" else viewSequenceOpen valueList
       ]
 
 
-viewSequenceOpen : List Value -> Node Msg
+viewSequenceOpen : List Expando -> Node Msg
 viewSequenceOpen values =
   div [] (List.indexedMap viewConstructorEntry values)
 
@@ -269,24 +275,24 @@ viewSequenceOpen values =
 -- VIEW DICTIONARY
 
 
-viewDictionary : Maybe String -> Bool -> List (Value, Value) -> Node Msg
+viewDictionary : Maybe String -> Bool -> List (Expando, Expando) -> Node Msg
 viewDictionary maybeKey isClosed keyValuePairs =
   let
     starter =
       "Dict(" ++ toString (List.length keyValuePairs) ++ ")"
   in
     div [ leftPad maybeKey ]
-      [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) [text starter])
+      [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) [text starter])
       , if isClosed then text "" else viewDictionaryOpen keyValuePairs
       ]
 
 
-viewDictionaryOpen : List (Value, Value) -> Node Msg
+viewDictionaryOpen : List (Expando, Expando) -> Node Msg
 viewDictionaryOpen keyValuePairs =
   div [] (List.indexedMap viewDictionaryEntry keyValuePairs)
 
 
-viewDictionaryEntry : Int -> (Value, Value) -> Node Msg
+viewDictionaryEntry : Int -> (Expando, Expando) -> Node Msg
 viewDictionaryEntry index (key, value) =
   case key of
     S stringRep ->
@@ -306,20 +312,20 @@ viewDictionaryEntry index (key, value) =
 -- VIEW RECORD
 
 
-viewRecord : Maybe String -> Bool -> Dict String Value -> Node Msg
+viewRecord : Maybe String -> Bool -> Dict String Expando -> Node Msg
 viewRecord maybeKey isClosed record =
   div [ leftPad maybeKey ]
-    [ div [ onClick Toggle ] (expando maybeKey (Just isClosed) (viewTinyRecord record))
+    [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) (viewTinyRecord record))
     , if isClosed then text "" else viewRecordOpen record
     ]
 
 
-viewRecordOpen : Dict String Value -> Node Msg
+viewRecordOpen : Dict String Expando -> Node Msg
 viewRecordOpen record =
   div [] (List.map viewRecordEntry (Dict.toList record))
 
 
-viewRecordEntry : (String, Value) -> Node Msg
+viewRecordEntry : (String, Expando) -> Node Msg
 viewRecordEntry (field, value) =
   VirtualDom.map (Field field) (view (Just field) value)
 
@@ -328,7 +334,7 @@ viewRecordEntry (field, value) =
 -- VIEW CONSTRUCTOR
 
 
-viewConstructor : Maybe String -> Maybe String -> Bool -> List Value -> Node Msg
+viewConstructor : Maybe String -> Maybe String -> Bool -> List Expando -> Node Msg
 viewConstructor maybeKey maybeName isClosed valueList =
   let
     tinyArgs =
@@ -391,17 +397,17 @@ viewConstructor maybeKey maybeName isClosed valueList =
           )
   in
     div [ leftPad maybeKey ]
-      [ div [ onClick Toggle ] (expando maybeKey maybeIsClosed description)
+      [ div [ onClick Toggle ] (lineStarter maybeKey maybeIsClosed description)
       , openHtml
       ]
 
 
-viewConstructorOpen : List Value -> Node Msg
+viewConstructorOpen : List Expando -> Node Msg
 viewConstructorOpen valueList =
   div [] (List.indexedMap viewConstructorEntry valueList)
 
 
-viewConstructorEntry : Int -> Value -> Node Msg
+viewConstructorEntry : Int -> Expando -> Node Msg
 viewConstructorEntry index value =
   VirtualDom.map (Index None index) (view (Just (toString index)) value)
 
@@ -410,7 +416,7 @@ viewConstructorEntry index value =
 -- TINY VIEW
 
 
-viewTiny : Value -> List (Node msg)
+viewTiny : Expando -> List (Node msg)
 viewTiny value =
   case value of
     S stringRep ->
@@ -440,7 +446,7 @@ viewTiny value =
           [ text (name ++ " …") ]
 
 
-viewTinyRecord : Dict String Value -> List (Node msg)
+viewTinyRecord : Dict String Expando -> List (Node msg)
 viewTinyRecord record =
   if Dict.isEmpty record then
     [ text "{}" ]
@@ -449,7 +455,7 @@ viewTinyRecord record =
     viewTinyRecordHelp 4 "{ " (Dict.toList record)
 
 
-viewTinyRecordHelp : Int -> String -> List (String, Value) -> List (Node msg)
+viewTinyRecordHelp : Int -> String -> List (String, Expando) -> List (Node msg)
 viewTinyRecordHelp n starter entries =
   case entries of
     [] ->
@@ -467,7 +473,7 @@ viewTinyRecordHelp n starter entries =
         :: viewTinyRecordHelp (n - 1) ", " rest
 
 
-viewExtraTiny : Value -> List (Node msg)
+viewExtraTiny : Expando -> List (Node msg)
 viewExtraTiny value =
   case value of
     Record _ record ->

@@ -1783,13 +1783,13 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, initialModel, eventNode)
 {
 	var curr, domNode, isIn, debugWindow;
-	var model = initialModel;
+	var currentModel = initialModel;
 
 	function tagger()
 	{
 		parentNode.removeChild(domNode);
 		isIn = false;
-		curr = viewOut(model);
+		curr = viewOut(currentModel);
 		domNode = render(curr, eventNode);
 		openDebugWindow(moduleName, popoutRef, makeButton, domNode);
 	}
@@ -1799,7 +1799,7 @@ function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, in
 	function makeButton()
 	{
 		isIn = true;
-		curr = viewIn(model);
+		curr = viewIn(currentModel);
 		domNode = render(curr, clickEventNode);
 		parentNode.appendChild(domNode);
 	}
@@ -1812,6 +1812,7 @@ function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, in
 		var patches = diff(curr, next);
 		domNode = applyPatches(domNode, curr, patches, eventNode);
 		curr = next;
+		currentModel = model;
 	};
 }
 

@@ -1840,10 +1840,12 @@ function openDebugWindow(moduleName, popoutRef, tagger, makeButton, domNode)
 		if (event.which === 38)
 		{
 			tagger({ ctor: 'Up' });
+			event.preventDefault();
 		}
 		if (event.which === 40)
 		{
 			tagger({ ctor: 'Down' });
+			event.preventDefault();
 		}
 	});
 

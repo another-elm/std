@@ -266,21 +266,28 @@ viewOut { history, state, expando } =
 
 
 viewMessages state history =
-  case state of
-    Running _ ->
-      div [ class "debugger-sidebar" ]
-        [ VDom.map Jump (History.view Nothing history)
-        ]
+  let
+    (maybeIndex, maybePlayButton) =
+      case state of
+        Running _ ->
+          (Nothing, VDom.text "")
 
-    Paused index _ _ ->
-      div [ class "debugger-sidebar" ]
-        [ VDom.map Jump (History.view (Just index) history)
-        , div
-            [ class "debugger-sidebar-play"
-            , VDom.on "click" (Decode.succeed Play)
-            ]
-            [ VDom.text "Play" ]
-        ]
+        Paused index _ _ ->
+          (Just index, playButton)
+  in
+    div [ class "debugger-sidebar" ]
+      [ VDom.map Jump (History.view maybeIndex history)
+      , maybePlayButton
+      ]
+
+
+playButton =
+  div
+    [ class "debugger-sidebar-play"
+    , VDom.on "click" (Decode.succeed Play)
+    ]
+    [ VDom.text "Play"
+    ]
 
 
 div =

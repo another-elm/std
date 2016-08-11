@@ -38,6 +38,7 @@ that expose more helper functions for HTML or SVG.
 
 import Json.Decode as Json
 import Native.VirtualDom
+import VirtualDom.Debug as Debug
 
 
 {-| An immutable chunk of data representing a DOM node. This can be HTML or SVG.
@@ -302,8 +303,8 @@ program
     , view : model -> Node msg
     }
   -> Program Never model msg
-program =
-  Native.VirtualDom.program
+program impl =
+  Native.VirtualDom.program Debug.wrap impl
 
 
 {-| Check out the docs for [`Html.App.programWithFlags`][prog].
@@ -318,6 +319,6 @@ programWithFlags
     , view : model -> Node msg
     }
   -> Program flags model msg
-programWithFlags =
-  Native.VirtualDom.programWithFlags
+programWithFlags impl =
+  Native.VirtualDom.programWithFlags Debug.wrapWithFlags impl
 

@@ -1472,117 +1472,80 @@ var propertyToAttribute = {
 };
 
 
+// PROGRAMS
 
-////////////  PROGRAMS  ////////////
+var program = makeProgram(checkNoFlags);
+var programWithFlags = makeProgram(checkYesFlags);
 
-
-function program(impl)
+function makeProgram(flagChecker)
 {
-	return function(flagDecoder)
+	return F2(function program(debugWrap, impl)
 	{
-		return function(object, moduleName)
+		return function(flagDecoder)
 		{
-			setEverythingUp(impl, object, moduleName, function(flags, domNode)
+			return function(object, moduleName, debugMode)
 			{
-				if (typeof flags === 'undefined')
+				var checker = flagChecker(flagDecoder, moduleName);
+				if (debugMode)
 				{
-					return impl.init;
+					debugSetup(debugWrap(impl), object, moduleName, checker);
 				}
-
-				var errorMessage =
-					'The `' + moduleName + '` module does not need flags.\n'
-					+ 'Initialize it with no arguments and you should be all set!';
-
-				crash(errorMessage, domNode);
-			});
+				else
+				{
+					normalSetup(impl, object, moduleName, checker);
+				}
+				freezeSetup(impl, object, moduleName, checker);
+			};
 		};
-	};
+	});
 }
 
-function programWithFlags(impl)
+
+// FLAG CHECKERS
+
+function checkNoFlags(flagDecoder, moduleName)
 {
-	return function(flagDecoder)
+	return function(init, flags, domNode)
 	{
-		return function(object, moduleName)
+		if (typeof flags === 'undefined')
 		{
-			setEverythingUp(impl, object, moduleName, function(flags, domNode)
-			{
-				if (typeof flagDecoder === 'undefined')
-				{
-					var errorMessage =
-						'Are you trying to sneak a Never value into Elm? Trickster!\n'
-						+ 'It looks like ' + moduleName + '.main is defined with `programWithFlags` but has type `Program Never`.\n'
-						+ 'Use `program` instead if you do not want flags.'
-
-					crash(errorMessage, domNode);
-				}
-
-				var result = A2(_elm_lang$core$Native_Json.run, flagDecoder, flags);
-				if (result.ctor === 'Ok')
-				{
-					return impl.init(result._0);
-				}
-
-				var errorMessage =
-					'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
-					+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
-					+ result._0;
-
-				crash(errorMessage, domNode);
-			});
-		};
-	};
-}
-
-function setEverythingUp(impl, object, moduleName, flagChecker)
-{
-	object['embed'] = function embed(node, flags)
-	{
-		var init = flagChecker(flags, node);
-
-		while (node.lastChild)
-		{
-			node.removeChild(node.lastChild);
+			return init;
 		}
 
-		return _elm_lang$core$Native_Platform.initialize(
-			init,
-			impl.update,
-			impl.subscriptions,
-			normalRenderer(node, impl.view)
-		);
+		var errorMessage =
+			'The `' + moduleName + '` module does not need flags.\n'
+			+ 'Initialize it with no arguments and you should be all set!';
+
+		crash(errorMessage, domNode);
 	};
+}
 
-	object['fullscreen'] = function fullscreen(flags)
+function checkYesFlags(flagDecoder, moduleName)
+{
+	return function(init, flags, domNode)
 	{
-		var init = flagChecker(flags, document.body);
+		if (typeof flagDecoder === 'undefined')
+		{
+			var errorMessage =
+				'Are you trying to sneak a Never value into Elm? Trickster!\n'
+				+ 'It looks like ' + moduleName + '.main is defined with `programWithFlags` but has type `Program Never`.\n'
+				+ 'Use `program` instead if you do not want flags.'
 
-		return _elm_lang$core$Native_Platform.initialize(
-			init,
-			impl.update,
-			impl.subscriptions,
-			normalRenderer(document.body, impl.view)
-		);
-	};
+			crash(errorMessage, domNode);
+		}
 
-	object['freeze'] = function freeze(id, flags)
-	{
-		var model = flagChecker(flags)._0;
-		var vNode = impl.view(model);
-		var html = freezeNode(vNode);
-		return '<div id="' + id + '" '
-			+ DATA_KEY + "='" + JSON.stringify(vNode)
-			+ "'>" + html + '</div>';
-	};
+		var result = A2(_elm_lang$core$Native_Json.run, flagDecoder, flags);
+		if (result.ctor === 'Ok')
+		{
+			return init(result._0);
+		}
 
-	object['thaw'] = function thaw(id, flags)
-	{
-		return _elm_lang$core$Native_Platform.initialize(
-			flagChecker(flags),
-			impl.update,
-			impl.subscriptions,
-			thawRenderer(moduleName, id, impl.view)
-		);
+		var errorMessage =
+			'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
+			+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
+			+ result._0;
+
+		crash(errorMessage, domNode);
 	};
 }
 
@@ -1601,8 +1564,35 @@ function crash(errorMessage, domNode)
 }
 
 
-////////////  RENDERER  ////////////
+//  NORMAL SETUP
 
+function normalSetup(impl, object, moduleName, flagChecker)
+{
+	object['embed'] = function embed(node, flags)
+	{
+		while (node.lastChild)
+		{
+			node.removeChild(node.lastChild);
+		}
+
+		return _elm_lang$core$Native_Platform.initialize(
+			flagChecker(impl.init, flags, node),
+			impl.update,
+			impl.subscriptions,
+			normalRenderer(node, impl.view)
+		);
+	};
+
+	object['fullscreen'] = function fullscreen(flags)
+	{
+		return _elm_lang$core$Native_Platform.initialize(
+			flagChecker(impl.init, flags, document.body),
+			impl.update,
+			impl.subscriptions,
+			normalRenderer(document.body, impl.view)
+		);
+	};
+}
 
 function normalRenderer(parentNode, view)
 {
@@ -1613,6 +1603,32 @@ function normalRenderer(parentNode, view)
 		var domNode = render(initialVirtualNode, eventNode);
 		parentNode.appendChild(domNode);
 		return makeStepper(domNode, view, initialVirtualNode, eventNode);
+	};
+}
+
+
+// SERVER-SIDE SETUP
+
+function freezeSetup(impl, object, moduleName, flagChecker)
+{
+	object['freeze'] = function freeze(id, flags)
+	{
+		var model = flagChecker(impl.init, flags)._0;
+		var vNode = impl.view(model);
+		var html = freezeNode(vNode);
+		return '<div id="' + id + '" '
+			+ DATA_KEY + "='" + JSON.stringify(vNode)
+			+ "'>" + html + '</div>';
+	};
+
+	object['thaw'] = function thaw(id, flags)
+	{
+		return _elm_lang$core$Native_Platform.initialize(
+			flagChecker(impl.init, flags),
+			impl.update,
+			impl.subscriptions,
+			thawRenderer(moduleName, id, impl.view)
+		);
 	};
 }
 
@@ -1669,6 +1685,14 @@ function thawRenderer(moduleName, id, view)
 	}
 }
 
+
+// STEPPER
+
+var rAF =
+	typeof requestAnimationFrame !== 'undefined'
+		? requestAnimationFrame
+		: function(callback) { callback(); };
+
 function makeStepper(domNode, view, initialVirtualNode, eventNode)
 {
 	var state = 'NO_REQUEST';
@@ -1714,31 +1738,19 @@ function makeStepper(domNode, view, initialVirtualNode, eventNode)
 }
 
 
-var rAF =
-	typeof requestAnimationFrame !== 'undefined'
-		? requestAnimationFrame
-		: function(callback) { callback(); };
+// DEBUG SETUP
 
-
-// DEBUG
-
-function debug(impl)
+function debugSetup(impl, object, moduleName, flagChecker)
 {
-	return function(flagDecoder)
+	object['fullscreen'] = function fullscreen(flags)
 	{
-		return function(object, moduleName)
-		{
-			object['fullscreen'] = function fullscreen(flags)
-			{
-				var popoutRef = { doc: undefined };
-				return _elm_lang$core$Native_Platform.initialize(
-					impl.init,
-					impl.update(scrollTask(popoutRef)),
-					impl.subscriptions,
-					debugRenderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
-				);
-			};
-		};
+		var popoutRef = { doc: undefined };
+		return _elm_lang$core$Native_Platform.initialize(
+			flagChecker(impl.init, flags, document.body),
+			impl.update(scrollTask(popoutRef)),
+			impl.subscriptions,
+			debugRenderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
+		);
 	};
 }
 
@@ -1816,7 +1828,6 @@ function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, in
 	};
 }
 
-
 function openDebugWindow(moduleName, popoutRef, tagger, makeButton, domNode)
 {
 	var w = 900;
@@ -1881,7 +1892,6 @@ return {
 	lazy3: F4(lazy3),
 	keyedNode: F3(keyedNode),
 
-	debug: debug,
 	program: program,
 	programWithFlags: programWithFlags
 };

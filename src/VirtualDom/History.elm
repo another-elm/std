@@ -12,7 +12,7 @@ import Array exposing (Array)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
-import VirtualDom as VDom exposing (Node)
+import VirtualDom.Helpers as VDom exposing (Node)
 
 
 
@@ -158,15 +158,7 @@ view maybeIndex { snapshots, recent, numMessages } =
     newStuff =
       snd <| List.foldl (consMsg index) (numMessages - 1, []) recent.messages
   in
-    div [ class "debugger-sidebar-messages" ] (oldStuff :: newStuff)
-
-
-div =
-  VDom.node "div"
-
-
-class name =
-  VDom.property "className" (Encode.string name)
+    VDom.div [ VDom.class "debugger-sidebar-messages" ] (oldStuff :: newStuff)
 
 
 
@@ -179,7 +171,7 @@ viewSnapshots currentIndex snapshots =
     highIndex =
       maxSnapshotSize * Array.length snapshots
   in
-    div [] <| snd <|
+    VDom.div [] <| snd <|
       Array.foldr (consSnapshot currentIndex) (highIndex, []) snapshots
 
 
@@ -199,7 +191,7 @@ consSnapshot currentIndex snapshot (index, rest) =
 
 viewSnapshot : Int -> Int -> Snapshot model msg -> Node Int
 viewSnapshot currentIndex index { messages } =
-  div [] <| snd <|
+  VDom.div [] <| snd <|
     Array.foldl (consMsg currentIndex) (index - 1, []) messages
 
 
@@ -224,8 +216,8 @@ viewMessage currentIndex index msg =
       else
         "messages-entry"
   in
-    div
-      [ class className
+    VDom.div
+      [ VDom.class className
       , VDom.on "click" (Decode.succeed index)
       ]
       [ VDom.text (Native.Debug.messageToString msg)

@@ -11,7 +11,7 @@ import Dict exposing (Dict)
 import Json.Decode as Json
 import Native.Debug
 import String
-import VirtualDom exposing (Node, text)
+import VirtualDom.Helpers as VDom exposing (Node, text, div, span, class, onClick)
 
 
 
@@ -210,44 +210,32 @@ lineStarter maybeKey maybeIsClosed description =
 
 
 makeArrow arrow =
-  span [ VirtualDom.style [("color", "#777"), ("width", "2ch"), ("display", "inline-block")] ] [ text arrow ]
+  span [ VDom.style [("color", "#777"), ("width", "2ch"), ("display", "inline-block")] ] [ text arrow ]
 
 
-leftPad : Maybe a -> VirtualDom.Property msg
+leftPad : Maybe a -> VDom.Property msg
 leftPad maybeKey =
   case maybeKey of
     Nothing ->
-      VirtualDom.style []
+      VDom.style []
 
     Just _ ->
-      VirtualDom.style [("padding-left", "2ch")]
+      VDom.style [("padding-left", "2ch")]
 
 
-div =
-  VirtualDom.node "div"
-
-
-span =
-  VirtualDom.node "span"
-
-
-onClick msg =
-  VirtualDom.on "click" (Json.succeed msg)
-
-
-red : VirtualDom.Property msg
+red : VDom.Property msg
 red =
-  VirtualDom.style [("color", "rgb(196, 26, 22)")]
+  VDom.style [("color", "rgb(196, 26, 22)")]
 
 
-blue : VirtualDom.Property msg
+blue : VDom.Property msg
 blue =
-  VirtualDom.style [("color", "rgb(28, 0, 207)")]
+  VDom.style [("color", "rgb(28, 0, 207)")]
 
 
-purple : VirtualDom.Property msg
+purple : VDom.Property msg
 purple =
-  VirtualDom.style [("color", "rgb(136, 19, 145)")]
+  VDom.style [("color", "rgb(136, 19, 145)")]
 
 
 
@@ -296,15 +284,15 @@ viewDictionaryEntry : Int -> (Expando, Expando) -> Node Msg
 viewDictionaryEntry index (key, value) =
   case key of
     S stringRep ->
-      VirtualDom.map (Index Value index) (view (Just stringRep) value)
+      VDom.map (Index Value index) (view (Just stringRep) value)
 
     Primitive stringRep ->
-      VirtualDom.map (Index Value index) (view (Just stringRep) value)
+      VDom.map (Index Value index) (view (Just stringRep) value)
 
     _ ->
         div []
-          [ VirtualDom.map (Index Key index) (view (Just "key") key)
-          , VirtualDom.map (Index Value index) (view (Just "value") value)
+          [ VDom.map (Index Key index) (view (Just "key") key)
+          , VDom.map (Index Value index) (view (Just "value") value)
           ]
 
 
@@ -327,7 +315,7 @@ viewRecordOpen record =
 
 viewRecordEntry : (String, Expando) -> Node Msg
 viewRecordEntry (field, value) =
-  VirtualDom.map (Field field) (view (Just field) value)
+  VDom.map (Field field) (view (Just field) value)
 
 
 
@@ -373,22 +361,22 @@ viewConstructor maybeKey maybeName isClosed valueList =
 
             Sequence _ _ subValueList ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewSequenceOpen subValueList)
+              , if isClosed then div [] [] else VDom.map (Index None 0) (viewSequenceOpen subValueList)
               )
 
             Dictionary _ keyValuePairs ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewDictionaryOpen keyValuePairs)
+              , if isClosed then div [] [] else VDom.map (Index None 0) (viewDictionaryOpen keyValuePairs)
               )
 
             Record _ record ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewRecordOpen record)
+              , if isClosed then div [] [] else VDom.map (Index None 0) (viewRecordOpen record)
               )
 
             Constructor _ _ subValueList ->
               ( Just isClosed
-              , if isClosed then div [] [] else VirtualDom.map (Index None 0) (viewConstructorOpen subValueList)
+              , if isClosed then div [] [] else VDom.map (Index None 0) (viewConstructorOpen subValueList)
               )
 
         _ ->
@@ -409,7 +397,7 @@ viewConstructorOpen valueList =
 
 viewConstructorEntry : Int -> Expando -> Node Msg
 viewConstructorEntry index value =
-  VirtualDom.map (Index None index) (view (Just (toString index)) value)
+  VDom.map (Index None index) (view (Just (toString index)) value)
 
 
 

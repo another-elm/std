@@ -1,39 +1,37 @@
-module VirtualDom.Debug exposing (program)
-{-|
-@docs program
--}
+module VirtualDom.Debug exposing (wrap, wrapWithFlags)
 
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
 import Native.VirtualDom
 import Task exposing (Task)
-import VirtualDom as VDom exposing (Node)
+import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.History as History exposing (History)
 
 
 
--- PROGRAMS
+-- WRAP PROGRAMS
 
 
-{-|-}
-program
-  : { init : (model, Cmd msg)
-    , update : msg -> model -> (model, Cmd msg)
-    , subscriptions : model -> Sub msg
-    , view : model -> Node msg
-    }
-  -> Program Never (Model model msg) (Msg msg)
-program { init, update, subscriptions, view } =
-  Native.VirtualDom.debug
-    { init = wrapInit init
-    , view = wrapView view
-    , update = wrapUpdate update
-    , viewIn = viewIn
-    , viewOut = viewOut
-    , subscriptions = wrapSubs subscriptions
-    }
+wrap { init, update, subscriptions, view } =
+  { init = wrapInit init
+  , view = wrapView view
+  , update = wrapUpdate update
+  , viewIn = viewIn
+  , viewOut = viewOut
+  , subscriptions = wrapSubs subscriptions
+  }
+
+
+wrapWithFlags { init, update, subscriptions, view } =
+  { init = wrapInit << init
+  , view = wrapView view
+  , update = wrapUpdate update
+  , viewIn = viewIn
+  , viewOut = viewOut
+  , subscriptions = wrapSubs subscriptions
+  }
 
 
 
@@ -229,7 +227,7 @@ wrapView userView { state } =
 
 viewIn : Model model msg -> Node ()
 viewIn { history } =
-  div
+  VDom.div
     [ VDom.on "click" (Decode.succeed ())
     , VDom.style
         [ ("width", "40px")
@@ -256,12 +254,12 @@ viewIn { history } =
 
 viewOut : Model model msg -> Node (Msg msg)
 viewOut { history, state, expando } =
-  div
-    [ VDom.attribute "id" "debugger" ]
+  VDom.div
+    [ VDom.id "debugger" ]
     [ styles
     , viewMessages state history
     , VDom.map ExpandoMsg <|
-        div [ VDom.attribute "id" "values" ] [ Expando.view Nothing expando ]
+        VDom.div [ VDom.id "values" ] [ Expando.view Nothing expando ]
     ]
 
 
@@ -275,31 +273,20 @@ viewMessages state history =
         Paused index _ _ ->
           (Just index, playButton)
   in
-    div [ class "debugger-sidebar" ]
+    VDom.div [ VDom.class "debugger-sidebar" ]
       [ VDom.map Jump (History.view maybeIndex history)
       , maybePlayButton
       ]
 
 
 playButton =
-  div
-    [ class "debugger-sidebar-play"
+  VDom.div
+    [ VDom.class "debugger-sidebar-play"
     , VDom.on "click" (Decode.succeed Play)
     ]
     [ VDom.text "Play"
     ]
 
-
-div =
-  VDom.node "div"
-
-
-id =
-  VDom.attribute "id"
-
-
-class name =
-  VDom.property "className" (Encode.string name)
 
 
 -- STYLE
@@ -343,7 +330,7 @@ body {
 
 .debugger-sidebar-play {
   background-color: rgb(50, 50, 50);
-  width: 240px;
+  width: 100%;
   cursor: pointer;
   color: white;
   padding: 8px 0;
@@ -351,7 +338,7 @@ body {
 }
 
 .debugger-sidebar-messages {
-  width: 240px;
+  width: 100%;
   overflow-y: scroll;
   flex: 1;
 }
@@ -359,6 +346,7 @@ body {
 .messages-entry {
   cursor: pointer;
   color: white;
+  width: 100%;
   padding: 4px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;

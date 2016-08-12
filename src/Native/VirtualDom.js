@@ -1483,16 +1483,16 @@ function makeProgram(flagChecker)
 	{
 		return function(flagDecoder)
 		{
-			return function(object, moduleName, debugMode)
+			return function(object, moduleName, debugInfo)
 			{
 				var checker = flagChecker(flagDecoder, moduleName);
-				if (debugMode)
+				if (typeof debugInfo === 'undefined')
 				{
-					debugSetup(debugWrap(impl), object, moduleName, checker);
+					normalSetup(impl, object, moduleName, checker);
 				}
 				else
 				{
-					normalSetup(impl, object, moduleName, checker);
+					debugSetup(debugWrap(impl), object, moduleName, checker);
 				}
 				freezeSetup(impl, object, moduleName, checker);
 			};

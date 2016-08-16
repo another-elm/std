@@ -1,8 +1,8 @@
 module VirtualDom.Helpers exposing
   ( Node
-  , text, node, div, span
+  , text, node, div, span, a
   , Property, property, attribute
-  , class, id
+  , class, id, href
   , style
   , on, onWithOptions, Options, defaultOptions
   , onClick
@@ -40,6 +40,11 @@ span =
   node "span"
 
 
+a : List (Property msg) -> List (Node msg) -> Node msg
+a =
+  node "a"
+
+
 map : (a -> msg) -> Node a -> Node msg
 map =
   Native.VirtualDom.map
@@ -61,6 +66,11 @@ attribute =
 class : String -> Property msg
 class name =
   property "className" (Encode.string name)
+
+
+href : String -> Property msg
+href name =
+  property "href" (Encode.string name)
 
 
 id : String -> Property msg

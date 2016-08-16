@@ -1479,20 +1479,20 @@ var programWithFlags = makeProgram(checkYesFlags);
 
 function makeProgram(flagChecker)
 {
-	return F2(function program(debugWrap, impl)
+	return F2(function(debugWrap, impl)
 	{
 		return function(flagDecoder)
 		{
-			return function(object, moduleName, debugInfo)
+			return function(object, moduleName, debugMetadata)
 			{
 				var checker = flagChecker(flagDecoder, moduleName);
-				if (typeof debugInfo === 'undefined')
+				if (typeof debugMetadata === 'undefined')
 				{
 					normalSetup(impl, object, moduleName, checker);
 				}
 				else
 				{
-					debugSetup(debugWrap(impl), object, moduleName, checker);
+					debugSetup(A2(debugWrap, debugMetadata, impl), object, moduleName, checker);
 				}
 				freezeSetup(impl, object, moduleName, checker);
 			};
@@ -1767,9 +1767,10 @@ function scrollTask(popoutRef)
 				msgs.scrollTop = msgs.scrollHeight;
 			}
 		}
-	callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+		callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
 	});
 }
+
 
 function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {

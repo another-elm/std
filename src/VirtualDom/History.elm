@@ -2,9 +2,12 @@ module VirtualDom.History exposing
   ( History
   , empty
   , size
+  , initialModel
   , add
   , get
   , view
+  , decoder
+  , encode
   )
 
 
@@ -13,6 +16,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
 import VirtualDom.Helpers as VDom exposing (Node)
+import VirtualDom.Metadata as Metadata
 
 
 
@@ -56,6 +60,58 @@ empty model =
 size : History model msg -> Int
 size history =
   history.numMessages
+
+
+initialModel : History model msg -> model
+initialModel  { snapshots, recent } =
+  case Array.get 0 snapshots of
+    Just { model } ->
+      model
+
+    Nothing ->
+      recent.model
+
+
+
+-- JSON
+
+
+decoder : model -> (msg -> model -> model) -> Decode.Decoder (model, History model msg)
+decoder initialModel update =
+  let
+    addMessage rawMsg (model, history) =
+      let
+        msg =
+          jsToElm rawMsg
+      in
+        (update msg model, add msg model history)
+  in
+    Decode.customDecoder (Decode.list Decode.value) <| \rawMsgs ->
+      Ok (List.foldl addMessage (initialModel, empty initialModel) rawMsgs)
+
+
+jsToElm : Encode.Value -> a
+jsToElm =
+  Native.Debug.unsafeCoerce
+
+
+encode : History model msg -> Encode.Value
+encode { snapshots, recent } =
+  let
+    recentJson =
+      List.map elmToJs (List.reverse recent.messages)
+  in
+    Encode.list <| Array.foldr encodeHelp recentJson snapshots
+
+
+encodeHelp : Snapshot model msg -> List Encode.Value -> List Encode.Value
+encodeHelp snapshot allMessages =
+  Array.foldl (\elm msgs -> elmToJs elm :: msgs) allMessages snapshot.messages
+
+
+elmToJs : a -> Encode.Value
+elmToJs =
+  Native.Debug.unsafeCoerce
 
 
 

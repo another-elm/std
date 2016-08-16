@@ -1,6 +1,51 @@
 var _elm_lang$virtual_dom$Native_Debug = function() {
 
 
+function unsafeCoerce(value)
+{
+	return value;
+}
+
+
+var upload = _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+{
+	var element = document.createElement('input');
+	element.setAttribute('type', 'file');
+	element.setAttribute('accept', 'text/json');
+	element.style.display = 'none';
+	element.addEventListener('change', function(event)
+	{
+		var fileReader = new FileReader();
+		fileReader.onload = function(e)
+		{
+			callback(_elm_lang$core$Native_Scheduler.succeed(e.target.result));
+		};
+		fileReader.readAsText(event.target.files[0]);
+		document.body.removeChild(element);
+	});
+	document.body.appendChild(element);
+	element.click();
+});
+
+
+function download(historyLength, json)
+{
+	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	{
+		var element = document.createElement('a');
+		var content = encodeURIComponent(JSON.stringify(json));
+		element.setAttribute('href', 'data:text/json;charset=utf-8,' + content);
+		element.setAttribute('download', 'history-' + historyLength + '.json');
+		element.style.display = 'none';
+		document.body.appendChild(element);
+		element.click();
+		document.body.removeChild(element);
+		callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+	});
+}
+
+
+
 function messageToString(value)
 {
 	switch (typeof value)
@@ -207,6 +252,9 @@ function addSlashes(str, isChar)
 
 
 return {
+	upload: upload,
+	download: F2(download),
+	unsafeCoerce: unsafeCoerce,
 	messageToString: messageToString,
 	init: init
 }

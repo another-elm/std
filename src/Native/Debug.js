@@ -1,11 +1,12 @@
 var _elm_lang$virtual_dom$Native_Debug = function() {
 
 
+// IMPORT / EXPORT
+
 function unsafeCoerce(value)
 {
 	return value;
 }
-
 
 var upload = _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 {
@@ -27,7 +28,6 @@ var upload = _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	element.click();
 });
 
-
 function download(historyLength, json)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
@@ -45,6 +45,7 @@ function download(historyLength, json)
 }
 
 
+// POPOUT
 
 function messageToString(value)
 {

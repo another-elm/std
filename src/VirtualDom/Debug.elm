@@ -9,6 +9,8 @@ import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.History as History exposing (History)
 import VirtualDom.Metadata as Metadata exposing (Metadata)
+import VirtualDom.Overlay as Overlay
+import VirtualDom.Report as Report
 
 
 
@@ -44,7 +46,8 @@ type alias Model model msg =
   , state : State model
   , expando : Expando
   , metadata : Metadata
-  , swapping : Maybe SwapState
+  , overlay : Overlay.State
+  , isDebuggerOpen : Bool
   }
 
 
@@ -53,19 +56,14 @@ type State model
   | Paused Int model model
 
 
-type alias SwapState =
-  { comparison : Metadata.Comparison
-  , rawHistory : Encode.Value
-  }
-
-
 wrapInit : Encode.Value -> ( model, Cmd msg ) -> ( Model model msg, Cmd (Msg msg) )
 wrapInit metadata ( userModel, userCommands ) =
   { history = History.empty userModel
   , state = Running userModel
   , expando = Expando.init userModel
   , metadata = Metadata.decode metadata
-  , swapping = Nothing
+  , overlay = Overlay.none
+  , isDebuggerOpen = False
   }
     ! [ Cmd.map UserMsg userCommands ]
 
@@ -80,21 +78,28 @@ type Msg msg
   | ExpandoMsg Expando.Msg
   | Resume
   | Jump Int
+  | Open
+  | Close
   | Up
   | Down
   | Import
   | Export
   | Upload String
+  | OverlayMsg Overlay.Msg
+
+
+type alias UserUpdate model msg =
+  msg -> model -> ( model, Cmd msg )
 
 
 wrapUpdate
-  : (msg -> model -> (model, Cmd msg))
+  : UserUpdate model msg
   -> Task Never ()
   -> Msg msg
   -> Model model msg
   -> (Model model msg, Cmd (Msg msg))
 wrapUpdate userUpdate scrollTask msg model =
-  case msg of
+  case Debug.log "msg" msg of
     NoOp ->
       model ! []
 
@@ -117,7 +122,7 @@ wrapUpdate userUpdate scrollTask msg model =
               | state = Running userModel
               , expando = Expando.merge userModel model.expando
           }
-            ! [ run scrollTask ]
+            ! [ runIf model.isDebuggerOpen scrollTask ]
 
     Jump index ->
       let
@@ -129,6 +134,12 @@ wrapUpdate userUpdate scrollTask msg model =
             , expando = Expando.merge indexModel model.expando
         }
           ! []
+
+    Open ->
+      { model | isDebuggerOpen = True } ! []
+
+    Close ->
+      { model | isDebuggerOpen = False } ! []
 
     Up ->
       let
@@ -163,49 +174,14 @@ wrapUpdate userUpdate scrollTask msg model =
       model ! [ download model.metadata model.history ]
 
     Upload jsonString ->
-      case Decode.decodeString (swapStateDecoder model.metadata) jsonString of
-        Err _ ->
-          model ! [] -- TODO notification on failure
+      updateOverlay userUpdate model <| Overlay.assessImport model.metadata jsonString
 
-        Ok ({comparison, rawHistory} as swapState) ->
-          if List.isEmpty comparison.problems && List.isEmpty comparison.warnings then
-            loadNewHistory rawHistory userUpdate model
-
-          else
-            { model | swapping = Just swapState } ! []
+    OverlayMsg overlayMsg ->
+      updateOverlay userUpdate model <| Overlay.update overlayMsg model.overlay
 
 
-loadNewHistory : Encode.Value -> (msg -> model -> (model, Cmd msg)) -> Model model msg -> ( Model model msg, Cmd (Msg msg) )
-loadNewHistory rawHistory userUpdate model =
-  let
-    initialUserModel =
-      History.initialModel model.history
 
-    pureUserUpdate msg userModel =
-      fst (userUpdate msg userModel)
-
-    decoder =
-      History.decoder initialUserModel pureUserUpdate
-  in
-    case Decode.decodeValue decoder rawHistory of
-      Err _ ->
-        model ! [] -- TODO notification on failure
-
-      Ok (latestUserModel, newHistory) ->
-        { model
-            | history = newHistory
-            , state = Running latestUserModel
-            , expando = Expando.init latestUserModel
-            , swapping = Nothing
-        }
-          ! []
-
-
-swapStateDecoder : Metadata -> Decode.Decoder SwapState
-swapStateDecoder oldMetadata =
-  Decode.object2 SwapState
-    (Decode.map (Metadata.check oldMetadata) ("metadata" := Metadata.decoder))
-    ("history" := Decode.value)
+-- COMMANDS
 
 
 upload : Cmd (Msg msg)
@@ -229,11 +205,51 @@ download metadata history =
 
 
 
+-- UPDATE OVERLAY
+
+
+updateOverlay : UserUpdate model msg -> Model model msg -> ( Overlay.State, Maybe Encode.Value ) -> ( Model model msg, Cmd (Msg msg) )
+updateOverlay userUpdate model (newOverlay, maybeHistory) =
+  case maybeHistory of
+    Nothing ->
+      { model | overlay = newOverlay } ! []
+
+    Just rawHistory ->
+      loadNewHistory rawHistory userUpdate model
+
+
+loadNewHistory : Encode.Value -> UserUpdate model msg -> Model model msg -> ( Model model msg, Cmd (Msg msg) )
+loadNewHistory rawHistory userUpdate model =
+  let
+    initialUserModel =
+      History.initialModel model.history
+
+    pureUserUpdate msg userModel =
+      fst (userUpdate msg userModel)
+
+    decoder =
+      History.decoder initialUserModel pureUserUpdate
+  in
+    case Decode.decodeValue decoder rawHistory of
+      Err _ ->
+        { model | overlay = Overlay.badImport "Trying to load invalid messages." } ! []
+
+      Ok (latestUserModel, newHistory) ->
+        { model
+            | history = newHistory
+            , state = Running latestUserModel
+            , expando = Expando.init latestUserModel
+            , overlay = Overlay.none
+        }
+          ! []
+
+
+
 -- UPDATE - USER MESSAGES
 
 
 updateUserMsg
-  : (msg -> model -> (model, Cmd msg))
+  : UserUpdate model msg
   -> Task Never ()
   -> msg
   -> Model model msg
@@ -259,7 +275,7 @@ updateUserMsg userUpdate scrollTask userMsg ({ history, state, expando } as mode
             , state = Running newUserModel
             , expando = Expando.merge newUserModel expando
         }
-          ! [ commands, run scrollTask ]
+          ! [ commands, runIf model.isDebuggerOpen scrollTask ]
 
       Paused index indexModel _ ->
         { model
@@ -269,9 +285,12 @@ updateUserMsg userUpdate scrollTask userMsg ({ history, state, expando } as mode
           ! [ commands ]
 
 
-run : Task Never () -> Cmd (Msg msg)
-run task =
-  Task.perform (always NoOp) (always NoOp) task
+runIf : Bool -> Task Never () -> Cmd (Msg msg)
+runIf bool task =
+  if bool then
+    Task.perform (always NoOp) (always NoOp) task
+  else
+    Cmd.none
 
 
 getLatestModel : State model -> model
@@ -300,40 +319,60 @@ wrapSubs userSubscriptions {state} =
 
 
 wrapView : (model -> Node msg) -> Model model msg -> Node (Msg msg)
-wrapView userView { state } =
-  case state of
-    Running model ->
-      VDom.map UserMsg (userView model)
+wrapView userView { state, overlay } =
+  let
+    currentModel =
+      case state of
+        Running model ->
+          model
 
-    Paused _ oldModel _ ->
-      VDom.map UserMsg (userView oldModel)
+        Paused _ oldModel _ ->
+          oldModel
+
+    userNode =
+      VDom.map UserMsg (userView currentModel)
+  in
+    if Overlay.isBlocking overlay then
+      VDom.div [gaussianBlur] [userNode]
+    else
+      userNode
+
+
+gaussianBlur =
+  VDom.style
+    [ ("webkitFilter", "blur(2px)")
+    , ("mozFilter", "blur(2px)")
+    , ("msFilter", "blur(2px)")
+    , ("filter", "blur(2px)")
+    ]
 
 
 
 -- SMALL DEBUG VIEW
 
 
-viewIn : Model model msg -> Node ()
-viewIn { history } =
-  VDom.div
-    [ VDom.onClick ()
-    , VDom.style
-        [ ("width", "40px")
-        , ("height", "40px")
-        , ("borderRadius", "50%")
-        , ("position", "absolute")
-        , ("bottom", "0")
-        , ("right", "0")
-        , ("margin", "10px")
-        , ("backgroundColor", "#60B5CC")
-        , ("color", "white")
-        , ("display", "flex")
-        , ("justify-content", "center")
-        , ("align-items", "center")
-        ]
-    ]
-    [ VDom.text (toString (History.size history))
-    ]
+viewIn : Model model msg -> Node (Msg msg)
+viewIn { history, state, overlay, isDebuggerOpen } =
+  let
+    isPaused =
+      case state of
+        Running _ ->
+          False
+
+        Paused _ _ _ ->
+          True
+  in
+    Overlay.view overlayConfig isPaused isDebuggerOpen (History.size history) overlay
+
+
+overlayConfig : Overlay.Config (Msg msg)
+overlayConfig =
+  { blocked = NoOp
+  , open = Open
+  , importHistory = Import
+  , exportHistory = Export
+  , wrap = OverlayMsg
+  }
 
 
 

@@ -1777,59 +1777,55 @@ function debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 	return function(tagger, initialModel)
 	{
 		var eventNode = { tagger: tagger, parent: undefined };
-
-		var appNode = view(initialModel);
-		var domNode = render(appNode, eventNode);
-		parentNode.appendChild(domNode);
-		var appStepper = makeStepper(domNode, view, appNode, eventNode);
-
-		var debugStepper = makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, initialModel, eventNode);
+		var appStepper = makeSimpleStepper(initialModel, view, eventNode, parentNode);
+		var overlayStepper = makeSimpleStepper(initialModel, viewIn, eventNode, parentNode);
+		var debugStepper = makeDebugStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
 
 		return function stepper(model)
 		{
 			appStepper(model);
+			overlayStepper(model);
 			debugStepper(model);
 		}
 	};
 }
 
-function makeDebugStepper(moduleName, parentNode, popoutRef, viewIn, viewOut, initialModel, eventNode)
+function makeSimpleStepper(initialModel, view, eventNode, parentNode)
 {
-	var curr, domNode, isIn, debugWindow;
-	var currentModel = initialModel;
+	var vNode = view(initialModel);
+	var domNode = render(vNode, eventNode);
+	parentNode.appendChild(domNode);
+	return makeStepper(domNode, view, vNode, eventNode);
+}
 
-	function tagger()
-	{
-		parentNode.removeChild(domNode);
-		isIn = false;
-		curr = viewOut(currentModel);
-		domNode = render(curr, eventNode);
-		openDebugWindow(moduleName, popoutRef, eventNode.tagger, makeButton, domNode);
-	}
-
-	var clickEventNode = { tagger: tagger, parent: undefined };
-
-	function makeButton()
-	{
-		isIn = true;
-		curr = viewIn(currentModel);
-		domNode = render(curr, clickEventNode);
-		parentNode.appendChild(domNode);
-	}
-
-	makeButton();
+function makeDebugStepper(initialModel, view, eventNode, parentNode, moduleName, popoutRef)
+{
+	var curr;
+	var domNode;
 
 	return function stepper(model)
 	{
-		var next = (isIn ? viewIn : viewOut)(model);
+		if (!model.isDebuggerOpen)
+		{
+			return;
+		}
+
+		if (!popoutRef.doc)
+		{
+			curr = view(model);
+			domNode = render(curr, eventNode);
+			openDebugWindow(moduleName, popoutRef, eventNode.tagger, domNode);
+			return;
+		}
+
+		var next = view(model);
 		var patches = diff(curr, next);
 		domNode = applyPatches(domNode, curr, patches, eventNode);
 		curr = next;
-		currentModel = model;
 	};
 }
 
-function openDebugWindow(moduleName, popoutRef, tagger, makeButton, domNode)
+function openDebugWindow(moduleName, popoutRef, tagger, domNode)
 {
 	var w = 900;
 	var h = 360;
@@ -1868,8 +1864,9 @@ function openDebugWindow(moduleName, popoutRef, tagger, makeButton, domNode)
 	}
 	window.addEventListener('unload', close);
 	debugWindow.addEventListener('unload', function() {
+		popoutRef.doc = undefined;
 		window.removeEventListener('unload', close);
-		makeButton();
+		tagger({ ctor: 'Close' });
 	});
 }
 

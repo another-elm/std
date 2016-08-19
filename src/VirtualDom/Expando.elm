@@ -50,7 +50,55 @@ init =
 
 merge : a -> Expando -> Expando
 merge value expando =
-  init value
+  mergeHelp expando (init value)
+
+
+mergeHelp : Expando -> Expando -> Expando
+mergeHelp old new =
+  case ( old, new ) of
+    ( _, S _ ) ->
+      new
+
+    ( _, Primitive _ ) ->
+      new
+
+    ( Sequence _ isClosed oldValues, Sequence seqType _ newValues ) ->
+      Sequence seqType isClosed (mergeListHelp oldValues newValues)
+
+    ( Dictionary isClosed _, Dictionary _ keyValuePairs ) ->
+      Dictionary isClosed keyValuePairs
+
+    ( Record isClosed oldDict, Record _ newDict ) ->
+      Record isClosed <| Dict.map (mergeDictHelp oldDict) newDict
+
+    ( Constructor _ isClosed oldValues, Constructor maybeName _ newValues ) ->
+      Constructor maybeName isClosed (mergeListHelp oldValues newValues)
+
+    _ ->
+      new
+
+
+mergeListHelp : List Expando -> List Expando -> List Expando
+mergeListHelp olds news =
+  case (olds, news) of
+    ( [], _ ) ->
+      news
+
+    ( _, [] ) ->
+      news
+
+    ( x :: xs, y :: ys ) ->
+      mergeHelp x y :: mergeListHelp xs ys
+
+
+mergeDictHelp : Dict String Expando -> String -> Expando -> Expando
+mergeDictHelp oldDict key value =
+  case Dict.get key oldDict of
+    Nothing ->
+      value
+
+    Just oldValue ->
+      mergeHelp oldValue value
 
 
 

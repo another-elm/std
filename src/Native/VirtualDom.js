@@ -1380,7 +1380,7 @@ function applyPatchReorder(domNode, patch)
 	var data = patch.data;
 
 	// remove end inserts
-	var frag = applyPatchReorderEndInsertsHelp(data.endInserts);
+	var frag = applyPatchReorderEndInsertsHelp(data.endInserts, patch);
 
 	// removals
 	domNode = applyPatchesHelp(domNode, data.patches);
@@ -1407,7 +1407,7 @@ function applyPatchReorder(domNode, patch)
 }
 
 
-function applyPatchReorderEndInsertsHelp(endInserts)
+function applyPatchReorderEndInsertsHelp(endInserts, patch)
 {
 	if (typeof endInserts === 'undefined')
 	{

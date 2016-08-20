@@ -99,7 +99,7 @@ wrapUpdate
   -> Model model msg
   -> (Model model msg, Cmd (Msg msg))
 wrapUpdate userUpdate scrollTask msg model =
-  case Debug.log "msg" msg of
+  case msg of
     NoOp ->
       model ! []
 

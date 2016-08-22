@@ -177,13 +177,6 @@ function organizeFacts(factList)
 		{
 			namespace = entry.value;
 		}
-		else if (key === 'className')
-		{
-			var classes = facts[key];
-			facts[key] = typeof classes === 'undefined'
-				? entry.value
-				: classes + ' ' + entry.value;
-		}
 		else
 		{
 			facts[key] = entry.value;

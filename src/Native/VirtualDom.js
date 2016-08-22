@@ -1314,33 +1314,8 @@ function applyPatchReorder(domNode, patch)
 {
 	var data = patch.data;
 
-	// end inserts
-	var endInserts = data.endInserts;
-	var end;
-	if (typeof endInserts !== 'undefined')
-	{
-		if (endInserts.length === 1)
-		{
-			var insert = endInserts[0];
-			var entry = insert.entry;
-			var end = entry.tag === 'move'
-				? entry.data
-				: render(entry.vnode, patch.eventNode);
-		}
-		else
-		{
-			end = document.createDocumentFragment();
-			for (var i = 0; i < endInserts.length; i++)
-			{
-				var insert = endInserts[i];
-				var entry = insert.entry;
-				var node = entry.tag === 'move'
-					? entry.data
-					: render(entry.vnode, patch.eventNode);
-				end.appendChild(node);
-			}
-		}
-	}
+	// remove end inserts
+	var frag = applyPatchReorderEndInsertsHelp(data.endInserts, patch);
 
 	// removals
 	domNode = applyPatchesHelp(domNode, data.patches);
@@ -1357,12 +1332,34 @@ function applyPatchReorder(domNode, patch)
 		domNode.insertBefore(node, domNode.childNodes[insert.index]);
 	}
 
-	if (typeof end !== 'undefined')
+	// add end inserts
+	if (typeof frag !== 'undefined')
 	{
-		domNode.appendChild(end);
+		domNode.appendChild(frag);
 	}
 
 	return domNode;
+}
+
+
+function applyPatchReorderEndInsertsHelp(endInserts, patch)
+{
+	if (typeof endInserts === 'undefined')
+	{
+		return;
+	}
+
+	var frag = document.createDocumentFragment();
+	for (var i = 0; i < endInserts.length; i++)
+	{
+		var insert = endInserts[i];
+		var entry = insert.entry;
+		frag.appendChild(entry.tag === 'move'
+			? entry.data
+			: render(entry.vnode, patch.eventNode)
+		);
+	}
+	return frag;
 }
 
 

@@ -1,5 +1,7 @@
 module Html exposing
-  ( text, node, Html, Attribute
+  ( Html, Attribute
+  , text, node, map
+  , beginnerProgram, program, programWithFlags
   , h1, h2, h3, h4, h5, h6
   , div, p, hr, pre, blockquote
   , span, a, code, em, strong, i, b, u, sub, sup, br
@@ -21,59 +23,63 @@ module Html exposing
 {-| This file is organized roughly in order of popularity. The tags which you'd
 expect to use frequently will be closer to the top.
 
-# Custom Nodes
-@docs text, node, Html, Attribute
+# Primitives
+@docs Html, Attribute, text, node, map
 
-# Headers
+# Programs
+@docs beginnerProgram, program, programWithFlags
+
+# Tags
+
+## Headers
 @docs h1, h2, h3, h4, h5, h6
 
-# Grouping Content
+## Grouping Content
 @docs div, p, hr, pre, blockquote
 
-# Text
+## Text
 @docs span, a, code, em, strong, i, b, u, sub, sup, br
 
-# Lists
+## Lists
 @docs ol, ul, li, dl, dt, dd
 
-# Emdedded Content
+## Emdedded Content
 @docs img, iframe, canvas, math
 
-# Inputs
+## Inputs
 @docs form, input, textarea, button, select, option
 
-# Sections
+## Sections
 @docs section, nav, article, aside, header, footer, address, main', body
 
-# Figures
+## Figures
 @docs figure, figcaption
 
-# Tables
+## Tables
 @docs table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th
 
 
-# Less Common Elements
+## Less Common Elements
 
-## Less Common Inputs
+### Less Common Inputs
 @docs fieldset, legend, label, datalist, optgroup, keygen, output, progress, meter
 
-
-## Audio and Video
+### Audio and Video
 @docs audio, video, source, track
 
-## Embedded Objects
+### Embedded Objects
 @docs embed, object, param
 
-## Text Edits
+### Text Edits
 @docs ins, del
 
-## Semantic Text
+### Semantic Text
 @docs small, cite, dfn, abbr, time, var, samp, kbd, s, q
 
-## Less Common Text Tags
+### Less Common Text Tags
 @docs mark, ruby, rt, rp, bdi, bdo, wbr
 
-# Interactive Elements
+## Interactive Elements
 @docs details, summary, menuitem, menu
 
 -}
@@ -85,14 +91,18 @@ import VirtualDom
 -- CORE TYPES
 
 
-{-| The core building block used to build up HTML. It is backed by
-`VirtualDom.Node` in `elm-lang/virtual-dom` but that is not a super crucial
-detail.
+{-| The core building block used to build up HTML. Here we create an `Html`
+value with no attributes and one child:
+
+    hello : Html msg
+    hello =
+      div [] [ text "Hello!" ]
 -}
 type alias Html msg = VirtualDom.Node msg
 
 
-{-| Set attributes on your `Html`.
+{-| Set attributes on your `Html`. Learn more in the
+[`Html.Attributes`](Html-Attributes) module.
 -}
 type alias Attribute msg = VirtualDom.Property msg
 
@@ -119,11 +129,110 @@ node =
 {-| Just put plain text in the DOM. It will escape the string so that it appears
 exactly as you specify.
 
-      text "Hello World!"
+    text "Hello World!"
 -}
 text : String -> Html msg
 text =
   VirtualDom.text
+
+
+
+-- NESTING VIEWS
+
+
+{-| Transform the messages produced by some `Html`. In the following example,
+we have `viewButton` that produces `()` messages, and we transform those values
+into `Msg` values in `view`.
+
+    type Msg = Left | Right
+
+    view : model -> Html Msg
+    view model =
+      div []
+        [ map (\_ -> Left) (viewButton "Left")
+        , map (\_ -> Right) (viewButton "Right")
+        ]
+
+    viewButton : String -> Html ()
+    viewButton name =
+      button [ onClick () ] [ text name ]
+
+This should not come in handy too often. Definitely read [this][reuse] before
+deciding if this is what you want.
+
+[reuse]: https://guide.elm-lang.org/reuse/
+-}
+map : (a -> msg) -> Html a -> Html msg
+map =
+  VirtualDom.map
+
+
+
+-- CREATING PROGRAMS
+
+
+{-| Create a [`Program`][program] that describes how your whole app works.
+
+Read about [The Elm Architecture][tea] to learn how to use this. Just do it.
+The additional context is very worthwhile! (Honestly, it is best to just read
+that guide from front to back instead of muddling around and reading it
+piecemeal.)
+
+[program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program
+[tea]: https://guide.elm-lang.org/architecture/
+-}
+beginnerProgram
+  : { model : model
+    , view : model -> Html msg
+    , update : msg -> model -> model
+    }
+  -> Program Never model msg
+beginnerProgram {model, view, update} =
+  program
+    { init = model ! []
+    , update = \msg model -> update msg model ! []
+    , view = view
+    , subscriptions = \_ -> Sub.none
+    }
+
+
+{-| Create a [`Program`][program] that describes how your whole app works.
+
+Read about [The Elm Architecture][tea] to learn how to use this. Just do it.
+Commands and subscriptions make way more sense when you work up to them
+gradually and see them in context with examples.
+
+[program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program
+[tea]: https://guide.elm-lang.org/architecture/
+-}
+program
+  : { init : (model, Cmd msg)
+    , update : msg -> model -> (model, Cmd msg)
+    , subscriptions : model -> Sub msg
+    , view : model -> Html msg
+    }
+  -> Program Never model msg
+program =
+  VirtualDom.program
+
+
+{-| Create a [`Program`][program] that describes how your whole app works.
+
+It works just like `program` but you can provide &ldquo;flags&rdquo; from
+JavaScript to configure your application. Read more about that [here][].
+
+[program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program
+[here]: https://guide.elm-lang.org/interop/javascript.html
+-}
+programWithFlags
+  : { init : flags -> (model, Cmd msg)
+    , update : msg -> model -> (model, Cmd msg)
+    , subscriptions : model -> Sub msg
+    , view : model -> Html msg
+    }
+  -> Program flags model msg
+programWithFlags =
+  VirtualDom.programWithFlags
 
 
 

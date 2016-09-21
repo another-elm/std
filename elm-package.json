@@ -8,7 +8,6 @@
     ],
     "exposed-modules": [
         "Html",
-        "Html.App",
         "Html.Attributes",
         "Html.Events",
         "Html.Keyed",

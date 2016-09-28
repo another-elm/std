@@ -1,5 +1,5 @@
 module VirtualDom.Overlay exposing
-  ( State, none, badImport
+  ( State, none, corruptImport
   , Msg, update, assessImport
   , isBlocking
   , Config
@@ -11,16 +11,14 @@ import Json.Decode as Decode exposing ((:=))
 import Json.Encode as Encode
 import VirtualDom.Helpers exposing (..)
 import VirtualDom.Metadata as Metadata exposing (Metadata)
-import VirtualDom.Report as Report
+import VirtualDom.Report as Report exposing (Report)
 
 
 
 type State
   = None
-  | BadImport (List String) (List String)
-  | RiskyImport (List String) Encode.Value
---  | BadSwap (List String) (List String)
---  | RiskySwap (List String)
+  | BadImport Report
+  | RiskyImport Report Encode.Value
 
 
 none : State
@@ -28,9 +26,9 @@ none =
   None
 
 
-badImport : String -> State
-badImport problem =
-  BadImport [problem] []
+corruptImport : State
+corruptImport =
+  BadImport Report.CorruptHistory
 
 
 isBlocking : State -> Bool
@@ -57,7 +55,7 @@ update msg state =
       None ->
         Nothing
 
-      BadImport _ _ ->
+      BadImport _ ->
         Nothing
 
       RiskyImport _ rawHistory ->
@@ -73,23 +71,22 @@ assessImport : Metadata -> String -> ( State, Maybe Encode.Value )
 assessImport metadata jsonString =
   case Decode.decodeString uploadDecoder jsonString of
     Err _ ->
-      ( badImport "Looks like the history file has been corrupted."
-      , Nothing
-      )
+      ( corruptImport, Nothing )
 
     Ok (foreignMetadata, rawHistory) ->
       let
-        { problems, warnings } =
+        report =
           Metadata.check foreignMetadata metadata
       in
-        if not (List.isEmpty problems) then
-          ( BadImport problems warnings, Nothing )
+        case Report.evaluate report of
+          Report.Impossible ->
+            ( BadImport report, Nothing )
 
-        else if not (List.isEmpty warnings) then
-          ( RiskyImport warnings rawHistory, Nothing )
+          Report.Risky ->
+            ( RiskyImport report rawHistory, Nothing )
 
-        else
-          ( None, Just rawHistory )
+          Report.Fine ->
+            ( None, Just rawHistory )
 
 
 uploadDecoder : Decode.Decoder (Metadata, Encode.Value)
@@ -126,24 +123,13 @@ view config isPaused isOpen numMsgs state =
           , viewMiniControls config isOpen numMsgs
           ]
 
-      BadImport problems warnings ->
-        let
-          details =
-            List.concatMap viewMessages
-              [ ("Problems", problems)
-              , ("Warnings", warnings)
-              ]
-        in
-          [ viewOverlay config "Cannot Import History" details (Accept "Ok")
-          , viewMiniControls config isOpen numMsgs
-          ]
+      BadImport report ->
+        [ viewOverlay config "Cannot Import History" report (Accept "Ok")
+        , viewMiniControls config isOpen numMsgs
+        ]
 
-      RiskyImport warnings _ ->
-        [ viewOverlay
-            config
-            "Warning"
-            [ ul [] (List.map viewMessage warnings) ]
-            (Choose "Cancel Import" "Import Anyway")
+      RiskyImport report _ ->
+        [ viewOverlay config "Warning" report (Choose "Cancel Import" "Import Anyway")
         , viewMiniControls config isOpen numMsgs
         ]
 
@@ -152,29 +138,104 @@ view config isPaused isOpen numMsgs state =
 -- VIEW MESSAGE
 
 
-viewOverlay : Config msg -> String -> List (Node msg) -> Buttons -> Node msg
-viewOverlay config title details buttons =
+viewOverlay : Config msg -> String -> Report -> Buttons -> Node msg
+viewOverlay config title report buttons =
   div [ class "elm-overlay-message" ]
     [ div [ class "elm-overlay-message-title" ] [ text title ]
-    , div [ class "elm-overlay-message-details" ] details
+    , div [ class "elm-overlay-message-details" ] (viewReport report)
     , map config.wrap <| viewButtons buttons
     ]
 
 
-viewMessages : ( String, List String ) -> List (Node msg)
-viewMessages ( title, messages ) =
-  if List.isEmpty messages then
-    [ text "" ]
+viewReport : Report -> List (Node msg)
+viewReport report =
+  case report of
+    Report.CorruptHistory ->
+      [ text "Looks like this history file is corrupt. I cannot understand it."
+      ]
 
-  else
-    [ h1 [] [ text title ]
-    , ul [] (List.map viewMessage messages)
-    ]
+    Report.VersionChanged old new ->
+      [ text <|
+          "This history was created with Elm "
+          ++ old ++ ", but you are using Elm "
+          ++ new ++ " right now."
+      ]
+
+    Report.MessageChanged old new ->
+      [ text <|
+          "To import some other history, the overall message type must"
+          ++ " be the same. The old history has "
+      , viewCode old
+      , text " messages, but the new program works with "
+      , viewCode new
+      , text " messages."
+      ]
+
+    Report.SomethingChanged changes ->
+      [ node "ul" [] (List.map viewChange changes)
+      ]
 
 
-viewMessage : String -> Node msg
-viewMessage message =
-  li [] [ text message ]
+viewCode : String -> Node msg
+viewCode name =
+  node "code" [] [ text name ]
+
+
+viewChange : Report.Change -> Node msg
+viewChange change =
+  node "li" [] <|
+    case change of
+      Report.AliasChange name ->
+        [ node "h1" []
+            [ text "Type alias "
+            , viewCode name
+            , text " changed."
+            ]
+        ]
+
+      Report.UnionChange name { removed, changed, added, argsMatch } ->
+        [ node "h1" []
+            [ text "Type "
+            , viewCode name
+            , text " has changed."
+            ]
+        , node "ul" []
+            [ viewMention removed "removed"
+            , viewMention changed "changed"
+            , viewMention added "added"
+            ]
+        , if argsMatch then
+            text ""
+          else
+            text "This may be due to the fact that the type variable names changed."
+        ]
+
+
+viewMention : List String -> String -> Node msg
+viewMention tags blanked =
+  case List.map viewCode (List.reverse tags) of
+    [] ->
+      text ""
+
+    [tag] ->
+      node "li" []
+        [ tag
+        , text (" was " ++ blanked ++ ".")
+        ]
+
+    [tag2, tag1] ->
+      node "li" []
+        [ tag1
+        , text " and "
+        , tag2
+        , text (" were " ++ blanked ++ ".")
+        ]
+
+    lastTag :: otherTags ->
+      node "li" [] <|
+        List.intersperse (text ", ") (List.reverse otherTags)
+        ++ [ text ", and ", lastTag, text (" were " ++ blanked ++ ".") ]
+
 
 
 -- VIEW MESSAGE BUTTONS

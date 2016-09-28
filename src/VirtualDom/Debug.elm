@@ -232,7 +232,7 @@ loadNewHistory rawHistory userUpdate model =
   in
     case Decode.decodeValue decoder rawHistory of
       Err _ ->
-        { model | overlay = Overlay.badImport "Trying to load invalid messages." } ! []
+        { model | overlay = Overlay.corruptImport } ! []
 
       Ok (latestUserModel, newHistory) ->
         { model

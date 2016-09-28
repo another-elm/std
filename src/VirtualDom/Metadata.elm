@@ -61,115 +61,77 @@ type alias Union =
 check : Metadata -> Metadata -> Report
 check old new =
   if old.versions.elm /= new.versions.elm then
-    Report.addProblem Report.empty <|
-      "The history created with Elm " ++ old.versions.elm
-      ++ ", but you are using Elm " ++ new.versions.elm ++ "."
+    Report.VersionChanged old.versions.elm new.versions.elm
 
   else
-    checkTypes old.types new.types Report.empty
+    checkTypes old.types new.types
 
 
+checkTypes : Types -> Types -> Report
+checkTypes old new =
+  if old.message /= new.message then
+    Report.MessageChanged old.message new.message
 
--- CHECK TYPES
+  else
+    []
+      |> Dict.merge ignore checkAlias ignore old.aliases new.aliases
+      |> Dict.merge ignore checkUnion ignore old.unions new.unions
+      |> Report.SomethingChanged
 
 
-checkTypes : Types -> Types -> Report -> Report
-checkTypes old new report =
+ignore : String -> value -> a -> a
+ignore key value report =
   report
-    |> checkMessage old.message new.message
-    |> checkUnions old.unions new.unions
-    |> checkAliases old.aliases new.aliases
-
-
-checkMessage : String -> String -> Report -> Report
-checkMessage old new report =
-  if old == new then
-    report
-  else
-    Report.addProblem report <|
-      "The message type changed from `" ++ old ++ "` to `" ++ new ++ "`."
-
-
-
--- CHECK UNIONS
-
-
-checkUnions : Dict String Union -> Dict String Union -> Report -> Report
-checkUnions old new report =
-  let
-    oldMissing key _ cmp =
-      Report.addWarning cmp <|
-        "Union type `" ++ key ++ "` is no longer used."
-
-    newMissing key _ cmp =
-      Report.addWarning cmp <|
-        "Union type `" ++ key ++ "` is now in use."
-  in
-    Dict.merge oldMissing checkUnion newMissing old new report
-
-
-checkUnion : String -> Union -> Union -> Report -> Report
-checkUnion name old new report =
-  let
-    oldMissing key _ cmp =
-      Report.addProblem cmp <|
-        "Constructor `" ++ key ++ "` was removed from union type `" ++ name
-        ++ "` so the old history may have messages this program cannot handle."
-
-    newMissing key _ cmp =
-      Report.addWarning cmp <|
-        "Constructor `" ++ key ++ "` was added to union type `" ++ name
-        ++ "`."
-  in
-    Dict.merge oldMissing (checkTag name) newMissing old.tags new.tags <|
-      if old.args == new.args then
-        report
-
-      else
-        Report.addProblem report <|
-          "Union type `" ++ name ++ "` now has different type variables."
-
-
-checkTag : String -> String -> List String -> List String -> Report -> Report
-checkTag name tag oldArgs newArgs report =
-  if oldArgs /= newArgs then
-    Report.addProblem report <|
-      "In union type `" ++ name ++ "` the data held in `" ++ tag ++ "` has changed."
-
-  else
-    report
 
 
 
 -- CHECK ALIASES
 
 
-checkAliases : Dict String Alias -> Dict String Alias -> Report -> Report
-checkAliases old new report =
-  let
-    oldMissing key _ cmp =
-      Report.addWarning cmp <|
-        "Type alias `" ++ key ++ "` is no longer used."
-
-    newMissing key _ cmp =
-      Report.addWarning cmp <|
-        "Type alias `" ++ key ++ "` is now in use."
-  in
-    Dict.merge oldMissing checkAlias newMissing old new report
-
-
-checkAlias : String -> Alias -> Alias -> Report -> Report
-checkAlias name old new report =
-  if old.tipe /= new.tipe then
-    Report.addProblem report <|
-      "Type alias `" ++ name ++ "` has changed."
-
-  else if old.args /= new.args then
-    Report.addProblem report <|
-      "The type arguments for type alias `" ++ name ++ "` have changed."
+checkAlias : String -> Alias -> Alias -> List Report.Change -> List Report.Change
+checkAlias name old new changes =
+  if old.tipe == new.tipe && old.args == new.args then
+    changes
 
   else
-    report
+    Report.AliasChange name :: changes
+
+
+
+-- CHECK UNIONS
+
+
+checkUnion : String -> Union -> Union -> List Report.Change -> List Report.Change
+checkUnion name old new changes =
+  let
+    tagChanges =
+      Dict.merge removeTag checkTag addTag old.tags new.tags <|
+        Report.emptyTagChanges (old.args == new.args)
+  in
+    if Report.hasTagChanges tagChanges then
+      changes
+
+    else
+      Report.UnionChange name tagChanges :: changes
+
+
+removeTag : String -> a -> Report.TagChanges -> Report.TagChanges
+removeTag tag _ changes =
+  { changes | removed = tag :: changes.removed }
+
+
+addTag : String -> a -> Report.TagChanges -> Report.TagChanges
+addTag tag _ changes =
+  { changes | added = tag :: changes.added }
+
+
+checkTag : String -> a -> a -> Report.TagChanges -> Report.TagChanges
+checkTag tag old new changes =
+  if old == new then
+    changes
+
+  else
+    { changes | changed = tag :: changes.changed }
 
 
 

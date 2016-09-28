@@ -1,6 +1,6 @@
 module VirtualDom.Helpers exposing
   ( Node
-  , text, node, div, span, a, ul, li, h1
+  , text, node, div, span, a, h1
   , Property, property, attribute
   , class, id, href
   , style
@@ -43,16 +43,6 @@ span =
 a : List (Property msg) -> List (Node msg) -> Node msg
 a =
   node "a"
-
-
-ul : List (Property msg) -> List (Node msg) -> Node msg
-ul =
-  node "ul"
-
-
-li : List (Property msg) -> List (Node msg) -> Node msg
-li =
-  node "li"
 
 
 h1 : List (Property msg) -> List (Node msg) -> Node msg

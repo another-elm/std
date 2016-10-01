@@ -91,7 +91,7 @@ on a button, it produces a message. That message is piped into the `update`
 function, producing a new model. We use the `view` function to show the new
 model on screen. And then we just repeat this forever!
 
-Check out [the Elm Architecture Tutorial][tutorial] for a a more complete
+Check out [the Elm Architecture Tutorial][tutorial] for a more complete
 explanation along with some examples!
 
 [program]: http://package.elm-lang.org/packages/elm-lang/core/latest/Platform#Program

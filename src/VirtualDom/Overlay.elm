@@ -1,6 +1,6 @@
 module VirtualDom.Overlay exposing
-  ( State, none, corruptImport
-  , Msg, update, assessImport
+  ( State, none, corruptImport, badMetadata
+  , Msg, close, assessImport
   , isBlocking
   , Config
   , view
@@ -9,6 +9,7 @@ module VirtualDom.Overlay exposing
 
 import Json.Decode as Decode exposing ((:=))
 import Json.Encode as Encode
+import String
 import VirtualDom.Helpers exposing (..)
 import VirtualDom.Metadata as Metadata exposing (Metadata)
 import VirtualDom.Report as Report exposing (Report)
@@ -17,6 +18,7 @@ import VirtualDom.Report as Report exposing (Report)
 
 type State
   = None
+  | BadMetadata Metadata.Error
   | BadImport Report
   | RiskyImport Report Encode.Value
 
@@ -29,6 +31,11 @@ none =
 corruptImport : State
 corruptImport =
   BadImport Report.CorruptHistory
+
+
+badMetadata : Metadata.Error -> State
+badMetadata =
+  BadMetadata
 
 
 isBlocking : State -> Bool
@@ -48,30 +55,32 @@ isBlocking state =
 type Msg = Cancel | Proceed
 
 
-update : Msg -> State -> ( State, Maybe Encode.Value )
-update msg state =
-  (,) None <|
-    case state of
-      None ->
-        Nothing
+close : Msg -> State -> Maybe Encode.Value
+close msg state =
+  case state of
+    None ->
+      Nothing
 
-      BadImport _ ->
-        Nothing
+    BadMetadata _ ->
+      Nothing
 
-      RiskyImport _ rawHistory ->
-        case msg of
-          Cancel ->
-            Nothing
+    BadImport _ ->
+      Nothing
 
-          Proceed ->
-            Just rawHistory
+    RiskyImport _ rawHistory ->
+      case msg of
+        Cancel ->
+          Nothing
+
+        Proceed ->
+          Just rawHistory
 
 
-assessImport : Metadata -> String -> ( State, Maybe Encode.Value )
+assessImport : Metadata -> String -> Result State Encode.Value
 assessImport metadata jsonString =
   case Decode.decodeString uploadDecoder jsonString of
     Err _ ->
-      ( corruptImport, Nothing )
+      Err corruptImport
 
     Ok (foreignMetadata, rawHistory) ->
       let
@@ -80,13 +89,13 @@ assessImport metadata jsonString =
       in
         case Report.evaluate report of
           Report.Impossible ->
-            ( BadImport report, Nothing )
+            Err (BadImport report)
 
           Report.Risky ->
-            ( RiskyImport report rawHistory, Nothing )
+            Err (RiskyImport report rawHistory)
 
           Report.Fine ->
-            ( None, Just rawHistory )
+            Ok rawHistory
 
 
 uploadDecoder : Decode.Decoder (Metadata, Encode.Value)
@@ -123,13 +132,30 @@ view config isPaused isOpen numMsgs state =
           , viewMiniControls config isOpen numMsgs
           ]
 
+      BadMetadata badMetadata ->
+        [ viewOverlay
+            config
+            "Cannot use Import or Export"
+            (viewBadMetadata badMetadata)
+            (Accept "Ok")
+        , viewMiniControls config isOpen numMsgs
+        ]
+
       BadImport report ->
-        [ viewOverlay config "Cannot Import History" report (Accept "Ok")
+        [ viewOverlay
+            config
+            "Cannot Import History"
+            (viewReport report)
+            (Accept "Ok")
         , viewMiniControls config isOpen numMsgs
         ]
 
       RiskyImport report _ ->
-        [ viewOverlay config "Warning" report (Choose "Cancel Import" "Import Anyway")
+        [ viewOverlay
+            config
+            "Warning"
+            (viewReport report)
+            (Choose "Cancel Import" "Import Anyway")
         , viewMiniControls config isOpen numMsgs
         ]
 
@@ -138,11 +164,11 @@ view config isPaused isOpen numMsgs state =
 -- VIEW MESSAGE
 
 
-viewOverlay : Config msg -> String -> Report -> Buttons -> Node msg
-viewOverlay config title report buttons =
+viewOverlay : Config msg -> String -> List (Node msg) -> Buttons -> Node msg
+viewOverlay config title details buttons =
   div [ class "elm-overlay-message" ]
     [ div [ class "elm-overlay-message-title" ] [ text title ]
-    , div [ class "elm-overlay-message-details" ] (viewReport report)
+    , div [ class "elm-overlay-message-details" ] details
     , map config.wrap <| viewButtons buttons
     ]
 
@@ -219,22 +245,100 @@ viewMention tags blanked =
 
     [tag] ->
       node "li" []
-        [ tag
-        , text (" was " ++ blanked ++ ".")
-        ]
+        [ tag, text (" was " ++ blanked ++ ".") ]
 
     [tag2, tag1] ->
       node "li" []
-        [ tag1
-        , text " and "
-        , tag2
-        , text (" were " ++ blanked ++ ".")
-        ]
+        [ tag1, text " and ", tag2, text (" were " ++ blanked ++ ".") ]
 
     lastTag :: otherTags ->
       node "li" [] <|
         List.intersperse (text ", ") (List.reverse otherTags)
         ++ [ text ", and ", lastTag, text (" were " ++ blanked ++ ".") ]
+
+
+viewBadMetadata : Metadata.Error -> List (Node msg)
+viewBadMetadata {message, problems} =
+  [ node "p" []
+      [ text "The "
+      , viewCode message
+      , text " type of your program cannot be reliably serialized for history files."
+      ]
+  , node "p" [] [ text "Functions cannot be serialized, nor can values that contain functions. This is a problem in these places:" ]
+  , node "ul" [] (List.map viewProblemType problems)
+  , node "p" []
+      [ text goodNews1
+      , a [ href "https://guide.elm-lang.org/types/union_types.html" ] [ text "union types" ]
+      , text ", in your messages. From there, your "
+      , viewCode "update"
+      , text goodNews2
+      ]
+  ]
+
+
+goodNews1 = """
+The good news is that having values like this in your message type is not
+so great in the long run. You are better off using simpler data, like
+"""
+
+
+goodNews2 = """
+function can pattern match on that data and call whatever functions, JSON
+decoders, etc. you need. This makes the code much more explicit and easy to
+follow for other readers (or you in a few months!)
+"""
+
+
+viewProblemType : Metadata.ProblemType -> Node msg
+viewProblemType { name, problems } =
+  node "li" []
+    [ viewCode name
+    , text (" can contain " ++ addCommas (List.map problemToString problems) ++ ".")
+    ]
+
+
+problemToString : Metadata.Problem -> String
+problemToString problem =
+  case problem of
+    Metadata.Function ->
+      "functions"
+
+    Metadata.Decoder ->
+      "JSON decoders"
+
+    Metadata.Task ->
+      "tasks"
+
+    Metadata.Process ->
+      "processes"
+
+    Metadata.Socket ->
+      "web sockets"
+
+    Metadata.Request ->
+      "HTTP requests"
+
+    Metadata.Program ->
+      "programs"
+
+    Metadata.VirtualDom ->
+      "virtual DOM values"
+
+
+addCommas : List String -> String
+addCommas items =
+  case items of
+    [] ->
+      ""
+
+    [item] ->
+      item
+
+    [item1, item2] ->
+      item1 ++ " and " ++ item2
+
+    lastItem :: otherItems ->
+      String.join ", " (otherItems ++ [ " and " ++ lastItem ])
 
 
 

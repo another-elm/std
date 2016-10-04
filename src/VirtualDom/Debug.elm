@@ -45,7 +45,7 @@ type alias Model model msg =
   { history : History model msg
   , state : State model
   , expando : Expando
-  , metadata : Metadata
+  , metadata : Result Metadata.Error Metadata
   , overlay : Overlay.State
   , isDebuggerOpen : Bool
   }
@@ -168,16 +168,29 @@ wrapUpdate userUpdate scrollTask msg model =
             wrapUpdate userUpdate scrollTask (Jump (index + 1)) model
 
     Import ->
-      model ! [ upload ]
+      withGoodMetadata model <| \_ ->
+        model ! [ upload ]
 
     Export ->
-      model ! [ download model.metadata model.history ]
+      withGoodMetadata model <| \metadata ->
+        model ! [ download metadata model.history ]
 
     Upload jsonString ->
-      updateOverlay userUpdate model <| Overlay.assessImport model.metadata jsonString
+      withGoodMetadata model <| \metadata ->
+        case Overlay.assessImport metadata jsonString of
+          Err newOverlay ->
+            { model | overlay = newOverlay } ! []
+
+          Ok rawHistory ->
+            loadNewHistory rawHistory userUpdate model
 
     OverlayMsg overlayMsg ->
-      updateOverlay userUpdate model <| Overlay.update overlayMsg model.overlay
+      case Overlay.close overlayMsg model.overlay of
+        Nothing ->
+          { model | overlay = Overlay.none } ! []
+
+        Just rawHistory ->
+          loadNewHistory rawHistory userUpdate model
 
 
 
@@ -186,7 +199,7 @@ wrapUpdate userUpdate scrollTask msg model =
 
 upload : Cmd (Msg msg)
 upload =
-  Task.perform (always NoOp) Upload Native.Debug.upload
+  Task.perform Upload Native.Debug.upload
 
 
 download : Metadata -> History model msg -> Cmd (Msg msg)
@@ -201,24 +214,31 @@ download metadata history =
         , ("history", History.encode history)
         ]
   in
-    Task.perform (always NoOp) (always NoOp) (Native.Debug.download historyLength json)
+    Task.perform (\_ -> NoOp) (Native.Debug.download historyLength json)
 
 
 
 -- UPDATE OVERLAY
 
 
-updateOverlay : UserUpdate model msg -> Model model msg -> ( Overlay.State, Maybe Encode.Value ) -> ( Model model msg, Cmd (Msg msg) )
-updateOverlay userUpdate model (newOverlay, maybeHistory) =
-  case maybeHistory of
-    Nothing ->
-      { model | overlay = newOverlay } ! []
+withGoodMetadata
+  : Model model msg
+  -> (Metadata -> (Model model msg, Cmd (Msg msg)))
+  -> (Model model msg, Cmd (Msg msg))
+withGoodMetadata model func =
+  case model.metadata of
+    Ok metadata ->
+      func metadata
 
-    Just rawHistory ->
-      loadNewHistory rawHistory userUpdate model
+    Err error ->
+      { model | overlay = Overlay.badMetadata error } ! []
 
 
-loadNewHistory : Encode.Value -> UserUpdate model msg -> Model model msg -> ( Model model msg, Cmd (Msg msg) )
+loadNewHistory
+  : Encode.Value
+  -> UserUpdate model msg
+  -> Model model msg
+  -> ( Model model msg, Cmd (Msg msg) )
 loadNewHistory rawHistory userUpdate model =
   let
     initialUserModel =
@@ -288,7 +308,7 @@ updateUserMsg userUpdate scrollTask userMsg ({ history, state, expando } as mode
 runIf : Bool -> Task Never () -> Cmd (Msg msg)
 runIf bool task =
   if bool then
-    Task.perform (always NoOp) (always NoOp) task
+    Task.perform (always NoOp) task
   else
     Cmd.none
 

@@ -2,6 +2,7 @@ module VirtualDom.Metadata exposing
   ( Metadata
   , check
   , decode, decoder, encode
+  , Error, ProblemType, Problem(..)
   )
 
 
@@ -9,6 +10,7 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing ((:=))
 import Json.Encode as Encode
+import String
 import VirtualDom.Report as Report exposing (Report)
 
 
@@ -52,6 +54,91 @@ type alias Union =
   { args : List String
   , tags : Dict String (List String)
   }
+
+
+
+-- PORTABILITY
+
+
+isPortable : Metadata -> Maybe Error
+isPortable {types} =
+  let
+    badAliases =
+      Dict.foldl collectBadAliases [] types.aliases
+  in
+    case Dict.foldl collectBadUnions badAliases types.unions of
+      [] ->
+        Nothing
+
+      problems ->
+        Just (Error types.message problems)
+
+
+type alias Error =
+  { message : String
+  , problems : List ProblemType
+  }
+
+
+type alias ProblemType =
+  { name : String
+  , problems : List Problem
+  }
+
+
+type Problem
+  = Function
+  | Decoder
+  | Task
+  | Process
+  | Socket
+  | Request
+  | Program
+  | VirtualDom
+
+
+collectBadAliases : String -> Alias -> List ProblemType -> List ProblemType
+collectBadAliases name {tipe} list =
+  case findProblems tipe of
+    [] ->
+      list
+
+    problems ->
+      ProblemType name problems :: list
+
+
+collectBadUnions : String -> Union -> List ProblemType -> List ProblemType
+collectBadUnions name {tags} list =
+  case List.concatMap findProblems (List.concat (Dict.values tags)) of
+    [] ->
+      list
+
+    problems ->
+      ProblemType name problems :: list
+
+
+findProblems : String -> List Problem
+findProblems tipe =
+  List.filterMap (hasProblem tipe) problemTable
+
+
+hasProblem : String -> (Problem, String) -> Maybe Problem
+hasProblem tipe (problem, token) =
+  if String.contains token tipe then Just problem else Nothing
+
+
+problemTable : List (Problem, String)
+problemTable =
+  [ ( Function, "->" )
+  , ( Decoder, "Json.Decode.Decoder" )
+  , ( Task, "Task.Task" )
+  , ( Process, "Process.Id" )
+  , ( Socket, "WebSocket.LowLevel.WebSocket" )
+  , ( Request, "Http.Request" )
+  , ( Program, "Platform.Program" )
+  , ( VirtualDom, "VirtualDom.Node" )
+  , ( VirtualDom, "VirtualDom.Attribute" )
+  ]
 
 
 
@@ -138,14 +225,19 @@ checkTag tag old new changes =
 -- JSON DECODE
 
 
-decode : Encode.Value -> Metadata
+decode : Encode.Value -> Result Error Metadata
 decode value =
   case Decode.decodeValue decoder value of
-    Ok metadata ->
-      metadata
+    Err _ ->
+      Debug.crash "Compiler is generating bad metadata. Report this at <https://github.com/elm-lang/virtual-dom/issues>."
 
-    Err msg ->
-      Debug.crash msg
+    Ok metadata ->
+      case isPortable metadata of
+        Nothing ->
+          Ok metadata
+
+        Just error ->
+          Err error
 
 
 decoder : Decode.Decoder Metadata

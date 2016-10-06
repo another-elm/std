@@ -1,6 +1,6 @@
 module VirtualDom.Debug exposing (wrap, wrapWithFlags)
 
-import Json.Decode as Decode exposing ((:=))
+import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
 import Native.VirtualDom

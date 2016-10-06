@@ -85,9 +85,11 @@ decoder initialModel update =
           jsToElm rawMsg
       in
         (update msg model, add msg model history)
+
+    updateModel rawMsgs =
+      List.foldl addMessage (initialModel, empty initialModel) rawMsgs
   in
-    Decode.customDecoder (Decode.list Decode.value) <| \rawMsgs ->
-      Ok (List.foldl addMessage (initialModel, empty initialModel) rawMsgs)
+    Decode.map updateModel (Decode.list Decode.value)
 
 
 jsToElm : Encode.Value -> a

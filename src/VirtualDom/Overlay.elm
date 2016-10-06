@@ -7,7 +7,7 @@ module VirtualDom.Overlay exposing
   , viewImportExport
   )
 
-import Json.Decode as Decode exposing ((:=))
+import Json.Decode as Decode
 import Json.Encode as Encode
 import String
 import VirtualDom.Helpers exposing (..)
@@ -100,9 +100,9 @@ assessImport metadata jsonString =
 
 uploadDecoder : Decode.Decoder (Metadata, Encode.Value)
 uploadDecoder =
-  Decode.object2 (,)
-    ("metadata" := Metadata.decoder)
-    ("history" := Decode.value)
+  Decode.map2 (,)
+    (Decode.field "metadata" Metadata.decoder)
+    (Decode.field "history" Decode.value)
 
 
 

@@ -8,7 +8,7 @@ module VirtualDom.Metadata exposing
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing ((:=))
+import Json.Decode as Decode
 import Json.Encode as Encode
 import String
 import VirtualDom.Report as Report exposing (Report)
@@ -242,36 +242,37 @@ decode value =
 
 decoder : Decode.Decoder Metadata
 decoder =
-  Decode.object2 Metadata
-    ("versions" := decodeVersions)
-    ("types" := decodeTypes)
+  Decode.map2 Metadata
+    (Decode.field "versions" decodeVersions)
+    (Decode.field "types" decodeTypes)
 
 
 decodeVersions : Decode.Decoder Versions
 decodeVersions =
-  Decode.object1 Versions ("elm" := Decode.string)
+  Decode.map Versions
+    (Decode.field "elm" Decode.string)
 
 
 decodeTypes : Decode.Decoder Types
 decodeTypes =
-  Decode.object3 Types
-    ("message" := Decode.string)
-    ("aliases" := Decode.dict decodeAlias)
-    ("unions" := Decode.dict decodeUnion)
+  Decode.map3 Types
+    (Decode.field "message" Decode.string)
+    (Decode.field "aliases" (Decode.dict decodeAlias))
+    (Decode.field "unions" (Decode.dict decodeUnion))
 
 
 decodeUnion : Decode.Decoder Union
 decodeUnion =
-  Decode.object2 Union
-    ("args" := Decode.list Decode.string)
-    ("tags" := Decode.dict (Decode.list Decode.string))
+  Decode.map2 Union
+    (Decode.field "args" (Decode.list Decode.string))
+    (Decode.field "tags" (Decode.dict (Decode.list Decode.string)))
 
 
 decodeAlias : Decode.Decoder Alias
 decodeAlias =
-  Decode.object2 Alias
-    ("args" := Decode.list Decode.string)
-    ("type" := Decode.string)
+  Decode.map2 Alias
+    (Decode.field "args" (Decode.list Decode.string))
+    (Decode.field "type" (Decode.string))
 
 
 

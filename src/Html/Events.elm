@@ -36,7 +36,7 @@ of events as seen in the [TodoMVC][] example.
 -}
 
 import Html exposing (Attribute)
-import Json.Decode as Json exposing ((:=))
+import Json.Decode as Json
 import VirtualDom
 
 
@@ -266,4 +266,4 @@ helpers here for `onKeyUp`, `onKeyDown`, `onKeyPress`, etc.
 -}
 keyCode : Json.Decoder Int
 keyCode =
-  ("keyCode" := Json.int)
+  Json.field "keyCode" Json.int

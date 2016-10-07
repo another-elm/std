@@ -1,5 +1,5 @@
 module Svg exposing
-  ( text, node, Svg, Attribute
+  ( Svg, Attribute, text, node, map
   , svg, foreignObject
   , circle, ellipse, image, line, path, polygon, polyline, rect, use
   , animate, animateColor, animateMotion, animateTransform, mpath, set
@@ -21,7 +21,7 @@ module Svg exposing
 {-|
 
 # SVG Nodes
-@docs Svg, Attribute, node, text
+@docs Svg, Attribute, text, node, map
 
 # HTML Embedding
 @docs svg, foreignObject
@@ -111,6 +111,13 @@ Warning: not to be confused with `text_` which produces the SVG `<text>` tag!
 text : String -> Svg msg
 text =
   VirtualDom.text
+
+
+{-| Transform the messages produced by some `Svg`.
+-}
+map : (a -> msg) -> Svg a -> Svg msg
+map =
+  VirtualDom.map
 
 
 {-| The root `<svg>` node for any SVG scene. This example shows a scene

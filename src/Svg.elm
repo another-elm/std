@@ -4,7 +4,7 @@ module Svg exposing
   , circle, ellipse, image, line, path, polygon, polyline, rect, use
   , animate, animateColor, animateMotion, animateTransform, mpath, set
   , desc, metadata, title
-  , a, defs, g, marker, mask, missingGlyph, pattern, switch, symbol
+  , a, defs, g, marker, mask, pattern, switch, symbol
   , altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text_
   , tref, tspan
   , font, fontFace, fontFaceFormat, fontFaceName, fontFaceSrc, fontFaceUri
@@ -36,7 +36,7 @@ module Svg exposing
 @docs desc, metadata, title
 
 # Containers
-@docs a, defs, g, marker, mask, missingGlyph, pattern, switch, symbol
+@docs a, defs, g, marker, mask, pattern, switch, symbol
 
 # Text
 @docs altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text_,
@@ -216,12 +216,6 @@ marker =
 mask : List (Attribute msg) -> List (Svg msg) -> Svg msg
 mask =
   node "mask"
-
-
-{-|-}
-missingGlyph : List (Attribute msg) -> List (Svg msg) -> Svg msg
-missingGlyph =
-  node "missingGlyph"
 
 
 {-|-}

@@ -1,7 +1,7 @@
 module Html.Attributes exposing
   ( style
   , class, classList, id, title, hidden
-  , type', value, defaultValue, checked, placeholder, selected
+  , type_, value, defaultValue, checked, placeholder, selected
   , accept, acceptCharset, action, autocomplete, autofocus
   , disabled, enctype, formaction, list, maxlength, minlength, method, multiple
   , name, novalidate, pattern, readonly, required, size, for, form
@@ -36,7 +36,7 @@ Attributes](#custom-attributes) section to learn how to create new helpers.
 @docs class, classList, id, title, hidden
 
 # Inputs
-@docs type', value, defaultValue, checked, placeholder, selected
+@docs type_, value, defaultValue, checked, placeholder, selected
 
 ## Input Helpers
 @docs accept, acceptCharset, action, autocomplete, autofocus,
@@ -520,8 +520,8 @@ srcdoc value =
 {-| Defines the type of a `button`, `input`, `embed`, `object`, `script`,
 `source`, `style`, or `menu`.
 -}
-type' : String -> Attribute msg
-type' value =
+type_ : String -> Attribute msg
+type_ value =
   stringProperty "type" value
 
 

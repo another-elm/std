@@ -8,7 +8,7 @@ module Html exposing
   , ol, ul, li, dl, dt, dd
   , img, iframe, canvas, math
   , form, input, textarea, button, select, option
-  , section, nav, article, aside, header, footer, address, main', body
+  , section, nav, article, aside, header, footer, address, main_, body
   , figure, figcaption
   , table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th
   , fieldset, legend, label, datalist, optgroup, keygen, output, progress, meter
@@ -50,7 +50,7 @@ expect to use frequently will be closer to the top.
 @docs form, input, textarea, button, select, option
 
 ## Sections
-@docs section, nav, article, aside, header, footer, address, main', body
+@docs section, nav, article, aside, header, footer, address, main_, body
 
 ## Figures
 @docs figure, figcaption
@@ -338,8 +338,8 @@ address =
 {-| Defines the main or important content in the document. There is only one
 `main` element in the document.
 -}
-main' : List (Attribute msg) -> List (Html msg) -> Html msg
-main' =
+main_ : List (Attribute msg) -> List (Html msg) -> Html msg
+main_ =
   node "main"
 
 

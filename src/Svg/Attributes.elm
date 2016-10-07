@@ -7,7 +7,7 @@ module Svg.Attributes exposing
   , elevation, end, exponent, externalResourcesRequired, filterRes, filterUnits
   , format, from, fx, fy, g1, g2, glyphName, glyphRef, gradientTransform
   , gradientUnits, hanging, height, horizAdvX, horizOriginX, horizOriginY, id
-  , ideographic, in', in2, intercept, k, k1, k2, k3, k4, kernelMatrix
+  , ideographic, in_, in2, intercept, k, k1, k2, k3, k4, kernelMatrix
   , kernelUnitLength, keyPoints, keySplines, keyTimes, lang, lengthAdjust
   , limitingConeAngle, local, markerHeight, markerUnits, markerWidth
   , maskContentUnits, maskUnits, mathematical, max, media, method, min, mode
@@ -21,7 +21,7 @@ module Svg.Attributes exposing
   , speed, spreadMethod, startOffset, stdDeviation, stemh, stemv, stitchTiles
   , strikethroughPosition, strikethroughThickness, string, style, surfaceScale
   , systemLanguage, tableValues, target, targetX, targetY, textLength, title, to
-  , transform, type', u1, u2, underlinePosition, underlineThickness, unicode
+  , transform, type_, u1, u2, underlinePosition, underlineThickness, unicode
   , unicodeRange, unitsPerEm, vAlphabetic, vHanging, vIdeographic, vMathematical
   , values, version, vertAdvY, vertOriginX, vertOriginY, viewBox, viewTarget
   , width, widths, x, xHeight, x1, x2, xChannelSelector, xlinkActuate
@@ -53,7 +53,7 @@ module Svg.Attributes exposing
   elevation, end, exponent, externalResourcesRequired, filterRes, filterUnits,
   format, from, fx, fy, g1, g2, glyphName, glyphRef, gradientTransform,
   gradientUnits, hanging, height, horizAdvX, horizOriginX, horizOriginY, id,
-  ideographic, in', in2, intercept, k, k1, k2, k3, k4, kernelMatrix,
+  ideographic, in_, in2, intercept, k, k1, k2, k3, k4, kernelMatrix,
   kernelUnitLength, keyPoints, keySplines, keyTimes, lang, lengthAdjust,
   limitingConeAngle, local, markerHeight, markerUnits, markerWidth,
   maskContentUnits, maskUnits, mathematical, max, media, method, min, mode,
@@ -67,7 +67,7 @@ module Svg.Attributes exposing
   speed, spreadMethod, startOffset, stdDeviation, stemh, stemv, stitchTiles,
   strikethroughPosition, strikethroughThickness, string, style, surfaceScale,
   systemLanguage, tableValues, target, targetX, targetY, textLength, title, to,
-  transform, type', u1, u2, underlinePosition, underlineThickness, unicode,
+  transform, type_, u1, u2, underlinePosition, underlineThickness, unicode,
   unicodeRange, unitsPerEm, vAlphabetic, vHanging, vIdeographic, vMathematical,
   values, version, vertAdvY, vertOriginX, vertOriginY, viewBox, viewTarget,
   width, widths, x, xHeight, x1, x2, xChannelSelector, xlinkActuate,
@@ -451,8 +451,8 @@ ideographic =
 
 
 {-|-}
-in' : String -> Attribute msg
-in' =
+in_ : String -> Attribute msg
+in_ =
   attribute "in"
 
 
@@ -1009,8 +1009,8 @@ transform =
 
 
 {-|-}
-type' : String -> Attribute msg
-type' =
+type_ : String -> Attribute msg
+type_ =
   attribute "type"
 
 

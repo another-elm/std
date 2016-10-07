@@ -5,7 +5,7 @@ module Svg exposing
   , animate, animateColor, animateMotion, animateTransform, mpath, set
   , desc, metadata, title
   , a, defs, g, marker, mask, missingGlyph, pattern, switch, symbol
-  , altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text'
+  , altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text_
   , tref, tspan
   , font, fontFace, fontFaceFormat, fontFaceName, fontFaceSrc, fontFaceUri
   , hkern, vkern
@@ -39,7 +39,7 @@ module Svg exposing
 @docs a, defs, g, marker, mask, missingGlyph, pattern, switch, symbol
 
 # Text
-@docs altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text',
+@docs altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text_,
   tref, tspan
 
 # Fonts
@@ -106,7 +106,7 @@ node name =
 
 {-| A simple text node, no tags at all.
 
-Warning: not to be confused with `text'` which produces the SVG `<text>` tag!
+Warning: not to be confused with `text_` which produces the SVG `<text>` tag!
 -}
 text : String -> Svg msg
 text =
@@ -590,8 +590,8 @@ textPath =
 
 
 {-|-}
-text' : List (Attribute msg) -> List (Svg msg) -> Svg msg
-text' =
+text_ : List (Attribute msg) -> List (Svg msg) -> Svg msg
+text_ =
   node "text"
 
 

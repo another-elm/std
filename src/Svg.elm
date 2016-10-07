@@ -7,8 +7,7 @@ module Svg exposing
   , a, defs, g, marker, mask, pattern, switch, symbol
   , altGlyph, altGlyphDef, altGlyphItem, glyph, glyphRef, textPath, text_
   , tref, tspan
-  , font, fontFace, fontFaceFormat, fontFaceName, fontFaceSrc, fontFaceUri
-  , hkern, vkern
+  , font
   , linearGradient, radialGradient, stop
   , feBlend, feColorMatrix, feComponentTransfer, feComposite
   , feConvolveMatrix, feDiffuseLighting, feDisplacementMap, feFlood, feFuncA
@@ -43,8 +42,7 @@ module Svg exposing
   tref, tspan
 
 # Fonts
-@docs font, fontFace, fontFaceFormat, fontFaceName, fontFaceSrc, fontFaceUri,
-  hkern, vkern
+@docs font
 
 # Gradients
 @docs linearGradient, radialGradient, stop
@@ -396,48 +394,6 @@ feTurbulence =
 font : List (Attribute msg) -> List (Svg msg) -> Svg msg
 font =
   node "font"
-
-
-{-|-}
-fontFace : List (Attribute msg) -> List (Svg msg) -> Svg msg
-fontFace =
-  node "fontFace"
-
-
-{-|-}
-fontFaceFormat : List (Attribute msg) -> List (Svg msg) -> Svg msg
-fontFaceFormat =
-  node "fontFaceFormat"
-
-
-{-|-}
-fontFaceName : List (Attribute msg) -> List (Svg msg) -> Svg msg
-fontFaceName =
-  node "fontFaceName"
-
-
-{-|-}
-fontFaceSrc : List (Attribute msg) -> List (Svg msg) -> Svg msg
-fontFaceSrc =
-  node "fontFaceSrc"
-
-
-{-|-}
-fontFaceUri : List (Attribute msg) -> List (Svg msg) -> Svg msg
-fontFaceUri =
-  node "fontFaceUri"
-
-
-{-|-}
-hkern : List (Attribute msg) -> List (Svg msg) -> Svg msg
-hkern =
-  node "hkern"
-
-
-{-|-}
-vkern : List (Attribute msg) -> List (Svg msg) -> Svg msg
-vkern =
-  node "vkern"
 
 
 

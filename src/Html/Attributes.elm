@@ -235,7 +235,7 @@ class name =
 {-| Indicates the relevance of an element. -}
 hidden : Bool -> Attribute msg
 hidden bool =
-  attribute "hidden" (if bool then "true" else "false")
+  boolProperty "hidden" bool
 
 
 {-| Often used with CSS to style a specific element. The value of this
@@ -265,7 +265,7 @@ accesskey char =
 {-| Indicates whether the element's content is editable. -}
 contenteditable : Bool -> Attribute msg
 contenteditable bool =
-  attribute "contentEditable" (if bool then "true" else "false")
+  boolProperty "contentEditable" bool
 
 
 {-| Defines the ID of a `menu` element which will serve as the element's
@@ -502,7 +502,7 @@ sandbox value =
 {-|  Make an `iframe` look like part of the containing document. -}
 seamless : Bool -> Attribute msg
 seamless bool =
-  attribute "seamless" (if bool then "true" else "false")
+  boolProperty "seamless" bool
 
 
 {-| An HTML document that will be displayed as the body of an `iframe`. It will
@@ -609,7 +609,7 @@ autofocus bool =
 -}
 disabled : Bool -> Attribute msg
 disabled bool =
-  attribute "disabled" (if bool then "true" else "false")
+  boolProperty "disabled" bool
 
 
 {-| How `form` data should be encoded when submitted with the POST method.

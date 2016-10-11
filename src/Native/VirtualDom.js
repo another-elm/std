@@ -1498,6 +1498,17 @@ function makeProgram(flagChecker)
 	});
 }
 
+function staticProgram(vNode)
+{
+	var nothing = _elm_lang$core$Native_Utils.Tuple2(null, _elm_lang$core$Platform_Cmd$none);
+	return A2(program, undefined, {
+		init: nothing,
+		view: function() { return vNode; },
+		update: F2(function() { return nothing; }),
+		subscriptions: function() { return _elm_lang$core$Platform_Sub$none; }
+	})();
+}
+
 
 // FLAG CHECKERS
 
@@ -1889,7 +1900,8 @@ return {
 	keyedNode: F3(keyedNode),
 
 	program: program,
-	programWithFlags: programWithFlags
+	programWithFlags: programWithFlags,
+	staticProgram: staticProgram
 };
 
 }();

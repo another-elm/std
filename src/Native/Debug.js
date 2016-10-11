@@ -32,15 +32,27 @@ function download(historyLength, json)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
+		var fileName = 'history-' + historyLength + '.json';
+		var jsonString = JSON.stringify(json);
+		var mime = 'application/json;charset=utf-81';
+		var done = _elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0);
+
+		// for IE10+
+		if (navigator.msSaveBlob)
+		{
+			navigator.msSaveBlob(new Blob([jsonString], {type: mime}), fileName);
+			return callback(done);
+		}
+
+		// for HTML5
 		var element = document.createElement('a');
-		var content = encodeURIComponent(JSON.stringify(json));
-		element.setAttribute('href', 'data:text/json;charset=utf-8,' + content);
-		element.setAttribute('download', 'history-' + historyLength + '.json');
+		element.setAttribute('href', 'data:' + mime + ',' + encodeURIComponent(jsonString));
+		element.setAttribute('download', fileName);
 		element.style.display = 'none';
 		document.body.appendChild(element);
 		element.click();
 		document.body.removeChild(element);
-		callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+		callback(done);
 	});
 }
 

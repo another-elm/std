@@ -8,6 +8,7 @@ var EVENT_KEY = 'EVENT';
 var ATTR_KEY = 'ATTR';
 var ATTR_NS_KEY = 'ATTR_NS';
 
+var localDoc = document;
 
 
 ////////////  VIRTUAL DOM NODES  ////////////
@@ -297,12 +298,12 @@ function render(vNode, eventNode)
 			return domNode;
 
 		case 'text':
-			return document.createTextNode(vNode.text);
+			return localDoc.createTextNode(vNode.text);
 
 		case 'node':
 			var domNode = vNode.namespace
-				? document.createElementNS(vNode.namespace, vNode.tag)
-				: document.createElement(vNode.tag);
+				? localDoc.createElementNS(vNode.namespace, vNode.tag)
+				: localDoc.createElement(vNode.tag);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -317,8 +318,8 @@ function render(vNode, eventNode)
 
 		case 'keyed-node':
 			var domNode = vNode.namespace
-				? document.createElementNS(vNode.namespace, vNode.tag)
-				: document.createElement(vNode.tag);
+				? localDoc.createElementNS(vNode.namespace, vNode.tag)
+				: localDoc.createElement(vNode.tag);
 
 			applyFacts(domNode, eventNode, vNode.facts);
 
@@ -1350,7 +1351,7 @@ function applyPatchReorderEndInsertsHelp(endInserts, patch)
 		return;
 	}
 
-	var frag = document.createDocumentFragment();
+	var frag = localDoc.createDocumentFragment();
 	for (var i = 0; i < endInserts.length; i++)
 	{
 		var insert = endInserts[i];
@@ -1822,19 +1823,24 @@ function makeDebugStepper(initialModel, view, eventNode, parentNode, moduleName,
 		if (!popoutRef.doc)
 		{
 			curr = view(model);
-			domNode = render(curr, eventNode);
-			openDebugWindow(moduleName, popoutRef, eventNode.tagger, domNode);
+			domNode = openDebugWindow(moduleName, popoutRef, curr, eventNode);
 			return;
 		}
+
+		// switch to document of popout
+		localDoc = popoutRef.doc;
 
 		var next = view(model);
 		var patches = diff(curr, next);
 		domNode = applyPatches(domNode, curr, patches, eventNode);
 		curr = next;
+
+		// switch back to normal document
+		localDoc = document;
 	};
 }
 
-function openDebugWindow(moduleName, popoutRef, tagger, domNode)
+function openDebugWindow(moduleName, popoutRef, virtualNode, eventNode)
 {
 	var w = 900;
 	var h = 360;
@@ -1842,26 +1848,29 @@ function openDebugWindow(moduleName, popoutRef, tagger, domNode)
 	var y = screen.height - h;
 	var debugWindow = window.open('', '', 'width=' + w + ',height=' + h + ',left=' + x + ',top=' + y);
 
-	var doc = debugWindow.document;
-	popoutRef.doc = doc;
-	doc.title = 'Debugger - ' + moduleName;
-	doc.body.style.margin = '0';
-	doc.body.style.padding = '0';
-	doc.body.appendChild(domNode);
+	// switch to window document
+	localDoc = debugWindow.document;
 
-	doc.addEventListener('keydown', function(event) {
+	popoutRef.doc = localDoc;
+	localDoc.title = 'Debugger - ' + moduleName;
+	localDoc.body.style.margin = '0';
+	localDoc.body.style.padding = '0';
+	var domNode = render(virtualNode, eventNode);
+	localDoc.body.appendChild(domNode);
+
+	localDoc.addEventListener('keydown', function(event) {
 		if (event.metaKey && event.which === 82)
 		{
 			window.location.reload();
 		}
 		if (event.which === 38)
 		{
-			tagger({ ctor: 'Up' });
+			eventNode.tagger({ ctor: 'Up' });
 			event.preventDefault();
 		}
 		if (event.which === 40)
 		{
-			tagger({ ctor: 'Down' });
+			eventNode.tagger({ ctor: 'Down' });
 			event.preventDefault();
 		}
 	});
@@ -1875,8 +1884,13 @@ function openDebugWindow(moduleName, popoutRef, tagger, domNode)
 	debugWindow.addEventListener('unload', function() {
 		popoutRef.doc = undefined;
 		window.removeEventListener('unload', close);
-		tagger({ ctor: 'Close' });
+		eventNode.tagger({ ctor: 'Close' });
 	});
+
+	// switch back to the normal document
+	localDoc = document;
+
+	return domNode;
 }
 
 

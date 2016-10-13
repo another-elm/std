@@ -456,7 +456,14 @@ viewTiny : Expando -> List (Node msg)
 viewTiny value =
   case value of
     S stringRep ->
-      [ span [red] [text stringRep] ]
+      let
+        str =
+          if String.length stringRep <= 18 then
+            stringRep
+          else
+            String.left 8 stringRep ++ "..." ++ String.right 8 stringRep
+      in
+        [ span [red] [text str] ]
 
     Primitive stringRep ->
       [ span [blue] [text stringRep] ]

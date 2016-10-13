@@ -144,7 +144,7 @@ view config isPaused isOpen numMsgs state =
         [ viewBlocker True config.blocked
         , viewOverlay config
             "Cannot Import History"
-            (viewReport report)
+            (viewReport True report)
             (Accept "Ok")
         ]
 
@@ -152,8 +152,8 @@ view config isPaused isOpen numMsgs state =
         [ viewBlocker True config.blocked
         , viewOverlay config
             "Warning"
-            (viewReport report)
-            (Choose "Cancel Import" "Import Anyway")
+            (viewReport False report)
+            (Choose "Cancel" "Import Anyway")
         ]
 
 
@@ -170,8 +170,8 @@ viewOverlay config title details buttons =
     ]
 
 
-viewReport : Report -> List (Node msg)
-viewReport report =
+viewReport : Bool -> Report -> List (Node msg)
+viewReport isBad report =
   case report of
     Report.CorruptHistory ->
       [ text "Looks like this history file is corrupt. I cannot understand it."
@@ -195,8 +195,22 @@ viewReport report =
       ]
 
     Report.SomethingChanged changes ->
-      [ node "ul" [] (List.map viewChange changes)
+      [ node "p" [] [ text (if isBad then explanationBad else explanationRisky) ]
+      , node "ul" [] (List.map viewChange changes)
       ]
+
+
+explanationBad : String
+explanationBad = """
+The messages in this history do not match the messages handled by your
+program. I noticed changes in the following types:
+"""
+
+explanationRisky : String
+explanationRisky = """
+This history seems old. It will work with this program, but some
+messages have been added since the history was created:
+"""
 
 
 viewCode : String -> Node msg
@@ -209,21 +223,15 @@ viewChange change =
   node "li" [] <|
     case change of
       Report.AliasChange name ->
-        [ node "h1" []
-            [ viewCode name
-            , text " changed."
-            ]
+        [ span [ class "elm-overlay-message-details-type" ] [ viewCode name ]
         ]
 
       Report.UnionChange name { removed, changed, added, argsMatch } ->
-        [ node "h1" []
-            [ viewCode name
-            , text " changed:"
-            ]
+        [ span [ class "elm-overlay-message-details-type" ] [ viewCode name ]
         , node "ul" []
-            [ viewMention removed "removed"
-            , viewMention changed "changed"
-            , viewMention added "added"
+            [ viewMention removed "Removed "
+            , viewMention changed "Changed "
+            , viewMention added "Added "
             ]
         , if argsMatch then
             text ""
@@ -233,23 +241,24 @@ viewChange change =
 
 
 viewMention : List String -> String -> Node msg
-viewMention tags blanked =
+viewMention tags verbed =
   case List.map viewCode (List.reverse tags) of
     [] ->
       text ""
 
     [tag] ->
       node "li" []
-        [ tag, text (" was " ++ blanked ++ ".") ]
+        [ text verbed, tag, text "." ]
 
     [tag2, tag1] ->
       node "li" []
-        [ tag1, text " and ", tag2, text (" were " ++ blanked ++ ".") ]
+        [ text verbed, tag1, text " and ", tag2, text "." ]
 
     lastTag :: otherTags ->
       node "li" [] <|
-        List.intersperse (text ", ") (List.reverse otherTags)
-        ++ [ text ", and ", lastTag, text (" were " ++ blanked ++ ".") ]
+        text verbed
+        :: List.intersperse (text ", ") (List.reverse otherTags)
+        ++ [ text ", and ", lastTag, text "." ]
 
 
 viewBadMetadata : Metadata.Error -> List (Node msg)
@@ -455,7 +464,7 @@ styles =
 }
 
 .elm-blocker-fade {
-  background-color: rgba(200, 200, 200, 0.5);
+  background-color: rgba(200, 200, 200, 0.7);
 }
 
 .elm-mini-controls {
@@ -503,15 +512,28 @@ styles =
 }
 
 .elm-overlay-message-details {
-  padding: 20px;
+  padding: 8px 20px;
   overflow-y: scroll;
   max-height: calc(100% - 180px);
   background-color: rgb(61, 61, 61);
 }
 
-.elm-overlay-message-details h1 {
-  font-weight: normal;
-  font-size: 1.2em;
+.elm-overlay-message-details-type {
+  font-size: 1.5em;
+}
+
+.elm-overlay-message-details ul {
+  list-style-type: none;
+  padding-left: 20px;
+}
+
+.elm-overlay-message-details ul ul {
+  list-style-type: circle;
+  padding-left: 2em;
+}
+
+.elm-overlay-message-details li {
+  margin: 8px 0;
 }
 
 .elm-overlay-message-buttons {
@@ -522,7 +544,6 @@ styles =
 }
 
 .elm-overlay-message-buttons button {
-  margin-left: 20px;
   margin-right: 20px;
 }
 

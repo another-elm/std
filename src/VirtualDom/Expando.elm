@@ -350,10 +350,18 @@ viewDictionaryEntry index (key, value) =
 
 viewRecord : Maybe String -> Bool -> Dict String Expando -> Node Msg
 viewRecord maybeKey isClosed record =
-  div [ leftPad maybeKey ]
-    [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) (viewTinyRecord record))
-    , if isClosed then text "" else viewRecordOpen record
-    ]
+  let
+    (start, middle, end) =
+      if isClosed then
+        ( viewTinyRecord record, text "", text "" )
+      else
+        ( [ text "{" ], viewRecordOpen record, div [VDom.style [("padding-left", "2ch")]] [text "}"] )
+  in
+    div [ leftPad maybeKey ]
+      [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) start)
+      , middle
+      , end
+      ]
 
 
 viewRecordOpen : Dict String Expando -> Node Msg

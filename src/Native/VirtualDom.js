@@ -264,6 +264,19 @@ function equalEvents(a, b)
 }
 
 
+function mapProperty(func, property)
+{
+	if (property.key !== EVENT_KEY)
+	{
+		return property;
+	}
+	return on(
+		property.realKey,
+		property.value.options,
+		A2(_elm_lang$core$Json$map, func, property.value.decoder)
+	);
+}
+
 
 ////////////  RENDER  ////////////
 
@@ -1897,9 +1910,7 @@ function openDebugWindow(moduleName, popoutRef, virtualNode, eventNode)
 return {
 	node: node,
 	text: text,
-
 	custom: custom,
-
 	map: F2(map),
 
 	on: F3(on),
@@ -1907,6 +1918,7 @@ return {
 	property: F2(property),
 	attribute: F2(attribute),
 	attributeNS: F3(attributeNS),
+	mapProperty: F2(mapProperty),
 
 	lazy: F2(lazy),
 	lazy2: F3(lazy2),

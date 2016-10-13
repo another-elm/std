@@ -1,7 +1,7 @@
 module VirtualDom exposing
   ( Node
   , text, node
-  , Property, property, attribute, attributeNS
+  , Property, property, attribute, attributeNS, mapProperty
   , style
   , on, onWithOptions, Options, defaultOptions
   , map
@@ -17,7 +17,7 @@ that expose more helper functions for HTML or SVG.
 @docs Node, text, node
 
 # Declare Properties and Attributes
-@docs Property, property, attribute, attributeNS
+@docs Property, property, attribute, attributeNS, mapProperty
 
 # Styles
 @docs style
@@ -169,6 +169,13 @@ attributes. This is used in some SVG stuff at least.
 attributeNS : String -> String -> String -> Property msg
 attributeNS =
   Native.VirtualDom.attributeNS
+
+
+{-| Transform the messages produced by a `Property`.
+-}
+mapProperty : (a -> b) -> Property a -> Property b
+mapProperty =
+  Native.VirtualDom.mapProperty
 
 
 {-| Specify a list of styles.

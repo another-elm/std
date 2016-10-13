@@ -207,8 +207,12 @@ undone getResult =
 view : Maybe Int -> History model msg -> Node Int
 view maybeIndex { snapshots, recent, numMessages } =
   let
-    index =
-      Maybe.withDefault -1 maybeIndex
+    (index, className) =
+      case maybeIndex of
+        Nothing ->
+          ( -1, "debugger-sidebar-messages" )
+        Just i ->
+          ( i, "debugger-sidebar-messages-paused" )
 
     oldStuff =
       VDom.lazy2 viewSnapshots index snapshots
@@ -216,7 +220,7 @@ view maybeIndex { snapshots, recent, numMessages } =
     newStuff =
       snd <| List.foldl (consMsg index) (numMessages - 1, []) recent.messages
   in
-    VDom.div [ VDom.class "debugger-sidebar-messages" ] (oldStuff :: newStuff)
+    VDom.div [ VDom.class className ] (oldStuff :: newStuff)
 
 
 

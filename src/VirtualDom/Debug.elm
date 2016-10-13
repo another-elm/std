@@ -389,13 +389,14 @@ viewOut { history, state, expando } =
   VDom.div
     [ VDom.id "debugger" ]
     [ styles
-    , viewMessages state history
+    , viewSidebar state history
     , VDom.map ExpandoMsg <|
         VDom.div [ VDom.id "values" ] [ Expando.view Nothing expando ]
     ]
 
 
-viewMessages state history =
+viewSidebar : State model -> History model msg -> Node (Msg msg)
+viewSidebar state history =
   let
     maybeIndex =
       case state of
@@ -411,19 +412,17 @@ viewMessages state history =
       ]
 
 
+playButton : Maybe Int -> Node (Msg msg)
 playButton maybeIndex =
-  VDom.div
-    [ VDom.class "debugger-sidebar-controls"
-    ]
+  VDom.div [ VDom.class "debugger-sidebar-controls" ]
     [ viewResumeButton maybeIndex
-    , VDom.div
-        [ VDom.style [("padding", "4px 0"), ("font-size","0.8em")]
-        ]
+    , VDom.div [ VDom.class "debugger-sidebar-controls-import-export" ]
         [ button Import "Import"
         , VDom.text " / "
         , button Export "Export"
         ]
     ]
+
 
 button msg label =
   VDom.span
@@ -431,6 +430,7 @@ button msg label =
     , VDom.style [("cursor","pointer")]
     ]
     [ VDom.text label ]
+
 
 viewResumeButton maybeIndex =
   case maybeIndex of
@@ -444,7 +444,7 @@ viewResumeButton maybeIndex =
 resumeButton =
   VDom.div
     [ VDom.onClick Resume
-    , VDom.style [("padding", "8px 0"), ("cursor", "pointer")]
+    , VDom.class "debugger-sidebar-controls-resume"
     ]
     [ VDom.text "Resume"
     ]
@@ -469,44 +469,70 @@ body {
 }
 
 #debugger {
-  display: flex;
-  font-family: monospace;
+  width: 100%
   height: 100%;
+  font-family: monospace;
 }
 
 #values {
+  display: block;
+  float: left;
   height: 100%;
-  width: 100%;
+  width: calc(100% - 200px);
   margin: 0;
   overflow: scroll;
   cursor: default;
 }
 
 .debugger-sidebar {
-  background-color: rgb(61, 61, 61);
+  display: block;
+  float: left;
+  width: 200px;
   height: 100%;
-  width: 240px;
-  display: flex;
-  flex-direction: column;
+  background-color: rgb(61, 61, 61);
 }
 
 .debugger-sidebar-controls {
-  background-color: rgb(50, 50, 50);
   width: 100%;
   color: white;
   text-align: center;
+  background-color: rgb(50, 50, 50);
+}
+
+.debugger-sidebar-controls-import-export {
+  width: 100%;
+  height: 24px;
+  line-height: 24px;
+  font-size: 12px;
+}
+
+.debugger-sidebar-controls-resume {
+  width: 100%;
+  height: 30px;
+  line-height: 30px;
+  cursor: pointer;
+}
+
+.debugger-sidebar-controls-resume:hover {
+  background-color: rgb(41, 41, 41);
 }
 
 .debugger-sidebar-messages {
   width: 100%;
   overflow-y: scroll;
-  flex: 1;
+  height: calc(100% - 24px);
+}
+
+.debugger-sidebar-messages-paused {
+  width: 100%;
+  overflow-y: scroll;
+  height: calc(100% - 54px);
 }
 
 .messages-entry {
   cursor: pointer;
   color: white;
-  width: 100%;
+  width: calc(100% - 16px);
   padding: 4px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;

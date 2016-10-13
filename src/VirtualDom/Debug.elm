@@ -480,7 +480,7 @@ body {
   height: 100%;
   width: calc(100% - 200px);
   margin: 0;
-  overflow: scroll;
+  overflow: auto;
   cursor: default;
 }
 
@@ -519,13 +519,13 @@ body {
 
 .debugger-sidebar-messages {
   width: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
   height: calc(100% - 24px);
 }
 
 .debugger-sidebar-messages-paused {
   width: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
   height: calc(100% - 54px);
 }
 

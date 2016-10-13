@@ -257,8 +257,17 @@ lineStarter maybeKey maybeIsClosed description =
         arrow :: span [purple] [text key] :: text " = " :: description
 
 
+makeArrow : String -> Node msg
 makeArrow arrow =
-  span [ VDom.style [("color", "#777"), ("width", "2ch"), ("display", "inline-block")] ] [ text arrow ]
+  span
+    [ VDom.style
+        [ ("color", "#777")
+        , ("padding-left", "2ch")
+        , ("width", "2ch")
+        , ("display", "inline-block")
+        ]
+    ]
+    [ text arrow ]
 
 
 leftPad : Maybe a -> VDom.Property msg
@@ -268,7 +277,7 @@ leftPad maybeKey =
       VDom.style []
 
     Just _ ->
-      VDom.style [("padding-left", "2ch")]
+      VDom.style [("padding-left", "4ch")]
 
 
 red : VDom.Property msg
@@ -355,7 +364,7 @@ viewRecord maybeKey isClosed record =
       if isClosed then
         ( viewTinyRecord record, text "", text "" )
       else
-        ( [ text "{" ], viewRecordOpen record, div [VDom.style [("padding-left", "2ch")]] [text "}"] )
+        ( [ text "{" ], viewRecordOpen record, div [leftPad (Just ())] [text "}"] )
   in
     div [ leftPad maybeKey ]
       [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) start)

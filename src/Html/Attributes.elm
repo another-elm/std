@@ -1,5 +1,5 @@
 module Html.Attributes exposing
-  ( style
+  ( style, property, attribute, map
   , class, classList, id, title, hidden
   , type_, value, defaultValue, checked, placeholder, selected
   , accept, acceptCharset, action, autocomplete, autofocus
@@ -19,7 +19,6 @@ module Html.Attributes exposing
   , itemprop, lang, spellcheck, tabindex
   , challenge, keytype
   , cite, datetime, pubdate, manifest
-  , property, attribute
   )
 
 {-| Helper functions for HTML attributes. They are organized roughly by
@@ -29,8 +28,8 @@ just search the page for `video` if you want video stuff.
 If you cannot find what you are looking for, go to the [Custom
 Attributes](#custom-attributes) section to learn how to create new helpers.
 
-# Special Attributes
-@docs style
+# Primitives
+@docs style, property, attribute, map
 
 # Super Common Attributes
 @docs class, classList, id, title, hidden
@@ -86,29 +85,6 @@ Attributes that can be attached to any HTML tag but are less commonly used.
 # Miscellaneous
 @docs cite, datetime, pubdate, manifest
 
-# Custom Attributes
-
-When using HTML and JS, there are two ways to specify parts of a DOM node.
-
-  1. Attributes &mdash; You can set things in HTML itself. So the `class`
-     in `<div class="greeting"></div>` is called an *attribute*.
-
-  2. Properties &mdash; You can also set things in JS. So the `className`
-     in `div.className = 'greeting'` is called a *property*.
-
-So the `class` attribute corresponds to the `className` property. At first
-glance, perhaps this distinction is defensible, but it gets much crazier.
-*There is not always a one-to-one mapping between attributes and properties!*
-Yes, that is a true fact. Sometimes an attribute exists, but there is no
-corresponding property. Sometimes changing an attribute does not change the
-underlying property. For example, as of this writing the `webkit-playsinline`
-attribute can be used in HTML, but there is no corresponding property!
-
-Pretty much all of the functions in `Html.Attributes` are defined with
-`property` and that is generally the preferred approach.
-
-@docs property, attribute
-
 -}
 
 import Html exposing (Attribute)
@@ -122,7 +98,7 @@ import VirtualDom
 
 
 
--- SPECIAL ATTRIBUTES
+-- PRIMITIVES
 
 
 {-| Specify a list of styles.
@@ -177,18 +153,18 @@ classList list =
 -- CUSTOM ATTRIBUTES
 
 
-{-| Create arbitrary *properties*.
+{-| Create *properties*, like saying `domNode.className = 'greeting'` in
+JavaScript.
 
-    import Json.Encode as Json
+    import Json.Encode as Encode
 
-    greeting : Html
-    greeting =
-        div [ property "className" (Json.string "greeting") ] [
-          text "Hello!"
-        ]
+    class : String -> Attribute msg
+    class name =
+      property "className" (Encode.string name)
 
-Notice that you must give the *property* name, so we use `className` as it
-would be in JavaScript, not `class` as it would appear in HTML.
+Read more about the difference between properties and attributes [here][].
+
+[here]: https://github.com/elm-lang/html/blob/master/properties-vs-attributes.md
 -}
 property : String -> Json.Value -> Attribute msg
 property =
@@ -205,21 +181,27 @@ boolProperty name bool =
   property name (Json.bool bool)
 
 
-{-| Create arbitrary HTML *attributes*. Maps onto JavaScript&rsquo;s
-`setAttribute` function under the hood.
+{-| Create *attributes*, like saying `domNode.setAttribute('class', 'greeting')`
+in JavaScript.
 
-    greeting : Html
-    greeting =
-        div [ attribute "class" "greeting" ] [
-          text "Hello!"
-        ]
+    class : String -> Attribute msg
+    class name =
+      attribute "class" name
 
-Notice that you must give the *attribute* name, so we use `class` as it would
-be in HTML, not `className` as it would appear in JS.
+Read more about the difference between properties and attributes [here][].
+
+[here]: https://github.com/elm-lang/html/blob/master/properties-vs-attributes.md
 -}
 attribute : String -> String -> Attribute msg
 attribute =
   VirtualDom.attribute
+
+
+{-| Transform the messages produced by an `Attribute`.
+-}
+map : (a -> msg) -> Attribute a -> Attribute msg
+map =
+  VirtualDom.mapProperty
 
 
 

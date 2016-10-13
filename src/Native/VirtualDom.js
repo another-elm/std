@@ -1521,8 +1521,11 @@ function makeProgram(flagChecker)
 
 function staticProgram(vNode)
 {
-	var nothing = _elm_lang$core$Native_Utils.Tuple2(null, _elm_lang$core$Platform_Cmd$none);
-	return A2(program, undefined, {
+	var nothing = _elm_lang$core$Native_Utils.Tuple2(
+		_elm_lang$core$Native_Utils.Tuple0,
+		_elm_lang$core$Platform_Cmd$none
+	);
+	return A2(program, _elm_lang$virtual_dom$VirtualDom_Debug$wrap, {
 		init: nothing,
 		view: function() { return vNode; },
 		update: F2(function() { return nothing; }),

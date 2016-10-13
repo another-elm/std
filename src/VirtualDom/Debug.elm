@@ -339,7 +339,7 @@ wrapSubs userSubscriptions {state} =
 
 
 wrapView : (model -> Node msg) -> Model model msg -> Node (Msg msg)
-wrapView userView { state, overlay } =
+wrapView userView { state } =
   let
     currentModel =
       case state of
@@ -348,23 +348,8 @@ wrapView userView { state, overlay } =
 
         Paused _ oldModel _ ->
           oldModel
-
-    userNode =
-      VDom.map UserMsg (userView currentModel)
   in
-    if Overlay.isBlocking overlay then
-      VDom.div [gaussianBlur] [userNode]
-    else
-      userNode
-
-
-gaussianBlur =
-  VDom.style
-    [ ("webkitFilter", "blur(2px)")
-    , ("mozFilter", "blur(2px)")
-    , ("msFilter", "blur(2px)")
-    , ("filter", "blur(2px)")
-    ]
+    VDom.map UserMsg (userView currentModel)
 
 
 

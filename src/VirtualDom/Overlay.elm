@@ -128,35 +128,32 @@ view config isPaused isOpen numMsgs state =
           ]
 
         else
-          [ viewBlocker config.blocked
+          [ viewBlocker False config.blocked
           , viewMiniControls config isOpen numMsgs
           ]
 
       BadMetadata badMetadata ->
-        [ viewOverlay
-            config
+        [ viewBlocker True config.blocked
+        , viewOverlay config
             "Cannot use Import or Export"
             (viewBadMetadata badMetadata)
             (Accept "Ok")
-        , viewMiniControls config isOpen numMsgs
         ]
 
       BadImport report ->
-        [ viewOverlay
-            config
+        [ viewBlocker True config.blocked
+        , viewOverlay config
             "Cannot Import History"
             (viewReport report)
             (Accept "Ok")
-        , viewMiniControls config isOpen numMsgs
         ]
 
       RiskyImport report _ ->
-        [ viewOverlay
-            config
+        [ viewBlocker True config.blocked
+        , viewOverlay config
             "Warning"
             (viewReport report)
             (Choose "Cancel Import" "Import Anyway")
-        , viewMiniControls config isOpen numMsgs
         ]
 
 
@@ -169,7 +166,7 @@ viewOverlay config title details buttons =
   div [ class "elm-overlay-message" ]
     [ div [ class "elm-overlay-message-title" ] [ text title ]
     , div [ class "elm-overlay-message-details" ] details
-    , map config.wrap <| viewButtons buttons
+    , map config.wrap (viewButtons buttons)
     ]
 
 
@@ -213,17 +210,15 @@ viewChange change =
     case change of
       Report.AliasChange name ->
         [ node "h1" []
-            [ text "Type alias "
-            , viewCode name
+            [ viewCode name
             , text " changed."
             ]
         ]
 
       Report.UnionChange name { removed, changed, added, argsMatch } ->
         [ node "h1" []
-            [ text "Type "
-            , viewCode name
-            , text " has changed."
+            [ viewCode name
+            , text " changed:"
             ]
         , node "ul" []
             [ viewMention removed "removed"
@@ -409,13 +404,19 @@ button msg label =
 -- BLOCKER
 
 
-viewBlocker : msg -> Node msg
-viewBlocker blockedMsg =
+viewBlocker : Bool -> msg -> Node msg
+viewBlocker fade blockedMsg =
   let
     block name =
       on name (Decode.succeed blockedMsg)
+
+    someAttrs =
+      class "elm-blocker" :: List.map block tonsOfEvents
+
+    allAttrs =
+      if fade then class "elm-blocker-fade" :: someAttrs else someAttrs
   in
-    div (class "elm-blocker" :: List.map block tonsOfEvents) []
+    div allAttrs []
 
 
 tonsOfEvents : List String
@@ -453,6 +454,10 @@ styles =
   pointer-events: auto;
 }
 
+.elm-blocker-fade {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+
 .elm-mini-controls {
   position: fixed;
   bottom: 0;
@@ -468,7 +473,7 @@ styles =
   padding: 6px;
   cursor: pointer;
   text-align: center;
-  min-width: 22ch;
+  min-width: 24ch;
 }
 
 .elm-mini-controls-import-export {
@@ -479,25 +484,29 @@ styles =
 }
 
 .elm-overlay-message {
-  display: flex;
-  flex-direction: column;
-  max-height: 70%;
+  position: absolute;
   width: 600px;
-  margin: 0 auto;
-  font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  height: 100%;
+  margin-left: calc(50% - 300px);
   color: white;
-  background-color: rgb(61, 61, 61);
+  font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   pointer-events: auto;
 }
 
 .elm-overlay-message-title {
-  font-size: 2em;
-  padding: 20px;
+  font-size: 36px;
+  height: 80px;
   background-color: rgb(50, 50, 50);
+  padding-left: 22px;
+  vertical-align: middle;
+  line-height: 80px;
 }
 
 .elm-overlay-message-details {
-  margin: 20px;
+  padding: 20px;
+  overflow-y: scroll;
+  max-height: calc(100% - 180px);
+  background-color: rgb(61, 61, 61);
 }
 
 .elm-overlay-message-details h1 {
@@ -506,8 +515,15 @@ styles =
 }
 
 .elm-overlay-message-buttons {
-  padding: 20px;
+  height: 60px;
+  line-height: 60px;
+  text-align: right;
   background-color: rgb(50, 50, 50);
+}
+
+.elm-overlay-message-buttons button {
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 """ ]

@@ -528,25 +528,27 @@ viewExtraTiny : Expando -> List (Node msg)
 viewExtraTiny value =
   case value of
     Record _ record ->
-      viewExtraTinyRecord 4 "{" (Dict.keys record)
+      viewExtraTinyRecord 0 "{" (Dict.keys record)
 
     _ ->
       viewTiny value
 
 
 viewExtraTinyRecord : Int -> String -> List String -> List (Node msg)
-viewExtraTinyRecord n starter entries =
+viewExtraTinyRecord length starter entries =
   case entries of
     [] ->
       [ text "}" ]
 
     field :: rest ->
-      if n == 0 then
-        [ text "…}" ]
+      let
+        nextLength =
+          length + String.length field + 1
+      in
+        if nextLength > 18 then
+          [ text "…}" ]
 
-      else
-        text starter
-        :: span [purple] [text field]
-        :: viewExtraTinyRecord (n - 1) "," rest
-
-
+        else
+          text starter
+          :: span [purple] [text field]
+          :: viewExtraTinyRecord nextLength "," rest

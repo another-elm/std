@@ -111,7 +111,7 @@ uploadDecoder =
 
 
 type alias Config msg =
-  { blocked : msg
+  { resume : msg
   , open : msg
   , importHistory : msg
   , exportHistory : msg
@@ -125,21 +125,28 @@ type Block = Normal | Pause | Message
 view : Config msg -> Bool -> Bool -> Int -> State -> ( Block, Node msg )
 view config isPaused isOpen numMsgs state =
   let
-    (block, node) =
+    (block, nodes) =
       viewHelp config isPaused isOpen numMsgs state
   in
     ( block
-    , div [ class "elm-overlay" ] [ styles, node ]
+    , div [ class "elm-overlay" ] (styles :: nodes)
     )
 
 
-viewHelp : Config msg -> Bool -> Bool -> Int -> State -> ( Block, Node msg )
+viewHelp : Config msg -> Bool -> Bool -> Int -> State -> ( Block, List (Node msg) )
 viewHelp config isPaused isOpen numMsgs state =
   case state of
     None ->
-      ( if isPaused then Pause else Normal
-      , viewMiniControls config isOpen numMsgs
-      )
+      let
+        miniControls =
+          if isOpen then [] else [ viewMiniControls config numMsgs ]
+      in
+        ( if isPaused then Pause else Normal
+        , if isPaused && not isOpen then
+            viewResume config :: miniControls
+          else
+            miniControls
+        )
 
     BadMetadata badMetadata ->
       viewMessage config
@@ -160,18 +167,24 @@ viewHelp config isPaused isOpen numMsgs state =
         (Choose "Cancel" "Import Anyway")
 
 
+viewResume config =
+  div [ class "elm-overlay-resume", onClick config.resume ]
+    [ div [class "elm-overlay-resume-words"] [text "Click to Resume"] ]
+
+
 
 -- VIEW MESSAGE
 
 
-viewMessage : Config msg -> String -> List (Node msg) -> Buttons -> ( Block, Node msg )
+viewMessage : Config msg -> String -> List (Node msg) -> Buttons -> ( Block, List (Node msg) )
 viewMessage config title details buttons =
   ( Message
-  , div [ class "elm-overlay-message" ]
-      [ div [ class "elm-overlay-message-title" ] [ text title ]
-      , div [ class "elm-overlay-message-details" ] details
-      , map config.wrap (viewButtons buttons)
-      ]
+  , [ div [ class "elm-overlay-message" ]
+        [ div [ class "elm-overlay-message-title" ] [ text title ]
+        , div [ class "elm-overlay-message-details" ] details
+        , map config.wrap (viewButtons buttons)
+        ]
+    ]
   )
 
 
@@ -377,26 +390,22 @@ viewButtons buttons =
 -- VIEW MINI CONTROLS
 
 
-viewMiniControls : Config msg -> Bool -> Int -> Node msg
-viewMiniControls config isOpen numMsgs =
-  if isOpen then
-    text ""
-
-  else
-    div
-      [ class "elm-mini-controls"
-      ]
-      [ div
-          [ onClick config.open
-          , class "elm-mini-controls-button"
-          ]
-          [ text ("Explore History (" ++ toString numMsgs ++ ")")
-          ]
-      , viewImportExport
-          [class "elm-mini-controls-import-export"]
-          config.importHistory
-          config.exportHistory
-      ]
+viewMiniControls : Config msg -> Int -> Node msg
+viewMiniControls config numMsgs =
+  div
+    [ class "elm-mini-controls"
+    ]
+    [ div
+        [ onClick config.open
+        , class "elm-mini-controls-button"
+        ]
+        [ text ("Explore History (" ++ toString numMsgs ++ ")")
+        ]
+    , viewImportExport
+        [class "elm-mini-controls-import-export"]
+        config.importHistory
+        config.exportHistory
+    ]
 
 
 viewImportExport : List (Property msg) -> msg -> msg -> Node msg
@@ -428,7 +437,27 @@ styles =
   left: 0;
   width: 100%;
   height: 100%;
+  color: white;
   pointer-events: none;
+  font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+}
+
+.elm-overlay-resume {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  text-align: center;
+  pointer-events: auto;
+  background-color: rgba(200, 200, 200, 0.7);
+}
+
+.elm-overlay-resume-words {
+  position: absolute;
+  top: calc(50% - 40px);
+  font-size: 80px;
+  line-height: 80px;
+  height: 80px;
+  width: 100%;
 }
 
 .elm-mini-controls {
@@ -436,7 +465,6 @@ styles =
   bottom: 0;
   right: 6px;
   border-radius: 4px;
-  color: white;
   background-color: rgb(61, 61, 61);
   font-family: monospace;
   pointer-events: auto;
@@ -462,9 +490,7 @@ styles =
   height: 100%;
   padding-left: calc(50% - 300px);
   padding-right: calc(50% - 300px);
-  color: white;
   background-color: rgba(200, 200, 200, 0.7);
-  font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   pointer-events: auto;
 }
 

@@ -372,7 +372,7 @@ viewIn { history, state, overlay, isDebuggerOpen } =
 
 overlayConfig : Overlay.Config (Msg msg)
 overlayConfig =
-  { blocked = NoOp
+  { resume = Resume
   , open = Open
   , importHistory = Import
   , exportHistory = Export

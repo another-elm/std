@@ -139,7 +139,7 @@ function init(value)
 
 	if (value instanceof Date)
 	{
-		return '<' + v.toString() + '>';
+		return '<' + value.toString() + '>';
 	}
 
 	if (type === 'object' && 'ctor' in value)

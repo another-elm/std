@@ -3,6 +3,7 @@ module VirtualDom.Overlay exposing
   , Msg, close, assessImport
   , isBlocking
   , Config
+  , Block
   , view
   , viewImportExport
   )
@@ -118,56 +119,60 @@ type alias Config msg =
   }
 
 
-view : Config msg -> Bool -> Bool -> Int -> State -> Node msg
+type Block = Normal | Pause | Message
+
+
+view : Config msg -> Bool -> Bool -> Int -> State -> ( Block, Node msg )
 view config isPaused isOpen numMsgs state =
-  div [ class "elm-overlay" ] <| (::) styles <|
-    case state of
-      None ->
-        if not isPaused then
-          [ viewMiniControls config isOpen numMsgs
-          ]
+  let
+    (block, node) =
+      viewHelp config isPaused isOpen numMsgs state
+  in
+    ( block
+    , div [ class "elm-overlay" ] [ styles, node ]
+    )
 
-        else
-          [ viewBlocker False config.blocked
-          , viewMiniControls config isOpen numMsgs
-          ]
 
-      BadMetadata badMetadata ->
-        [ viewBlocker True config.blocked
-        , viewOverlay config
-            "Cannot use Import or Export"
-            (viewBadMetadata badMetadata)
-            (Accept "Ok")
-        ]
+viewHelp : Config msg -> Bool -> Bool -> Int -> State -> ( Block, Node msg )
+viewHelp config isPaused isOpen numMsgs state =
+  case state of
+    None ->
+      ( if isPaused then Pause else Normal
+      , viewMiniControls config isOpen numMsgs
+      )
 
-      BadImport report ->
-        [ viewBlocker True config.blocked
-        , viewOverlay config
-            "Cannot Import History"
-            (viewReport True report)
-            (Accept "Ok")
-        ]
+    BadMetadata badMetadata ->
+      viewMessage config
+        "Cannot use Import or Export"
+        (viewBadMetadata badMetadata)
+        (Accept "Ok")
 
-      RiskyImport report _ ->
-        [ viewBlocker True config.blocked
-        , viewOverlay config
-            "Warning"
-            (viewReport False report)
-            (Choose "Cancel" "Import Anyway")
-        ]
+    BadImport report ->
+      viewMessage config
+        "Cannot Import History"
+        (viewReport True report)
+        (Accept "Ok")
+
+    RiskyImport report _ ->
+      viewMessage config
+        "Warning"
+        (viewReport False report)
+        (Choose "Cancel" "Import Anyway")
 
 
 
 -- VIEW MESSAGE
 
 
-viewOverlay : Config msg -> String -> List (Node msg) -> Buttons -> Node msg
-viewOverlay config title details buttons =
-  div [ class "elm-overlay-message" ]
-    [ div [ class "elm-overlay-message-title" ] [ text title ]
-    , div [ class "elm-overlay-message-details" ] details
-    , map config.wrap (viewButtons buttons)
-    ]
+viewMessage : Config msg -> String -> List (Node msg) -> Buttons -> ( Block, Node msg )
+viewMessage config title details buttons =
+  ( Message
+  , div [ class "elm-overlay-message" ]
+      [ div [ class "elm-overlay-message-title" ] [ text title ]
+      , div [ class "elm-overlay-message-details" ] details
+      , map config.wrap (viewButtons buttons)
+      ]
+  )
 
 
 viewReport : Bool -> Report -> List (Node msg)
@@ -410,36 +415,6 @@ button msg label =
 
 
 
--- BLOCKER
-
-
-viewBlocker : Bool -> msg -> Node msg
-viewBlocker fade blockedMsg =
-  let
-    block name =
-      on name (Decode.succeed blockedMsg)
-
-    someAttrs =
-      class "elm-blocker" :: List.map block tonsOfEvents
-
-    allAttrs =
-      if fade then class "elm-blocker-fade" :: someAttrs else someAttrs
-  in
-    div allAttrs []
-
-
-tonsOfEvents : List String
-tonsOfEvents =
-  [ "click", "dblclick", "mousemove"
-  , "mouseup", "mousedown", "mouseenter", "mouseleave"
-  , "touchstart", "touchend", "touchcancel", "touchmove"
-  , "pointerdown", "pointerup", "pointerover", "pointerout"
-  , "pointerenter", "pointerleave", "pointermove", "pointercancel"
-  , "scroll"
-  ]
-
-
-
 -- STYLE
 
 
@@ -454,17 +429,6 @@ styles =
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.elm-blocker {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  pointer-events: auto;
-}
-
-.elm-blocker-fade {
-  background-color: rgba(200, 200, 200, 0.7);
 }
 
 .elm-mini-controls {
@@ -496,8 +460,10 @@ styles =
   position: absolute;
   width: 600px;
   height: 100%;
-  margin-left: calc(50% - 300px);
+  padding-left: calc(50% - 300px);
+  padding-right: calc(50% - 300px);
   color: white;
+  background-color: rgba(200, 200, 200, 0.7);
   font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   pointer-events: auto;
 }
@@ -513,8 +479,8 @@ styles =
 
 .elm-overlay-message-details {
   padding: 8px 20px;
-  overflow-y: scroll;
-  max-height: calc(100% - 180px);
+  overflow-y: auto;
+  max-height: calc(100% - 156px);
   background-color: rgb(61, 61, 61);
 }
 
@@ -528,7 +494,7 @@ styles =
 }
 
 .elm-overlay-message-details ul ul {
-  list-style-type: circle;
+  list-style-type: disc;
   padding-left: 2em;
 }
 

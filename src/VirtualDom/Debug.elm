@@ -356,7 +356,7 @@ wrapView userView { state } =
 -- SMALL DEBUG VIEW
 
 
-viewIn : Model model msg -> Node (Msg msg)
+viewIn : Model model msg -> ( Overlay.Block, Node (Msg msg) )
 viewIn { history, state, overlay, isDebuggerOpen } =
   let
     isPaused =

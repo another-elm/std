@@ -362,7 +362,7 @@ viewRecord maybeKey isClosed record =
   let
     (start, middle, end) =
       if isClosed then
-        ( viewTinyRecord record, text "", text "" )
+        ( snd (viewTinyRecord record), text "", text "" )
       else
         ( [ text "{" ], viewRecordOpen record, div [leftPad (Just ())] [text "}"] )
   in
@@ -391,7 +391,7 @@ viewConstructor : Maybe String -> Maybe String -> Bool -> List Expando -> Node M
 viewConstructor maybeKey maybeName isClosed valueList =
   let
     tinyArgs =
-      List.map viewExtraTiny valueList
+      List.map (snd << viewExtraTiny) valueList
 
     description =
       case (maybeName, tinyArgs) of
@@ -469,71 +469,110 @@ viewConstructorEntry index value =
 -- TINY VIEW
 
 
-viewTiny : Expando -> List (Node msg)
+viewTiny : Expando -> ( Int, List (Node msg) )
 viewTiny value =
   case value of
     S stringRep ->
       let
         str =
-          if String.length stringRep <= 18 then
-            stringRep
-          else
-            String.left 8 stringRep ++ "..." ++ String.right 8 stringRep
+          elideMiddle stringRep
       in
-        [ span [red] [text str] ]
+        ( String.length str
+        , [ span [red] [text str] ]
+        )
 
     Primitive stringRep ->
-      [ span [blue] [text stringRep] ]
+      ( String.length stringRep
+      , [ span [blue] [text stringRep] ]
+      )
 
     Sequence seqType _ valueList ->
-      [ text (seqTypeToString (List.length valueList) seqType) ]
+      viewTinyHelp <|
+        seqTypeToString (List.length valueList) seqType
 
     Dictionary _ keyValuePairs ->
-      [ text ("Dict(" ++ toString (List.length keyValuePairs) ++ ")") ]
+      viewTinyHelp <|
+        "Dict(" ++ toString (List.length keyValuePairs) ++ ")"
 
     Record _ record ->
       viewTinyRecord record
 
     Constructor maybeName _ [] ->
-      [ text (Maybe.withDefault "Unit" maybeName) ]
+      viewTinyHelp <|
+        Maybe.withDefault "Unit" maybeName
 
     Constructor maybeName _ valueList ->
-      case maybeName of
-        Nothing ->
-          [ text ("Tuple(" ++ toString (List.length valueList) ++ ")") ]
+      viewTinyHelp <|
+        case maybeName of
+          Nothing ->
+            "Tuple(" ++ toString (List.length valueList) ++ ")"
 
-        Just name ->
-          [ text (name ++ " …") ]
+          Just name ->
+            name ++ " …"
 
 
-viewTinyRecord : Dict String Expando -> List (Node msg)
-viewTinyRecord record =
-  if Dict.isEmpty record then
-    [ text "{}" ]
+viewTinyHelp : String -> ( Int, List (Node msg) )
+viewTinyHelp str =
+  ( String.length str, [text str] )
+
+
+elideMiddle : String -> String
+elideMiddle str =
+  if String.length str <= 18 then
+    str
 
   else
-    viewTinyRecordHelp 4 "{ " (Dict.toList record)
+    String.left 8 str ++ "..." ++ String.right 8 str
 
 
-viewTinyRecordHelp : Int -> String -> List (String, Expando) -> List (Node msg)
-viewTinyRecordHelp n starter entries =
+
+-- TINY RECORDS
+
+
+viewTinyRecord : Dict String Expando -> ( Int, List (Node msg) )
+viewTinyRecord record =
+  if Dict.isEmpty record then
+    ( 2, [text "{}"] )
+
+  else
+    viewTinyRecordHelp 0 "{ " (Dict.toList record)
+
+
+viewTinyRecordHelp : Int -> String -> List (String, Expando) -> ( Int, List (Node msg) )
+viewTinyRecordHelp length starter entries =
   case entries of
     [] ->
-      [ text " }" ]
+      ( length + 2, [ text " }" ] )
 
     (field, value) :: rest ->
-      if n == 0 then
-        [ text ", … }" ]
+      let
+        fieldLen =
+          String.length field
 
-      else
-        text starter
-        :: span [purple] [text field]
-        :: text " = "
-        :: span [] (viewExtraTiny value)
-        :: viewTinyRecordHelp (n - 1) ", " rest
+        (valueLen, valueNodes) =
+          viewExtraTiny value
+
+        newLength =
+          length + fieldLen + valueLen + 5
+      in
+        if newLength > 60 then
+          ( length + 4, [text ", … }"] )
+
+        else
+          let
+            ( finalLength, otherNodes ) =
+              viewTinyRecordHelp newLength ", " rest
+          in
+            ( finalLength
+            , text starter
+              :: span [purple] [text field]
+              :: text " = "
+              :: span [] valueNodes
+              :: otherNodes
+            )
 
 
-viewExtraTiny : Expando -> List (Node msg)
+viewExtraTiny : Expando -> ( Int, List (Node msg) )
 viewExtraTiny value =
   case value of
     Record _ record ->
@@ -543,11 +582,11 @@ viewExtraTiny value =
       viewTiny value
 
 
-viewExtraTinyRecord : Int -> String -> List String -> List (Node msg)
+viewExtraTinyRecord : Int -> String -> List String -> ( Int, List (Node msg) )
 viewExtraTinyRecord length starter entries =
   case entries of
     [] ->
-      [ text "}" ]
+      ( length + 1, [text "}"] )
 
     field :: rest ->
       let
@@ -555,9 +594,13 @@ viewExtraTinyRecord length starter entries =
           length + String.length field + 1
       in
         if nextLength > 18 then
-          [ text "…}" ]
+          ( length + 2, [text "…}"])
 
         else
-          text starter
-          :: span [purple] [text field]
-          :: viewExtraTinyRecord nextLength "," rest
+          let
+            (finalLength, otherNodes) =
+              viewExtraTinyRecord nextLength "," rest
+          in
+            ( finalLength
+            , text starter :: span [purple] [text field] :: otherNodes
+            )

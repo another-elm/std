@@ -282,5 +282,6 @@ viewMessage currentIndex index msg =
       [ VDom.class className
       , VDom.on "click" (Decode.succeed index)
       ]
-      [ VDom.text (Native.Debug.messageToString msg)
+      [ VDom.span [VDom.class "messages-entry-content"] [ VDom.text (Native.Debug.messageToString msg) ]
+      , VDom.span [VDom.class "messages-entry-index"] [ VDom.text (toString index) ]
       ]

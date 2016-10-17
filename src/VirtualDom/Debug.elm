@@ -478,7 +478,7 @@ body {
   display: block;
   float: left;
   height: 100%;
-  width: calc(100% - 200px);
+  width: calc(100% - 30ch);
   margin: 0;
   overflow: auto;
   cursor: default;
@@ -487,14 +487,14 @@ body {
 .debugger-sidebar {
   display: block;
   float: left;
-  width: 200px;
+  width: 30ch;
   height: 100%;
+  color: white;
   background-color: rgb(61, 61, 61);
 }
 
 .debugger-sidebar-controls {
   width: 100%;
-  color: white;
   text-align: center;
   background-color: rgb(50, 50, 50);
 }
@@ -531,12 +531,7 @@ body {
 
 .messages-entry {
   cursor: pointer;
-  color: white;
-  width: calc(100% - 16px);
-  padding: 4px 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
+  width: 100%;
 }
 
 .messages-entry:hover {
@@ -546,4 +541,27 @@ body {
 .messages-entry-selected, .messages-entry-selected:hover {
   background-color: rgb(10, 10, 10);
 }
+
+.messages-entry-content {
+  width: 23ch;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 1ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.messages-entry-index {
+  color: #666;
+  width: 5ch;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-right: 1ch;
+  text-align: right;
+  display: block;
+  float: right;
+}
+
 """ ]

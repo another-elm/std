@@ -285,66 +285,6 @@ view maybeKey expando =
       viewConstructor maybeKey maybeName isClosed valueList
 
 
-lineStarter : Maybe String -> Maybe Bool -> List (Node msg) -> List (Node msg)
-lineStarter maybeKey maybeIsClosed description =
-  let
-    arrow =
-      case maybeIsClosed of
-        Nothing ->
-          makeArrow ""
-
-        Just True ->
-          makeArrow "▸"
-
-        Just False ->
-          makeArrow "▾"
-  in
-    case maybeKey of
-      Nothing ->
-        arrow :: description
-
-      Just key ->
-        arrow :: span [purple] [text key] :: text " = " :: description
-
-
-makeArrow : String -> Node msg
-makeArrow arrow =
-  span
-    [ VDom.style
-        [ ("color", "#777")
-        , ("padding-left", "2ch")
-        , ("width", "2ch")
-        , ("display", "inline-block")
-        ]
-    ]
-    [ text arrow ]
-
-
-leftPad : Maybe a -> VDom.Property msg
-leftPad maybeKey =
-  case maybeKey of
-    Nothing ->
-      VDom.style []
-
-    Just _ ->
-      VDom.style [("padding-left", "4ch")]
-
-
-red : VDom.Property msg
-red =
-  VDom.style [("color", "rgb(196, 26, 22)")]
-
-
-blue : VDom.Property msg
-blue =
-  VDom.style [("color", "rgb(28, 0, 207)")]
-
-
-purple : VDom.Property msg
-purple =
-  VDom.style [("color", "rgb(136, 19, 145)")]
-
-
 
 -- VIEW SEQUENCE
 
@@ -516,7 +456,7 @@ viewConstructorEntry index value =
 
 
 
--- TINY VIEW
+-- VIEW TINY
 
 
 viewTiny : Expando -> ( Int, List (Node msg) )
@@ -576,7 +516,7 @@ elideMiddle str =
 
 
 
--- TINY RECORDS
+-- VIEW TINY RECORDS
 
 
 viewTinyRecord : Dict String Expando -> ( Int, List (Node msg) )
@@ -654,3 +594,67 @@ viewExtraTinyRecord length starter entries =
             ( finalLength
             , text starter :: span [purple] [text field] :: otherNodes
             )
+
+
+
+-- VIEW HELPERS
+
+
+lineStarter : Maybe String -> Maybe Bool -> List (Node msg) -> List (Node msg)
+lineStarter maybeKey maybeIsClosed description =
+  let
+    arrow =
+      case maybeIsClosed of
+        Nothing ->
+          makeArrow ""
+
+        Just True ->
+          makeArrow "▸"
+
+        Just False ->
+          makeArrow "▾"
+  in
+    case maybeKey of
+      Nothing ->
+        arrow :: description
+
+      Just key ->
+        arrow :: span [purple] [text key] :: text " = " :: description
+
+
+makeArrow : String -> Node msg
+makeArrow arrow =
+  span
+    [ VDom.style
+        [ ("color", "#777")
+        , ("padding-left", "2ch")
+        , ("width", "2ch")
+        , ("display", "inline-block")
+        ]
+    ]
+    [ text arrow ]
+
+
+leftPad : Maybe a -> VDom.Property msg
+leftPad maybeKey =
+  case maybeKey of
+    Nothing ->
+      VDom.style []
+
+    Just _ ->
+      VDom.style [("padding-left", "4ch")]
+
+
+red : VDom.Property msg
+red =
+  VDom.style [("color", "rgb(196, 26, 22)")]
+
+
+blue : VDom.Property msg
+blue =
+  VDom.style [("color", "rgb(28, 0, 207)")]
+
+
+purple : VDom.Property msg
+purple =
+  VDom.style [("color", "rgb(136, 19, 145)")]

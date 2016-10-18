@@ -43,14 +43,64 @@ seqTypeToString n seqType =
       "Array(" ++ toString n ++ ")"
 
 
+
+-- INITIALIZE
+
+
 init : a -> Expando
-init =
-  Native.Debug.init
+init value =
+  initHelp True (Native.Debug.init value)
+
+
+initHelp : Bool -> Expando -> Expando
+initHelp isOuter expando =
+  case expando of
+    S _ ->
+      expando
+
+    Primitive _ ->
+      expando
+
+    Sequence seqType isClosed items ->
+      if isOuter then
+        Sequence seqType False (List.map (initHelp False) items)
+      else if List.length items <= 8 then
+        Sequence seqType False items
+      else
+        expando
+
+    Dictionary isClosed keyValuePairs ->
+      if isOuter then
+        Dictionary False (List.map (\(k,v) -> (k, initHelp False v)) keyValuePairs)
+      else if List.length keyValuePairs <= 8 then
+        Dictionary False keyValuePairs
+      else
+        expando
+
+    Record isClosed entries ->
+      if isOuter then
+        Record False (Dict.map (\_ v -> initHelp False v) entries)
+      else if Dict.size entries <= 4 then
+        Record False entries
+      else
+        expando
+
+    Constructor maybeName isClosed args ->
+      if isOuter then
+        Constructor maybeName False (List.map (initHelp False) args)
+      else if List.length args <= 4 then
+        Constructor maybeName False args
+      else
+        expando
+
+
+
+-- PRESERVE OLD EXPANDO STATE (open/closed)
 
 
 merge : a -> Expando -> Expando
 merge value expando =
-  mergeHelp expando (init value)
+  mergeHelp expando (Native.Debug.init value)
 
 
 mergeHelp : Expando -> Expando -> Expando

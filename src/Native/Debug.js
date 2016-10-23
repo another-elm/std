@@ -139,7 +139,7 @@ function init(value)
 
 	if (value instanceof Date)
 	{
-		return '<' + value.toString() + '>';
+		return primitive('<' + value.toString() + '>');
 	}
 
 	if (type === 'object' && 'ctor' in value)
@@ -188,7 +188,7 @@ function init(value)
 		var ctorStarter = value.ctor.substring(0, 5);
 		if (ctorStarter === '_Task')
 		{
-			return '<task>'
+			return primitive('<task>');
 		}
 
 		if (ctor === '<decoder>')

@@ -142,6 +142,11 @@ function init(value)
 		return primitive('<' + value.toString() + '>');
 	}
 
+	if (value === null)
+	{
+		return primitive('XXX');
+	}
+
 	if (type === 'object' && 'ctor' in value)
 	{
 		var ctor = value.ctor;

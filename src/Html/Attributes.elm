@@ -90,6 +90,7 @@ Attributes that can be attached to any HTML tag but are less commonly used.
 import Html exposing (Attribute)
 import Json.Encode as Json
 import String
+import Tuple
 import VirtualDom
 
 
@@ -143,7 +144,7 @@ is paired with.
 classList : List (String, Bool) -> Attribute msg
 classList list =
   list
-    |> List.filter snd
+    |> List.filter Tuple.second
     |> List.map fst
     |> String.join " "
     |> class

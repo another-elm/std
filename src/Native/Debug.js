@@ -32,9 +32,9 @@ function download(historyLength, json)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
-		var fileName = 'history-' + historyLength + '.json';
+		var fileName = 'history-' + historyLength + '.txt';
 		var jsonString = JSON.stringify(json);
-		var mime = 'application/json;charset=utf-81';
+		var mime = 'text/plain;charset=utf-8';
 		var done = _elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0);
 
 		// for IE10+

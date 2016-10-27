@@ -145,7 +145,7 @@ classList : List (String, Bool) -> Attribute msg
 classList list =
   list
     |> List.filter Tuple.second
-    |> List.map fst
+    |> List.map Tuple.first
     |> String.join " "
     |> class
 

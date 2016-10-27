@@ -15,6 +15,7 @@ import Array exposing (Array)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
+import Tuple
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.Metadata as Metadata
 
@@ -184,10 +185,10 @@ getHelp update msg getResult =
 
     Stepping n model ->
       if n == 0 then
-        Done msg (fst (update msg model))
+        Done msg (Tuple.first (update msg model))
 
       else
-        Stepping (n - 1) (fst (update msg model))
+        Stepping (n - 1) (Tuple.first (update msg model))
 
 
 undone : GetResult model msg -> ( model, msg )
@@ -218,7 +219,7 @@ view maybeIndex { snapshots, recent, numMessages } =
       VDom.lazy2 viewSnapshots index snapshots
 
     newStuff =
-      snd <| List.foldl (consMsg index) (numMessages - 1, []) recent.messages
+      Tuple.second <| List.foldl (consMsg index) (numMessages - 1, []) recent.messages
   in
     VDom.div [ VDom.class className ] (oldStuff :: newStuff)
 
@@ -233,7 +234,7 @@ viewSnapshots currentIndex snapshots =
     highIndex =
       maxSnapshotSize * Array.length snapshots
   in
-    VDom.div [] <| snd <|
+    VDom.div [] <| Tuple.second <|
       Array.foldr (consSnapshot currentIndex) (highIndex, []) snapshots
 
 
@@ -253,7 +254,7 @@ consSnapshot currentIndex snapshot (index, rest) =
 
 viewSnapshot : Int -> Int -> Snapshot model msg -> Node Int
 viewSnapshot currentIndex index { messages } =
-  VDom.div [] <| snd <|
+  VDom.div [] <| Tuple.second <|
     Array.foldl (consMsg currentIndex) (index - 1, []) messages
 
 

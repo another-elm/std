@@ -11,6 +11,7 @@ import Dict exposing (Dict)
 import Json.Decode as Json
 import Native.Debug
 import String
+import Tuple
 import VirtualDom.Helpers as VDom exposing (Node, text, div, span, class, onClick)
 
 
@@ -352,7 +353,7 @@ viewRecord maybeKey isClosed record =
   let
     (start, middle, end) =
       if isClosed then
-        ( snd (viewTinyRecord record), text "", text "" )
+        ( Tuple.second (viewTinyRecord record), text "", text "" )
       else
         ( [ text "{" ], viewRecordOpen record, div [leftPad (Just ())] [text "}"] )
   in
@@ -381,7 +382,7 @@ viewConstructor : Maybe String -> Maybe String -> Bool -> List Expando -> Node M
 viewConstructor maybeKey maybeName isClosed valueList =
   let
     tinyArgs =
-      List.map (snd << viewExtraTiny) valueList
+      List.map (Tuple.second << viewExtraTiny) valueList
 
     description =
       case (maybeName, tinyArgs) of

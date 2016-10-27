@@ -1385,112 +1385,6 @@ function applyPatchReorderEndInsertsHelp(endInserts, patch)
 }
 
 
-
-////////////  FREEZE  ////////////
-
-
-var DATA_KEY = 'data-vrep';
-
-function freezeNode(vNode)
-{
-	switch (vNode.type)
-	{
-		case 'thunk':
-			var node = vNode.thunk();
-			vNode.func = null;
-			vNode.args = args.map(function() { return 0; });
-			vNode.thunk = null;
-			vNode.node = node;
-			return freezeNode(node);
-
-		case 'tagger':
-			vNode.tagger = null;
-			return freezeNode(vNode.node);
-
-		case 'text':
-			return vNode.text
-				.replace(/&/g, "&amp;")
-				.replace(/</g, "&lt;")
-				.replace(/>/g, "&gt;")
-				.replace(/"/g, "&quot;")
-				.replace(/'/g, "&#039;");
-
-		case 'node':
-			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
-				+ vNode.children.map(freezeNode).join('')
-				+ '</' + vNode.tag + '>';
-
-		case 'keyed-node':
-			return '<' + vNode.tag + freezeFacts(vNode.facts) + '>'
-				+ vNode.children.map(function(kid) { return freezeNode(kid._1); }).join('')
-				+ '</' + vNode.tag + '>';
-
-		case 'custom':
-			vNode.facts = null;
-			vNode.model = null;
-			vNode.impl = null;
-			return '<div></div>';
-	}
-}
-
-
-function freezeFacts(facts)
-{
-	var string = '';
-
-	for (var key in facts)
-	{
-		var fact = facts[key];
-
-		switch (key)
-		{
-			case STYLE_KEY:
-				var styles = facts[key];
-				string += ' style="';
-				for (var prop in styles)
-				{
-					string += prop + ':' + styles[prop] + ';'
-				}
-				string += '"';
-				break;
-
-			case EVENT_KEY:
-				facts[key] = undefined;
-				break;
-
-			case ATTR_KEY:
-				string += freezeAttribute(fact.realKey, fact.value);
-				break;
-
-			case ATTR_NS_KEY:
-				var data = fact.value;
-				string += freezeAttribute(fact.realKey, data.value);
-				break;
-
-			default:
-				string += freezeAttribute(propertyToAttribute[key] || key, fact);
-				break;
-		}
-	}
-
-	return string;
-}
-
-
-function freezeAttribute(key, value)
-{
-	return ' ' + key + '="' + value + '"';
-}
-
-
-var propertyToAttribute = {
-	'className': 'class',
-    'htmlFor': 'for',
-    'httpEquiv': 'http-equiv',
-    'acceptCharset': 'accept-charset'
-};
-
-
 // PROGRAMS
 
 var program = makeProgram(checkNoFlags);
@@ -1513,7 +1407,6 @@ function makeProgram(flagChecker)
 				{
 					debugSetup(A2(debugWrap, debugMetadata, impl), object, moduleName, checker);
 				}
-				freezeSetup(impl, object, moduleName, checker);
 			};
 		};
 	});
@@ -1637,85 +1530,6 @@ function normalRenderer(parentNode, view)
 		parentNode.appendChild(domNode);
 		return makeStepper(domNode, view, initialVirtualNode, eventNode);
 	};
-}
-
-
-// SERVER-SIDE SETUP
-
-function freezeSetup(impl, object, moduleName, flagChecker)
-{
-	object['freeze'] = function freeze(id, flags)
-	{
-		var model = flagChecker(impl.init, flags)._0;
-		var vNode = impl.view(model);
-		var html = freezeNode(vNode);
-		return '<div id="' + id + '" '
-			+ DATA_KEY + "='" + JSON.stringify(vNode)
-			+ "'>" + html + '</div>';
-	};
-
-	object['thaw'] = function thaw(id, flags)
-	{
-		return _elm_lang$core$Native_Platform.initialize(
-			flagChecker(impl.init, flags),
-			impl.update,
-			impl.subscriptions,
-			thawRenderer(moduleName, id, impl.view)
-		);
-	};
-}
-
-function thawRenderer(moduleName, id, view)
-{
-	return function(tagger, initialModel)
-	{
-		// get id
-		if (typeof id !== 'string')
-		{
-			crash(
-				'To initialize a program with ' + moduleName
-				+ '.thaw(), the first argument must be the STRING id you used when you called '
-				+ moduleName + '.freeze() and the HTML that resulted from freeze must be embeded on this page.'
-			);
-		}
-
-		// get DOM node
-		var domNode = document.getElementById(id);
-		if (!domNode)
-		{
-			crash(
-				'You tried to initialize a frozen program with '
-				+ moduleName + '.thaw("' + id + '"), but I cannot find that ID in the DOM.\n'
-				+ 'Are you sure it is the same ID you used when calling ' + moduleName + '.freeze()?\n'
-				+ 'Are you sure you embedded the frozen HTML in this page?'
-			);
-		}
-
-		// get frozen node
-		try
-		{
-			var frozenVirtualNode = JSON.parse(domNode.getAttribute(DATA_KEY));
-			domNode.removeAttribute(DATA_KEY);
-		}
-		catch (e)
-		{
-			var errorMessage =
-				'You tried to initialize a frozen program with '
-				+ moduleName + '.thaw("' + id + '"), but some data has been corrupted.\n'
-				+ 'Calling freeze produces an HTML string containing a ' + DATA_KEY
-				+ ' attribute. That attribute SHOULD hold a JSON object that'
-				+ ' I use to get everything set up, but I ran into the\n'
-				+ ' following problem when trying to read it:\n\n'
-				+ e.message;
-
-			crash(errorMessage, domNode);
-		}
-
-		var eventNode = { tagger: tagger, parent: undefined };
-		var stepper = makeStepper(domNode.firstChild, view, frozenVirtualNode, eventNode);
-		stepper(initialModel);
-		return stepper;
-	}
 }
 
 

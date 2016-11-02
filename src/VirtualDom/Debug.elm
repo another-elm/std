@@ -544,7 +544,7 @@ body {
 }
 
 .messages-entry-content {
-  width: 23ch;
+  width: calc(100% - 7ch);
   padding-top: 4px;
   padding-bottom: 4px;
   padding-left: 1ch;

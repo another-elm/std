@@ -15,7 +15,6 @@ import Array exposing (Array)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Native.Debug
-import Tuple
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.Metadata as Metadata
 

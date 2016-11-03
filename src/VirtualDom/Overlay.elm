@@ -10,7 +10,6 @@ module VirtualDom.Overlay exposing
 
 import Json.Decode as Decode
 import Json.Encode as Encode
-import String
 import VirtualDom.Helpers exposing (..)
 import VirtualDom.Metadata as Metadata exposing (Metadata)
 import VirtualDom.Report as Report exposing (Report)

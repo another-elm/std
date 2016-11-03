@@ -10,8 +10,6 @@ module VirtualDom.Expando exposing
 import Dict exposing (Dict)
 import Json.Decode as Json
 import Native.Debug
-import String
-import Tuple
 import VirtualDom.Helpers as VDom exposing (Node, text, div, span, class, onClick)
 
 

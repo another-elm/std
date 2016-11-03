@@ -5,7 +5,6 @@ import Json.Encode as Encode
 import Native.Debug
 import Native.VirtualDom
 import Task exposing (Task)
-import Tuple
 import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.History as History exposing (History)

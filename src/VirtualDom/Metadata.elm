@@ -10,7 +10,6 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import String
 import VirtualDom.Report as Report exposing (Report)
 
 

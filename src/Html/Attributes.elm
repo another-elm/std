@@ -125,19 +125,18 @@ style =
 
 {-| This function makes it easier to build a space-separated class attribute.
 Each class can easily be added and removed depending on the boolean value it
-is paired with.
+is paired with. For example, maybe we want a way to view notices:
 
-    renderMessage : Msg -> Html
-    renderMessage msg =
+    viewNotice : Notice -> Html msg
+    viewNotice notice =
       div
-        [
-          classList [
-            ("message", True),
-            ("message-important", msg.isImportant),
-            ("message-read", msg.isRead)
-          ]
+        [ classList
+            [ ("notice", True)
+            , ("notice-important", notice.isImportant)
+            , ("notice-seen", notice.isSeen)
+            ]
         ]
-        [ text msg.content ]
+        [ text notice.content ]
 -}
 classList : List (String, Bool) -> Attribute msg
 classList list =

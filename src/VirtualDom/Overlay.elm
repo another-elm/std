@@ -439,6 +439,7 @@ styles =
   color: white;
   pointer-events: none;
   font-family: 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  z-index: 2147483647;
 }
 
 .elm-overlay-resume {

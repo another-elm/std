@@ -1,5 +1,5 @@
 {
-    "version": "2.0.3",
+    "version": "2.0.4",
     "summary": "Core virtual DOM implementation, basis for HTML and SVG libraries",
     "repository": "https://github.com/elm-lang/virtual-dom.git",
     "license": "BSD3",

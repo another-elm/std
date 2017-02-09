@@ -43,7 +43,7 @@ expect to use frequently will be closer to the top.
 ## Lists
 @docs ol, ul, li, dl, dt, dd
 
-## Emdedded Content
+## Embedded Content
 @docs img, iframe, canvas, math
 
 ## Inputs

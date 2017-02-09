@@ -25,9 +25,6 @@ module Html.Attributes exposing
 category. Each attribute is labeled with the HTML tags it can be used with, so
 just search the page for `video` if you want video stuff.
 
-If you cannot find what you are looking for, go to the [Custom
-Attributes](#custom-attributes) section to learn how to create new helpers.
-
 # Primitives
 @docs style, property, attribute, map
 

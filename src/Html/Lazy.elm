@@ -8,8 +8,8 @@ about building `Html` that utilize this fact.
 
 Rather than immediately applying functions to their arguments, the `lazy`
 functions just bundle the function and arguments up for later. When diffing
-the old and new virtual DOM, it checks to see if all the arguments are equal.
-If so, it skips calling the function!
+the old and new virtual DOM, it checks to see if all the arguments are equal
+by reference. If so, it skips calling the function!
 
 This is a really cheap test and often makes things a lot faster, but definitely
 benchmark to be sure!

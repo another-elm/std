@@ -12,9 +12,9 @@ module VirtualDom.History exposing
 
 
 import Array exposing (Array)
+import Elm.Kernel.Debug
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Native.Debug
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.Metadata as Metadata
 
@@ -94,7 +94,7 @@ decoder initialModel update =
 
 jsToElm : Encode.Value -> a
 jsToElm =
-  Native.Debug.unsafeCoerce
+  Elm.Kernel.Debug.unsafeCoerce
 
 
 encode : History model msg -> Encode.Value
@@ -113,7 +113,7 @@ encodeHelp snapshot allMessages =
 
 elmToJs : a -> Encode.Value
 elmToJs =
-  Native.Debug.unsafeCoerce
+  Elm.Kernel.Debug.unsafeCoerce
 
 
 
@@ -279,7 +279,7 @@ viewMessage currentIndex index msg =
         "messages-entry"
 
     messageName =
-      Native.Debug.messageToString msg
+      Elm.Kernel.Debug.messageToString msg
   in
     VDom.div
       [ VDom.class className

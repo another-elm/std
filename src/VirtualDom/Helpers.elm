@@ -12,9 +12,9 @@ module VirtualDom.Helpers exposing
   )
 
 
+import Elm.Kernel.VirtualDom
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Native.VirtualDom
 
 
 type Node msg = Node
@@ -22,12 +22,12 @@ type Node msg = Node
 
 node : String -> List (Property msg) -> List (Node msg) -> Node msg
 node =
-  Native.VirtualDom.node
+  Elm.Kernel.VirtualDom.node
 
 
 text : String -> Node msg
 text =
-  Native.VirtualDom.text
+  Elm.Kernel.VirtualDom.text
 
 
 div : List (Property msg) -> List (Node msg) -> Node msg
@@ -52,7 +52,7 @@ h1 =
 
 map : (a -> msg) -> Node a -> Node msg
 map =
-  Native.VirtualDom.map
+  Elm.Kernel.VirtualDom.map
 
 
 type Property msg = Property
@@ -60,12 +60,12 @@ type Property msg = Property
 
 property : String -> Decode.Value -> Property msg
 property =
-  Native.VirtualDom.property
+  Elm.Kernel.VirtualDom.property
 
 
 attribute : String -> String -> Property msg
 attribute =
-  Native.VirtualDom.attribute
+  Elm.Kernel.VirtualDom.attribute
 
 
 class : String -> Property msg
@@ -85,7 +85,7 @@ id =
 
 style : List (String, String) -> Property msg
 style =
-  Native.VirtualDom.style
+  Elm.Kernel.VirtualDom.style
 
 
 on : String -> Decode.Decoder msg -> Property msg
@@ -100,7 +100,7 @@ onClick msg =
 
 onWithOptions : String -> Options -> Decode.Decoder msg -> Property msg
 onWithOptions =
-  Native.VirtualDom.on
+  Elm.Kernel.VirtualDom.on
 
 
 type alias Options =
@@ -118,20 +118,20 @@ defaultOptions =
 
 lazy : (a -> Node msg) -> a -> Node msg
 lazy =
-  Native.VirtualDom.lazy
+  Elm.Kernel.VirtualDom.lazy
 
 
 lazy2 : (a -> b -> Node msg) -> a -> b -> Node msg
 lazy2 =
-  Native.VirtualDom.lazy2
+  Elm.Kernel.VirtualDom.lazy2
 
 
 lazy3 : (a -> b -> c -> Node msg) -> a -> b -> c -> Node msg
 lazy3 =
-  Native.VirtualDom.lazy3
+  Elm.Kernel.VirtualDom.lazy3
 
 
 keyedNode : String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
 keyedNode =
-  Native.VirtualDom.keyedNode
+  Elm.Kernel.VirtualDom.keyedNode
 

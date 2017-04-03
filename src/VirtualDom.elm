@@ -36,8 +36,8 @@ that expose more helper functions for HTML or SVG.
 
 -}
 
+import Elm.Kernel.VirtualDom
 import Json.Decode as Json
-import Native.VirtualDom
 import VirtualDom.Debug as Debug
 
 
@@ -64,7 +64,7 @@ a list of child nodes.
 -}
 node : String -> List (Property msg) -> List (Node msg) -> Node msg
 node =
-  Native.VirtualDom.node
+  Elm.Kernel.VirtualDom.node
 
 
 {-| Just put plain text in the DOM. It will escape the string so that it appears
@@ -74,7 +74,7 @@ exactly as you specify.
 -}
 text : String -> Node msg
 text =
-  Native.VirtualDom.text
+  Elm.Kernel.VirtualDom.text
 
 
 {-| This function is useful when nesting components with [the Elm
@@ -100,7 +100,7 @@ So now all the events produced by `button` will be transformed to be of type
 -}
 map : (a -> msg) -> Node a -> Node msg
 map =
-  Native.VirtualDom.map
+  Elm.Kernel.VirtualDom.map
 
 
 
@@ -141,7 +141,7 @@ would be in JavaScript, not `class` as it would appear in HTML.
 -}
 property : String -> Json.Value -> Property msg
 property =
-  Native.VirtualDom.property
+  Elm.Kernel.VirtualDom.property
 
 
 {-| Create arbitrary HTML *attributes*. Maps onto JavaScript’s `setAttribute`
@@ -158,7 +158,7 @@ be in HTML, not `className` as it would appear in JS.
 -}
 attribute : String -> String -> Property msg
 attribute =
-  Native.VirtualDom.attribute
+  Elm.Kernel.VirtualDom.attribute
 
 
 {-| Would you believe that there is another way to do this?! This corresponds
@@ -168,14 +168,14 @@ attributes. This is used in some SVG stuff at least.
 -}
 attributeNS : String -> String -> String -> Property msg
 attributeNS =
-  Native.VirtualDom.attributeNS
+  Elm.Kernel.VirtualDom.attributeNS
 
 
 {-| Transform the messages produced by a `Property`.
 -}
 mapProperty : (a -> b) -> Property a -> Property b
 mapProperty =
-  Native.VirtualDom.mapProperty
+  Elm.Kernel.VirtualDom.mapProperty
 
 
 {-| Specify a list of styles.
@@ -195,7 +195,7 @@ mapProperty =
 -}
 style : List (String, String) -> Property msg
 style =
-  Native.VirtualDom.style
+  Elm.Kernel.VirtualDom.style
 
 
 
@@ -224,7 +224,7 @@ on eventName decoder =
 -}
 onWithOptions : String -> Options -> Json.Decoder msg -> Property msg
 onWithOptions =
-  Native.VirtualDom.on
+  Elm.Kernel.VirtualDom.on
 
 
 {-| Options for an event listener. If `stopPropagation` is true, it means the
@@ -267,21 +267,21 @@ we know if the input to `view` is the same, the output must be the same!
 -}
 lazy : (a -> Node msg) -> a -> Node msg
 lazy =
-  Native.VirtualDom.lazy
+  Elm.Kernel.VirtualDom.lazy
 
 
 {-| Same as `lazy` but checks on two arguments.
 -}
 lazy2 : (a -> b -> Node msg) -> a -> b -> Node msg
 lazy2 =
-  Native.VirtualDom.lazy2
+  Elm.Kernel.VirtualDom.lazy2
 
 
 {-| Same as `lazy` but checks on three arguments.
 -}
 lazy3 : (a -> b -> c -> Node msg) -> a -> b -> c -> Node msg
 lazy3 =
-  Native.VirtualDom.lazy3
+  Elm.Kernel.VirtualDom.lazy3
 
 
 {-| Works just like `node`, but you add a unique identifier to each child
@@ -291,7 +291,7 @@ the DOM modifications more efficient.
 -}
 keyedNode : String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
 keyedNode =
-  Native.VirtualDom.keyedNode
+  Elm.Kernel.VirtualDom.keyedNode
 
 
 
@@ -311,7 +311,7 @@ program
     }
   -> Program Never model msg
 program impl =
-  Native.VirtualDom.program Debug.wrap impl
+  Elm.Kernel.VirtualDom.program Debug.wrap impl
 
 
 {-| Check out the docs for [`Html.App.programWithFlags`][prog].
@@ -327,5 +327,5 @@ programWithFlags
     }
   -> Program flags model msg
 programWithFlags impl =
-  Native.VirtualDom.programWithFlags Debug.wrapWithFlags impl
+  Elm.Kernel.VirtualDom.programWithFlags Debug.wrapWithFlags impl
 

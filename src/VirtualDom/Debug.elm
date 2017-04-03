@@ -1,10 +1,9 @@
 module VirtualDom.Debug exposing (wrap, wrapWithFlags)
 
+import Elm.Kernel.Debug
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Task exposing (Task)
-import Native.Debug
-import Native.VirtualDom
 import VirtualDom.Expando as Expando exposing (Expando)
 import VirtualDom.Helpers as VDom exposing (Node)
 import VirtualDom.History as History exposing (History)
@@ -199,7 +198,7 @@ wrapUpdate userUpdate scrollTask msg model =
 
 upload : Cmd (Msg msg)
 upload =
-  Task.perform Upload (Native.Debug.upload ())
+  Task.perform Upload (Elm.Kernel.Debug.upload ())
 
 
 download : Metadata -> History model msg -> Cmd (Msg msg)
@@ -214,7 +213,7 @@ download metadata history =
         , ("history", History.encode history)
         ]
   in
-    Task.perform (\_ -> NoOp) (Native.Debug.download historyLength json)
+    Task.perform (\_ -> NoOp) (Elm.Kernel.Debug.download historyLength json)
 
 
 

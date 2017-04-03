@@ -2,12 +2,12 @@
 
 // IMPORT / EXPORT
 
-function _Debug_unsafeCoerce(value)
+function _VDebug_unsafeCoerce(value)
 {
 	return value;
 }
 
-function _Debug_upload()
+function _VDebug_upload()
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
@@ -30,7 +30,7 @@ function _Debug_upload()
 	});
 }
 
-var _Debug_download = F2(function(historyLength, json)
+var _VDebug_download = F2(function(historyLength, json)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
@@ -61,7 +61,7 @@ var _Debug_download = F2(function(historyLength, json)
 
 // POPOUT
 
-function _Debug_messageToString(value)
+function _VDebug_messageToString(value)
 {
 	switch (typeof value)
 	{
@@ -70,11 +70,11 @@ function _Debug_messageToString(value)
 		case 'number':
 			return value + '';
 		case 'string':
-			return '"' + _Debug_addSlashes(value, false) + '"';
+			return '"' + _VDebug_addSlashes(value, false) + '"';
 	}
 	if (value instanceof String)
 	{
-		return '\'' + _Debug_addSlashes(value, true) + '\'';
+		return '\'' + _VDebug_addSlashes(value, true) + '\'';
 	}
 	if (typeof value !== 'object' || value === null || !('ctor' in value))
 	{
@@ -97,20 +97,20 @@ function _Debug_messageToString(value)
 		case 1:
 			return value.ctor;
 		case 2:
-			return value.ctor + ' ' + _Debug_messageToString(value._0);
+			return value.ctor + ' ' + _VDebug_messageToString(value._0);
 		default:
-			return value.ctor + ' … ' + _Debug_messageToString(value[keys[keys.length - 1]]);
+			return value.ctor + ' … ' + _VDebug_messageToString(value[keys[keys.length - 1]]);
 	}
 }
 
 
-function _Debug_primitive(str)
+function _VDebug_primitive(str)
 {
 	return { ctor: 'Primitive', _0: str };
 }
 
 
-function _Debug_init(value)
+function _VDebug_init(value)
 {
 	var type = typeof value;
 
@@ -126,27 +126,27 @@ function _Debug_init(value)
 
 	if (type === 'number')
 	{
-		return _Debug_primitive(value + '');
+		return _VDebug_primitive(value + '');
 	}
 
 	if (type === 'string')
 	{
-		return { ctor: 'S', _0: '"' + _Debug_addSlashes(value, false) + '"' };
+		return { ctor: 'S', _0: '"' + _VDebug_addSlashes(value, false) + '"' };
 	}
 
 	if (value instanceof String)
 	{
-		return { ctor: 'S', _0: "'" + _Debug_addSlashes(value, true) + "'" };
+		return { ctor: 'S', _0: "'" + _VDebug_addSlashes(value, true) + "'" };
 	}
 
 	if (value instanceof Date)
 	{
-		return _Debug_primitive('<' + value.toString() + '>');
+		return _VDebug_primitive('<' + value.toString() + '>');
 	}
 
 	if (value === null)
 	{
-		return _Debug_primitive('XXX');
+		return _VDebug_primitive('XXX');
 	}
 
 	if (type === 'object' && 'ctor' in value)
@@ -159,7 +159,7 @@ function _Debug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ListSeq'},
 				_1: true,
-				_2: A2(_elm_lang$core$List$map, _Debug_init, value)
+				_2: A2(_elm_lang$core$List$map, _VDebug_init, value)
 			};
 		}
 
@@ -169,7 +169,7 @@ function _Debug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'SetSeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Set$foldr, _Debug_initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(_elm_lang$core$Set$foldr, _VDebug_initCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
@@ -178,7 +178,7 @@ function _Debug_init(value)
 			return {
 				ctor: 'Dictionary',
 				_0: true,
-				_1: A3(_elm_lang$core$Dict$foldr, _Debug_initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
+				_1: A3(_elm_lang$core$Dict$foldr, _VDebug_initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
@@ -188,31 +188,31 @@ function _Debug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ArraySeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Array$foldr, _Debug_initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(_elm_lang$core$Array$foldr, _VDebug_initCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
 		var ctorStarter = value.ctor.substring(0, 5);
 		if (ctorStarter === '_Task')
 		{
-			return _Debug_primitive('<task>');
+			return _VDebug_primitive('<task>');
 		}
 
 		if (ctor === '<decoder>')
 		{
-			return _Debug_primitive(ctor);
+			return _VDebug_primitive(ctor);
 		}
 
 		if (ctor === '_Process')
 		{
-			return _Debug_primitive('<process>');
+			return _VDebug_primitive('<process>');
 		}
 
 		var list = _elm_lang$core$Native_List.Nil;
 		for (var i in value)
 		{
 			if (i === 'ctor') continue;
-			list = _elm_lang$core$Native_List.Cons(_Debug_init(value[i]), list);
+			list = _elm_lang$core$Native_List.Cons(_VDebug_init(value[i]), list);
 		}
 		return {
 			ctor: 'Constructor',
@@ -227,28 +227,28 @@ function _Debug_init(value)
 		var dict = _elm_lang$core$Dict$empty;
 		for (var i in value)
 		{
-			dict = A3(_elm_lang$core$Dict$insert, i, _Debug_init(value[i]), dict);
+			dict = A3(_elm_lang$core$Dict$insert, i, _VDebug_init(value[i]), dict);
 		}
 		return { ctor: 'Record', _0: true, _1: dict };
 	}
 
-	return _Debug_primitive('XXX');
+	return _VDebug_primitive('XXX');
 }
 
-var _Debug_initCons = F2(function initConsHelp(value, list)
+var _VDebug_initCons = F2(function initConsHelp(value, list)
 {
-	return _elm_lang$core$Native_List.Cons(_Debug_init(value), list);
+	return _elm_lang$core$Native_List.Cons(_VDebug_init(value), list);
 });
 
-var _Debug_initKeyValueCons = F3(function(key, value, list)
+var _VDebug_initKeyValueCons = F3(function(key, value, list)
 {
 	return _elm_lang$core$Native_List.Cons(
-		_elm_lang$core$Native_Utils.Tuple2(_Debug_init(key), _Debug_init(value)),
+		_elm_lang$core$Native_Utils.Tuple2(_VDebug_init(key), _VDebug_init(value)),
 		list
 	);
 });
 
-function _Debug_addSlashes(str, isChar)
+function _VDebug_addSlashes(str, isChar)
 {
 	var s = str
 		.replace(/\\/g, '\\\\')
@@ -270,16 +270,16 @@ function _Debug_addSlashes(str, isChar)
 
 // DEBUG SETUP
 
-function _Debug_setup(impl, object, moduleName, flagChecker)
+function _VDebug_setup(impl, object, moduleName, flagChecker)
 {
 	object['fullscreen'] = function fullscreen(flags)
 	{
 		var popoutRef = { doc: undefined };
 		return _elm_lang$core$Native_Platform.initialize(
 			flagChecker(impl.init, flags, document.body),
-			impl.update(_Debug_scrollTask(popoutRef)),
+			impl.update(_VDebug_scrollTask(popoutRef)),
 			impl.subscriptions,
-			_Debug_renderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
+			_VDebug_renderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
 		);
 	};
 
@@ -288,14 +288,14 @@ function _Debug_setup(impl, object, moduleName, flagChecker)
 		var popoutRef = { doc: undefined };
 		return _elm_lang$core$Native_Platform.initialize(
 			flagChecker(impl.init, flags, node),
-			impl.update(_Debug_scrollTask(popoutRef)),
+			impl.update(_VDebug_scrollTask(popoutRef)),
 			impl.subscriptions,
-			_Debug_renderer(moduleName, node, popoutRef, impl.view, impl.viewIn, impl.viewOut)
+			_VDebug_renderer(moduleName, node, popoutRef, impl.view, impl.viewIn, impl.viewOut)
 		);
 	};
 }
 
-function _Debug_scrollTask(popoutRef)
+function _VDebug_scrollTask(popoutRef)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
@@ -313,7 +313,7 @@ function _Debug_scrollTask(popoutRef)
 }
 
 
-function _Debug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
+function _VDebug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
@@ -330,11 +330,11 @@ function _Debug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewOu
 		var overVirtualNode = viewIn(initialModel)._1;
 		var overNode = _VirtualDom_render(overVirtualNode, eventNode);
 		parentNode.appendChild(overNode);
-		var wrappedViewIn = _Debug_wrapViewIn(appEventNode, overNode, viewIn);
+		var wrappedViewIn = _VDebug_wrapViewIn(appEventNode, overNode, viewIn);
 		var overStepper = _VirtualDom_makeStepper(overNode, wrappedViewIn, overVirtualNode, eventNode);
 
 		// make debugger stepper
-		var debugStepper = _Debug_makeStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
+		var debugStepper = _VDebug_makeStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
 
 		return function stepper(model)
 		{
@@ -345,7 +345,7 @@ function _Debug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewOu
 	};
 }
 
-function _Debug_makeStepper(initialModel, view, eventNode, parentNode, moduleName, popoutRef)
+function _VDebug_makeStepper(initialModel, view, eventNode, parentNode, moduleName, popoutRef)
 {
 	var curr;
 	var domNode;
@@ -360,7 +360,7 @@ function _Debug_makeStepper(initialModel, view, eventNode, parentNode, moduleNam
 		if (!popoutRef.doc)
 		{
 			curr = view(model);
-			domNode = _Debug_openWindow(moduleName, popoutRef, curr, eventNode);
+			domNode = _VDebug_openWindow(moduleName, popoutRef, curr, eventNode);
 			return;
 		}
 
@@ -377,7 +377,7 @@ function _Debug_makeStepper(initialModel, view, eventNode, parentNode, moduleNam
 	};
 }
 
-function _Debug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
+function _VDebug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
 {
 	var w = 900;
 	var h = 360;
@@ -433,9 +433,9 @@ function _Debug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
 
 // BLOCK EVENTS
 
-function _Debug_wrapViewIn(appEventNode, overlayNode, viewIn)
+function _VDebug_wrapViewIn(appEventNode, overlayNode, viewIn)
 {
-	var ignorer = _Debug_makeIgnorer(overlayNode);
+	var ignorer = _VDebug_makeIgnorer(overlayNode);
 	var blocking = 'Normal';
 	var overflow;
 
@@ -449,8 +449,8 @@ function _Debug_wrapViewIn(appEventNode, overlayNode, viewIn)
 		appEventNode.tagger = newBlocking === 'Normal' ? normalTagger : blockTagger;
 		if (blocking !== newBlocking)
 		{
-			_Debug_traverse('removeEventListener', ignorer, blocking);
-			_Debug_traverse('addEventListener', ignorer, newBlocking);
+			_VDebug_traverse('removeEventListener', ignorer, blocking);
+			_VDebug_traverse('addEventListener', ignorer, newBlocking);
 
 			if (blocking === 'Normal')
 			{
@@ -469,7 +469,7 @@ function _Debug_wrapViewIn(appEventNode, overlayNode, viewIn)
 	}
 }
 
-function _Debug_traverse(verbEventListener, ignorer, blocking)
+function _VDebug_traverse(verbEventListener, ignorer, blocking)
 {
 	switch(blocking)
 	{
@@ -477,14 +477,14 @@ function _Debug_traverse(verbEventListener, ignorer, blocking)
 			return;
 
 		case 'Pause':
-			return _Debug_traverseHelp(verbEventListener, ignorer, _Debug_mostEvents);
+			return _VDebug_traverseHelp(verbEventListener, ignorer, _VDebug_mostEvents);
 
 		case 'Message':
-			return _Debug_traverseHelp(verbEventListener, ignorer, _Debug_allEvents);
+			return _VDebug_traverseHelp(verbEventListener, ignorer, _VDebug_allEvents);
 	}
 }
 
-function _Debug_traverseHelp(verbEventListener, handler, eventNames)
+function _VDebug_traverseHelp(verbEventListener, handler, eventNames)
 {
 	for (var i = 0; i < eventNames.length; i++)
 	{
@@ -492,7 +492,7 @@ function _Debug_traverseHelp(verbEventListener, handler, eventNames)
 	}
 }
 
-function _Debug_makeIgnorer(overlayNode)
+function _VDebug_makeIgnorer(overlayNode)
 {
 	return function(event)
 	{
@@ -523,7 +523,7 @@ function _Debug_makeIgnorer(overlayNode)
 	}
 }
 
-var _Debug_mostEvents = [
+var _VDebug_mostEvents = [
 	'click', 'dblclick', 'mousemove',
 	'mouseup', 'mousedown', 'mouseenter', 'mouseleave',
 	'touchstart', 'touchend', 'touchcancel', 'touchmove',
@@ -535,5 +535,5 @@ var _Debug_mostEvents = [
 	'focus', 'blur'
 ];
 
-var _Debug_allEvents = _Debug_mostEvents.concat('wheel', 'scroll');
+var _VDebug_allEvents = _VDebug_mostEvents.concat('wheel', 'scroll');
 

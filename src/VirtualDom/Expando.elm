@@ -8,7 +8,7 @@ module VirtualDom.Expando exposing
 
 
 import Dict exposing (Dict)
-import Elm.Kernel.Debug
+import Elm.Kernel.VDebug
 import Json.Decode as Json
 import VirtualDom.Helpers as VDom exposing (Node, text, div, span, class, onClick)
 
@@ -48,7 +48,7 @@ seqTypeToString n seqType =
 
 init : a -> Expando
 init value =
-  initHelp True (Elm.Kernel.Debug.init value)
+  initHelp True (Elm.Kernel.VDebug.init value)
 
 
 initHelp : Bool -> Expando -> Expando
@@ -99,7 +99,7 @@ initHelp isOuter expando =
 
 merge : a -> Expando -> Expando
 merge value expando =
-  mergeHelp expando (Elm.Kernel.Debug.init value)
+  mergeHelp expando (Elm.Kernel.VDebug.init value)
 
 
 mergeHelp : Expando -> Expando -> Expando

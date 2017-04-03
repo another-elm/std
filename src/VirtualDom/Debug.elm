@@ -199,7 +199,7 @@ wrapUpdate userUpdate scrollTask msg model =
 
 upload : Cmd (Msg msg)
 upload =
-  Task.perform Upload Native.Debug.upload
+  Task.perform Upload (Native.Debug.upload ())
 
 
 download : Metadata -> History model msg -> Cmd (Msg msg)

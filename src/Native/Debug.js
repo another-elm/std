@@ -1,34 +1,36 @@
-var _elm_lang$virtual_dom$Native_Debug = function() {
 
 
 // IMPORT / EXPORT
 
-function unsafeCoerce(value)
+function _Debug_unsafeCoerce(value)
 {
 	return value;
 }
 
-var upload = _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+function _Debug_upload()
 {
-	var element = document.createElement('input');
-	element.setAttribute('type', 'file');
-	element.setAttribute('accept', 'text/json');
-	element.style.display = 'none';
-	element.addEventListener('change', function(event)
+	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
-		var fileReader = new FileReader();
-		fileReader.onload = function(e)
+		var element = document.createElement('input');
+		element.setAttribute('type', 'file');
+		element.setAttribute('accept', 'text/json');
+		element.style.display = 'none';
+		element.addEventListener('change', function(event)
 		{
-			callback(_elm_lang$core$Native_Scheduler.succeed(e.target.result));
-		};
-		fileReader.readAsText(event.target.files[0]);
-		document.body.removeChild(element);
+			var fileReader = new FileReader();
+			fileReader.onload = function(e)
+			{
+				callback(_elm_lang$core$Native_Scheduler.succeed(e.target.result));
+			};
+			fileReader.readAsText(event.target.files[0]);
+			document.body.removeChild(element);
+		});
+		document.body.appendChild(element);
+		element.click();
 	});
-	document.body.appendChild(element);
-	element.click();
-});
+}
 
-function download(historyLength, json)
+var _Debug_download = F2(function(historyLength, json)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
@@ -54,12 +56,12 @@ function download(historyLength, json)
 		document.body.removeChild(element);
 		callback(done);
 	});
-}
+});
 
 
 // POPOUT
 
-function messageToString(value)
+function _Debug_messageToString(value)
 {
 	switch (typeof value)
 	{
@@ -68,11 +70,11 @@ function messageToString(value)
 		case 'number':
 			return value + '';
 		case 'string':
-			return '"' + addSlashes(value, false) + '"';
+			return '"' + _Debug_addSlashes(value, false) + '"';
 	}
 	if (value instanceof String)
 	{
-		return '\'' + addSlashes(value, true) + '\'';
+		return '\'' + _Debug_addSlashes(value, true) + '\'';
 	}
 	if (typeof value !== 'object' || value === null || !('ctor' in value))
 	{
@@ -95,20 +97,20 @@ function messageToString(value)
 		case 1:
 			return value.ctor;
 		case 2:
-			return value.ctor + ' ' + messageToString(value._0);
+			return value.ctor + ' ' + _Debug_messageToString(value._0);
 		default:
-			return value.ctor + ' … ' + messageToString(value[keys[keys.length - 1]]);
+			return value.ctor + ' … ' + _Debug_messageToString(value[keys[keys.length - 1]]);
 	}
 }
 
 
-function primitive(str)
+function _Debug_primitive(str)
 {
 	return { ctor: 'Primitive', _0: str };
 }
 
 
-function init(value)
+function _Debug_init(value)
 {
 	var type = typeof value;
 
@@ -124,27 +126,27 @@ function init(value)
 
 	if (type === 'number')
 	{
-		return primitive(value + '');
+		return _Debug_primitive(value + '');
 	}
 
 	if (type === 'string')
 	{
-		return { ctor: 'S', _0: '"' + addSlashes(value, false) + '"' };
+		return { ctor: 'S', _0: '"' + _Debug_addSlashes(value, false) + '"' };
 	}
 
 	if (value instanceof String)
 	{
-		return { ctor: 'S', _0: "'" + addSlashes(value, true) + "'" };
+		return { ctor: 'S', _0: "'" + _Debug_addSlashes(value, true) + "'" };
 	}
 
 	if (value instanceof Date)
 	{
-		return primitive('<' + value.toString() + '>');
+		return _Debug_primitive('<' + value.toString() + '>');
 	}
 
 	if (value === null)
 	{
-		return primitive('XXX');
+		return _Debug_primitive('XXX');
 	}
 
 	if (type === 'object' && 'ctor' in value)
@@ -157,7 +159,7 @@ function init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ListSeq'},
 				_1: true,
-				_2: A2(_elm_lang$core$List$map, init, value)
+				_2: A2(_elm_lang$core$List$map, _Debug_init, value)
 			};
 		}
 
@@ -167,7 +169,7 @@ function init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'SetSeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Set$foldr, initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(_elm_lang$core$Set$foldr, _Debug_initCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
@@ -176,7 +178,7 @@ function init(value)
 			return {
 				ctor: 'Dictionary',
 				_0: true,
-				_1: A3(_elm_lang$core$Dict$foldr, initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
+				_1: A3(_elm_lang$core$Dict$foldr, _Debug_initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
@@ -186,31 +188,31 @@ function init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ArraySeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Array$foldr, initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(_elm_lang$core$Array$foldr, _Debug_initCons, _elm_lang$core$Native_List.Nil, value)
 			};
 		}
 
 		var ctorStarter = value.ctor.substring(0, 5);
 		if (ctorStarter === '_Task')
 		{
-			return primitive('<task>');
+			return _Debug_primitive('<task>');
 		}
 
 		if (ctor === '<decoder>')
 		{
-			return primitive(ctor);
+			return _Debug_primitive(ctor);
 		}
 
 		if (ctor === '_Process')
 		{
-			return primitive('<process>');
+			return _Debug_primitive('<process>');
 		}
 
 		var list = _elm_lang$core$Native_List.Nil;
 		for (var i in value)
 		{
 			if (i === 'ctor') continue;
-			list = _elm_lang$core$Native_List.Cons(init(value[i]), list);
+			list = _elm_lang$core$Native_List.Cons(_Debug_init(value[i]), list);
 		}
 		return {
 			ctor: 'Constructor',
@@ -225,39 +227,36 @@ function init(value)
 		var dict = _elm_lang$core$Dict$empty;
 		for (var i in value)
 		{
-			dict = A3(_elm_lang$core$Dict$insert, i, init(value[i]), dict);
+			dict = A3(_elm_lang$core$Dict$insert, i, _Debug_init(value[i]), dict);
 		}
 		return { ctor: 'Record', _0: true, _1: dict };
 	}
 
-	return primitive('XXX');
+	return _Debug_primitive('XXX');
 }
 
-var initCons = F2(initConsHelp);
-
-function initConsHelp(value, list)
+var _Debug_initCons = F2(function initConsHelp(value, list)
 {
-	return _elm_lang$core$Native_List.Cons(init(value), list);
-}
+	return _elm_lang$core$Native_List.Cons(_Debug_init(value), list);
+});
 
-var initKeyValueCons = F3(initKeyValueConsHelp);
-
-function initKeyValueConsHelp(key, value, list)
+var _Debug_initKeyValueCons = F3(function(key, value, list)
 {
 	return _elm_lang$core$Native_List.Cons(
-		_elm_lang$core$Native_Utils.Tuple2(init(key), init(value)),
+		_elm_lang$core$Native_Utils.Tuple2(_Debug_init(key), _Debug_init(value)),
 		list
 	);
-}
+});
 
-function addSlashes(str, isChar)
+function _Debug_addSlashes(str, isChar)
 {
-	var s = str.replace(/\\/g, '\\\\')
-			  .replace(/\n/g, '\\n')
-			  .replace(/\t/g, '\\t')
-			  .replace(/\r/g, '\\r')
-			  .replace(/\v/g, '\\v')
-			  .replace(/\0/g, '\\0');
+	var s = str
+		.replace(/\\/g, '\\\\')
+		.replace(/\n/g, '\\n')
+		.replace(/\t/g, '\\t')
+		.replace(/\r/g, '\\r')
+		.replace(/\v/g, '\\v')
+		.replace(/\0/g, '\\0');
 	if (isChar)
 	{
 		return s.replace(/\'/g, '\\\'');
@@ -267,14 +266,3 @@ function addSlashes(str, isChar)
 		return s.replace(/\"/g, '\\"');
 	}
 }
-
-
-return {
-	upload: upload,
-	download: F2(download),
-	unsafeCoerce: unsafeCoerce,
-	messageToString: messageToString,
-	init: init
-}
-
-}();

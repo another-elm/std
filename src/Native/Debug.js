@@ -268,20 +268,18 @@ function _Debug_addSlashes(str, isChar)
 }
 
 
-
-
 // DEBUG SETUP
 
-function _VirtualDom_debugSetup(impl, object, moduleName, flagChecker)
+function _Debug_setup(impl, object, moduleName, flagChecker)
 {
 	object['fullscreen'] = function fullscreen(flags)
 	{
 		var popoutRef = { doc: undefined };
 		return _elm_lang$core$Native_Platform.initialize(
 			flagChecker(impl.init, flags, document.body),
-			impl.update(_VirtualDom_scrollTask(popoutRef)),
+			impl.update(_Debug_scrollTask(popoutRef)),
 			impl.subscriptions,
-			_VirtualDom_debugRenderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
+			_Debug_renderer(moduleName, document.body, popoutRef, impl.view, impl.viewIn, impl.viewOut)
 		);
 	};
 
@@ -290,14 +288,14 @@ function _VirtualDom_debugSetup(impl, object, moduleName, flagChecker)
 		var popoutRef = { doc: undefined };
 		return _elm_lang$core$Native_Platform.initialize(
 			flagChecker(impl.init, flags, node),
-			impl.update(_VirtualDom_scrollTask(popoutRef)),
+			impl.update(_Debug_scrollTask(popoutRef)),
 			impl.subscriptions,
-			_VirtualDom_debugRenderer(moduleName, node, popoutRef, impl.view, impl.viewIn, impl.viewOut)
+			_Debug_renderer(moduleName, node, popoutRef, impl.view, impl.viewIn, impl.viewOut)
 		);
 	};
 }
 
-function _VirtualDom_scrollTask(popoutRef)
+function _Debug_scrollTask(popoutRef)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
@@ -315,7 +313,7 @@ function _VirtualDom_scrollTask(popoutRef)
 }
 
 
-function _VirtualDom_debugRenderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
+function _Debug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewOut)
 {
 	return function(tagger, initialModel)
 	{
@@ -332,11 +330,11 @@ function _VirtualDom_debugRenderer(moduleName, parentNode, popoutRef, view, view
 		var overVirtualNode = viewIn(initialModel)._1;
 		var overNode = _VirtualDom_render(overVirtualNode, eventNode);
 		parentNode.appendChild(overNode);
-		var wrappedViewIn = _VirtualDom_wrapViewIn(appEventNode, overNode, viewIn);
+		var wrappedViewIn = _Debug_wrapViewIn(appEventNode, overNode, viewIn);
 		var overStepper = _VirtualDom_makeStepper(overNode, wrappedViewIn, overVirtualNode, eventNode);
 
 		// make debugger stepper
-		var debugStepper = _VirtualDom_makeDebugStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
+		var debugStepper = _Debug_makeStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
 
 		return function stepper(model)
 		{
@@ -347,7 +345,7 @@ function _VirtualDom_debugRenderer(moduleName, parentNode, popoutRef, view, view
 	};
 }
 
-function _VirtualDom_makeDebugStepper(initialModel, view, eventNode, parentNode, moduleName, popoutRef)
+function _Debug_makeStepper(initialModel, view, eventNode, parentNode, moduleName, popoutRef)
 {
 	var curr;
 	var domNode;
@@ -362,7 +360,7 @@ function _VirtualDom_makeDebugStepper(initialModel, view, eventNode, parentNode,
 		if (!popoutRef.doc)
 		{
 			curr = view(model);
-			domNode = _VirtualDom_openDebugWindow(moduleName, popoutRef, curr, eventNode);
+			domNode = _Debug_openWindow(moduleName, popoutRef, curr, eventNode);
 			return;
 		}
 
@@ -379,7 +377,7 @@ function _VirtualDom_makeDebugStepper(initialModel, view, eventNode, parentNode,
 	};
 }
 
-function _VirtualDom_openDebugWindow(moduleName, popoutRef, virtualNode, eventNode)
+function _Debug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
 {
 	var w = 900;
 	var h = 360;
@@ -435,9 +433,9 @@ function _VirtualDom_openDebugWindow(moduleName, popoutRef, virtualNode, eventNo
 
 // BLOCK EVENTS
 
-function _VirtualDom_wrapViewIn(appEventNode, overlayNode, viewIn)
+function _Debug_wrapViewIn(appEventNode, overlayNode, viewIn)
 {
-	var ignorer = _VirtualDom_makeIgnorer(overlayNode);
+	var ignorer = _Debug_makeIgnorer(overlayNode);
 	var blocking = 'Normal';
 	var overflow;
 
@@ -451,8 +449,8 @@ function _VirtualDom_wrapViewIn(appEventNode, overlayNode, viewIn)
 		appEventNode.tagger = newBlocking === 'Normal' ? normalTagger : blockTagger;
 		if (blocking !== newBlocking)
 		{
-			_VirtualDom_traverse('removeEventListener', ignorer, blocking);
-			_VirtualDom_traverse('addEventListener', ignorer, newBlocking);
+			_Debug_traverse('removeEventListener', ignorer, blocking);
+			_Debug_traverse('addEventListener', ignorer, newBlocking);
 
 			if (blocking === 'Normal')
 			{
@@ -471,7 +469,7 @@ function _VirtualDom_wrapViewIn(appEventNode, overlayNode, viewIn)
 	}
 }
 
-function _VirtualDom_traverse(verbEventListener, ignorer, blocking)
+function _Debug_traverse(verbEventListener, ignorer, blocking)
 {
 	switch(blocking)
 	{
@@ -479,14 +477,14 @@ function _VirtualDom_traverse(verbEventListener, ignorer, blocking)
 			return;
 
 		case 'Pause':
-			return _VirtualDom_traverseHelp(verbEventListener, ignorer, _VirtualDom_mostEvents);
+			return _Debug_traverseHelp(verbEventListener, ignorer, _Debug_mostEvents);
 
 		case 'Message':
-			return _VirtualDom_traverseHelp(verbEventListener, ignorer, _VirtualDom_allEvents);
+			return _Debug_traverseHelp(verbEventListener, ignorer, _Debug_allEvents);
 	}
 }
 
-function _VirtualDom_traverseHelp(verbEventListener, handler, eventNames)
+function _Debug_traverseHelp(verbEventListener, handler, eventNames)
 {
 	for (var i = 0; i < eventNames.length; i++)
 	{
@@ -494,7 +492,7 @@ function _VirtualDom_traverseHelp(verbEventListener, handler, eventNames)
 	}
 }
 
-function _VirtualDom_makeIgnorer(overlayNode)
+function _Debug_makeIgnorer(overlayNode)
 {
 	return function(event)
 	{
@@ -525,7 +523,7 @@ function _VirtualDom_makeIgnorer(overlayNode)
 	}
 }
 
-var _VirtualDom_mostEvents = [
+var _Debug_mostEvents = [
 	'click', 'dblclick', 'mousemove',
 	'mouseup', 'mousedown', 'mouseenter', 'mouseleave',
 	'touchstart', 'touchend', 'touchcancel', 'touchmove',
@@ -537,5 +535,5 @@ var _VirtualDom_mostEvents = [
 	'focus', 'blur'
 ];
 
-var _VirtualDom_allEvents = _VirtualDom_mostEvents.concat('wheel', 'scroll');
+var _Debug_allEvents = _Debug_mostEvents.concat('wheel', 'scroll');
 

@@ -1400,11 +1400,11 @@ function _VirtualDom_makeProgram(flagChecker)
 				var checker = flagChecker(flagDecoder, moduleName);
 				if (typeof debugMetadata === 'undefined')
 				{
-					_VirtualDom_normalSetup(impl, object, moduleName, checker);
+					_VirtualDom_setup(impl, object, moduleName, checker);
 				}
 				else
 				{
-					_VirtualDom_debugSetup(A2(debugWrap, debugMetadata, impl), object, moduleName, checker);
+					_Degug_setup(A2(debugWrap, debugMetadata, impl), object, moduleName, checker);
 				}
 			};
 		};
@@ -1491,7 +1491,7 @@ function _VirtualDom_crash(errorMessage, domNode)
 
 //  NORMAL SETUP
 
-function _VirtualDom_normalSetup(impl, object, moduleName, flagChecker)
+function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 {
 	object['embed'] = function embed(node, flags)
 	{
@@ -1504,7 +1504,7 @@ function _VirtualDom_normalSetup(impl, object, moduleName, flagChecker)
 			flagChecker(impl.init, flags, node),
 			impl.update,
 			impl.subscriptions,
-			_VirtualDom_normalRenderer(node, impl.view)
+			_VirtualDom_renderer(node, impl.view)
 		);
 	};
 
@@ -1514,12 +1514,12 @@ function _VirtualDom_normalSetup(impl, object, moduleName, flagChecker)
 			flagChecker(impl.init, flags, document.body),
 			impl.update,
 			impl.subscriptions,
-			_VirtualDom_normalRenderer(document.body, impl.view)
+			_VirtualDom_renderer(document.body, impl.view)
 		);
 	};
 }
 
-function _VirtualDom_normalRenderer(parentNode, view)
+function _VirtualDom_renderer(parentNode, view)
 {
 	return function(tagger, initialModel)
 	{

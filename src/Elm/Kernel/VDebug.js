@@ -1,3 +1,16 @@
+/*
+
+import Array exposing (foldr)
+import Dict exposing (empty, foldr, insert)
+import Elm.Kernel.List exposing (Cons, Nil)
+import Elm.Kernel.Platform exposing (initialize)
+import Elm.Kernel.Scheduler exposing (nativeBinding, succeed)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import List exposing (map, reverse)
+import Maybe exposing (Maybe(Just, Nothing))
+import Set exposing (foldr)
+
+*/
 
 
 // IMPORT / EXPORT
@@ -9,7 +22,7 @@ function _VDebug_unsafeCoerce(value)
 
 function _VDebug_upload()
 {
-	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	return __Scheduler_nativeBinding(function(callback)
 	{
 		var element = document.createElement('input');
 		element.setAttribute('type', 'file');
@@ -20,7 +33,7 @@ function _VDebug_upload()
 			var fileReader = new FileReader();
 			fileReader.onload = function(e)
 			{
-				callback(_elm_lang$core$Native_Scheduler.succeed(e.target.result));
+				callback(__Scheduler_succeed(e.target.result));
 			};
 			fileReader.readAsText(event.target.files[0]);
 			document.body.removeChild(element);
@@ -32,12 +45,12 @@ function _VDebug_upload()
 
 var _VDebug_download = F2(function(historyLength, json)
 {
-	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	return __Scheduler_nativeBinding(function(callback)
 	{
 		var fileName = 'history-' + historyLength + '.txt';
 		var jsonString = JSON.stringify(json);
 		var mime = 'text/plain;charset=utf-8';
-		var done = _elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0);
+		var done = __Scheduler_succeed(__Utils_Tuple0);
 
 		// for IE10+
 		if (navigator.msSaveBlob)
@@ -118,9 +131,9 @@ function _VDebug_init(value)
 	{
 		return {
 			ctor: 'Constructor',
-			_0: _elm_lang$core$Maybe$Just(value ? 'True' : 'False'),
+			_0: __Maybe_Just(value ? 'True' : 'False'),
 			_1: true,
-			_2: _elm_lang$core$Native_List.Nil
+			_2: __List_Nil
 		};
 	}
 
@@ -159,7 +172,7 @@ function _VDebug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ListSeq'},
 				_1: true,
-				_2: A2(_elm_lang$core$List$map, _VDebug_init, value)
+				_2: A2(__List_map, _VDebug_init, value)
 			};
 		}
 
@@ -169,7 +182,7 @@ function _VDebug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'SetSeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Set$foldr, _VDebug_initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(__Set_foldr, _VDebug_initCons, __List_Nil, value)
 			};
 		}
 
@@ -178,7 +191,7 @@ function _VDebug_init(value)
 			return {
 				ctor: 'Dictionary',
 				_0: true,
-				_1: A3(_elm_lang$core$Dict$foldr, _VDebug_initKeyValueCons, _elm_lang$core$Native_List.Nil, value)
+				_1: A3(__Dict_foldr, _VDebug_initKeyValueCons, __List_Nil, value)
 			};
 		}
 
@@ -188,7 +201,7 @@ function _VDebug_init(value)
 				ctor: 'Sequence',
 				_0: {ctor: 'ArraySeq'},
 				_1: true,
-				_2: A3(_elm_lang$core$Array$foldr, _VDebug_initCons, _elm_lang$core$Native_List.Nil, value)
+				_2: A3(__Array_foldr, _VDebug_initCons, __List_Nil, value)
 			};
 		}
 
@@ -208,26 +221,26 @@ function _VDebug_init(value)
 			return _VDebug_primitive('<process>');
 		}
 
-		var list = _elm_lang$core$Native_List.Nil;
+		var list = __List_Nil;
 		for (var i in value)
 		{
 			if (i === 'ctor') continue;
-			list = _elm_lang$core$Native_List.Cons(_VDebug_init(value[i]), list);
+			list = __List_Cons(_VDebug_init(value[i]), list);
 		}
 		return {
 			ctor: 'Constructor',
-			_0: ctorStarter === '_Tupl' ? _elm_lang$core$Maybe$Nothing : _elm_lang$core$Maybe$Just(ctor),
+			_0: ctorStarter === '_Tupl' ? __Maybe_Nothing : __Maybe_Just(ctor),
 			_1: true,
-			_2: _elm_lang$core$List$reverse(list)
+			_2: __List_reverse(list)
 		};
 	}
 
 	if (type === 'object')
 	{
-		var dict = _elm_lang$core$Dict$empty;
+		var dict = __Dict_empty;
 		for (var i in value)
 		{
-			dict = A3(_elm_lang$core$Dict$insert, i, _VDebug_init(value[i]), dict);
+			dict = A3(__Dict_insert, i, _VDebug_init(value[i]), dict);
 		}
 		return { ctor: 'Record', _0: true, _1: dict };
 	}
@@ -237,13 +250,13 @@ function _VDebug_init(value)
 
 var _VDebug_initCons = F2(function initConsHelp(value, list)
 {
-	return _elm_lang$core$Native_List.Cons(_VDebug_init(value), list);
+	return __List_Cons(_VDebug_init(value), list);
 });
 
 var _VDebug_initKeyValueCons = F3(function(key, value, list)
 {
-	return _elm_lang$core$Native_List.Cons(
-		_elm_lang$core$Native_Utils.Tuple2(_VDebug_init(key), _VDebug_init(value)),
+	return __List_Cons(
+		__Utils_Tuple2(_VDebug_init(key), _VDebug_init(value)),
 		list
 	);
 });
@@ -275,7 +288,7 @@ function _VDebug_setup(impl, object, moduleName, flagChecker)
 	object['fullscreen'] = function fullscreen(flags)
 	{
 		var popoutRef = { doc: undefined };
-		return _elm_lang$core$Native_Platform.initialize(
+		return __Platform_initialize(
 			flagChecker(impl.init, flags, document.body),
 			impl.update(_VDebug_scrollTask(popoutRef)),
 			impl.subscriptions,
@@ -286,7 +299,7 @@ function _VDebug_setup(impl, object, moduleName, flagChecker)
 	object['embed'] = function fullscreen(node, flags)
 	{
 		var popoutRef = { doc: undefined };
-		return _elm_lang$core$Native_Platform.initialize(
+		return __Platform_initialize(
 			flagChecker(impl.init, flags, node),
 			impl.update(_VDebug_scrollTask(popoutRef)),
 			impl.subscriptions,
@@ -297,7 +310,7 @@ function _VDebug_setup(impl, object, moduleName, flagChecker)
 
 function _VDebug_scrollTask(popoutRef)
 {
-	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+	return __Scheduler_nativeBinding(function(callback)
 	{
 		var doc = popoutRef.doc;
 		if (doc)
@@ -308,7 +321,7 @@ function _VDebug_scrollTask(popoutRef)
 				msgs.scrollTop = msgs.scrollHeight;
 			}
 		}
-		callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+		callback(__Scheduler_succeed(__Utils_Tuple0));
 	});
 }
 

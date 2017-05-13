@@ -1,3 +1,15 @@
+/*
+
+import Elm.Kernel.Json exposing (equality, run)
+import Elm.Kernel.Platform exposing (initialize)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Json.Decode as Json exposing (map)
+import Platform.Cmd as Cmd exposing (none)
+import Platform.Sub as Sub exposing (none)
+
+*/
+
+
 var elm_lang$virtual_dom$VirtualDom_Debug$wrap;
 var elm_lang$virtual_dom$VirtualDom_Debug$wrapWithFlags;
 
@@ -266,7 +278,7 @@ function _VirtualDom_equalEvents(a, b)
 			return false;
 		}
 	}
-	return elm_lang$core$Native_Json.equality(a.decoder, b.decoder);
+	return __Json_equality(a.decoder, b.decoder);
 }
 
 
@@ -279,7 +291,7 @@ var _VirtualDom_mapProperty = F2(function(func, property)
 	return on(
 		property.realKey,
 		property.value.options,
-		A2(elm_lang$core$Json_Decode$map, func, property.value.decoder)
+		A2(__Json_map, func, property.value.decoder)
 	);
 });
 
@@ -446,7 +458,7 @@ function _VirtualDom_makeEventHandler(eventNode, info)
 	{
 		var info = eventHandler.info;
 
-		var value = A2(elm_lang$core$Native_Json.run, info.decoder, event);
+		var value = A2(__Json_run, info.decoder, event);
 
 		if (value.ctor === 'Ok')
 		{
@@ -1413,15 +1425,12 @@ function _VirtualDom_makeProgram(flagChecker)
 
 function _VirtualDom_staticProgram(vNode)
 {
-	var nothing = elm_lang$core$Native_Utils.Tuple2(
-		elm_lang$core$Native_Utils.Tuple0,
-		elm_lang$core$Platform_Cmd$none
-	);
+	var nothing = __Utils_Tuple2( __Utils_Tuple0, __Cmd_none );
 	return A2(program, elm_lang$virtual_dom$VirtualDom_Debug$wrap, {
 		init: nothing,
 		view: function() { return vNode; },
 		update: F2(function() { return nothing; }),
-		subscriptions: function() { return elm_lang$core$Platform_Sub$none; }
+		subscriptions: function() { return __Sub_none; }
 	})();
 }
 
@@ -1459,7 +1468,7 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 			_VirtualDom_crash(errorMessage, domNode);
 		}
 
-		var result = A2(elm_lang$core$Native_Json.run, flagDecoder, flags);
+		var result = A2(__Json_run, flagDecoder, flags);
 		if (result.ctor === 'Ok')
 		{
 			return init(result._0);
@@ -1500,7 +1509,7 @@ function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 			node.removeChild(node.lastChild);
 		}
 
-		return elm_lang$core$Native_Platform.initialize(
+		return __Platform_initialize(
 			flagChecker(impl.init, flags, node),
 			impl.update,
 			impl.subscriptions,
@@ -1510,7 +1519,7 @@ function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 
 	object['fullscreen'] = function fullscreen(flags)
 	{
-		return elm_lang$core$Native_Platform.initialize(
+		return __Platform_initialize(
 			flagChecker(impl.init, flags, document.body),
 			impl.update,
 			impl.subscriptions,

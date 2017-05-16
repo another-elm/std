@@ -1426,7 +1426,7 @@ function _VirtualDom_makeProgram(flagChecker)
 function _VirtualDom_staticProgram(vNode)
 {
 	var nothing = __Utils_Tuple2( __Utils_Tuple0, __Cmd_none );
-	return A2(program, elm_lang$virtual_dom$VirtualDom_Debug$wrap, {
+	return A2(_VirtualDom_program, elm_lang$virtual_dom$VirtualDom_Debug$wrap, {
 		init: nothing,
 		view: function() { return vNode; },
 		update: F2(function() { return nothing; }),

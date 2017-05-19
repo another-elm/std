@@ -14,7 +14,6 @@ module Html.Attributes exposing
   , sandbox, seamless, srcdoc
   , reversed, start
   , align, colspan, rowspan, headers, scope
-  , async, charset, content, defer, httpEquiv, language, scoped
   , accesskey, contenteditable, contextmenu, dir, draggable, dropzone
   , itemprop, lang, spellcheck, tabindex
   , challenge, keytype
@@ -67,9 +66,6 @@ just search the page for `video` if you want video stuff.
 
 # Tables
 @docs align, colspan, rowspan, headers, scope
-
-# Header Stuff
-@docs async, charset, content, defer, httpEquiv, language, scoped
 
 # Less Common Global Attributes
 Attributes that can be attached to any HTML tag but are less commonly used.
@@ -297,67 +293,6 @@ instead.
 tabindex : Int -> Attribute msg
 tabindex n =
   attribute "tabIndex" (toString n)
-
-
-
--- HEADER STUFF
-
-
-{-| Indicates that the `script` should be executed asynchronously. -}
-async : Bool -> Attribute msg
-async bool =
-  boolProperty "async" bool
-
-
-{-| Declares the character encoding of the page or script. Common values include:
-
-  * UTF-8 - Character encoding for Unicode
-  * ISO-8859-1 - Character encoding for the Latin alphabet
-
-For `meta` and `script`.
--}
-charset : String -> Attribute msg
-charset value =
-  attribute "charset" value
-
-
-{-| A value associated with http-equiv or name depending on the context. For
-`meta`.
--}
-content : String -> Attribute msg
-content value =
-  stringProperty "content" value
-
-
-{-| Indicates that a `script` should be executed after the page has been
-parsed.
--}
-defer : Bool -> Attribute msg
-defer bool =
-  boolProperty "defer" bool
-
-
-{-| This attribute is an indicator that is paired with the `content` attribute,
-indicating what that content means. `httpEquiv` can take on three different
-values: content-type, default-style, or refresh. For `meta`.
--}
-httpEquiv : String -> Attribute msg
-httpEquiv value =
-  stringProperty "httpEquiv" value
-
-
-{-| Defines the script language used in a `script`. -}
-language : String -> Attribute msg
-language value =
-  stringProperty "language" value
-
-
-{-| Indicates that a `style` should only apply to its parent and all of the
-parents children.
--}
-scoped : Bool -> Attribute msg
-scoped bool =
-  boolProperty "scoped" bool
 
 
 

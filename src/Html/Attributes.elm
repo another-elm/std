@@ -814,6 +814,7 @@ download bool =
 
 {-| Indicates that clicking an `a` and `area` will download the resource
 directly, and that the downloaded resource with have the given filename.
+So `downloadAs "hats.json"` means the person gets a file named `hats.json`.
 -}
 downloadAs : String -> Attribute msg
 downloadAs value =

@@ -189,8 +189,8 @@ beginnerProgram
   -> Program Never model msg
 beginnerProgram {model, view, update} =
   program
-    { init = model ! []
-    , update = \msg model -> update msg model ! []
+    { init = (model, Cmd.none)
+    , update = \msg model -> (update msg model, Cmd.none)
     , view = view
     , subscriptions = \_ -> Sub.none
     }

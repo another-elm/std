@@ -6,6 +6,7 @@ import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Platform exposing (initialize)
 import Elm.Kernel.Scheduler exposing (nativeBinding, succeed)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.VirtualDom exposing (applyPatches, diff, doc, makeStepper, render)
 import List exposing (map, reverse)
 import Maybe exposing (Maybe(Just, Nothing))
 import Set exposing (foldr)
@@ -335,16 +336,16 @@ function _VDebug_renderer(moduleName, parentNode, popoutRef, view, viewIn, viewO
 
 		// make normal stepper
 		var appVirtualNode = view(initialModel);
-		var appNode = _VirtualDom_render(appVirtualNode, appEventNode);
+		var appNode = __VirtualDom_render(appVirtualNode, appEventNode);
 		parentNode.appendChild(appNode);
-		var appStepper = _VirtualDom_makeStepper(appNode, view, appVirtualNode, appEventNode);
+		var appStepper = __VirtualDom_makeStepper(appNode, view, appVirtualNode, appEventNode);
 
 		// make overlay stepper
 		var overVirtualNode = viewIn(initialModel)._1;
-		var overNode = _VirtualDom_render(overVirtualNode, eventNode);
+		var overNode = __VirtualDom_render(overVirtualNode, eventNode);
 		parentNode.appendChild(overNode);
 		var wrappedViewIn = _VDebug_wrapViewIn(appEventNode, overNode, viewIn);
-		var overStepper = _VirtualDom_makeStepper(overNode, wrappedViewIn, overVirtualNode, eventNode);
+		var overStepper = __VirtualDom_makeStepper(overNode, wrappedViewIn, overVirtualNode, eventNode);
 
 		// make debugger stepper
 		var debugStepper = _VDebug_makeStepper(initialModel, viewOut, eventNode, parentNode, moduleName, popoutRef);
@@ -378,15 +379,15 @@ function _VDebug_makeStepper(initialModel, view, eventNode, parentNode, moduleNa
 		}
 
 		// switch to document of popout
-		_VirtualDom_doc = popoutRef.doc;
+		__VirtualDom_doc = popoutRef.doc;
 
 		var next = view(model);
-		var patches = _VirtualDom_diff(curr, next);
-		domNode = _VirtualDom_applyPatches(domNode, curr, patches, eventNode);
+		var patches = __VirtualDom_diff(curr, next);
+		domNode = __VirtualDom_applyPatches(domNode, curr, patches, eventNode);
 		curr = next;
 
 		// switch back to normal document
-		_VirtualDom_doc = document;
+		__VirtualDom_doc = document;
 	};
 }
 
@@ -399,16 +400,16 @@ function _VDebug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
 	var debugWindow = window.open('', '', 'width=' + w + ',height=' + h + ',left=' + x + ',top=' + y);
 
 	// switch to window document
-	_VirtualDom_doc = debugWindow.document;
+	__VirtualDom_doc = debugWindow.document;
 
-	popoutRef.doc = _VirtualDom_doc;
-	_VirtualDom_doc.title = 'Debugger - ' + moduleName;
-	_VirtualDom_doc.body.style.margin = '0';
-	_VirtualDom_doc.body.style.padding = '0';
-	var domNode = _VirtualDom_render(virtualNode, eventNode);
-	_VirtualDom_doc.body.appendChild(domNode);
+	popoutRef.doc = __VirtualDom_doc;
+	__VirtualDom_doc.title = 'Debugger - ' + moduleName;
+	__VirtualDom_doc.body.style.margin = '0';
+	__VirtualDom_doc.body.style.padding = '0';
+	var domNode = __VirtualDom_render(virtualNode, eventNode);
+	__VirtualDom_doc.body.appendChild(domNode);
 
-	_VirtualDom_doc.addEventListener('keydown', function(event) {
+	__VirtualDom_doc.addEventListener('keydown', function(event) {
 		if (event.metaKey && event.which === 82)
 		{
 			window.location.reload();
@@ -438,7 +439,7 @@ function _VDebug_openWindow(moduleName, popoutRef, virtualNode, eventNode)
 	});
 
 	// switch back to the normal document
-	_VirtualDom_doc = document;
+	__VirtualDom_doc = document;
 
 	return domNode;
 }

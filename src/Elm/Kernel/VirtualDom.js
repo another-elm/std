@@ -1,6 +1,7 @@
 /*
 
 import Elm.Kernel.Json exposing (equality, run)
+import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Platform exposing (initialize)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Json.Decode as Json exposing (map)
@@ -1528,66 +1529,109 @@ function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 	};
 }
 
-function _VirtualDom_renderer(parentNode, view)
-{
-	return function(tagger, initialModel)
-	{
-		var eventNode = { tagger: tagger, parent: undefined };
-		var initialVirtualNode = view(initialModel);
-		var domNode = _VirtualDom_render(initialVirtualNode, eventNode);
-		parentNode.appendChild(domNode);
-		return _VirtualDom_makeStepper(domNode, view, initialVirtualNode, eventNode);
-	};
-}
 
-
-// STEPPER
+// RENDERER
 
 var _VirtualDom_requestAnimationFrame =
 	typeof requestAnimationFrame !== 'undefined'
 		? requestAnimationFrame
 		: function(callback) { setTimeout(callback, 1000 / 60); };
 
-function _VirtualDom_makeStepper(domNode, view, initialVirtualNode, eventNode)
+function _VirtualDom_renderer(domNode, view)
 {
-	var state = 'NO_REQUEST';
-	var currNode = initialVirtualNode;
-	var nextModel;
-
-	function updateIfNeeded()
+	return function(tagger)
 	{
-		switch (state)
+		var eventNode = { tagger: tagger, parent: undefined };
+		var currNode = virtualize(domNode);
+
+		var state = 'NO_REQUEST';
+		var nextModel;
+
+		function updateIfNeeded()
 		{
-			case 'NO_REQUEST':
-				throw new Error(
-					'Unexpected draw callback.\n' +
-					'Please report this to <https://github.com/elm-lang/virtual-dom/issues>.'
-				);
+			switch (state)
+			{
+				case 'NO_REQUEST':
+					throw new Error(
+						'Unexpected draw callback.\n' +
+						'Please report this to <https://github.com/elm-lang/virtual-dom/issues>.'
+					);
 
-			case 'PENDING_REQUEST':
-				_VirtualDom_requestAnimationFrame(updateIfNeeded);
-				state = 'EXTRA_REQUEST';
+				case 'PENDING_REQUEST':
+					_VirtualDom_requestAnimationFrame(updateIfNeeded);
+					state = 'EXTRA_REQUEST';
 
-				var nextNode = view(nextModel);
-				var patches = _VirtualDom_diff(currNode, nextNode);
-				domNode = _VirtualDom_applyPatches(domNode, currNode, patches, eventNode);
-				currNode = nextNode;
+					var nextNode = view(nextModel);
+					var patches = _VirtualDom_diff(currNode, nextNode);
+					domNode = _VirtualDom_applyPatches(domNode, currNode, patches, eventNode);
+					currNode = nextNode;
 
-				return;
+					return;
 
-			case 'EXTRA_REQUEST':
-				state = 'NO_REQUEST';
-				return;
+				case 'EXTRA_REQUEST':
+					state = 'NO_REQUEST';
+					return;
+			}
 		}
+
+		return function stepper(model)
+		{
+			if (state === 'NO_REQUEST')
+			{
+				_VirtualDom_requestAnimationFrame(updateIfNeeded);
+			}
+			state = 'PENDING_REQUEST';
+			nextModel = model;
+		};
+	};
+}
+
+function virtualize(node)
+{
+	// TEXT NODES
+
+	if (node.nodeType === 3)
+	{
+		return _VirtualDom_text(node.textContent);
+	}
+	// else is normal NODE
+
+
+	// ATTRIBUTES
+
+	var keys;
+	var attrList = __List_Nil;
+	var attrs = node.attributes;
+	for (var i = attrs.length; i--; )
+	{
+		var attr = attrs[i];
+		var name = attr.name;
+		var value = attr.value;
+		name === 'data-k'
+			? keys = value.split('|')
+			: attrList = __List_Cons( A2(_VirtualDom_attribute, name, value), attrList );
 	}
 
-	return function stepper(model)
+	var tag = node.tagName.toLowerCase();
+	var kidList = __List_Nil;
+	var kids = node.childNodes;
+
+	// KEYED NODES
+
+	if (keys)
 	{
-		if (state === 'NO_REQUEST')
+		for (var i = kids.length; i--; )
 		{
-			_VirtualDom_requestAnimationFrame(updateIfNeeded);
+			kidList = __List_Cons(__Utils_Tuple2(keys[i], virtualize(kids[i])), kidList);
 		}
-		state = 'PENDING_REQUEST';
-		nextModel = model;
-	};
+		return A3(_VirtualDom_keyedNode, tag, attrList, kidList);
+	}
+
+	// NORMAL NODES
+
+	for (var i = kids.length; i--; )
+	{
+		kidList = __List_Cons(virtualize(kids[i]), kidList);
+	}
+	return A3(_VirtualDom_node, tag, attrList, kidList);
 }

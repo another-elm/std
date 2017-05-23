@@ -1,5 +1,6 @@
 /*
 
+import Elm.Kernel.Error exposing (throw)
 import Elm.Kernel.Json exposing (equality, run)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Platform exposing (initialize)
@@ -1213,7 +1214,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 		case __2_TEXT:
 		case __2_THUNK:
-			throw new Error('should never traverse `text` or `thunk` nodes like this');
+			__Error_throw(13); // 'should never traverse `text` or `thunk` nodes like this'
 	}
 }
 
@@ -1316,7 +1317,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return impl.applyPatch(domNode, impl.data);
 
 		default:
-			throw new Error('Ran into an unknown patch!');
+			__Error_throw(13); // 'Ran into an unknown patch!'
 	}
 }
 
@@ -1442,11 +1443,7 @@ function _VirtualDom_checkNoFlags(flagDecoder, moduleName)
 			return init;
 		}
 
-		var errorMessage =
-			'The `' + moduleName + '` module does not need flags.\n'
-			+ 'Initialize it with no arguments and you should be all set!';
-
-		_VirtualDom_crash(errorMessage, domNode);
+		__Error_throw(0);
 	};
 }
 
@@ -1456,12 +1453,7 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 	{
 		if (typeof flagDecoder === 'undefined')
 		{
-			var errorMessage =
-				'Are you trying to sneak a Never value into Elm? Trickster!\n'
-				+ 'It looks like ' + moduleName + '.main is defined with `programWithFlags` but has type `Program Never`.\n'
-				+ 'Use `program` instead if you do not want flags.'
-
-			_VirtualDom_crash(errorMessage, domNode);
+			__Error_throw(1);
 		}
 
 		var result = A2(__Json_run, flagDecoder, flags);
@@ -1470,27 +1462,8 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 			return init(result._0);
 		}
 
-		var errorMessage =
-			'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
-			+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
-			+ result._0;
-
-		_VirtualDom_crash(errorMessage, domNode);
+		__Error_throw(2);
 	};
-}
-
-function _VirtualDom_crash(errorMessage, domNode)
-{
-	if (domNode)
-	{
-		domNode.innerHTML =
-			'<div style="padding-left:1em;">'
-			+ '<h2 style="font-weight:normal;"><b>Oops!</b> Something went wrong when starting your Elm program.</h2>'
-			+ '<pre style="padding-left:1em;">' + errorMessage + '</pre>'
-			+ '</div>';
-	}
-
-	throw new Error(errorMessage);
 }
 
 
@@ -1547,10 +1520,7 @@ function _VirtualDom_renderer(domNode, view)
 			switch (state)
 			{
 				case __4_NO_REQUEST:
-					throw new Error(
-						'Unexpected draw callback.\n' +
-						'Please report this to <https://github.com/elm-lang/virtual-dom/issues>.'
-					);
+					__Error_throw(13); // unexpected draw callback
 
 				case __4_PENDING_REQUEST:
 					_VirtualDom_requestAnimationFrame(updateIfNeeded);

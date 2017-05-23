@@ -268,9 +268,11 @@ var _VirtualDom_on = F3(function(name, options, decoder)
 
 function _VirtualDom_equalEvents(a, b)
 {
-	if (a.options !== b.options)
+	var aOps = a.options;
+	var bOps = b.options;
+	if (aOps !== bOps)
 	{
-		if (a.options.stopPropagation !== b.options.stopPropagation || a.options.preventDefault !== b.options.preventDefault)
+		if (aOps.stopPropagation !== bOps.stopPropagation || aOps.preventDefault !== bOps.preventDefault)
 		{
 			return false;
 		}

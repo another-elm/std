@@ -146,7 +146,7 @@ var _VirtualDom_lazy2 = F3(function(fn, a, b)
 
 var _VirtualDom_lazy3 = F4(function(fn, a, b, c)
 {
-	return thunk(fn, [a,b,c], function() {
+	return _VirtualDom_thunk(fn, [a,b,c], function() {
 		return A3(fn, a, b, c);
 	});
 });

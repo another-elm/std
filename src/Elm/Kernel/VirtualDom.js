@@ -15,11 +15,6 @@ var elm_lang$virtual_dom$VirtualDom_Debug$wrap;
 var elm_lang$virtual_dom$VirtualDom_Debug$wrapWithFlags;
 
 
-var _VirtualDom_STYLE_KEY = 'STYLE';
-var _VirtualDom_EVENT_KEY = 'EVENT';
-var _VirtualDom_ATTR_KEY = 'ATTR';
-var _VirtualDom_ATTR_NS_KEY = 'ATTR_NS';
-
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
 
@@ -29,7 +24,7 @@ var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 function _VirtualDom_text(string)
 {
 	return {
-		type: 'text',
+		type: __2_TEXT,
 		text: string
 	};
 }
@@ -61,7 +56,7 @@ function _VirtualDom_nodeHelp(tag, factList, kidList)
 	descendantsCount += children.length;
 
 	return {
-		type: 'node',
+		type: __2_NODE,
 		tag: tag,
 		facts: facts,
 		children: children,
@@ -89,7 +84,7 @@ var _VirtualDom_keyedNode = F3(function(tag, factList, kidList)
 	descendantsCount += children.length;
 
 	return {
-		type: 'keyed-node',
+		type: __2_KEYED_NODE,
 		tag: tag,
 		facts: facts,
 		children: children,
@@ -104,7 +99,7 @@ var _VirtualDom_custom = F3(function(factList, model, impl)
 	var facts = _VirtualDom_organizeFacts(factList).facts;
 
 	return {
-		type: 'custom',
+		type: __2_CUSTOM,
 		facts: facts,
 		model: model,
 		impl: impl
@@ -115,7 +110,7 @@ var _VirtualDom_custom = F3(function(factList, model, impl)
 var _VirtualDom_map = F2(function(tagger, node)
 {
 	return {
-		type: 'tagger',
+		type: __2_TAGGER,
 		tagger: tagger,
 		node: node,
 		descendantsCount: 1 + (node.descendantsCount || 0)
@@ -126,7 +121,7 @@ var _VirtualDom_map = F2(function(tagger, node)
 function _VirtualDom_thunk(func, args, thunk)
 {
 	return {
-		type: 'thunk',
+		type: __2_THUNK,
 		func: func,
 		args: args,
 		thunk: thunk,
@@ -169,13 +164,13 @@ function _VirtualDom_organizeFacts(factList)
 		var entry = factList._0;
 		var key = entry.key;
 
-		if (key === _VirtualDom_ATTR_KEY || key === _VirtualDom_ATTR_NS_KEY || key === _VirtualDom_EVENT_KEY)
+		if (key === __1_ATTR || key === __1_ATTR_NS || key === __1_EVENT)
 		{
 			var subFacts = facts[key] || {};
 			subFacts[entry.realKey] = entry.value;
 			facts[key] = subFacts;
 		}
-		else if (key === _VirtualDom_STYLE_KEY)
+		else if (key === __1_STYLE)
 		{
 			var styles = facts[key] || {};
 			var styleList = entry.value;
@@ -219,7 +214,7 @@ function _VirtualDom_organizeFacts(factList)
 function _VirtualDom_style(value)
 {
 	return {
-		key: _VirtualDom_STYLE_KEY,
+		key: __1_STYLE,
 		value: value
 	};
 }
@@ -237,7 +232,7 @@ var _VirtualDom_property = F2(function(key, value)
 var _VirtualDom_attribute = F2(function(key, value)
 {
 	return {
-		key: _VirtualDom_ATTR_KEY,
+		key: __1_ATTR,
 		realKey: key,
 		value: value
 	};
@@ -247,7 +242,7 @@ var _VirtualDom_attribute = F2(function(key, value)
 var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 {
 	return {
-		key: _VirtualDom_ATTR_NS_KEY,
+		key: __1_ATTR_NS,
 		realKey: key,
 		value: {
 			value: value,
@@ -260,7 +255,7 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 var _VirtualDom_on = F3(function(name, options, decoder)
 {
 	return {
-		key: _VirtualDom_EVENT_KEY,
+		key: __1_EVENT,
 		realKey: name,
 		value: {
 			options: options,
@@ -285,7 +280,7 @@ function _VirtualDom_equalEvents(a, b)
 
 var _VirtualDom_mapProperty = F2(function(func, property)
 {
-	if (property.key !== _VirtualDom_EVENT_KEY)
+	if (property.key !== __1_EVENT)
 	{
 		return property;
 	}
@@ -304,18 +299,18 @@ function _VirtualDom_render(vNode, eventNode)
 {
 	switch (vNode.type)
 	{
-		case 'thunk':
+		case __2_THUNK:
 			if (!vNode.node)
 			{
 				vNode.node = vNode.thunk();
 			}
 			return _VirtualDom_render(vNode.node, eventNode);
 
-		case 'tagger':
+		case __2_TAGGER:
 			var subNode = vNode.node;
 			var tagger = vNode.tagger;
 
-			while (subNode.type === 'tagger')
+			while (subNode.type === __2_TAGGER)
 			{
 				typeof tagger !== 'object'
 					? tagger = [tagger, subNode.tagger]
@@ -329,10 +324,10 @@ function _VirtualDom_render(vNode, eventNode)
 			domNode.elm_event_node_ref = subEventRoot;
 			return domNode;
 
-		case 'text':
+		case __2_TEXT:
 			return _VirtualDom_doc.createTextNode(vNode.text);
 
-		case 'node':
+		case __2_NODE:
 			var domNode = vNode.namespace
 				? _VirtualDom_doc.createElementNS(vNode.namespace, vNode.tag)
 				: _VirtualDom_doc.createElement(vNode.tag);
@@ -348,7 +343,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 			return domNode;
 
-		case 'keyed-node':
+		case __2_KEYED_NODE:
 			var domNode = vNode.namespace
 				? _VirtualDom_doc.createElementNS(vNode.namespace, vNode.tag)
 				: _VirtualDom_doc.createElement(vNode.tag);
@@ -364,7 +359,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 			return domNode;
 
-		case 'custom':
+		case __2_CUSTOM:
 			var domNode = vNode.impl.render(vNode.model);
 			_VirtualDom_applyFacts(domNode, eventNode, vNode.facts);
 			return domNode;
@@ -384,19 +379,19 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 
 		switch (key)
 		{
-			case _VirtualDom_STYLE_KEY:
+			case __1_STYLE:
 				_VirtualDom_applyStyles(domNode, value);
 				break;
 
-			case _VirtualDom_EVENT_KEY:
+			case __1_EVENT:
 				_VirtualDom_applyEvents(domNode, eventNode, value);
 				break;
 
-			case _VirtualDom_ATTR_KEY:
+			case __1_ATTR:
 				_VirtualDom_applyAttrs(domNode, value);
 				break;
 
-			case _VirtualDom_ATTR_NS_KEY:
+			case __1_ATTR_NS:
 				_VirtualDom_applyAttrsNS(domNode, value);
 				break;
 
@@ -574,14 +569,14 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 	// structure has changed significantly and it's not worth a diff.
 	if (aType !== bType)
 	{
-		patches.push(_VirtualDom_makePatch('p-redraw', index, b));
+		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
 		return;
 	}
 
 	// Now we know that both nodes are the same type.
 	switch (bType)
 	{
-		case 'thunk':
+		case __2_THUNK:
 			var aArgs = a.args;
 			var bArgs = b.args;
 			var i = aArgs.length;
@@ -600,18 +595,18 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 			_VirtualDom_diffHelp(a.node, b.node, subPatches, 0);
 			if (subPatches.length > 0)
 			{
-				patches.push(_VirtualDom_makePatch('p-thunk', index, subPatches));
+				patches.push(_VirtualDom_makePatch(__3_THUNK, index, subPatches));
 			}
 			return;
 
-		case 'tagger':
+		case __2_TAGGER:
 			// gather nested taggers
 			var aTaggers = a.tagger;
 			var bTaggers = b.tagger;
 			var nesting = false;
 
 			var aSubNode = a.node;
-			while (aSubNode.type === 'tagger')
+			while (aSubNode.type === __2_TAGGER)
 			{
 				nesting = true;
 
@@ -623,7 +618,7 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 			}
 
 			var bSubNode = b.node;
-			while (bSubNode.type === 'tagger')
+			while (bSubNode.type === __2_TAGGER)
 			{
 				nesting = true;
 
@@ -638,35 +633,35 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 			// structure of the virtual DOM has changed.
 			if (nesting && aTaggers.length !== bTaggers.length)
 			{
-				patches.push(_VirtualDom_makePatch('p-redraw', index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
 				return;
 			}
 
 			// check if taggers are "the same"
 			if (nesting ? !_VirtualDom_pairwiseRefEqual(aTaggers, bTaggers) : aTaggers !== bTaggers)
 			{
-				patches.push(_VirtualDom_makePatch('p-tagger', index, bTaggers));
+				patches.push(_VirtualDom_makePatch(__3_TAGGER, index, bTaggers));
 			}
 
 			// diff everything below the taggers
 			_VirtualDom_diffHelp(aSubNode, bSubNode, patches, index + 1);
 			return;
 
-		case 'text':
+		case __2_TEXT:
 			if (a.text !== b.text)
 			{
-				patches.push(_VirtualDom_makePatch('p-text', index, b.text));
+				patches.push(_VirtualDom_makePatch(__3_TEXT, index, b.text));
 				return;
 			}
 
 			return;
 
-		case 'node':
+		case __2_NODE:
 			// Bail if obvious indicators have changed. Implies more serious
 			// structural changes such that it's not worth it to diff.
 			if (a.tag !== b.tag || a.namespace !== b.namespace)
 			{
-				patches.push(_VirtualDom_makePatch('p-redraw', index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
 				return;
 			}
 
@@ -674,18 +669,18 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 
 			if (typeof factsDiff !== 'undefined')
 			{
-				patches.push(_VirtualDom_makePatch('p-facts', index, factsDiff));
+				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
 			_VirtualDom_diffChildren(a, b, patches, index);
 			return;
 
-		case 'keyed-node':
+		case __2_KEYED_NODE:
 			// Bail if obvious indicators have changed. Implies more serious
 			// structural changes such that it's not worth it to diff.
 			if (a.tag !== b.tag || a.namespace !== b.namespace)
 			{
-				patches.push(_VirtualDom_makePatch('p-redraw', index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
 				return;
 			}
 
@@ -693,29 +688,29 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 
 			if (typeof factsDiff !== 'undefined')
 			{
-				patches.push(_VirtualDom_makePatch('p-facts', index, factsDiff));
+				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
 			_VirtualDom_diffKeyedChildren(a, b, patches, index);
 			return;
 
-		case 'custom':
+		case __2_CUSTOM:
 			if (a.impl !== b.impl)
 			{
-				patches.push(_VirtualDom_makePatch('p-redraw', index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
 				return;
 			}
 
 			var factsDiff = _VirtualDom_diffFacts(a.facts, b.facts);
 			if (typeof factsDiff !== 'undefined')
 			{
-				patches.push(_VirtualDom_makePatch('p-facts', index, factsDiff));
+				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
 			var patch = b.impl.diff(a,b);
 			if (patch)
 			{
-				patches.push(_VirtualDom_makePatch('p-custom', index, patch));
+				patches.push(_VirtualDom_makePatch(__3_CUSTOM, index, patch));
 				return;
 			}
 
@@ -749,7 +744,7 @@ function _VirtualDom_diffFacts(a, b, category)
 	// look for changes and removals
 	for (var aKey in a)
 	{
-		if (aKey === _VirtualDom_STYLE_KEY || aKey === _VirtualDom_EVENT_KEY || aKey === _VirtualDom_ATTR_KEY || aKey === _VirtualDom_ATTR_NS_KEY)
+		if (aKey === __1_STYLE || aKey === __1_EVENT || aKey === __1_ATTR || aKey === __1_ATTR_NS)
 		{
 			var subDiff = _VirtualDom_diffFacts(a[aKey], b[aKey] || {}, aKey);
 			if (subDiff)
@@ -768,10 +763,10 @@ function _VirtualDom_diffFacts(a, b, category)
 				(typeof category === 'undefined')
 					? (typeof a[aKey] === 'string' ? '' : null)
 					:
-				(category === _VirtualDom_STYLE_KEY)
+				(category === __1_STYLE)
 					? ''
 					:
-				(category === _VirtualDom_EVENT_KEY || category === _VirtualDom_ATTR_KEY)
+				(category === __1_EVENT || category === __1_ATTR)
 					? undefined
 					:
 				{ namespace: a[aKey].namespace, value: undefined };
@@ -784,7 +779,7 @@ function _VirtualDom_diffFacts(a, b, category)
 
 		// reference equal, so don't worry about it
 		if (aValue === bValue && aKey !== 'value'
-			|| category === _VirtualDom_EVENT_KEY && _VirtualDom_equalEvents(aValue, bValue))
+			|| category === __1_EVENT && _VirtualDom_equalEvents(aValue, bValue))
 		{
 			continue;
 		}
@@ -819,11 +814,11 @@ function _VirtualDom_diffChildren(aParent, bParent, patches, rootIndex)
 
 	if (aLen > bLen)
 	{
-		patches.push(_VirtualDom_makePatch('p-remove-last', rootIndex, aLen - bLen));
+		patches.push(_VirtualDom_makePatch(__3_REMOVE_LAST, rootIndex, aLen - bLen));
 	}
 	else if (aLen < bLen)
 	{
-		patches.push(_VirtualDom_makePatch('p-append', rootIndex, bChildren.slice(aLen)));
+		patches.push(_VirtualDom_makePatch(__3_APPEND, rootIndex, bChildren.slice(aLen)));
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE
@@ -995,7 +990,7 @@ function _VirtualDom_diffKeyedChildren(aParent, bParent, patches, rootIndex)
 
 	if (localPatches.length > 0 || inserts.length > 0 || typeof endInserts !== 'undefined')
 	{
-		patches.push(_VirtualDom_makePatch('p-reorder', rootIndex, {
+		patches.push(_VirtualDom_makePatch(__3_REORDER, rootIndex, {
 			patches: localPatches,
 			inserts: inserts,
 			endInserts: endInserts
@@ -1060,7 +1055,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 	// never seen this key before
 	if (typeof entry === 'undefined')
 	{
-		var patch = _VirtualDom_makePatch('p-remove', index, undefined);
+		var patch = _VirtualDom_makePatch(__3_REMOVE, index, undefined);
 		localPatches.push(patch);
 
 		changes[key] = {
@@ -1080,7 +1075,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 		var subPatches = [];
 		_VirtualDom_diffHelp(vnode, entry.vnode, subPatches, index);
 
-		var patch = _VirtualDom_makePatch('p-remove', index, {
+		var patch = _VirtualDom_makePatch(__3_REMOVE, index, {
 			patches: subPatches,
 			entry: entry
 		});
@@ -1119,11 +1114,11 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 	{
 		var patchType = patch.type;
 
-		if (patchType === 'p-thunk')
+		if (patchType === __3_THUNK)
 		{
 			_VirtualDom_addDomNodes(domNode, vNode.node, patch.data, eventNode);
 		}
-		else if (patchType === 'p-reorder')
+		else if (patchType === __3_REORDER)
 		{
 			patch.domNode = domNode;
 			patch.eventNode = eventNode;
@@ -1134,7 +1129,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 				_VirtualDom_addDomNodesHelp(domNode, vNode, subPatches, 0, low, high, eventNode);
 			}
 		}
-		else if (patchType === 'p-remove')
+		else if (patchType === __3_REMOVE)
 		{
 			patch.domNode = domNode;
 			patch.eventNode = eventNode;
@@ -1166,17 +1161,17 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 	switch (vNode.type)
 	{
-		case 'tagger':
+		case __2_TAGGER:
 			var subNode = vNode.node;
 
-			while (subNode.type === "tagger")
+			while (subNode.type === __2_TAGGER)
 			{
 				subNode = subNode.node;
 			}
 
 			return _VirtualDom_addDomNodesHelp(domNode, subNode, patches, i, low + 1, high, domNode.elm_event_node_ref);
 
-		case 'node':
+		case __2_NODE:
 			var vChildren = vNode.children;
 			var childNodes = domNode.childNodes;
 			for (var j = 0; j < vChildren.length; j++)
@@ -1196,7 +1191,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 			}
 			return i;
 
-		case 'keyed-node':
+		case __2_KEYED_NODE:
 			var vChildren = vNode.children;
 			var childNodes = domNode.childNodes;
 			for (var j = 0; j < vChildren.length; j++)
@@ -1216,8 +1211,8 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 			}
 			return i;
 
-		case 'text':
-		case 'thunk':
+		case __2_TEXT:
+		case __2_THUNK:
 			throw new Error('should never traverse `text` or `thunk` nodes like this');
 	}
 }
@@ -1257,21 +1252,21 @@ function _VirtualDom_applyPatch(domNode, patch)
 {
 	switch (patch.type)
 	{
-		case 'p-redraw':
+		case __3_REDRAW:
 			return _VirtualDom_applyPatchRedraw(domNode, patch.data, patch.eventNode);
 
-		case 'p-facts':
+		case __3_FACTS:
 			_VirtualDom_applyFacts(domNode, patch.eventNode, patch.data);
 			return domNode;
 
-		case 'p-text':
+		case __3_TEXT:
 			domNode.replaceData(0, domNode.length, patch.data);
 			return domNode;
 
-		case 'p-thunk':
+		case __3_THUNK:
 			return _VirtualDom_applyPatchesHelp(domNode, patch.data);
 
-		case 'p-tagger':
+		case __3_TAGGER:
 			if (typeof domNode.elm_event_node_ref !== 'undefined')
 			{
 				domNode.elm_event_node_ref.tagger = patch.data;
@@ -1282,7 +1277,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			}
 			return domNode;
 
-		case 'p-remove-last':
+		case __3_REMOVE_LAST:
 			var i = patch.data;
 			while (i--)
 			{
@@ -1290,7 +1285,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			}
 			return domNode;
 
-		case 'p-append':
+		case __3_APPEND:
 			var newNodes = patch.data;
 			for (var i = 0; i < newNodes.length; i++)
 			{
@@ -1298,7 +1293,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			}
 			return domNode;
 
-		case 'p-remove':
+		case __3_REMOVE:
 			var data = patch.data;
 			if (typeof data === 'undefined')
 			{
@@ -1313,10 +1308,10 @@ function _VirtualDom_applyPatch(domNode, patch)
 			entry.data = _VirtualDom_applyPatchesHelp(domNode, data.patches);
 			return domNode;
 
-		case 'p-reorder':
+		case __3_REORDER:
 			return _VirtualDom_applyPatchReorder(domNode, patch);
 
-		case 'p-custom':
+		case __3_CUSTOM:
 			var impl = patch.data;
 			return impl.applyPatch(domNode, impl.data);
 
@@ -1544,22 +1539,22 @@ function _VirtualDom_renderer(domNode, view)
 		var eventNode = { tagger: tagger, parent: undefined };
 		var currNode = virtualize(domNode);
 
-		var state = 'NO_REQUEST';
+		var state = __4_NO_REQUEST;
 		var nextModel;
 
 		function updateIfNeeded()
 		{
 			switch (state)
 			{
-				case 'NO_REQUEST':
+				case __4_NO_REQUEST:
 					throw new Error(
 						'Unexpected draw callback.\n' +
 						'Please report this to <https://github.com/elm-lang/virtual-dom/issues>.'
 					);
 
-				case 'PENDING_REQUEST':
+				case __4_PENDING_REQUEST:
 					_VirtualDom_requestAnimationFrame(updateIfNeeded);
-					state = 'EXTRA_REQUEST';
+					state = __4_EXTRA_REQUEST;
 
 					var nextNode = view(nextModel);
 					var patches = _VirtualDom_diff(currNode, nextNode);
@@ -1568,19 +1563,19 @@ function _VirtualDom_renderer(domNode, view)
 
 					return;
 
-				case 'EXTRA_REQUEST':
-					state = 'NO_REQUEST';
+				case __4_EXTRA_REQUEST:
+					state = __4_NO_REQUEST;
 					return;
 			}
 		}
 
 		return function stepper(model)
 		{
-			if (state === 'NO_REQUEST')
+			if (state === __4_NO_REQUEST)
 			{
 				_VirtualDom_requestAnimationFrame(updateIfNeeded);
 			}
-			state = 'PENDING_REQUEST';
+			state = __4_PENDING_REQUEST;
 			nextModel = model;
 		};
 	};

@@ -1,12 +1,12 @@
 module VirtualDom exposing
   ( Node
-  , text, node
+  , text, node, nodeNS
   , Property, property, attribute, attributeNS, mapProperty
   , style
   , on, onWithOptions, Options, defaultOptions
   , map
   , lazy, lazy2, lazy3
-  , keyedNode
+  , keyedNode, keyedNodeNS
   , program, programWithFlags
   )
 
@@ -14,7 +14,7 @@ module VirtualDom exposing
 that expose more helper functions for HTML or SVG.
 
 # Create
-@docs Node, text, node
+@docs Node, text, node, nodeNS
 
 # Declare Properties and Attributes
 @docs Property, property, attribute, attributeNS, mapProperty
@@ -29,7 +29,7 @@ that expose more helper functions for HTML or SVG.
 @docs map
 
 # Optimizations
-@docs lazy, lazy2, lazy3, keyedNode
+@docs lazy, lazy2, lazy3, keyedNode, keyedNodeNS
 
 # Programs
 @docs program, programWithFlags
@@ -65,6 +65,18 @@ a list of child nodes.
 node : String -> List (Property msg) -> List (Node msg) -> Node msg
 node =
   Elm.Kernel.VirtualDom.node
+
+
+{-| Create a namespaced DOM node. For example, an SVG `<path>` node could be
+defined like this:
+
+    path : List (Property msg) -> List (Node msg) -> Node msg
+    path attrubutes children =
+      nodeNS "http://www.w3.org/2000/svg" "path" attributes children
+-}
+nodeNS : String -> String -> List (Property msg) -> List (Node msg) -> Node msg
+nodeNS =
+  Elm.Kernel.VirtualDom.nodeNS
 
 
 {-| Just put plain text in the DOM. It will escape the string so that it appears
@@ -164,7 +176,12 @@ attribute =
 {-| Would you believe that there is another way to do this?! This corresponds
 to JavaScript's `setAttributeNS` function under the hood. It is doing pretty
 much the same thing as `attribute` but you are able to have "namespaced"
-attributes. This is used in some SVG stuff at least.
+attributes. As an example, the `elm-lang/svg` package defines an attribute
+like this:
+
+    xlinkHref : String -> Attribute msg
+    xlinkHref =
+      attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
 -}
 attributeNS : String -> String -> String -> Property msg
 attributeNS =
@@ -292,6 +309,18 @@ the DOM modifications more efficient.
 keyedNode : String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
 keyedNode =
   Elm.Kernel.VirtualDom.keyedNode
+
+
+{-| Create a keyed and namespaced DOM node. For example, an SVG `<g>` node
+could be defined like this:
+
+    g : List (Property msg) -> List ( String, Node msg ) -> Node msg
+    g =
+      keyedNodeNS "http://www.w3.org/2000/svg" "g"
+-}
+keyedNodeNS : String -> String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
+keyedNodeNS =
+  Elm.Kernel.VirtualDom.keyedNodeNS
 
 
 

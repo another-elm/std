@@ -19,8 +19,7 @@ var elm_lang$virtual_dom$VirtualDom_Debug$wrapWithFlags;
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
 
-////////////  VIRTUAL DOM NODES  ////////////
-
+// TEXT
 
 function _VirtualDom_text(string)
 {
@@ -31,20 +30,19 @@ function _VirtualDom_text(string)
 }
 
 
+// NODE
+
 function _VirtualDom_node(tag)
 {
 	return F2(function(factList, kidList) {
-		return _VirtualDom_nodeHelp(tag, factList, kidList);
+		return _VirtualDom_nodeHelp(undefined, tag, factList, kidList);
 	});
 }
 
+var _VirtualDom_nodeNS = F4(_VirtualDom_nodeHelp);
 
-function _VirtualDom_nodeHelp(tag, factList, kidList)
+function _VirtualDom_nodeHelp(namespace, tag, factList, kidList)
 {
-	var organized = _VirtualDom_organizeFacts(factList);
-	var namespace = organized.namespace;
-	var facts = organized.facts;
-
 	var children = [];
 	var descendantsCount = 0;
 	while (kidList.$ !== '[]')
@@ -59,7 +57,7 @@ function _VirtualDom_nodeHelp(tag, factList, kidList)
 	return {
 		type: __2_NODE,
 		tag: tag,
-		facts: facts,
+		facts: _VirtualDom_organizeFacts(factList),
 		children: children,
 		namespace: namespace,
 		descendantsCount: descendantsCount
@@ -67,12 +65,20 @@ function _VirtualDom_nodeHelp(tag, factList, kidList)
 }
 
 
-var _VirtualDom_keyedNode = F3(function(tag, factList, kidList)
-{
-	var organized = _VirtualDom_organizeFacts(factList);
-	var namespace = organized.namespace;
-	var facts = organized.facts;
+// KEYED NODE
 
+function _VirtualDom_keyedNode(tag)
+{
+	return F2(function(factList, kidList) {
+		return _VirtualDom_keyedNodeHelp(undefined, tag, factList, kidList);
+	});
+}
+
+var _VirtualDom_keyedNodeNS = F4(_VirtualDom_keyedNodeHelp);
+
+
+function _VirtualDom_keyedNodeHelp(namespace, tag, factList, kidList)
+{
 	var children = [];
 	var descendantsCount = 0;
 	while (kidList.$ !== '[]')
@@ -87,12 +93,12 @@ var _VirtualDom_keyedNode = F3(function(tag, factList, kidList)
 	return {
 		type: __2_KEYED_NODE,
 		tag: tag,
-		facts: facts,
+		facts: _VirtualDom_organizeFacts(factList),
 		children: children,
 		namespace: namespace,
 		descendantsCount: descendantsCount
 	};
-});
+}
 
 
 var _VirtualDom_custom = F3(function(factList, model, impl)
@@ -158,7 +164,7 @@ var _VirtualDom_lazy3 = F4(function(fn, arg1, arg2, arg3)
 
 function _VirtualDom_organizeFacts(factList)
 {
-	var namespace, facts = {};
+	var facts = {};
 
 	while (factList.$ !== '[]')
 	{
@@ -183,10 +189,6 @@ function _VirtualDom_organizeFacts(factList)
 			}
 			facts[key] = styles;
 		}
-		else if (key === 'namespace')
-		{
-			namespace = entry.value;
-		}
 		else if (key === 'className')
 		{
 			var classes = facts[key];
@@ -201,10 +203,7 @@ function _VirtualDom_organizeFacts(factList)
 		factList = factList.b;
 	}
 
-	return {
-		facts: facts,
-		namespace: namespace
-	};
+	return facts;
 }
 
 

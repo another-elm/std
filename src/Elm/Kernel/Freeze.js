@@ -39,10 +39,10 @@ function _VirtualDom_node(tag)
 		var output = _VirtualDom_openTag(tag, factList);
 
 		var kids = kidList;
-		while (kids.ctor !== '[]')
+		while (kids.$ !== '[]')
 		{
-			output += kids._0;
-			kids = kids._1;
+			output += kids.a;
+			kids = kids.b;
 		}
 
 		return output + '</' + tag + '>';
@@ -59,10 +59,10 @@ function _VirtualDom_keyedNode(tag)
 		var output = _VirtualDom_openTag(tag, factList);
 
 		var kids = kidList;
-		while (kids.ctor !== '[]')
+		while (kids.$ !== '[]')
 		{
-			output += kids._0._1;
-			kids = kids._1;
+			output += kids.a.b;
+			kids = kids.b;
 		}
 
 		return output + '</' + tag + '>';
@@ -102,9 +102,9 @@ function _VirtualDom_openTag(tag, facts)
 {
 	var output = '<' + tag;
 	var styles = ' style="';
-	while (facts.ctor !== '[]')
+	while (facts.$ !== '[]')
 	{
-		var fact = facts._0;
+		var fact = facts.a;
 		if (fact instanceof String)
 		{
 			styles += fact;
@@ -113,7 +113,7 @@ function _VirtualDom_openTag(tag, facts)
 		{
 			output += fact;
 		}
-		facts = facts._1;
+		facts = facts.b;
 	}
 
 	return (styles.length > 8
@@ -147,11 +147,11 @@ function _VirtualDom_style(styleList)
 {
 	var temp = styleList;
 	var styles = '';
-	while (temp.ctor !== '[]')
+	while (temp.$ !== '[]')
 	{
-		var style = temp._0;
-		styles += style._0 + ':' + style._1 + ';'
-		temp = temp._1;
+		var style = temp.a;
+		styles += style.a + ':' + style.b + ';'
+		temp = temp.b;
 	}
 	return new String(styles);
 }
@@ -211,7 +211,7 @@ var _VirtualDom_program = F2(function(_, impl)
 	{
 		return function(object, moduleName)
 		{
-			var model = impl.init._0;
+			var model = impl.init.a;
 			var html = impl.view(model);
 
 			object['freeze'] = function freeze(flags)
@@ -232,16 +232,16 @@ var _VirtualDom_programWithFlags = F2(function(_, impl)
 			object['freeze'] = function freeze(flags)
 			{
 				var result = A2(__Json_run, flagDecoder, flags);
-				if (result.ctor === 'Ok')
+				if (result.$ === 'Ok')
 				{
-					var model = impl.init(result._0)._0;
+					var model = impl.init(result.a).a;
 					return impl.view(model);
 				}
 
 				throw new Error(
 					'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
 					+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
-					+ result._0
+					+ result.a
 				);
 			};
 		};

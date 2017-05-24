@@ -1,9 +1,6 @@
 /*
 
 import Elm.Kernel.Json exposing (run)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
-import Platform.Cmd as Cmd exposing (none)
-import Platform.Sub as Sub exposing (none)
 
 */
 

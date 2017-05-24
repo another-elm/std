@@ -398,7 +398,7 @@ viewMiniControls config numMsgs =
         [ onClick config.open
         , class "elm-mini-controls-button"
         ]
-        [ text ("Explore History (" ++ toString numMsgs ++ ")")
+        [ text ("Explore History (" ++ String.fromInt numMsgs ++ ")")
         ]
     , viewImportExport
         [class "elm-mini-controls-import-export"]

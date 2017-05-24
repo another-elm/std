@@ -286,5 +286,5 @@ viewMessage currentIndex index msg =
       , VDom.on "click" (Decode.succeed index)
       ]
       [ VDom.span [VDom.class "messages-entry-content", VDom.attribute "title" messageName ] [ VDom.text messageName ]
-      , VDom.span [VDom.class "messages-entry-index"] [ VDom.text (toString index) ]
+      , VDom.span [VDom.class "messages-entry-index"] [ VDom.text (String.fromInt index) ]
       ]

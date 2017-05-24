@@ -33,13 +33,13 @@ seqTypeToString : Int -> SeqType -> String
 seqTypeToString n seqType =
   case seqType of
     ListSeq ->
-      "List(" ++ toString n ++ ")"
+      "List(" ++ String.fromInt n ++ ")"
 
     SetSeq ->
-      "Set(" ++ toString n ++ ")"
+      "Set(" ++ String.fromInt n ++ ")"
 
     ArraySeq ->
-      "Array(" ++ toString n ++ ")"
+      "Array(" ++ String.fromInt n ++ ")"
 
 
 
@@ -313,7 +313,7 @@ viewDictionary : Maybe String -> Bool -> List (Expando, Expando) -> Node Msg
 viewDictionary maybeKey isClosed keyValuePairs =
   let
     starter =
-      "Dict(" ++ toString (List.length keyValuePairs) ++ ")"
+      "Dict(" ++ String.fromInt (List.length keyValuePairs) ++ ")"
   in
     div [ leftPad maybeKey ]
       [ div [ onClick Toggle ] (lineStarter maybeKey (Just isClosed) [text starter])
@@ -451,7 +451,7 @@ viewConstructorOpen valueList =
 
 viewConstructorEntry : Int -> Expando -> Node Msg
 viewConstructorEntry index value =
-  VDom.map (Index None index) (view (Just (toString index)) value)
+  VDom.map (Index None index) (view (Just (String.fromInt index)) value)
 
 
 
@@ -481,7 +481,7 @@ viewTiny value =
 
     Dictionary _ keyValuePairs ->
       viewTinyHelp <|
-        "Dict(" ++ toString (List.length keyValuePairs) ++ ")"
+        "Dict(" ++ String.fromInt (List.length keyValuePairs) ++ ")"
 
     Record _ record ->
       viewTinyRecord record
@@ -494,7 +494,7 @@ viewTiny value =
       viewTinyHelp <|
         case maybeName of
           Nothing ->
-            "Tuple(" ++ toString (List.length valueList) ++ ")"
+            "Tuple(" ++ String.fromInt (List.length valueList) ++ ")"
 
           Just name ->
             name ++ " …"

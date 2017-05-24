@@ -82,11 +82,6 @@ type alias Attribute msg =
   VirtualDom.Property msg
 
 
-svgNamespace : Attribute msg
-svgNamespace =
-  VirtualDom.property "namespace" (Json.string "http://www.w3.org/2000/svg")
-
-
 {-| Create any SVG node. To create a `<rect>` helper function, you would write:
 
     rect : List (Attribute msg) -> List (Svg msg) -> Svg msg
@@ -99,7 +94,7 @@ library though!
 node : String -> List (Attribute msg) -> List (Svg msg) -> Svg msg
 node name =
   \attributes children ->
-    VirtualDom.node name (svgNamespace :: attributes) children
+    VirtualDom.nodeNS "http://www.w3.org/2000/svg" name attributes children
 
 
 {-| A simple text node, no tags at all.

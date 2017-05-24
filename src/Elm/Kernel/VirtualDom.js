@@ -24,7 +24,7 @@ var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 function _VirtualDom_text(string)
 {
 	return {
-		type: __2_TEXT,
+		$: __2_TEXT,
 		text: string
 	};
 }
@@ -55,7 +55,7 @@ function _VirtualDom_nodeHelp(namespace, tag, factList, kidList)
 	descendantsCount += children.length;
 
 	return {
-		type: __2_NODE,
+		$: __2_NODE,
 		tag: tag,
 		facts: _VirtualDom_organizeFacts(factList),
 		children: children,
@@ -91,7 +91,7 @@ function _VirtualDom_keyedNodeHelp(namespace, tag, factList, kidList)
 	descendantsCount += children.length;
 
 	return {
-		type: __2_KEYED_NODE,
+		$: __2_KEYED_NODE,
 		tag: tag,
 		facts: _VirtualDom_organizeFacts(factList),
 		children: children,
@@ -106,7 +106,7 @@ var _VirtualDom_custom = F3(function(factList, model, impl)
 	var facts = _VirtualDom_organizeFacts(factList).facts;
 
 	return {
-		type: __2_CUSTOM,
+		$: __2_CUSTOM,
 		facts: facts,
 		model: model,
 		impl: impl
@@ -117,7 +117,7 @@ var _VirtualDom_custom = F3(function(factList, model, impl)
 var _VirtualDom_map = F2(function(tagger, node)
 {
 	return {
-		type: __2_TAGGER,
+		$: __2_TAGGER,
 		tagger: tagger,
 		node: node,
 		descendantsCount: 1 + (node.descendantsCount || 0)
@@ -128,7 +128,7 @@ var _VirtualDom_map = F2(function(tagger, node)
 function _VirtualDom_thunk(func, args, thunk)
 {
 	return {
-		type: __2_THUNK,
+		$: __2_THUNK,
 		func: func,
 		args: args,
 		thunk: thunk,
@@ -299,7 +299,7 @@ var _VirtualDom_mapProperty = F2(function(func, property)
 
 function _VirtualDom_render(vNode, eventNode)
 {
-	switch (vNode.type)
+	switch (vNode.$)
 	{
 		case __2_THUNK:
 			if (!vNode.node)
@@ -312,7 +312,7 @@ function _VirtualDom_render(vNode, eventNode)
 			var subNode = vNode.node;
 			var tagger = vNode.tagger;
 
-			while (subNode.type === __2_TAGGER)
+			while (subNode.$ === __2_TAGGER)
 			{
 				typeof tagger !== 'object'
 					? tagger = [tagger, subNode.tagger]
@@ -548,8 +548,8 @@ function _VirtualDom_diff(x, y)
 function _VirtualDom_makePatch(type, index, data)
 {
 	return {
+		$: type,
 		index: index,
-		type: type,
 		data: data,
 		domNode: undefined,
 		eventNode: undefined
@@ -564,8 +564,8 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 		return;
 	}
 
-	var xType = x.type;
-	var yType = y.type;
+	var xType = x.$;
+	var yType = y.$;
 
 	// Bail if you run into different types of nodes. Implies that the
 	// structure has changed significantly and it's not worth a diff.
@@ -575,7 +575,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 		return;
 	}
 
-	// Now we know that both nodes are the same type.
+	// Now we know that both nodes are the same $.
 	switch (yType)
 	{
 		case __2_THUNK:
@@ -608,7 +608,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			var nesting = false;
 
 			var xSubNode = x.node;
-			while (xSubNode.type === __2_TAGGER)
+			while (xSubNode.$ === __2_TAGGER)
 			{
 				nesting = true;
 
@@ -620,7 +620,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			}
 
 			var ySubNode = y.node;
-			while (ySubNode.type === __2_TAGGER)
+			while (ySubNode.$ === __2_TAGGER)
 			{
 				nesting = true;
 
@@ -1114,7 +1114,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 	while (index === low)
 	{
-		var patchType = patch.type;
+		var patchType = patch.$;
 
 		if (patchType === __3_THUNK)
 		{
@@ -1161,12 +1161,12 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 		}
 	}
 
-	switch (vNode.type)
+	switch (vNode.$)
 	{
 		case __2_TAGGER:
 			var subNode = vNode.node;
 
-			while (subNode.type === __2_TAGGER)
+			while (subNode.$ === __2_TAGGER)
 			{
 				subNode = subNode.node;
 			}
@@ -1252,7 +1252,7 @@ function _VirtualDom_applyPatchesHelp(rootDomNode, patches)
 
 function _VirtualDom_applyPatch(domNode, patch)
 {
-	switch (patch.type)
+	switch (patch.$)
 	{
 		case __3_REDRAW:
 			return _VirtualDom_applyPatchRedraw(domNode, patch.data, patch.eventNode);

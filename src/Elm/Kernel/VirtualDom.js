@@ -130,24 +130,24 @@ function _VirtualDom_thunk(func, args, thunk)
 	};
 }
 
-var _VirtualDom_lazy = F2(function(fn, a)
+var _VirtualDom_lazy = F2(function(fn, arg1)
 {
-	return _VirtualDom_thunk(fn, [a], function() {
-		return fn(a);
+	return _VirtualDom_thunk(fn, [arg1], function() {
+		return fn(arg1);
 	});
 });
 
-var _VirtualDom_lazy2 = F3(function(fn, a, b)
+var _VirtualDom_lazy2 = F3(function(fn, arg1, arg2)
 {
-	return _VirtualDom_thunk(fn, [a,b], function() {
-		return A2(fn, a, b);
+	return _VirtualDom_thunk(fn, [arg1,arg2], function() {
+		return A2(fn, arg1, arg2);
 	});
 });
 
-var _VirtualDom_lazy3 = F4(function(fn, a, b, c)
+var _VirtualDom_lazy3 = F4(function(fn, arg1, arg2, arg3)
 {
-	return _VirtualDom_thunk(fn, [a,b,c], function() {
-		return A3(fn, a, b, c);
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3], function() {
+		return A3(fn, arg1, arg2, arg3);
 	});
 });
 
@@ -266,18 +266,18 @@ var _VirtualDom_on = F3(function(name, options, decoder)
 });
 
 
-function _VirtualDom_equalEvents(a, b)
+function _VirtualDom_equalEvents(x, y)
 {
-	var aOps = a.options;
-	var bOps = b.options;
-	if (aOps !== bOps)
+	var xOps = x.options;
+	var yOps = y.options;
+	if (xOps !== yOps)
 	{
-		if (aOps.stopPropagation !== bOps.stopPropagation || aOps.preventDefault !== bOps.preventDefault)
+		if (xOps.stopPropagation !== yOps.stopPropagation || xOps.preventDefault !== yOps.preventDefault)
 		{
 			return false;
 		}
 	}
-	return __Json_equality(a.decoder, b.decoder);
+	return __Json_equality(x.decoder, y.decoder);
 }
 
 
@@ -538,10 +538,10 @@ function _VirtualDom_applyAttrsNS(domNode, nsAttrs)
 ////////////  DIFF  ////////////
 
 
-function _VirtualDom_diff(a, b)
+function _VirtualDom_diff(x, y)
 {
 	var patches = [];
-	_VirtualDom_diffHelp(a, b, patches, 0);
+	_VirtualDom_diffHelp(x, y, patches, 0);
 	return patches;
 }
 
@@ -558,44 +558,44 @@ function _VirtualDom_makePatch(type, index, data)
 }
 
 
-function _VirtualDom_diffHelp(a, b, patches, index)
+function _VirtualDom_diffHelp(x, y, patches, index)
 {
-	if (a === b)
+	if (x === y)
 	{
 		return;
 	}
 
-	var aType = a.type;
-	var bType = b.type;
+	var xType = x.type;
+	var yType = y.type;
 
 	// Bail if you run into different types of nodes. Implies that the
 	// structure has changed significantly and it's not worth a diff.
-	if (aType !== bType)
+	if (xType !== yType)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
+		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
 		return;
 	}
 
 	// Now we know that both nodes are the same type.
-	switch (bType)
+	switch (yType)
 	{
 		case __2_THUNK:
-			var aArgs = a.args;
-			var bArgs = b.args;
-			var i = aArgs.length;
-			var same = a.func === b.func && i === bArgs.length;
+			var xArgs = x.args;
+			var yArgs = y.args;
+			var i = xArgs.length;
+			var same = x.func === y.func && i === yArgs.length;
 			while (same && i--)
 			{
-				same = aArgs[i] === bArgs[i];
+				same = xArgs[i] === yArgs[i];
 			}
 			if (same)
 			{
-				b.node = a.node;
+				y.node = x.node;
 				return;
 			}
-			b.node = b.thunk();
+			y.node = y.thunk();
 			var subPatches = [];
-			_VirtualDom_diffHelp(a.node, b.node, subPatches, 0);
+			_VirtualDom_diffHelp(x.node, y.node, subPatches, 0);
 			if (subPatches.length > 0)
 			{
 				patches.push(_VirtualDom_makePatch(__3_THUNK, index, subPatches));
@@ -604,56 +604,56 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 
 		case __2_TAGGER:
 			// gather nested taggers
-			var aTaggers = a.tagger;
-			var bTaggers = b.tagger;
+			var xTaggers = x.tagger;
+			var yTaggers = y.tagger;
 			var nesting = false;
 
-			var aSubNode = a.node;
-			while (aSubNode.type === __2_TAGGER)
+			var xSubNode = x.node;
+			while (xSubNode.type === __2_TAGGER)
 			{
 				nesting = true;
 
-				typeof aTaggers !== 'object'
-					? aTaggers = [aTaggers, aSubNode.tagger]
-					: aTaggers.push(aSubNode.tagger);
+				typeof xTaggers !== 'object'
+					? xTaggers = [xTaggers, xSubNode.tagger]
+					: xTaggers.push(xSubNode.tagger);
 
-				aSubNode = aSubNode.node;
+				xSubNode = xSubNode.node;
 			}
 
-			var bSubNode = b.node;
-			while (bSubNode.type === __2_TAGGER)
+			var ySubNode = y.node;
+			while (ySubNode.type === __2_TAGGER)
 			{
 				nesting = true;
 
-				typeof bTaggers !== 'object'
-					? bTaggers = [bTaggers, bSubNode.tagger]
-					: bTaggers.push(bSubNode.tagger);
+				typeof yTaggers !== 'object'
+					? yTaggers = [yTaggers, ySubNode.tagger]
+					: yTaggers.push(ySubNode.tagger);
 
-				bSubNode = bSubNode.node;
+				ySubNode = ySubNode.node;
 			}
 
 			// Just bail if different numbers of taggers. This implies the
 			// structure of the virtual DOM has changed.
-			if (nesting && aTaggers.length !== bTaggers.length)
+			if (nesting && xTaggers.length !== yTaggers.length)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
 				return;
 			}
 
 			// check if taggers are "the same"
-			if (nesting ? !_VirtualDom_pairwiseRefEqual(aTaggers, bTaggers) : aTaggers !== bTaggers)
+			if (nesting ? !_VirtualDom_pairwiseRefEqual(xTaggers, yTaggers) : xTaggers !== yTaggers)
 			{
-				patches.push(_VirtualDom_makePatch(__3_TAGGER, index, bTaggers));
+				patches.push(_VirtualDom_makePatch(__3_TAGGER, index, yTaggers));
 			}
 
 			// diff everything below the taggers
-			_VirtualDom_diffHelp(aSubNode, bSubNode, patches, index + 1);
+			_VirtualDom_diffHelp(xSubNode, ySubNode, patches, index + 1);
 			return;
 
 		case __2_TEXT:
-			if (a.text !== b.text)
+			if (x.text !== y.text)
 			{
-				patches.push(_VirtualDom_makePatch(__3_TEXT, index, b.text));
+				patches.push(_VirtualDom_makePatch(__3_TEXT, index, y.text));
 				return;
 			}
 
@@ -662,55 +662,55 @@ function _VirtualDom_diffHelp(a, b, patches, index)
 		case __2_NODE:
 			// Bail if obvious indicators have changed. Implies more serious
 			// structural changes such that it's not worth it to diff.
-			if (a.tag !== b.tag || a.namespace !== b.namespace)
+			if (x.tag !== y.tag || x.namespace !== y.namespace)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
 				return;
 			}
 
-			var factsDiff = _VirtualDom_diffFacts(a.facts, b.facts);
+			var factsDiff = _VirtualDom_diffFacts(x.facts, y.facts);
 
 			if (typeof factsDiff !== 'undefined')
 			{
 				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
-			_VirtualDom_diffChildren(a, b, patches, index);
+			_VirtualDom_diffChildren(x, y, patches, index);
 			return;
 
 		case __2_KEYED_NODE:
 			// Bail if obvious indicators have changed. Implies more serious
 			// structural changes such that it's not worth it to diff.
-			if (a.tag !== b.tag || a.namespace !== b.namespace)
+			if (x.tag !== y.tag || x.namespace !== y.namespace)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
 				return;
 			}
 
-			var factsDiff = _VirtualDom_diffFacts(a.facts, b.facts);
+			var factsDiff = _VirtualDom_diffFacts(x.facts, y.facts);
 
 			if (typeof factsDiff !== 'undefined')
 			{
 				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
-			_VirtualDom_diffKeyedChildren(a, b, patches, index);
+			_VirtualDom_diffKeyedChildren(x, y, patches, index);
 			return;
 
 		case __2_CUSTOM:
-			if (a.impl !== b.impl)
+			if (x.impl !== y.impl)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, b));
+				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
 				return;
 			}
 
-			var factsDiff = _VirtualDom_diffFacts(a.facts, b.facts);
+			var factsDiff = _VirtualDom_diffFacts(x.facts, y.facts);
 			if (typeof factsDiff !== 'undefined')
 			{
 				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
 
-			var patch = b.impl.diff(a,b);
+			var patch = y.impl.diff(x,y);
 			if (patch)
 			{
 				patches.push(_VirtualDom_makePatch(__3_CUSTOM, index, patch));
@@ -740,31 +740,31 @@ function _VirtualDom_pairwiseRefEqual(as, bs)
 // TODO Instead of creating a new diff object, it's possible to just test if
 // there *is* a diff. During the actual patch, do the diff again and make the
 // modifications directly. This way, there's no new allocations. Worth it?
-function _VirtualDom_diffFacts(a, b, category)
+function _VirtualDom_diffFacts(x, y, category)
 {
 	var diff;
 
 	// look for changes and removals
-	for (var aKey in a)
+	for (var xKey in x)
 	{
-		if (aKey === __1_STYLE || aKey === __1_EVENT || aKey === __1_ATTR || aKey === __1_ATTR_NS)
+		if (xKey === __1_STYLE || xKey === __1_EVENT || xKey === __1_ATTR || xKey === __1_ATTR_NS)
 		{
-			var subDiff = _VirtualDom_diffFacts(a[aKey], b[aKey] || {}, aKey);
+			var subDiff = _VirtualDom_diffFacts(x[xKey], y[xKey] || {}, xKey);
 			if (subDiff)
 			{
 				diff = diff || {};
-				diff[aKey] = subDiff;
+				diff[xKey] = subDiff;
 			}
 			continue;
 		}
 
 		// remove if not in the new facts
-		if (!(aKey in b))
+		if (!(xKey in y))
 		{
 			diff = diff || {};
-			diff[aKey] =
+			diff[xKey] =
 				(typeof category === 'undefined')
-					? (typeof a[aKey] === 'string' ? '' : null)
+					? (typeof x[xKey] === 'string' ? '' : null)
 					:
 				(category === __1_STYLE)
 					? ''
@@ -772,32 +772,32 @@ function _VirtualDom_diffFacts(a, b, category)
 				(category === __1_EVENT || category === __1_ATTR)
 					? undefined
 					:
-				{ namespace: a[aKey].namespace, value: undefined };
+				{ namespace: x[xKey].namespace, value: undefined };
 
 			continue;
 		}
 
-		var aValue = a[aKey];
-		var bValue = b[aKey];
+		var xValue = x[xKey];
+		var yValue = y[xKey];
 
 		// reference equal, so don't worry about it
-		if (aValue === bValue && aKey !== 'value'
-			|| category === __1_EVENT && _VirtualDom_equalEvents(aValue, bValue))
+		if (xValue === yValue && xKey !== 'value'
+			|| category === __1_EVENT && _VirtualDom_equalEvents(xValue, yValue))
 		{
 			continue;
 		}
 
 		diff = diff || {};
-		diff[aKey] = bValue;
+		diff[xKey] = yValue;
 	}
 
 	// add new stuff
-	for (var bKey in b)
+	for (var yKey in y)
 	{
-		if (!(bKey in a))
+		if (!(yKey in x))
 		{
 			diff = diff || {};
-			diff[bKey] = b[bKey];
+			diff[yKey] = y[yKey];
 		}
 	}
 
@@ -805,35 +805,35 @@ function _VirtualDom_diffFacts(a, b, category)
 }
 
 
-function _VirtualDom_diffChildren(aParent, bParent, patches, rootIndex)
+function _VirtualDom_diffChildren(xParent, yParent, patches, rootIndex)
 {
-	var aChildren = aParent.children;
-	var bChildren = bParent.children;
+	var xChildren = xParent.children;
+	var yChildren = yParent.children;
 
-	var aLen = aChildren.length;
-	var bLen = bChildren.length;
+	var xLen = xChildren.length;
+	var yLen = yChildren.length;
 
 	// FIGURE OUT IF THERE ARE INSERTS OR REMOVALS
 
-	if (aLen > bLen)
+	if (xLen > yLen)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REMOVE_LAST, rootIndex, aLen - bLen));
+		patches.push(_VirtualDom_makePatch(__3_REMOVE_LAST, rootIndex, xLen - yLen));
 	}
-	else if (aLen < bLen)
+	else if (xLen < yLen)
 	{
-		patches.push(_VirtualDom_makePatch(__3_APPEND, rootIndex, bChildren.slice(aLen)));
+		patches.push(_VirtualDom_makePatch(__3_APPEND, rootIndex, yChildren.slice(xLen)));
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE
 
 	var index = rootIndex;
-	var minLen = aLen < bLen ? aLen : bLen;
+	var minLen = xLen < yLen ? xLen : yLen;
 	for (var i = 0; i < minLen; i++)
 	{
 		index++;
-		var aChild = aChildren[i];
-		_VirtualDom_diffHelp(aChild, bChildren[i], patches, index);
-		index += aChild.descendantsCount || 0;
+		var xChild = xChildren[i];
+		_VirtualDom_diffHelp(xChild, yChildren[i], patches, index);
+		index += xChild.descendantsCount || 0;
 	}
 }
 
@@ -842,7 +842,7 @@ function _VirtualDom_diffChildren(aParent, bParent, patches, rootIndex)
 ////////////  KEYED DIFF  ////////////
 
 
-function _VirtualDom_diffKeyedChildren(aParent, bParent, patches, rootIndex)
+function _VirtualDom_diffKeyedChildren(xParent, yParent, patches, rootIndex)
 {
 	var localPatches = [];
 
@@ -850,120 +850,120 @@ function _VirtualDom_diffKeyedChildren(aParent, bParent, patches, rootIndex)
 	var inserts = []; // Array { index : Int, entry : Entry }
 	// type Entry = { tag : String, vnode : VNode, index : Int, data : _ }
 
-	var aChildren = aParent.children;
-	var bChildren = bParent.children;
-	var aLen = aChildren.length;
-	var bLen = bChildren.length;
-	var aIndex = 0;
-	var bIndex = 0;
+	var xChildren = xParent.children;
+	var yChildren = yParent.children;
+	var xLen = xChildren.length;
+	var yLen = yChildren.length;
+	var xIndex = 0;
+	var yIndex = 0;
 
 	var index = rootIndex;
 
-	while (aIndex < aLen && bIndex < bLen)
+	while (xIndex < xLen && yIndex < yLen)
 	{
-		var a = aChildren[aIndex];
-		var b = bChildren[bIndex];
+		var x = xChildren[xIndex];
+		var y = yChildren[yIndex];
 
-		var aKey = a._0;
-		var bKey = b._0;
-		var aNode = a._1;
-		var bNode = b._1;
+		var xKey = x._0;
+		var yKey = y._0;
+		var xNode = x._1;
+		var yNode = y._1;
 
 		// check if keys match
 
-		if (aKey === bKey)
+		if (xKey === yKey)
 		{
 			index++;
-			_VirtualDom_diffHelp(aNode, bNode, localPatches, index);
-			index += aNode.descendantsCount || 0;
+			_VirtualDom_diffHelp(xNode, yNode, localPatches, index);
+			index += xNode.descendantsCount || 0;
 
-			aIndex++;
-			bIndex++;
+			xIndex++;
+			yIndex++;
 			continue;
 		}
 
 		// look ahead 1 to detect insertions and removals.
 
-		var aLookAhead = aIndex + 1 < aLen;
-		var bLookAhead = bIndex + 1 < bLen;
+		var xLookAhead = xIndex + 1 < xLen;
+		var yLookAhead = yIndex + 1 < yLen;
 
-		if (aLookAhead)
+		if (xLookAhead)
 		{
-			var aNext = aChildren[aIndex + 1];
-			var aNextKey = aNext._0;
-			var aNextNode = aNext._1;
-			var oldMatch = bKey === aNextKey;
+			var xNext = xChildren[xIndex + 1];
+			var xNextKey = xNext._0;
+			var xNextNode = xNext._1;
+			var oldMatch = yKey === xNextKey;
 		}
 
-		if (bLookAhead)
+		if (yLookAhead)
 		{
-			var bNext = bChildren[bIndex + 1];
-			var bNextKey = bNext._0;
-			var bNextNode = bNext._1;
-			var newMatch = aKey === bNextKey;
+			var yNext = yChildren[yIndex + 1];
+			var yNextKey = yNext._0;
+			var yNextNode = yNext._1;
+			var newMatch = xKey === yNextKey;
 		}
 
 
-		// swap a and b
-		if (aLookAhead && bLookAhead && newMatch && oldMatch)
+		// swap x and y
+		if (xLookAhead && yLookAhead && newMatch && oldMatch)
 		{
 			index++;
-			_VirtualDom_diffHelp(aNode, bNextNode, localPatches, index);
-			_VirtualDom_insertNode(changes, localPatches, aKey, bNode, bIndex, inserts);
-			index += aNode.descendantsCount || 0;
+			_VirtualDom_diffHelp(xNode, yNextNode, localPatches, index);
+			_VirtualDom_insertNode(changes, localPatches, xKey, yNode, yIndex, inserts);
+			index += xNode.descendantsCount || 0;
 
 			index++;
-			_VirtualDom_removeNode(changes, localPatches, aKey, aNextNode, index);
-			index += aNextNode.descendantsCount || 0;
+			_VirtualDom_removeNode(changes, localPatches, xKey, xNextNode, index);
+			index += xNextNode.descendantsCount || 0;
 
-			aIndex += 2;
-			bIndex += 2;
+			xIndex += 2;
+			yIndex += 2;
 			continue;
 		}
 
-		// insert b
-		if (bLookAhead && newMatch)
+		// insert y
+		if (yLookAhead && newMatch)
 		{
 			index++;
-			_VirtualDom_insertNode(changes, localPatches, bKey, bNode, bIndex, inserts);
-			_VirtualDom_diffHelp(aNode, bNextNode, localPatches, index);
-			index += aNode.descendantsCount || 0;
+			_VirtualDom_insertNode(changes, localPatches, yKey, yNode, yIndex, inserts);
+			_VirtualDom_diffHelp(xNode, yNextNode, localPatches, index);
+			index += xNode.descendantsCount || 0;
 
-			aIndex += 1;
-			bIndex += 2;
+			xIndex += 1;
+			yIndex += 2;
 			continue;
 		}
 
-		// remove a
-		if (aLookAhead && oldMatch)
+		// remove x
+		if (xLookAhead && oldMatch)
 		{
 			index++;
-			_VirtualDom_removeNode(changes, localPatches, aKey, aNode, index);
-			index += aNode.descendantsCount || 0;
+			_VirtualDom_removeNode(changes, localPatches, xKey, xNode, index);
+			index += xNode.descendantsCount || 0;
 
 			index++;
-			_VirtualDom_diffHelp(aNextNode, bNode, localPatches, index);
-			index += aNextNode.descendantsCount || 0;
+			_VirtualDom_diffHelp(xNextNode, yNode, localPatches, index);
+			index += xNextNode.descendantsCount || 0;
 
-			aIndex += 2;
-			bIndex += 1;
+			xIndex += 2;
+			yIndex += 1;
 			continue;
 		}
 
-		// remove a, insert b
-		if (aLookAhead && bLookAhead && aNextKey === bNextKey)
+		// remove x, insert y
+		if (xLookAhead && yLookAhead && xNextKey === yNextKey)
 		{
 			index++;
-			_VirtualDom_removeNode(changes, localPatches, aKey, aNode, index);
-			_VirtualDom_insertNode(changes, localPatches, bKey, bNode, bIndex, inserts);
-			index += aNode.descendantsCount || 0;
+			_VirtualDom_removeNode(changes, localPatches, xKey, xNode, index);
+			_VirtualDom_insertNode(changes, localPatches, yKey, yNode, yIndex, inserts);
+			index += xNode.descendantsCount || 0;
 
 			index++;
-			_VirtualDom_diffHelp(aNextNode, bNextNode, localPatches, index);
-			index += aNextNode.descendantsCount || 0;
+			_VirtualDom_diffHelp(xNextNode, yNextNode, localPatches, index);
+			index += xNextNode.descendantsCount || 0;
 
-			aIndex += 2;
-			bIndex += 2;
+			xIndex += 2;
+			yIndex += 2;
 			continue;
 		}
 
@@ -972,23 +972,23 @@ function _VirtualDom_diffKeyedChildren(aParent, bParent, patches, rootIndex)
 
 	// eat up any remaining nodes with removeNode and insertNode
 
-	while (aIndex < aLen)
+	while (xIndex < xLen)
 	{
 		index++;
-		var a = aChildren[aIndex];
-		var aNode = a._1;
-		_VirtualDom_removeNode(changes, localPatches, a._0, aNode, index);
-		index += aNode.descendantsCount || 0;
-		aIndex++;
+		var x = xChildren[xIndex];
+		var xNode = x._1;
+		_VirtualDom_removeNode(changes, localPatches, x._0, xNode, index);
+		index += xNode.descendantsCount || 0;
+		xIndex++;
 	}
 
 	var endInserts;
-	while (bIndex < bLen)
+	while (yIndex < yLen)
 	{
 		endInserts = endInserts || [];
-		var b = bChildren[bIndex];
-		_VirtualDom_insertNode(changes, localPatches, b._0, b._1, undefined, endInserts);
-		bIndex++;
+		var y = yChildren[yIndex];
+		_VirtualDom_insertNode(changes, localPatches, y._0, y._1, undefined, endInserts);
+		yIndex++;
 	}
 
 	if (localPatches.length > 0 || inserts.length > 0 || typeof endInserts !== 'undefined')
@@ -1009,7 +1009,7 @@ function _VirtualDom_diffKeyedChildren(aParent, bParent, patches, rootIndex)
 var _VirtualDom_POSTFIX = '_elmW6BL';
 
 
-function _VirtualDom_insertNode(changes, localPatches, key, vnode, bIndex, inserts)
+function _VirtualDom_insertNode(changes, localPatches, key, vnode, yIndex, inserts)
 {
 	var entry = changes[key];
 
@@ -1019,11 +1019,11 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, bIndex, inser
 		entry = {
 			tag: 'insert',
 			vnode: vnode,
-			index: bIndex,
+			index: yIndex,
 			data: undefined
 		};
 
-		inserts.push({ index: bIndex, entry: entry });
+		inserts.push({ index: yIndex, entry: entry });
 		changes[key] = entry;
 
 		return;
@@ -1032,12 +1032,12 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, bIndex, inser
 	// this key was removed earlier, a match!
 	if (entry.tag === 'remove')
 	{
-		inserts.push({ index: bIndex, entry: entry });
+		inserts.push({ index: yIndex, entry: entry });
 
 		entry.tag = 'move';
 		var subPatches = [];
 		_VirtualDom_diffHelp(entry.vnode, vnode, subPatches, entry.index);
-		entry.index = bIndex;
+		entry.index = yIndex;
 		entry.data.data = {
 			patches: subPatches,
 			entry: entry
@@ -1047,7 +1047,7 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, bIndex, inser
 	}
 
 	// this key has already been inserted or moved, a duplicate!
-	_VirtualDom_insertNode(changes, localPatches, key + _VirtualDom_POSTFIX, vnode, bIndex, inserts);
+	_VirtualDom_insertNode(changes, localPatches, key + _VirtualDom_POSTFIX, vnode, yIndex, inserts);
 }
 
 

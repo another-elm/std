@@ -5,7 +5,7 @@ module Html.Events exposing
   , onMouseOver, onMouseOut
   , onInput, onCheck, onSubmit
   , onBlur, onFocus
-  , on, onWithOptions, Options, defaultOptions
+  , on, onCustom
   , targetValue, targetChecked, keyCode
   )
 
@@ -29,7 +29,7 @@ of events as seen in the [TodoMVC][] example.
 @docs onBlur, onFocus
 
 # Custom Event Handlers
-@docs on, onWithOptions, Options, defaultOptions
+@docs on, onCustom
 
 # Custom Decoders
 @docs targetValue, targetChecked, keyCode
@@ -100,7 +100,7 @@ onMouseOut msg =
 events for things like text fields or text areas.
 
 It grabs the **string** value at `event.target.value`, so it will not work if
-you need some other type of information. For example, if you want to track 
+you need some other type of information. For example, if you want to track
 inputs on a range slider, make a custom handler with [`on`](#on).
 
 For more details on how `onInput` works, check out [targetValue](#targetValue).
@@ -124,17 +124,20 @@ onCheck tagger =
 {-| Capture a [submit](https://developer.mozilla.org/en-US/docs/Web/Events/submit)
 event with [`preventDefault`](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault)
 in order to prevent the form from changing the page’s location. If you need
-different behavior, use `onWithOptions` to create a customized version of
-`onSubmit`.
+different behavior, use `onCustom` to modify these defaults.
 -}
 onSubmit : msg -> Attribute msg
 onSubmit msg =
-  onWithOptions "submit" onSubmitOptions (Json.succeed msg)
+  onCustom "submit" (Json.map toSubmitEvent (Json.succeed msg))
 
 
-onSubmitOptions : Options
-onSubmitOptions =
-  { defaultOptions | preventDefault = True }
+toSubmitEvent : msg -> { message : msg, stopPropagation : Bool, preventDefault : Bool }
+toSubmitEvent message =
+  { message = message
+  , stopPropagation = False
+  , preventDefault = True
+  }
+
 
 
 -- FOCUS EVENTS
@@ -159,11 +162,11 @@ onFocus msg =
 {-| Create a custom event listener. Normally this will not be necessary, but
 you have the power! Here is how `onClick` is defined for example:
 
-    import Json.Decode as Json
+    import Json.Decode as Decode
 
     onClick : msg -> Attribute msg
     onClick message =
-      on "click" (Json.succeed message)
+      on "click" (Decode.succeed message)
 
 The first argument is the event name in the same format as with JavaScript's
 [`addEventListener`][aEL] function.
@@ -185,35 +188,19 @@ on =
   VirtualDom.on
 
 
-{-| Same as `on` but you can set a few options.
+{-| Same as `on` but you can customize how the JavaScript event behaves. For example,
+maybe when someone presses the ENTER key, you want to avoid a page scroll. You have
+control over this with:
+
+  - `stopPropagation = True` means the event stops traveling through the DOM. So if
+  propagation of a click is stopped, it will not trigger any other event listeners.
+  - `preventDefault = True` means any built-in browser behavior related to the event
+  is prevented. This is handy with certain key presses or touch gestures.
+
 -}
-onWithOptions : String -> Options -> Json.Decoder msg -> Attribute msg
-onWithOptions =
-  VirtualDom.onWithOptions
-
-
-{-| Options for an event listener. If `stopPropagation` is true, it means the
-event stops traveling through the DOM so it will not trigger any other event
-listeners. If `preventDefault` is true, any built-in browser behavior related
-to the event is prevented. For example, this is used with touch events when you
-want to treat them as gestures of your own, not as scrolls.
--}
-type alias Options =
-    { stopPropagation : Bool
-    , preventDefault : Bool
-    }
-
-
-{-| Everything is `False` by default.
-
-    defaultOptions =
-        { stopPropagation = False
-        , preventDefault = False
-        }
--}
-defaultOptions : Options
-defaultOptions =
-  VirtualDom.defaultOptions
+onCustom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
+onCustom =
+  VirtualDom.onCustom
 
 
 

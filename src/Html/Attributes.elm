@@ -93,25 +93,23 @@ import VirtualDom
 -- PRIMITIVES
 
 
-{-| Specify a list of styles.
+{-| Specify a style.
 
-    myStyle : Attribute msg
-    myStyle =
-      style
-        [ ("backgroundColor", "red")
-        , ("height", "90px")
-        , ("width", "100%")
-        ]
-
-    greeting : Html msg
+    greeting : Node msg
     greeting =
-      div [ myStyle ] [ text "Hello!" ]
+      div
+        [ style "backgroundColor" "red"
+        , style "height" "90px"
+        , style "width" "100%"
+        ]
+        [ text "Hello!"
+        ]
 
 There is no `Html.Styles` module because best practices for working with HTML
 suggest that this should primarily be specified in CSS files. So the general
 recommendation is to use this function lightly.
 -}
-style : List (String, String) -> Attribute msg
+style : String -> String -> Attribute msg
 style =
   VirtualDom.style
 
@@ -292,7 +290,7 @@ instead.
 -}
 tabindex : Int -> Attribute msg
 tabindex n =
-  attribute "tabIndex" (toString n)
+  attribute "tabIndex" (Debug.toString n)
 
 
 
@@ -312,7 +310,7 @@ src value =
 -}
 height : Int -> Attribute msg
 height value =
-  attribute "height" (toString value)
+  attribute "height" (Debug.toString value)
 
 
 {-| Declare the width of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -320,7 +318,7 @@ height value =
 -}
 width : Int -> Attribute msg
 width value =
-  attribute "width" (toString value)
+  attribute "width" (Debug.toString value)
 
 
 {-| Alternative text in case an image can't be displayed. Works with `img`,
@@ -556,7 +554,7 @@ list value =
 -}
 minlength : Int -> Attribute msg
 minlength n =
-  attribute "minLength" (toString n)
+  attribute "minLength" (Debug.toString n)
 
 
 {-| Defines the maximum number of characters allowed in an `input` or
@@ -564,7 +562,7 @@ minlength n =
 -}
 maxlength : Int -> Attribute msg
 maxlength n =
-  attribute "maxlength" (toString n)
+  attribute "maxlength" (Debug.toString n)
 
 
 {-| Defines which HTTP method to use when submitting a `form`. Can be GET
@@ -628,7 +626,7 @@ For `select` specifies the number of visible options in a drop-down list.
 -}
 size : Int -> Attribute msg
 size n =
-  attribute "size" (toString n)
+  attribute "size" (Debug.toString n)
 
 
 {-| The element ID described by this `label` or the element IDs that are used
@@ -682,13 +680,13 @@ step n =
 {-| Defines the number of columns in a `textarea`. -}
 cols : Int -> Attribute msg
 cols n =
-  attribute "cols" (toString n)
+  attribute "cols" (Debug.toString n)
 
 
 {-| Defines the number of rows in a `textarea`. -}
 rows : Int -> Attribute msg
 rows n =
-  attribute "rows" (toString n)
+  attribute "rows" (Debug.toString n)
 
 
 {-| Indicates whether the text should be wrapped in a `textarea`. Possible
@@ -889,7 +887,7 @@ besides 1.
 -}
 start : Int -> Attribute msg
 start n =
-  stringProperty "start" (toString n)
+  stringProperty "start" (Debug.toString n)
 
 
 
@@ -901,7 +899,7 @@ For `td` and `th`.
 -}
 colspan : Int -> Attribute msg
 colspan n =
-  attribute "colspan" (toString n)
+  attribute "colspan" (Debug.toString n)
 
 
 {-| A space separated list of element IDs indicating which `th` elements are
@@ -917,7 +915,7 @@ For `td` and `th`.
 -}
 rowspan : Int -> Attribute msg
 rowspan n =
-  attribute "rowspan" (toString n)
+  attribute "rowspan" (Debug.toString n)
 
 
 {-| Specifies the scope of a header cell `th`. Possible values are: col, row,
@@ -938,5 +936,5 @@ manifest value =
 {-| The number of columns a `col` or `colgroup` should span. -}
 span : Int -> Attribute msg
 span n =
-    stringProperty "span" (toString n)
+    stringProperty "span" (Debug.toString n)
 --}

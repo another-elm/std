@@ -1,9 +1,8 @@
 module VirtualDom exposing
   ( Node
   , text, node, nodeNS
-  , Property, property, attribute, attributeNS, mapProperty
-  , style
-  , on, onWithOptions, Options, defaultOptions
+  , Attribute, style, property, attribute, attributeNS
+  , on, onCustom, mapAttribute
   , map
   , lazy, lazy2, lazy3
   , keyedNode, keyedNodeNS
@@ -16,14 +15,11 @@ that expose more helper functions for HTML or SVG.
 # Create
 @docs Node, text, node, nodeNS
 
-# Declare Properties and Attributes
-@docs Property, property, attribute, attributeNS, mapProperty
-
-# Styles
-@docs style
+# Attributes
+@docs Attribute, style, property, attribute, attributeNS
 
 # Events
-@docs on, onWithOptions, Options, defaultOptions
+@docs on, onCustom, mapAttribute
 
 # Routing Messages
 @docs map
@@ -62,7 +58,7 @@ a list of child nodes.
         [ property "id" (Json.string "greeting") ]
         [ text "Hello!" ]
 -}
-node : String -> List (Property msg) -> List (Node msg) -> Node msg
+node : String -> List (Attribute msg) -> List (Node msg) -> Node msg
 node =
   Elm.Kernel.VirtualDom.node
 
@@ -70,11 +66,11 @@ node =
 {-| Create a namespaced DOM node. For example, an SVG `<path>` node could be
 defined like this:
 
-    path : List (Property msg) -> List (Node msg) -> Node msg
+    path : List (Attribute msg) -> List (Node msg) -> Node msg
     path attrubutes children =
       nodeNS "http://www.w3.org/2000/svg" "path" attributes children
 -}
-nodeNS : String -> String -> List (Property msg) -> List (Node msg) -> Node msg
+nodeNS : String -> String -> List (Attribute msg) -> List (Node msg) -> Node msg
 nodeNS =
   Elm.Kernel.VirtualDom.nodeNS
 
@@ -116,7 +112,7 @@ map =
 
 
 
--- PROPERTIES
+-- ATTRIBUTES
 
 
 {-| When using HTML and JS, there are two ways to specify parts of a DOM node.
@@ -135,47 +131,61 @@ corresponding property. Sometimes changing an attribute does not change the
 underlying property. For example, as of this writing, the `webkit-playsinline`
 attribute can be used in HTML, but there is no corresponding property!
 -}
-type Property msg = Property
+type Attribute msg = Attribute
 
 
-{-| Create arbitrary *properties*.
+{-| Specify a style.
 
-    import JavaScript.Encode as Json
-
-    greeting : Html
+    greeting : Node msg
     greeting =
-        node "div" [ property "className" (Json.string "greeting") ] [
-          text "Hello!"
+      node "div"
+        [ style "backgroundColor" "red"
+        , style "height" "90px"
+        , style "width" "100%"
+        ]
+        [ text "Hello!"
         ]
 
-Notice that you must give the *property* name, so we use `className` as it
-would be in JavaScript, not `class` as it would appear in HTML.
 -}
-property : String -> Json.Value -> Property msg
+style : String -> String -> Attribute msg
+style =
+  Elm.Kernel.VirtualDom.style
+
+
+{-| Create a property.
+
+    import Json.Encode as Encode
+
+    buttonLabel : Node msg
+    buttonLabel =
+      node "label" [ property "htmlFor" (Encode.string "button") ] [ text "Label" ]
+
+Notice that you must give the *property* name, so we use `htmlFor` as it
+would be in JavaScript, not `for` as it would appear in HTML.
+-}
+property : String -> Json.Value -> Attribute msg
 property =
   Elm.Kernel.VirtualDom.property
 
 
-{-| Create arbitrary HTML *attributes*. Maps onto JavaScript’s `setAttribute`
-function under the hood.
+{-| Create an attribute. This uses JavaScript’s `setAttribute` function
+behind the scenes.
 
-    greeting : Html
-    greeting =
-        node "div" [ attribute "class" "greeting" ] [
-          text "Hello!"
-        ]
+    buttonLabel : Node msg
+    buttonLabel =
+      node "label" [ attribute "for" "button" ] [ text "Label" ]
 
-Notice that you must give the *attribute* name, so we use `class` as it would
-be in HTML, not `className` as it would appear in JS.
+Notice that you must give the *attribute* name, so we use `for` as it would
+be in HTML, not `htmlFor` as it would appear in JS.
 -}
-attribute : String -> String -> Property msg
+attribute : String -> String -> Attribute msg
 attribute =
   Elm.Kernel.VirtualDom.attribute
 
 
-{-| Would you believe that there is another way to do this?! This corresponds
-to JavaScript's `setAttributeNS` function under the hood. It is doing pretty
-much the same thing as `attribute` but you are able to have "namespaced"
+{-| Would you believe that there is another way to do this?! This uses
+JavaScript's `setAttributeNS` function behind the scenes. It is doing pretty
+much the same thing as `attribute` but you are able to have namespaced
 attributes. As an example, the `elm-lang/svg` package defines an attribute
 like this:
 
@@ -183,36 +193,16 @@ like this:
     xlinkHref =
       attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
 -}
-attributeNS : String -> String -> String -> Property msg
+attributeNS : String -> String -> String -> Attribute msg
 attributeNS =
   Elm.Kernel.VirtualDom.attributeNS
 
 
-{-| Transform the messages produced by a `Property`.
+{-| Transform the messages produced by a `Attribute`.
 -}
-mapProperty : (a -> b) -> Property a -> Property b
-mapProperty =
-  Elm.Kernel.VirtualDom.mapProperty
-
-
-{-| Specify a list of styles.
-
-    myStyle : Property msg
-    myStyle =
-      style
-        [ ("backgroundColor", "red")
-        , ("height", "90px")
-        , ("width", "100%")
-        ]
-
-    greeting : Node msg
-    greeting =
-      node "div" [ myStyle ] [ text "Hello!" ]
-
--}
-style : List (String, String) -> Property msg
-style =
-  Elm.Kernel.VirtualDom.style
+mapAttribute : (a -> b) -> Attribute a -> Attribute b
+mapAttribute =
+  Elm.Kernel.VirtualDom.mapAttribute
 
 
 
@@ -221,51 +211,41 @@ style =
 
 {-| Create a custom event listener.
 
-    import Json.Decode as Json
+    import Json.Decode as Decode
 
-    onClick : msg -> Property msg
+    onClick : msg -> Attribute msg
     onClick msg =
-      on "click" (Json.succeed msg)
+      on "click" (Decode.succeed msg)
 
 You first specify the name of the event in the same format as with JavaScript’s
 `addEventListener`. Next you give a JSON decoder, which lets you pull
 information out of the event object. If the decoder succeeds, it will produce
 a message and route it to your `update` function.
 -}
-on : String -> Json.Decoder msg -> Property msg
+on : String -> Json.Decoder msg -> Attribute msg
 on eventName decoder =
-  onWithOptions eventName defaultOptions decoder
+  onCustom eventName (Json.map toDefaultEvent decoder)
 
 
-{-| Same as `on` but you can set a few options.
+{-| Same as `on` but you can customize how the JavaScript event behaves. For example,
+maybe when someone presses the ENTER key, you want to avoid a page scroll. You have
+control over this with:
+
+  - `stopPropagation = True` means the event stops traveling through the DOM. So if
+  propagation of a click is stopped, it will not trigger any other event listeners.
+  - `preventDefault = True` means any built-in browser behavior related to the event
+  is prevented. This is handy with certain key presses or touch gestures.
+
 -}
-onWithOptions : String -> Options -> Json.Decoder msg -> Property msg
-onWithOptions =
+onCustom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
+onCustom =
   Elm.Kernel.VirtualDom.on
 
 
-{-| Options for an event listener. If `stopPropagation` is true, it means the
-event stops traveling through the DOM so it will not trigger any other event
-listeners. If `preventDefault` is true, any built-in browser behavior related
-to the event is prevented. For example, this is used with touch events when you
-want to treat them as gestures of your own, not as scrolls.
--}
-type alias Options =
-  { stopPropagation : Bool
-  , preventDefault : Bool
-  }
-
-
-{-| Everything is `False` by default.
-
-    defaultOptions =
-        { stopPropagation = False
-        , preventDefault = False
-        }
--}
-defaultOptions : Options
-defaultOptions =
-  { stopPropagation = False
+toDefaultEvent : msg -> { message : msg, stopPropagation : Bool, preventDefault : Bool }
+toDefaultEvent message =
+  { message = message
+  , stopPropagation = False
   , preventDefault = False
   }
 
@@ -306,7 +286,7 @@ node. You want this when you have a list of nodes that is changing: adding
 nodes, removing nodes, etc. In these cases, the unique identifiers help make
 the DOM modifications more efficient.
 -}
-keyedNode : String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
+keyedNode : String -> List (Attribute msg) -> List ( String, Node msg ) -> Node msg
 keyedNode =
   Elm.Kernel.VirtualDom.keyedNode
 
@@ -314,11 +294,11 @@ keyedNode =
 {-| Create a keyed and namespaced DOM node. For example, an SVG `<g>` node
 could be defined like this:
 
-    g : List (Property msg) -> List ( String, Node msg ) -> Node msg
+    g : List (Attribute msg) -> List ( String, Node msg ) -> Node msg
     g =
       keyedNodeNS "http://www.w3.org/2000/svg" "g"
 -}
-keyedNodeNS : String -> String -> List (Property msg) -> List ( String, Node msg ) -> Node msg
+keyedNodeNS : String -> String -> List (Attribute msg) -> List ( String, Node msg ) -> Node msg
 keyedNodeNS =
   Elm.Kernel.VirtualDom.keyedNodeNS
 

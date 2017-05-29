@@ -11,7 +11,7 @@ module Html.Attributes exposing
   , ismap, usemap, shape, coords
   , src, height, width, alt
   , autoplay, controls, loop, preload, poster, default, kind, srclang
-  , sandbox, seamless, srcdoc
+  , sandbox, srcdoc
   , reversed, start
   , align, colspan, rowspan, headers, scope
   , accesskey, contenteditable, contextmenu, dir, draggable, dropzone
@@ -59,7 +59,7 @@ just search the page for `video` if you want video stuff.
 @docs autoplay, controls, loop, preload, poster, default, kind, srclang
 
 ## iframes
-@docs sandbox, seamless, srcdoc
+@docs sandbox, srcdoc
 
 # Ordered Lists
 @docs reversed, start
@@ -407,12 +407,6 @@ srclang value =
 sandbox : String -> Attribute msg
 sandbox value =
   stringProperty "sandbox" value
-
-
-{-|  Make an `iframe` look like part of the containing document. -}
-seamless : Bool -> Attribute msg
-seamless bool =
-  boolProperty "seamless" bool
 
 
 {-| An HTML document that will be displayed as the body of an `iframe`. It will

@@ -104,7 +104,7 @@ type alias Html msg = VirtualDom.Node msg
 {-| Set attributes on your `Html`. Learn more in the
 [`Html.Attributes`](Html-Attributes) module.
 -}
-type alias Attribute msg = VirtualDom.Property msg
+type alias Attribute msg = VirtualDom.Attribute msg
 
 
 

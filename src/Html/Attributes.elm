@@ -190,7 +190,7 @@ attribute =
 -}
 map : (a -> msg) -> Attribute a -> Attribute msg
 map =
-  VirtualDom.mapProperty
+  VirtualDom.mapAttribute
 
 
 

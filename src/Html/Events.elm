@@ -5,7 +5,7 @@ module Html.Events exposing
   , onMouseOver, onMouseOut
   , onInput, onCheck, onSubmit
   , onBlur, onFocus
-  , on, onCustom
+  , on, onBubble, onCapture, Handler(..)
   , targetValue, targetChecked, keyCode
   )
 
@@ -29,7 +29,7 @@ of events as seen in the [TodoMVC][] example.
 @docs onBlur, onFocus
 
 # Custom Event Handlers
-@docs on, onCustom
+@docs on, onBubble, onCapture, Handler
 
 # Custom Decoders
 @docs targetValue, targetChecked, keyCode
@@ -96,7 +96,7 @@ onMouseOut msg =
 -- FORM EVENTS
 
 
-{-| Capture [input](https://developer.mozilla.org/en-US/docs/Web/Events/input)
+{-| Detect [input](https://developer.mozilla.org/en-US/docs/Web/Events/input)
 events for things like text fields or text areas.
 
 It grabs the **string** value at `event.target.value`, so it will not work if
@@ -110,7 +110,7 @@ onInput tagger =
   on "input" (Json.map tagger targetValue)
 
 
-{-| Capture [change](https://developer.mozilla.org/en-US/docs/Web/Events/change)
+{-| Detect [change](https://developer.mozilla.org/en-US/docs/Web/Events/change)
 events on checkboxes. It will grab the boolean value from `event.target.checked`
 on any input event.
 
@@ -121,22 +121,20 @@ onCheck tagger =
   on "change" (Json.map tagger targetChecked)
 
 
-{-| Capture a [submit](https://developer.mozilla.org/en-US/docs/Web/Events/submit)
+{-| Detect a [submit](https://developer.mozilla.org/en-US/docs/Web/Events/submit)
 event with [`preventDefault`](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault)
 in order to prevent the form from changing the page’s location. If you need
-different behavior, use `onCustom` to modify these defaults.
+different behavior, use `onBubble` to modify these defaults.
 -}
 onSubmit : msg -> Attribute msg
 onSubmit msg =
-  onCustom "submit" (Json.map toSubmitEvent (Json.succeed msg))
+  onBubble "submit" <|
+    MayPreventDefault (Json.map preventDefault (Json.succeed msg))
 
 
-toSubmitEvent : msg -> { message : msg, stopPropagation : Bool, preventDefault : Bool }
-toSubmitEvent message =
-  { message = message
-  , stopPropagation = False
-  , preventDefault = True
-  }
+preventDefault : msg -> ( msg, Bool )
+preventDefault msg =
+  ( msg, True )
 
 
 
@@ -188,19 +186,74 @@ on =
   VirtualDom.on
 
 
-{-| Same as `on` but you can customize how the JavaScript event behaves. For example,
-maybe when someone presses the ENTER key, you want to avoid a page scroll. You have
-control over this with:
+{-| For very custom event handlers. These handlers will activate during the
+“bubble” phase, when events travel from leaf to root, as described
+[here](https://www.quirksmode.org/js/events_order.html).
 
-  - `stopPropagation = True` means the event stops traveling through the DOM. So if
-  propagation of a click is stopped, it will not trigger any other event listeners.
-  - `preventDefault = True` means any built-in browser behavior related to the event
-  is prevented. This is handy with certain key presses or touch gestures.
+**This is the default**, so you can define `on` like this:
 
+    import Json.Decode exposing (Decoder)
+
+    on : String -> Decoder msg -> Attribute msg
+    on eventName decoder =
+      onBubble eventName (Simple decoder)
 -}
-onCustom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
-onCustom =
-  VirtualDom.onCustom
+onBubble : String -> Handler msg -> Attribute msg
+onBubble name handler =
+  VirtualDom.onBubble name (convertHandler handler)
+
+
+{-| For very custom event handlers. These handlers will activate during the
+“capture” phase, when events travel from root to leaf, as described
+[here](https://www.quirksmode.org/js/events_order.html).
+
+**This is very rarely what you want.**
+-}
+onCapture : String -> Handler msg -> Attribute msg
+onCapture name handler =
+  VirtualDom.onCapture name (convertHandler handler)
+
+
+convertHandler : Handler msg -> VirtualDom.Handler msg
+convertHandler handler =
+  case handler of
+    Simple decoder ->
+      VirtualDom.Simple decoder
+
+    MayStopPropagation decoder ->
+      VirtualDom.MayStopPropagation decoder
+
+    MayPreventDefault decoder ->
+      VirtualDom.MayPreventDefault decoder
+
+    Fancy decoder ->
+      VirtualDom.Fancy decoder
+
+
+
+{-| When using `onBubble` or `onCapture` you can customize the event behavior
+a bit. There are two ways to do this:
+
+  - `stopPropagation = True` means the event stops traveling through the DOM.
+  So if propagation of a click is stopped, it will not trigger any other event
+  listeners.
+
+  - `preventDefault = True` means any built-in browser behavior related to the
+  event is prevented. This can be handy with key presses or touch gestures.
+
+**Note:** A [passive][] event listener will be created if you use `Simple`
+or `MayStopPropagation`. In both cases `preventDefault` cannot be used, so
+we can enable optimizations for touch, scroll, and wheel events in some
+browsers.
+
+[passive]: https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
+-}
+type Handler msg
+  = Simple (Json.Decoder msg)
+  | MayStopPropagation (Json.Decoder (msg, Bool))
+  | MayPreventDefault (Json.Decoder (msg, Bool))
+  | Fancy (Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool })
+
 
 
 

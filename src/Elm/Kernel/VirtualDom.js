@@ -619,8 +619,16 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 	// structure has changed significantly and it's not worth a diff.
 	if (xType !== yType)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
-		return;
+		if (xType === __2_NODE && yType === __2_KEYED_NODE)
+		{
+			y = _VirtualDom_dekey(y);
+			yType = __2_NODE;
+		}
+		else
+		{
+			patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+			return;
+		}
 	}
 
 	// Now we know that both nodes are the same $.
@@ -1626,7 +1634,6 @@ function virtualize(node)
 
 	// ATTRIBUTES
 
-	var keys;
 	var attrList = __List_Nil;
 	var attrs = node.attributes;
 	for (var i = attrs.length; i--; )
@@ -1634,31 +1641,38 @@ function virtualize(node)
 		var attr = attrs[i];
 		var name = attr.name;
 		var value = attr.value;
-		name === 'data-k'
-			? keys = value.split('|')
-			: attrList = __List_Cons( A2(_VirtualDom_attribute, name, value), attrList );
+		attrList = __List_Cons( A2(_VirtualDom_attribute, name, value), attrList );
 	}
 
 	var tag = node.tagName.toLowerCase();
 	var kidList = __List_Nil;
 	var kids = node.childNodes;
 
-	// KEYED NODES
-
-	if (keys)
-	{
-		for (var i = kids.length; i--; )
-		{
-			kidList = __List_Cons(__Utils_Tuple2(keys[i], virtualize(kids[i])), kidList);
-		}
-		return A3(_VirtualDom_keyedNode, tag, attrList, kidList);
-	}
-
-	// NORMAL NODES
+	// NODES
 
 	for (var i = kids.length; i--; )
 	{
 		kidList = __List_Cons(virtualize(kids[i]), kidList);
 	}
 	return A3(_VirtualDom_node, tag, attrList, kidList);
+}
+
+function _VirtualDom_dekey(keyedNode)
+{
+	var keyedKids = keyedNode.kids;
+	var len = keyedKids.length;
+	var kids = new Array(len);
+	for (var i = 0; i < len; i++)
+	{
+		kids[i] = keyedKids[i].b;
+	}
+
+	return {
+		$: __2_NODE,
+		tag: keyedNode.tag,
+		facts: keyedNode.facts,
+		kids: kids,
+		namespace: keyedNode.namespace,
+		descendantsCount: keyedNode.descendantsCount
+	};
 }

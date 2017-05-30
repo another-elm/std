@@ -30,41 +30,43 @@ function replaceBadChars(m)
 
 // NODES
 
-function _VirtualDom_node(tag)
+var _VirtualDom_nodeNS = F2(function(namespace, tag)
 {
 	return F2(function(factList, kidList) {
 		var output = _VirtualDom_openTag(tag, factList);
 
-		var kids = kidList;
-		while (kids.$ !== '[]')
+		while (kidList.$ !== '[]')
 		{
-			output += kids.a;
-			kids = kids.b;
+			output += kidList.a;
+			kidList = kidList.b;
 		}
 
 		return output + '</' + tag + '>';
 	});
-}
+});
+
+var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
 
 
 // KEYED NODES
 
-function _VirtualDom_keyedNode(tag)
+var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 {
 	return F2(function(factList, kidList)
 	{
 		var output = _VirtualDom_openTag(tag, factList);
 
-		var kids = kidList;
-		while (kids.$ !== '[]')
+		while (kidList.$ !== '[]')
 		{
-			output += kids.a.b;
-			kids = kids.b;
+			output += kidList.a.b;
+			kidList = kidList.b;
 		}
 
 		return output + '</' + tag + '>';
 	});
-}
+});
+
+var _VirtualDom_keyedNode = _VirtualDom_keyedNodeNS(undefined);
 
 
 // CUSTOM
@@ -90,6 +92,19 @@ var _VirtualDom_lazy2 = F3(function(fn, a, b)
 var _VirtualDom_lazy3 = F4(function(fn, a, b, c)
 {
 	return A3(fn, a, b, c);
+});
+
+
+// MAP
+
+var _VirtualDom_map = F2(function(tagger, node)
+{
+	return node;
+});
+
+var _VirtualDom_mapAttribute = F2(function(func, attr)
+{
+	return attr;
 });
 
 
@@ -119,57 +134,28 @@ function _VirtualDom_openTag(tag, facts)
 	);
 }
 
-var _VirtualDom_mapProperty = F2(function(func, property)
+
+// FACTS
+
+var _VirtualDom_style = F2(function(key, value)
 {
-	return property;
+	return new String(key + ':' + value + ';');
 });
-
-
-// EVENTS
-
-var _VirtualDom_on = F3(function(name, options, decoder)
-{
-	return '';
-});
-
-var _VirtualDom_map = F2(function(tagger, node)
-{
-	return node;
-});
-
-
-// STYLE
-
-function _VirtualDom_style(styleList)
-{
-	var temp = styleList;
-	var styles = '';
-	while (temp.$ !== '[]')
-	{
-		var style = temp.a;
-		styles += style.a + ':' + style.b + ';'
-		temp = temp.b;
-	}
-	return new String(styles);
-}
-
-
-// ATTRIBUTES
 
 var _VirtualDom_attribute = F2(function(key, value)
 {
 	return ' ' + key + '="' + value + '"';
 });
 
-
 var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 {
-	return ' ' + key + '="' + value + '"';
+	return '';
 });
 
-
-
-// PROPERTIES
+var _VirtualDom_on = F3(function(useCapture, name, decoder)
+{
+	return '';
+});
 
 var _VirtualDom_property = F2(function(key, value)
 {

@@ -2,8 +2,8 @@ module VirtualDom exposing
   ( Node
   , text, node, nodeNS
   , Attribute, style, property, attribute, attributeNS
-  , on, onCustom, mapAttribute
-  , map
+  , on, onBubble, onCapture, Handler(..)
+  , map, mapAttribute
   , lazy, lazy2, lazy3
   , keyedNode, keyedNodeNS
   , program, programWithFlags
@@ -19,10 +19,10 @@ that expose more helper functions for HTML or SVG.
 @docs Attribute, style, property, attribute, attributeNS
 
 # Events
-@docs on, onCustom, mapAttribute
+@docs on, onBubble, onCapture, Handler
 
 # Routing Messages
-@docs map
+@docs map, mapAttribute
 
 # Optimizations
 @docs lazy, lazy2, lazy3, keyedNode, keyedNodeNS
@@ -224,30 +224,59 @@ a message and route it to your `update` function.
 -}
 on : String -> Json.Decoder msg -> Attribute msg
 on eventName decoder =
-  onCustom eventName (Json.map toDefaultEvent decoder)
+  onBubble eventName (Simple decoder)
 
 
-{-| Same as `on` but you can customize how the JavaScript event behaves. For example,
-maybe when someone presses the ENTER key, you want to avoid a page scroll. You have
-control over this with:
+{-| For very custom event handlers. These handlers will activate during the
+“bubble” phase, when events travel from leaf to root, as described
+[here](https://www.quirksmode.org/js/events_order.html).
 
-  - `stopPropagation = True` means the event stops traveling through the DOM. So if
-  propagation of a click is stopped, it will not trigger any other event listeners.
-  - `preventDefault = True` means any built-in browser behavior related to the event
-  is prevented. This is handy with certain key presses or touch gestures.
+**This is the default**, so you can define `on` like this:
 
+    import Json.Decode exposing (Decoder)
+
+    on : String -> Decoder msg -> Attribute msg
+    on eventName decoder =
+      onBubble eventName (Simple decoder)
 -}
-onCustom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
-onCustom =
-  Elm.Kernel.VirtualDom.on
+onBubble : String -> Handler msg -> Attribute msg
+onBubble =
+  Elm.Kernel.VirtualDom.on False
 
 
-toDefaultEvent : msg -> { message : msg, stopPropagation : Bool, preventDefault : Bool }
-toDefaultEvent message =
-  { message = message
-  , stopPropagation = False
-  , preventDefault = False
-  }
+{-| For very custom event handlers. These handlers will activate during the
+“capture” phase, when events travel from root to leaf, as described
+[here](https://www.quirksmode.org/js/events_order.html).
+
+**This is very rarely what you want.**
+-}
+onCapture : String -> Handler msg -> Attribute msg
+onCapture =
+  Elm.Kernel.VirtualDom.on True
+
+
+{-| When using `onBubble` or `onCapture` you can customize the event behavior
+a bit. There are two ways to do this:
+
+  - `stopPropagation = True` means the event stops traveling through the DOM.
+  So if propagation of a click is stopped, it will not trigger any other event
+  listeners.
+
+  - `preventDefault = True` means any built-in browser behavior related to the
+  event is prevented. This can be handy with key presses or touch gestures.
+
+**Note:** A [passive][] event listener will be created if you use `Simple`
+or `MayStopPropagation`. In both cases `preventDefault` cannot be used, so
+we can enable optimizations for touch, scroll, and wheel events in some
+browsers.
+
+[passive]: https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
+-}
+type Handler msg
+  = Simple (Json.Decoder msg)
+  | MayStopPropagation (Json.Decoder (msg, Bool))
+  | MayPreventDefault (Json.Decoder (msg, Bool))
+  | Fancy (Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool })
 
 
 

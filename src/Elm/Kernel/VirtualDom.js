@@ -5,9 +5,10 @@ import Elm.Kernel.Json exposing (equality, run)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Platform exposing (initialize)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
-import Json.Decode as Json exposing (map)
+import Json.Decode as Json exposing (map, map2, succeed)
 import Platform.Cmd as Cmd exposing (none)
 import Platform.Sub as Sub exposing (none)
+import Tuple exposing (mapFirst)
 
 */
 
@@ -19,7 +20,9 @@ var elm_lang$virtual_dom$VirtualDom_Debug$wrapWithFlags;
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
 
+
 // TEXT
+
 
 function _VirtualDom_text(string)
 {
@@ -30,9 +33,9 @@ function _VirtualDom_text(string)
 }
 
 
+
 // NODE
 
-var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
 
 var _VirtualDom_nodeNS = F2(function(namespace, tag)
 {
@@ -61,9 +64,12 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 });
 
 
+var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
+
+
+
 // KEYED NODE
 
-var _VirtualDom_keyedNode = _VirtualDom_keyedNodeNS(undefined);
 
 var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 {
@@ -92,19 +98,26 @@ var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 });
 
 
+var _VirtualDom_keyedNode = _VirtualDom_keyedNodeNS(undefined);
+
+
+
 // CUSTOM
+
 
 var _VirtualDom_custom = F3(function(factList, model, impl)
 {
-	var facts = _VirtualDom_organizeFacts(factList).facts;
-
 	return {
 		$: __2_CUSTOM,
-		facts: facts,
+		facts: _VirtualDom_organizeFacts(factList),
 		model: model,
 		impl: impl
 	};
 });
+
+
+
+// MAP
 
 
 var _VirtualDom_map = F2(function(tagger, node)
@@ -116,6 +129,10 @@ var _VirtualDom_map = F2(function(tagger, node)
 		descendantsCount: 1 + (node.descendantsCount || 0)
 	};
 });
+
+
+
+// LAZY
 
 
 function _VirtualDom_thunk(func, args, thunk)
@@ -155,6 +172,75 @@ var _VirtualDom_lazy3 = F4(function(fn, arg1, arg2, arg3)
 // FACTS
 
 
+var _VirtualDom_on = F3(function(useCapture, key, handler)
+{
+	return { $: __1_EVENT, a: key, b: { $: handler.$, a: useCapture, b: handler.a } };
+});
+var _VirtualDom_style = F2(function(key, value)
+{
+	return { $: __1_STYLE, a: key, b: value };
+});
+var _VirtualDom_property = F2(function(key, value)
+{
+	return { $: __1_PROP , a: key, b: value };
+});
+var _VirtualDom_attribute = F2(function(key, value)
+{
+	return { $: __1_ATTR , a: key, b: value };
+});
+var _VirtualDom_attributeNS = F3(function(namespace, key, value)
+{
+	return { $: __1_ATTR_NS, a: key, b: { n: namespace, v: value } };
+});
+
+
+
+// MAP FACTS
+
+
+var _VirtualDom_mapAttribute = F2(function(func, attr)
+{
+	return (attr.$ === __1_EVENT)
+		? _VirtualDom_mapEvent(attr.a, func, attr.b)
+		: attr;
+});
+
+function _VirtualDom_mapEvent(key, func, handler)
+{
+	var tag = handler.$;
+
+	return {
+		$: __1_EVENT,
+		a: key,
+		b: {
+			$: tag,
+			a: handler.a,
+			b:
+				tag === 'Simple'
+					? A2(__Json_map, func, handler.b)
+					:
+				tag !== 'Fancy'
+					? A3(__Json_map2, __Tuple_mapFirst, __Json_succeed(func), handler.b)
+					:
+				A3(__Json_map2, _VirtualDom_mapEventHelp, __Json_succeed(func), handler.b)
+		}
+	};
+}
+
+var _VirtualDom_mapEventHelp = F2(function(func, record)
+{
+	return {
+		message: func(record.message),
+		stopPropagation: record.stopPropagation,
+		preventDefault: record.preventDefault
+	}
+});
+
+
+
+// ORGANIZE FACTS
+
+
 function _VirtualDom_organizeFacts(factList)
 {
 	var facts = {};
@@ -162,132 +248,39 @@ function _VirtualDom_organizeFacts(factList)
 	while (factList.$ !== '[]')
 	{
 		var entry = factList.a;
-		var key = entry.key;
-
-		if (key === __1_ATTR || key === __1_ATTR_NS || key === __1_EVENT)
-		{
-			var subFacts = facts[key] || {};
-			subFacts[entry.realKey] = entry.value;
-			facts[key] = subFacts;
-		}
-		else if (key === __1_STYLE)
-		{
-			var styles = facts[key] || {};
-			var styleList = entry.value;
-			while (styleList.$ !== '[]')
-			{
-				var style = styleList.a;
-				styles[style.a] = style.b;
-				styleList = styleList.b;
-			}
-			facts[key] = styles;
-		}
-		else if (key === 'className')
-		{
-			var classes = facts[key];
-			facts[key] = typeof classes === 'undefined'
-				? entry.value
-				: classes + ' ' + entry.value;
-		}
- 		else
-		{
-			facts[key] = entry.value;
-		}
 		factList = factList.b;
+
+		var tag = entry.$;
+		var key = entry.a;
+		var value = entry.b;
+
+		if (tag === __1_PROP)
+		{
+			(key === 'className')
+				? _VirtualDom_addClass(facts, key, value)
+				: facts[key] = value;
+
+			continue;
+		}
+
+		var subFacts = facts[tag] || (facts[tag] = {});
+		(tag === __1_ATTR && key === 'class')
+			? _VirtualDom_addClass(subFacts, key, value)
+			: subFacts[key] = value;
 	}
 
 	return facts;
 }
 
-
-
-////////////  PROPERTIES AND ATTRIBUTES  ////////////
-
-
-function _VirtualDom_style(value)
+function _VirtualDom_addClass(object, key, newClass)
 {
-	return {
-		key: __1_STYLE,
-		value: value
-	};
+	var classes = object[key];
+	object[key] = classes ? classes + ' ' + newClass : newClass;
 }
 
 
-var _VirtualDom_property = F2(function(key, value)
-{
-	return {
-		key: key,
-		value: value
-	};
-});
 
-
-var _VirtualDom_attribute = F2(function(key, value)
-{
-	return {
-		key: __1_ATTR,
-		realKey: key,
-		value: value
-	};
-});
-
-
-var _VirtualDom_attributeNS = F3(function(namespace, key, value)
-{
-	return {
-		key: __1_ATTR_NS,
-		realKey: key,
-		value: {
-			value: value,
-			namespace: namespace
-		}
-	};
-});
-
-
-var _VirtualDom_on = F3(function(name, options, decoder)
-{
-	return {
-		key: __1_EVENT,
-		realKey: name,
-		value: {
-			options: options,
-			decoder: decoder
-		}
-	};
-});
-
-
-function _VirtualDom_equalEvents(x, y)
-{
-	var xOps = x.options;
-	var yOps = y.options;
-	if (xOps !== yOps)
-	{
-		if (xOps.stopPropagation !== yOps.stopPropagation || xOps.preventDefault !== yOps.preventDefault)
-		{
-			return false;
-		}
-	}
-	return __Json_equality(x.decoder, y.decoder);
-}
-
-
-var _VirtualDom_mapProperty = F2(function(func, property)
-{
-	if (property.key !== __1_EVENT)
-	{
-		return property;
-	}
-	return on(
-		property.realKey,
-		property.value.options,
-		A2(__Json_map, func, property.value.decoder)
-	);
-});
-
-
-////////////  RENDER  ////////////
+// RENDER
 
 
 function _VirtualDom_render(vNode, eventNode)
@@ -363,7 +356,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 
 
-////////////  APPLY FACTS  ////////////
+// APPLY FACTS
 
 
 function _VirtualDom_applyFacts(domNode, eventNode, facts)
@@ -404,6 +397,11 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 	}
 }
 
+
+
+// APPLY STYLES
+
+
 function _VirtualDom_applyStyles(domNode, styles)
 {
 	var domNodeStyle = domNode.style;
@@ -414,120 +412,177 @@ function _VirtualDom_applyStyles(domNode, styles)
 	}
 }
 
-function _VirtualDom_applyEvents(domNode, eventNode, events)
-{
-	var allHandlers = domNode.elm_handlers || {};
 
-	for (var key in events)
-	{
-		var handler = allHandlers[key];
-		var value = events[key];
 
-		if (typeof value === 'undefined')
-		{
-			domNode.removeEventListener(key, handler);
-			allHandlers[key] = undefined;
-		}
-		else if (typeof handler === 'undefined')
-		{
-			var handler = _VirtualDom_makeEventHandler(eventNode, value);
-			domNode.addEventListener(key, handler);
-			allHandlers[key] = handler;
-		}
-		else
-		{
-			handler.info = value;
-		}
-	}
+// APPLY ATTRS
 
-	domNode.elm_handlers = allHandlers;
-}
-
-function _VirtualDom_makeEventHandler(eventNode, info)
-{
-	function eventHandler(event)
-	{
-		var info = eventHandler.info;
-
-		var value = A2(__Json_run, info.decoder, event);
-
-		if (value.$ === 'Ok')
-		{
-			var options = info.options;
-			if (options.stopPropagation)
-			{
-				event.stopPropagation();
-			}
-			if (options.preventDefault)
-			{
-				event.preventDefault();
-			}
-
-			var message = value.a;
-
-			var currentEventNode = eventNode;
-			while (currentEventNode)
-			{
-				var tagger = currentEventNode.tagger;
-				if (typeof tagger === 'function')
-				{
-					message = tagger(message);
-				}
-				else
-				{
-					for (var i = tagger.length; i--; )
-					{
-						message = tagger[i](message);
-					}
-				}
-				currentEventNode = currentEventNode.parent;
-			}
-		}
-	};
-
-	eventHandler.info = info;
-
-	return eventHandler;
-}
 
 function _VirtualDom_applyAttrs(domNode, attrs)
 {
 	for (var key in attrs)
 	{
 		var value = attrs[key];
-		if (typeof value === 'undefined')
-		{
-			domNode.removeAttribute(key);
-		}
-		else
-		{
-			domNode.setAttribute(key, value);
-		}
+		value
+			? domNode.setAttribute(key, value)
+			: domNode.removeAttribute(key);
 	}
 }
+
+
+
+// APPLY NAMESPACED ATTRS
+
 
 function _VirtualDom_applyAttrsNS(domNode, nsAttrs)
 {
 	for (var key in nsAttrs)
 	{
 		var pair = nsAttrs[key];
-		var namespace = pair.namespace;
-		var value = pair.value;
+		var namespace = pair.n;
+		var value = pair.v;
 
-		if (typeof value === 'undefined')
-		{
-			domNode.removeAttributeNS(namespace, key);
-		}
-		else
-		{
-			domNode.setAttributeNS(namespace, key, value);
-		}
+		value
+			? domNode.setAttributeNS(namespace, key, value)
+			: domNode.removeAttributeNS(namespace, key);
 	}
 }
 
 
 
-////////////  DIFF  ////////////
+// APPLY EVENTS
+
+
+function _VirtualDom_applyEvents(domNode, eventNode, events)
+{
+	var callbacks = domNode.elmFs || (domNode.elmFs = {});
+
+	for (var key in events)
+	{
+		var newHandler = events[key];
+		var cb = callbacks[key];
+
+		if (!newHandler)
+		{
+			domNode.removeEventListener(key, cb);
+			callbacks[key] = undefined;
+			continue;
+		}
+
+		if (!cb)
+		{
+			cb = _VirtualDom_makeCallback(eventNode, newHandler);
+			domNode.addEventListener(key, cb, _VirtualDom_toOptions(newHandler));
+			callbacks[key] = cb;
+			continue;
+		}
+
+		var oldHandler = cb.handler;
+		if (oldHandler.$ === newHandler.$ && oldHandler.a === newHandler.a)
+		{
+			cb.handler = newHandler;
+			continue
+		}
+
+		domNode.removeEventListener(key, cb);
+		cb = _VirtualDom_makeCallback(eventNode, newHandler);
+		domNode.addEventListener(key, cb, _VirtualDom_toOptions(newHandler));
+		callbacks[key] = cb;
+	}
+}
+
+
+// EVENT OPTIONS
+
+var _VirtualDom_toOptions = function(handler) { return handler.a; }
+
+try
+{
+	window.addEventListener("test", null, Object.defineProperty({}, "passive", {
+		get: function()
+		{
+			_VirtualDom_toOptions = function(handler)
+			{
+				var tag = handler.$;
+				return {
+					passive: tag === 'Simple' || tag === 'MayStopPropagation',
+					capture: handler.a
+				};
+			}
+		}
+	}));
+}
+catch(e) {}
+
+
+// EVENT HANDLERS
+
+function _VirtualDom_makeCallback(eventNode, initialHandler)
+{
+	function eventHandler(event)
+	{
+		var handler = eventHandler.handler;
+		var result = A2(__Json_run, handler.b, event);
+
+		if (result.$ !== 'Ok')
+		{
+			return;
+		}
+
+		var message = _VirtualDom_eventToMessage(event, handler.$, result.a);
+		var currentEventNode = eventNode;
+		while (currentEventNode)
+		{
+			var tagger = currentEventNode.tagger;
+			if (typeof tagger === 'function')
+			{
+				message = tagger(message);
+			}
+			else
+			{
+				for (var i = tagger.length; i--; )
+				{
+					message = tagger[i](message);
+				}
+			}
+			currentEventNode = currentEventNode.parent;
+		}
+	}
+
+	eventHandler.handler = initialHandler;
+
+	return eventHandler;
+}
+
+function _VirtualDom_equalEvents(x, y)
+{
+	return x.$ === y.$ && x.a === y.a && __Json_equality(x.b, y.b);
+}
+
+function _VirtualDom_eventToMessage(event, tag, value)
+{
+	switch (tag)
+	{
+		case 'Simple':
+			return value;
+
+		case 'MayStopPropagation':
+			if (value.b) event.stopPropagation();
+			return value.a;
+
+		case 'MayPreventDefault':
+			if (value.b) event.preventDefault();
+			return value.a;
+
+		case 'Fancy':
+			if (value.stopPropagation) event.stopPropagation();
+			if (value.preventDefault) event.preventDefault();
+			return value.message;
+	}
+}
+
+
+
+// DIFF
 
 
 function _VirtualDom_diff(x, y)
@@ -729,6 +784,10 @@ function _VirtualDom_pairwiseRefEqual(as, bs)
 }
 
 
+
+// DIFF FACTS
+
+
 // TODO Instead of creating a new diff object, it's possible to just test if
 // there *is* a diff. During the actual patch, do the diff again and make the
 // modifications directly. This way, there's no new allocations. Worth it?
@@ -755,7 +814,7 @@ function _VirtualDom_diffFacts(x, y, category)
 		{
 			diff = diff || {};
 			diff[xKey] =
-				(typeof category === 'undefined')
+				!category
 					? (typeof x[xKey] === 'string' ? '' : null)
 					:
 				(category === __1_STYLE)
@@ -764,7 +823,7 @@ function _VirtualDom_diffFacts(x, y, category)
 				(category === __1_EVENT || category === __1_ATTR)
 					? undefined
 					:
-				{ namespace: x[xKey].namespace, value: undefined };
+				{ n: x[xKey].n, v: undefined };
 
 			continue;
 		}
@@ -795,6 +854,10 @@ function _VirtualDom_diffFacts(x, y, category)
 
 	return diff;
 }
+
+
+
+// DIFF KIDS
 
 
 function _VirtualDom_diffKids(xParent, yParent, patches, rootIndex)
@@ -831,7 +894,7 @@ function _VirtualDom_diffKids(xParent, yParent, patches, rootIndex)
 
 
 
-////////////  KEYED DIFF  ////////////
+// KEYED DIFF
 
 
 function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
@@ -995,7 +1058,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 
 
 
-////////////  CHANGES FROM KEYED DIFF  ////////////
+// CHANGES FROM KEYED DIFF
 
 
 var _VirtualDom_POSTFIX = '_elmW6BL';
@@ -1085,7 +1148,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 
 
 
-////////////  ADD DOM NODES  ////////////
+// ADD DOM NODES
 //
 // Each DOM node has an "index" assigned in order of traversal. It is important
 // to minimize our crawl over the actual DOM, so these indexes (along with the
@@ -1214,7 +1277,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 
 
-////////////  APPLY PATCHES  ////////////
+// APPLY PATCHES
 
 
 function _VirtualDom_applyPatches(rootDomNode, oldVirtualNode, patches, eventNode)
@@ -1387,7 +1450,9 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 }
 
 
+
 // PROGRAMS
+
 
 var _VirtualDom_program = _VirtualDom_makeProgram(_VirtualDom_checkNoFlags);
 var _VirtualDom_programWithFlags = _VirtualDom_makeProgram(_VirtualDom_checkYesFlags);
@@ -1426,7 +1491,9 @@ function _VirtualDom_staticProgram(vNode)
 }
 
 
+
 // FLAG CHECKERS
+
 
 function _VirtualDom_checkNoFlags(flagDecoder, moduleName)
 {
@@ -1461,17 +1528,14 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 }
 
 
+
 //  NORMAL SETUP
+
 
 function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 {
 	object['embed'] = function embed(node, flags)
 	{
-		while (node.lastChild)
-		{
-			node.removeChild(node.lastChild);
-		}
-
 		return __Platform_initialize(
 			flagChecker(impl.init, flags, node),
 			impl.update,
@@ -1492,7 +1556,9 @@ function _VirtualDom_setup(impl, object, moduleName, flagChecker)
 }
 
 
+
 // RENDERER
+
 
 var _VirtualDom_requestAnimationFrame =
 	typeof requestAnimationFrame !== 'undefined'
@@ -1501,13 +1567,23 @@ var _VirtualDom_requestAnimationFrame =
 
 function _VirtualDom_renderer(domNode, view)
 {
-	return function(tagger)
+	return function(tagger, nextModel)
 	{
 		var eventNode = { tagger: tagger, parent: undefined };
 		var currNode = virtualize(domNode);
 
 		var state = __4_NO_REQUEST;
-		var nextModel;
+		stepper(nextModel);
+
+		function stepper(model)
+		{
+			if (state === __4_NO_REQUEST)
+			{
+				_VirtualDom_requestAnimationFrame(updateIfNeeded);
+			}
+			state = __4_PENDING_REQUEST;
+			nextModel = model;
+		}
 
 		function updateIfNeeded()
 		{
@@ -1533,15 +1609,7 @@ function _VirtualDom_renderer(domNode, view)
 			}
 		}
 
-		return function stepper(model)
-		{
-			if (state === __4_NO_REQUEST)
-			{
-				_VirtualDom_requestAnimationFrame(updateIfNeeded);
-			}
-			state = __4_PENDING_REQUEST;
-			nextModel = model;
-		};
+		return stepper;
 	};
 }
 

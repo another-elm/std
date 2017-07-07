@@ -124,6 +124,10 @@ is paired with. For example, maybe we want a way to view notices:
             ]
         ]
         [ text notice.content ]
+
+**Note:** You can have as many `class` and `classList` attributes as you want.
+They all get applied, so if you say `[ class "notice", class "notice-seen" ]`
+you will bet both classes!
 -}
 classList : List (String, Bool) -> Attribute msg
 classList list =
@@ -193,7 +197,12 @@ map =
 -- GLOBAL ATTRIBUTES
 
 
-{-| Often used with CSS to style elements with common properties. -}
+{-| Often used with CSS to style elements with common properties.
+
+**Note:** You can have as many `class` and `classList` attributes as you want.
+They all get applied, so if you say `[ class "notice", class "notice-seen" ]`
+you will bet both classes!
+-}
 class : String -> Attribute msg
 class name =
   stringProperty "className" name

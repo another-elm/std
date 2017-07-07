@@ -7,7 +7,7 @@ module Html.Attributes exposing
   , name, novalidate, pattern, readonly, required, size, for, form
   , max, min, step
   , cols, rows, wrap
-  , href, target, download, downloadAs, hreflang, media, ping, rel
+  , href, target, download, hreflang, media, ping, rel
   , ismap, usemap, shape, coords
   , src, height, width, alt
   , autoplay, controls, loop, preload, poster, default, kind, srclang
@@ -45,7 +45,7 @@ just search the page for `video` if you want video stuff.
 
 
 # Links and Areas
-@docs href, target, download, downloadAs, hreflang, media, ping, rel
+@docs href, target, download, hreflang, media, ping, rel
 
 ## Maps
 @docs ismap, usemap, shape, coords
@@ -783,11 +783,18 @@ target value =
 
 
 {-| Indicates that clicking an `a` and `area` will download the resource
-directly.
+directly. The `String` argument determins the name of the downloaded file.
+Say the file you are serving is named `hats.json`.
+
+    download ""               -- hats.json
+    download "my-hats.json"   -- my-hats.json
+    download "snakes.json"    -- snakes.json
+
+The empty `String` says to just name it whatever it was called on the server.
 -}
-download : Bool -> Attribute msg
-download bool =
-  boolProperty "download" bool
+download : String -> Attribute msg
+download fileName =
+  stringProperty "download" fileName
 
 
 {-| Indicates that clicking an `a` and `area` will download the resource

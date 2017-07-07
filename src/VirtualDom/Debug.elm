@@ -57,14 +57,15 @@ type State model
 
 wrapInit : Encode.Value -> ( model, Cmd msg ) -> ( Model model msg, Cmd (Msg msg) )
 wrapInit metadata ( userModel, userCommands ) =
-  { history = History.empty userModel
-  , state = Running userModel
-  , expando = Expando.init userModel
-  , metadata = Metadata.decode metadata
-  , overlay = Overlay.none
-  , isDebuggerOpen = False
-  }
-    => Cmd.map UserMsg userCommands
+  ( { history = History.empty userModel
+    , state = Running userModel
+    , expando = Expando.init userModel
+    , metadata = Metadata.decode metadata
+    , overlay = Overlay.none
+    , isDebuggerOpen = False
+    }
+  , Cmd.map UserMsg userCommands
+  )
 
 
 
@@ -100,45 +101,46 @@ wrapUpdate
 wrapUpdate userUpdate scrollTask msg model =
   case msg of
     NoOp ->
-      model => Cmd.none
+      ( model, Cmd.none )
 
     UserMsg userMsg ->
       updateUserMsg userUpdate scrollTask userMsg model
 
     ExpandoMsg eMsg ->
-      { model
-          | expando = Expando.update eMsg model.expando
-      }
-        => Cmd.none
+      ( { model | expando = Expando.update eMsg model.expando }
+      , Cmd.none
+      )
 
     Resume ->
       case model.state of
         Running _ ->
-          model => Cmd.none
+          ( model, Cmd.none )
 
         Paused _ _ userModel ->
-          { model
+          ( { model
               | state = Running userModel
               , expando = Expando.merge userModel model.expando
-          }
-            => runIf model.isDebuggerOpen scrollTask
+            }
+          , runIf model.isDebuggerOpen scrollTask
+          )
 
     Jump index ->
       let
         (indexModel, indexMsg) =
           History.get userUpdate index model.history
       in
-        { model
+        ( { model
             | state = Paused index indexModel (getLatestModel model.state)
             , expando = Expando.merge indexModel model.expando
-        }
-          => Cmd.none
+          }
+        , Cmd.none
+        )
 
     Open ->
-      { model | isDebuggerOpen = True } => Cmd.none
+      ( { model | isDebuggerOpen = True }, Cmd.none )
 
     Close ->
-      { model | isDebuggerOpen = False } => Cmd.none
+      ( { model | isDebuggerOpen = False }, Cmd.none )
 
     Up ->
       let
@@ -153,12 +155,12 @@ wrapUpdate userUpdate scrollTask msg model =
         if index > 0 then
           wrapUpdate userUpdate scrollTask (Jump (index - 1)) model
         else
-          model => Cmd.none
+          ( model, Cmd.none )
 
     Down ->
       case model.state of
         Running _ ->
-          model => Cmd.none
+          ( model, Cmd.none )
 
         Paused index _ userModel ->
           if index == History.size model.history - 1 then
@@ -168,17 +170,17 @@ wrapUpdate userUpdate scrollTask msg model =
 
     Import ->
       withGoodMetadata model <| \_ ->
-        model => upload
+        ( model, upload )
 
     Export ->
       withGoodMetadata model <| \metadata ->
-        model => download metadata model.history
+        ( model, download metadata model.history )
 
     Upload jsonString ->
       withGoodMetadata model <| \metadata ->
         case Overlay.assessImport metadata jsonString of
           Err newOverlay ->
-            { model | overlay = newOverlay } => Cmd.none
+            ( { model | overlay = newOverlay }, Cmd.none )
 
           Ok rawHistory ->
             loadNewHistory rawHistory userUpdate model
@@ -186,7 +188,7 @@ wrapUpdate userUpdate scrollTask msg model =
     OverlayMsg overlayMsg ->
       case Overlay.close overlayMsg model.overlay of
         Nothing ->
-          { model | overlay = Overlay.none } => Cmd.none
+          ( { model | overlay = Overlay.none }, Cmd.none )
 
         Just rawHistory ->
           loadNewHistory rawHistory userUpdate model
@@ -230,7 +232,7 @@ withGoodMetadata model func =
       func metadata
 
     Err error ->
-      { model | overlay = Overlay.badMetadata error } => Cmd.none
+      ( { model | overlay = Overlay.badMetadata error }, Cmd.none )
 
 
 loadNewHistory
@@ -251,16 +253,17 @@ loadNewHistory rawHistory userUpdate model =
   in
     case Decode.decodeValue decoder rawHistory of
       Err _ ->
-        { model | overlay = Overlay.corruptImport } => Cmd.none
+        ( { model | overlay = Overlay.corruptImport }, Cmd.none )
 
       Ok (latestUserModel, newHistory) ->
-        { model
+        ( { model
             | history = newHistory
             , state = Running latestUserModel
             , expando = Expando.init latestUserModel
             , overlay = Overlay.none
-        }
-          => Cmd.none
+          }
+        , Cmd.none
+        )
 
 
 
@@ -289,19 +292,21 @@ updateUserMsg userUpdate scrollTask userMsg ({ history, state, expando } as mode
   in
     case state of
       Running _ ->
-        { model
+        ( { model
             | history = newHistory
             , state = Running newUserModel
             , expando = Expando.merge newUserModel expando
-        }
-          => Cmd.batch [ commands, runIf model.isDebuggerOpen scrollTask ]
+          }
+        , Cmd.batch [ commands, runIf model.isDebuggerOpen scrollTask ]
+        )
 
       Paused index indexModel _ ->
-        { model
+        ( { model
             | history = newHistory
             , state = Paused index indexModel newUserModel
-        }
-          => commands
+          }
+        , commands
+        )
 
 
 runIf : Bool -> Task Never () -> Cmd (Msg msg)

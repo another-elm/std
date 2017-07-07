@@ -127,7 +127,7 @@ is paired with. For example, maybe we want a way to view notices:
 
 **Note:** You can have as many `class` and `classList` attributes as you want.
 They all get applied, so if you say `[ class "notice", class "notice-seen" ]`
-you will bet both classes!
+you will get both classes!
 -}
 classList : List (String, Bool) -> Attribute msg
 classList list =
@@ -201,7 +201,7 @@ map =
 
 **Note:** You can have as many `class` and `classList` attributes as you want.
 They all get applied, so if you say `[ class "notice", class "notice-seen" ]`
-you will bet both classes!
+you will get both classes!
 -}
 class : String -> Attribute msg
 class name =

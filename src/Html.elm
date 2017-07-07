@@ -8,7 +8,7 @@ module Html exposing
   , ol, ul, li, dl, dt, dd
   , img, iframe, canvas, math
   , form, input, textarea, button, select, option
-  , section, nav, article, aside, header, footer, address, main_, body
+  , section, nav, article, aside, header, footer, address, main_
   , figure, figcaption
   , table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th
   , fieldset, legend, label, datalist, optgroup, output, progress, meter
@@ -237,14 +237,6 @@ programWithFlags =
 
 
 -- SECTIONS
-
-
-{-| Represents the content of an HTML document. There is only one `body`
-element in a document.
--}
-body : List (Attribute msg) -> List (Html msg) -> Html msg
-body =
-  node "body"
 
 
 {-| Defines a section in a document.

@@ -190,8 +190,8 @@ attributes. As an example, the `elm-lang/svg` package defines an attribute
 like this:
 
     xlinkHref : String -> Attribute msg
-    xlinkHref =
-      attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
+    xlinkHref value =
+      attributeNS "http://www.w3.org/1999/xlink" "xlink:href" value
 -}
 attributeNS : String -> String -> String -> Attribute msg
 attributeNS =

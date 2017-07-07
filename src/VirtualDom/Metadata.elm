@@ -303,7 +303,7 @@ encodeTypes { message, unions, aliases } =
 encodeAlias : Alias -> Encode.Value
 encodeAlias { args, tipe } =
   Encode.object
-    [ ("args", Encode.list (List.map Encode.string args))
+    [ ("args", Encode.list Encode.string args)
     , ("type", Encode.string tipe)
     ]
 
@@ -311,8 +311,8 @@ encodeAlias { args, tipe } =
 encodeUnion : Union -> Encode.Value
 encodeUnion { args, tags } =
   Encode.object
-    [ ("args", Encode.list (List.map Encode.string args))
-    , ("tags", encodeDict (Encode.list << List.map Encode.string) tags)
+    [ ("args", Encode.list Encode.string args)
+    , ("tags", encodeDict (Encode.list Encode.string) tags)
     ]
 
 

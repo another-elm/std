@@ -99,16 +99,12 @@ jsToElm =
 
 encode : History model msg -> Encode.Value
 encode { snapshots, recent } =
-  let
-    recentJson =
-      List.map elmToJs (List.reverse recent.messages)
-  in
-    Encode.list <| Array.foldr encodeHelp recentJson snapshots
+  Encode.list elmToJs <| Array.foldr encodeHelp (List.reverse recent.messages) snapshots
 
 
-encodeHelp : Snapshot model msg -> List Encode.Value -> List Encode.Value
+encodeHelp : Snapshot model msg -> List msg -> List msg
 encodeHelp snapshot allMessages =
-  Array.foldl (\elm msgs -> elmToJs elm :: msgs) allMessages snapshot.messages
+  Array.foldl (::) allMessages snapshot.messages
 
 
 elmToJs : a -> Encode.Value

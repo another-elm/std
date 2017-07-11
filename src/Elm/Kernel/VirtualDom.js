@@ -167,6 +167,41 @@ var _VirtualDom_lazy3 = F4(function(fn, arg1, arg2, arg3)
 	});
 });
 
+var _VirtualDom_lazy4 = F5(function(fn, arg1, arg2, arg3, arg4)
+{
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4], function() {
+		return A4(fn, arg1, arg2, arg3, arg4);
+	});
+});
+
+var _VirtualDom_lazy5 = F6(function(fn, arg1, arg2, arg3, arg4, arg5)
+{
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5], function() {
+		return A5(fn, arg1, arg2, arg3, arg4, arg5);
+	});
+});
+
+var _VirtualDom_lazy6 = F7(function(fn, arg1, arg2, arg3, arg4, arg5, arg6)
+{
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6], function() {
+		return A6(fn, arg1, arg2, arg3, arg4, arg5, arg6);
+	});
+});
+
+var _VirtualDom_lazy7 = F8(function(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+{
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6,arg7], function() {
+		return A7(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+	});
+});
+
+var _VirtualDom_lazy8 = F9(function(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+{
+	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8], function() {
+		return A8(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+	});
+});
+
 
 
 // FACTS
@@ -585,6 +620,15 @@ function _VirtualDom_eventToMessage(event, tag, value)
 // DIFF
 
 
+// TODO: Should we do patches like in iOS?
+//
+// type Patch
+//   = At Int Patch
+//   | Batch (List Patch)
+//   | Change ...
+//
+// How could it not be better?
+//
 function _VirtualDom_diff(x, y)
 {
 	var patches = [];

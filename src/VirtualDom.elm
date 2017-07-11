@@ -4,8 +4,8 @@ module VirtualDom exposing
   , Attribute, style, property, attribute, attributeNS
   , on, onBubble, onCapture, Handler(..)
   , map, mapAttribute
-  , lazy, lazy2, lazy3
   , keyedNode, keyedNodeNS
+  , lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
   , program, programWithFlags
   )
 
@@ -24,8 +24,11 @@ that expose more helper functions for HTML or SVG.
 # Routing Messages
 @docs map, mapAttribute
 
-# Optimizations
-@docs lazy, lazy2, lazy3, keyedNode, keyedNodeNS
+# Keyed Nodes
+@docs keyedNode, keyedNodeNS
+
+# Lazy Nodes
+@docs lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
 
 # Programs
 @docs program, programWithFlags
@@ -280,7 +283,7 @@ type Handler msg
 
 
 
--- OPTIMIZATION
+-- LAZY NODES
 
 
 {-| A performance optimization that delays the building of virtual DOM nodes.
@@ -308,6 +311,40 @@ lazy2 =
 lazy3 : (a -> b -> c -> Node msg) -> a -> b -> c -> Node msg
 lazy3 =
   Elm.Kernel.VirtualDom.lazy3
+
+
+{-|-}
+lazy4 : (a -> b -> c -> d -> Node msg) -> a -> b -> c -> d -> Node msg
+lazy4 =
+  Elm.Kernel.VirtualDom.lazy4
+
+
+{-|-}
+lazy5 : (a -> b -> c -> d -> e -> Node msg) -> a -> b -> c -> d -> e -> Node msg
+lazy5 =
+  Elm.Kernel.VirtualDom.lazy5
+
+
+{-|-}
+lazy6 : (a -> b -> c -> d -> e -> f -> Node msg) -> a -> b -> c -> d -> e -> f -> Node msg
+lazy6 =
+  Elm.Kernel.VirtualDom.lazy6
+
+
+{-|-}
+lazy7 : (a -> b -> c -> d -> e -> f -> g -> Node msg) -> a -> b -> c -> d -> e -> f -> g -> Node msg
+lazy7 =
+  Elm.Kernel.VirtualDom.lazy7
+
+
+{-|-}
+lazy8 : (a -> b -> c -> d -> e -> f -> g -> h -> Node msg) -> a -> b -> c -> d -> e -> f -> g -> h -> Node msg
+lazy8 =
+  Elm.Kernel.VirtualDom.lazy8
+
+
+
+-- KEYED NODES
 
 
 {-| Works just like `node`, but you add a unique identifier to each child

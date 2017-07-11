@@ -1,5 +1,5 @@
 module Html.Lazy exposing
-  ( lazy, lazy2, lazy3
+  ( lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
   )
 
 {-| Since all Elm functions are pure we have a guarantee that the same input
@@ -14,7 +14,8 @@ by reference. If so, it skips calling the function!
 This is a really cheap test and often makes things a lot faster, but definitely
 benchmark to be sure!
 
-@docs lazy, lazy2, lazy3
+@docs lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
+
 -}
 
 import Html exposing (Html)
@@ -46,3 +47,38 @@ lazy2 =
 lazy3 : (a -> b -> c -> Html msg) -> a -> b -> c -> Html msg
 lazy3 =
   VirtualDom.lazy3
+
+
+{-| Same as `lazy` but checks on four arguments.
+-}
+lazy4 : (a -> b -> c -> d -> Html msg) -> a -> b -> c -> d -> Html msg
+lazy4 =
+  VirtualDom.lazy4
+
+
+{-| Same as `lazy` but checks on five arguments.
+-}
+lazy5 : (a -> b -> c -> d -> e -> Html msg) -> a -> b -> c -> d -> e -> Html msg
+lazy5 =
+  VirtualDom.lazy5
+
+
+{-| Same as `lazy` but checks on six arguments.
+-}
+lazy6 : (a -> b -> c -> d -> e -> f -> Html msg) -> a -> b -> c -> d -> e -> f -> Html msg
+lazy6 =
+  VirtualDom.lazy6
+
+
+{-| Same as `lazy` but checks on seven arguments.
+-}
+lazy7 : (a -> b -> c -> d -> e -> f -> g -> Html msg) -> a -> b -> c -> d -> e -> f -> g -> Html msg
+lazy7 =
+  VirtualDom.lazy7
+
+
+{-| Same as `lazy` but checks on eight arguments.
+-}
+lazy8 : (a -> b -> c -> d -> e -> f -> g -> h -> Html msg) -> a -> b -> c -> d -> e -> f -> g -> h -> Html msg
+lazy8 =
+  VirtualDom.lazy8

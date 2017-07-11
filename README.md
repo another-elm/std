@@ -1,13 +1,11 @@
-# HTML for Elm
+# HTML
 
 Quickly render HTML in Elm.
 
 
 ## Examples
 
-You can see a bunch of examples [here](http://elm-lang.org/examples).
-
-The simplest one one is a counter that you can increment and decrement ([code](http://elm-lang.org/examples/buttons) / [explanation](https://guide.elm-lang.org/architecture/user_input/buttons.html)). The HTML part of that program looks like this:
+The HTML part of an Elm program looks something like this:
 
 ```elm
 import Html exposing (Html, button, div, text)
@@ -33,7 +31,9 @@ view count =
 --
 ```
 
-Again, you can see the full code [here](http://elm-lang.org/examples/buttons) and read how it works [here](https://guide.elm-lang.org/architecture/user_input/buttons.html).
+This snippet comes from a complete example. You can play with it online [here](http://elm-lang.org/examples/buttons) and read how it works [here](https://guide.elm-lang.org/architecture/user_input/buttons.html).
+
+You can play with a bunch of other examples [here](http://elm-lang.org/examples).
 
 
 ## Learn More

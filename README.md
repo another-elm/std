@@ -20,15 +20,16 @@ view count =
     , div [] [ text (String.fromInt count) ]
     , button [ onClick Increment ] [ text "+" ]
     ]
+```
 
--- If you call `view 42` you get something like this:
---
--- <div>
---   <button>-</button>
---   <div>42</div>
---   <button>+</button>
--- </div>
---
+If you call `view 42` you get something like this:
+
+```html
+<div>
+  <button>-</button>
+  <div>42</div>
+  <button>+</button>
+</div>
 ```
 
 This snippet comes from a complete example. You can play with it online [here](http://elm-lang.org/examples/buttons) and read how it works [here](https://guide.elm-lang.org/architecture/user_input/buttons.html).

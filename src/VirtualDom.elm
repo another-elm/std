@@ -313,31 +313,36 @@ lazy3 =
   Elm.Kernel.VirtualDom.lazy3
 
 
-{-|-}
+{-| Same as `lazy` but checks on four arguments.
+-}
 lazy4 : (a -> b -> c -> d -> Node msg) -> a -> b -> c -> d -> Node msg
 lazy4 =
   Elm.Kernel.VirtualDom.lazy4
 
 
-{-|-}
+{-| Same as `lazy` but checks on five arguments.
+-}
 lazy5 : (a -> b -> c -> d -> e -> Node msg) -> a -> b -> c -> d -> e -> Node msg
 lazy5 =
   Elm.Kernel.VirtualDom.lazy5
 
 
-{-|-}
+{-| Same as `lazy` but checks on six arguments.
+-}
 lazy6 : (a -> b -> c -> d -> e -> f -> Node msg) -> a -> b -> c -> d -> e -> f -> Node msg
 lazy6 =
   Elm.Kernel.VirtualDom.lazy6
 
 
-{-|-}
+{-| Same as `lazy` but checks on seven arguments.
+-}
 lazy7 : (a -> b -> c -> d -> e -> f -> g -> Node msg) -> a -> b -> c -> d -> e -> f -> g -> Node msg
 lazy7 =
   Elm.Kernel.VirtualDom.lazy7
 
 
-{-|-}
+{-| Same as `lazy` but checks on eight arguments.
+-}
 lazy8 : (a -> b -> c -> d -> e -> f -> g -> h -> Node msg) -> a -> b -> c -> d -> e -> f -> g -> h -> Node msg
 lazy8 =
   Elm.Kernel.VirtualDom.lazy8

@@ -50,7 +50,7 @@ expect to use frequently will be closer to the top.
 @docs form, input, textarea, button, select, option
 
 ## Sections
-@docs section, nav, article, aside, header, footer, address, main_, body
+@docs section, nav, article, aside, header, footer, address, main_
 
 ## Figures
 @docs figure, figcaption

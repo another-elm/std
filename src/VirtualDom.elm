@@ -230,11 +230,16 @@ on eventName decoder =
   onBubble eventName (Simple decoder)
 
 
-{-| For very custom event handlers. These handlers will activate during the
-“bubble” phase, when events travel from leaf to root, as described
-[here](https://www.quirksmode.org/js/events_order.html).
+{-| **This is the default event primitive.**
 
-**This is the default**, so you can define `on` like this:
+It lets you create very custom event handlers. These handlers activate during
+the “bubble” phase, as described [here][]. This is the default behavior of
+event handlers in JavaScript, so using `addEventListener` normally will work
+the same way.
+
+[here]: https://www.quirksmode.org/js/events_order.html
+
+We actually define `on` using `onBubble` like this:
 
     import Json.Decode exposing (Decoder)
 
@@ -247,11 +252,14 @@ onBubble =
   Elm.Kernel.VirtualDom.on False
 
 
-{-| For very custom event handlers. These handlers will activate during the
-“capture” phase, when events travel from root to leaf, as described
-[here](https://www.quirksmode.org/js/events_order.html).
+{-| **This is the weird event primitive.**
 
-**This is very rarely what you want.**
+It lets you create very custom event handlers. These handlers activate during
+the “capture” phase, as described [here][]. This is only useful in very odd
+circumstances and is generally advised against. This is included mainly to
+have parity with the underlying browser API just in case.
+
+[here]: https://www.quirksmode.org/js/events_order.html
 -}
 onCapture : String -> Handler msg -> Attribute msg
 onCapture =

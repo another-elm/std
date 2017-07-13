@@ -1,7 +1,7 @@
 /*
 
 import Elm.Kernel.Error exposing (throw)
-import Elm.Kernel.Json exposing (equality, run)
+import Elm.Kernel.Json exposing (equality, runHelp)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Platform exposing (initialize)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
@@ -573,7 +573,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 	function eventHandler(event)
 	{
 		var handler = eventHandler.handler;
-		var result = A2(__Json_run, handler.b, event);
+		var result = A2(__Json_runHelp, handler.b, event);
 
 		if (result.$ !== 'Ok')
 		{
@@ -1578,7 +1578,7 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 			__Error_throw(1);
 		}
 
-		var result = A2(__Json_run, flagDecoder, flags);
+		var result = A2(__Json_runHelp, flagDecoder, flags);
 		if (result.$ === 'Ok')
 		{
 			return init(result.a);

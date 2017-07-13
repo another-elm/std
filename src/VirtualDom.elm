@@ -251,11 +251,11 @@ onCapture =
 {-| When using `onBubble` or `onCapture` you can customize the event behavior
 a bit. There are two ways to do this:
 
-  - `stopPropagation = True` means the event stops traveling through the DOM.
+  - [`stopPropagation`][sp] means the event stops traveling through the DOM.
   So if propagation of a click is stopped, it will not trigger any other event
   listeners.
 
-  - `preventDefault = True` means any built-in browser behavior related to the
+  - [`preventDefault`][pd] means any built-in browser behavior related to the
   event is prevented. This can be handy with key presses or touch gestures.
 
 **Note:** A [passive][] event listener will be created if you use `Normal`
@@ -263,6 +263,8 @@ or `MayStopPropagation`. In both cases `preventDefault` cannot be used, so
 we can enable optimizations for touch, scroll, and wheel events in some
 browsers.
 
+[sp]: https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
+[pd]: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
 [passive]: https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
 -}
 type Handler msg

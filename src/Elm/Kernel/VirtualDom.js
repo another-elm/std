@@ -545,7 +545,7 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 // EVENT OPTIONS
 
-var _VirtualDom_toOptions = function(handler) { return handler.a; }
+function _VirtualDom_toOptions(handler) { return handler.a; }
 
 try
 {

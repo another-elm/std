@@ -251,21 +251,38 @@ function _VirtualDom_mapEvent(key, func, handler)
 			$: tag,
 			a: handler.a,
 			b:
-				tag === 'Simple'
+				tag === 'Normal'
 					? A2(__Json_map, func, handler.b)
 					:
-				tag !== 'Fancy'
-					? A3(__Json_map2, __Tuple_mapFirst, __Json_succeed(func), handler.b)
+				tag === 'Custom'
+					? A3(__Json_map2, _VirtualDom_mapEventRecord, __Json_succeed(func), handler.b)
 					:
-				A3(__Json_map2, _VirtualDom_mapEventHelp, __Json_succeed(func), handler.b)
+				A3(__Json_map2, _VirtualDom_mapEventTuple, __Json_succeed(func), handler.b)
+
 		}
 	};
 }
 
-var _VirtualDom_mapEventHelp = F2(function(func, record)
+function _VirtualDom_mapTimed(func, timed)
 {
 	return {
-		message: func(record.message),
+		$: timed.$,
+		a: func(timed.a)
+	};
+}
+
+var _VirtualDom_mapEventTuple = F2(function(func, tuple)
+{
+	return __Utils_Tuple2(
+		_VirtualDom_mapTimed(func, tuple.a),
+		tuple.b
+	);
+});
+
+var _VirtualDom_mapEventRecord = F2(function(func, record)
+{
+	return {
+		message: _VirtualDom_mapTimed(func, record.message),
 		stopPropagation: record.stopPropagation,
 		preventDefault: record.preventDefault
 	}
@@ -563,24 +580,25 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 			return;
 		}
 
-		var message = _VirtualDom_eventToMessage(event, handler.$, result.a);
+		var timedMsg = result.a;
+		var message = _VirtualDom_eventToMessage(event, handler.$, timedMsg.a);
 		var currentEventNode = eventNode;
-		while (currentEventNode)
+		var tagger;
+		var i;
+		while (tagger = currentEventNode.tagger)
 		{
-			var tagger = currentEventNode.tagger;
-			if (typeof tagger === 'function')
+			if (i = tagger.length)
 			{
-				message = tagger(message);
+				while (i--) { message = tagger[i](message); }
 			}
 			else
 			{
-				for (var i = tagger.length; i--; )
-				{
-					message = tagger[i](message);
-				}
+				message = tagger(message);
 			}
+
 			currentEventNode = currentEventNode.parent;
 		}
+		currentEventNode(message, timedMsg.$ === 'Sync');
 	}
 
 	eventHandler.handler = initialHandler;
@@ -608,7 +626,7 @@ function _VirtualDom_eventToMessage(event, tag, value)
 			if (value.b) event.preventDefault();
 			return value.a;
 
-		case 'Fancy':
+		case 'Custom':
 			if (value.stopPropagation) event.stopPropagation();
 			if (value.preventDefault) event.preventDefault();
 			return value.message;
@@ -1323,7 +1341,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 
 		case __2_TEXT:
 		case __2_THUNK:
-			__Error_throw(13); // 'should never traverse `text` or `thunk` nodes like this'
+			__Error_throw(10); // 'should never traverse `text` or `thunk` nodes like this'
 	}
 }
 
@@ -1426,7 +1444,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return impl.applyPatch(domNode, impl.data);
 
 		default:
-			__Error_throw(13); // 'Ran into an unknown patch!'
+			__Error_throw(10); // 'Ran into an unknown patch!'
 	}
 }
 
@@ -1619,49 +1637,58 @@ var _VirtualDom_requestAnimationFrame =
 
 function _VirtualDom_renderer(domNode, view)
 {
-	return function(tagger, nextModel)
+	return function(sendToApp, nextModel)
 	{
-		var eventNode = { tagger: tagger, parent: undefined };
+		// initial setup
+
 		var currNode = virtualize(domNode);
 
-		var state = __4_NO_REQUEST;
-		stepper(nextModel);
-
-		function stepper(model)
+		function draw(model)
 		{
+			var nextNode = view(model);
+			var patches = _VirtualDom_diff(currNode, nextNode);
+			domNode = _VirtualDom_applyPatches(domNode, currNode, patches, sendToApp);
+			currNode = nextNode;
+		}
+
+		draw(nextModel);
+
+		// create stepper
+
+		var state = __4_NO_REQUEST;
+
+		function updateIfNeeded()
+		{
+			if (state === __4_EXTRA_REQUEST)
+			{
+				state = __4_NO_REQUEST;
+				return;
+			}
+
+			_VirtualDom_requestAnimationFrame(updateIfNeeded);
+			state = __4_EXTRA_REQUEST;
+			draw(nextModel);
+		}
+
+		return function(model, isSync)
+		{
+			if (isSync)
+			{
+				draw(model);
+				if (state === __4_PENDING_REQUEST)
+				{
+					state = __4_EXTRA_REQUEST;
+				}
+				return;
+			}
+
 			if (state === __4_NO_REQUEST)
 			{
 				_VirtualDom_requestAnimationFrame(updateIfNeeded);
 			}
 			state = __4_PENDING_REQUEST;
 			nextModel = model;
-		}
-
-		function updateIfNeeded()
-		{
-			switch (state)
-			{
-				case __4_NO_REQUEST:
-					__Error_throw(13); // unexpected draw callback
-
-				case __4_PENDING_REQUEST:
-					_VirtualDom_requestAnimationFrame(updateIfNeeded);
-					state = __4_EXTRA_REQUEST;
-
-					var nextNode = view(nextModel);
-					var patches = _VirtualDom_diff(currNode, nextNode);
-					domNode = _VirtualDom_applyPatches(domNode, currNode, patches, eventNode);
-					currNode = nextNode;
-
-					return;
-
-				case __4_EXTRA_REQUEST:
-					state = __4_NO_REQUEST;
-					return;
-			}
-		}
-
-		return stepper;
+		};
 	};
 }
 

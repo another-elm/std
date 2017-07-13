@@ -2,7 +2,7 @@ module VirtualDom exposing
   ( Node
   , text, node, nodeNS
   , Attribute, style, property, attribute, attributeNS
-  , on, onBubble, onCapture, Handler(..)
+  , onBubble, onCapture, Handler(..), Timed(..)
   , map, mapAttribute
   , keyedNode, keyedNodeNS
   , lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
@@ -19,7 +19,7 @@ that expose more helper functions for HTML or SVG.
 @docs Attribute, style, property, attribute, attributeNS
 
 # Events
-@docs on, onBubble, onCapture, Handler
+@docs onBubble, onCapture, Handler, Timed
 
 # Routing Messages
 @docs map, mapAttribute
@@ -212,24 +212,6 @@ mapAttribute =
 -- EVENTS
 
 
-{-| Create a custom event listener.
-
-    import Json.Decode as Decode
-
-    onClick : msg -> Attribute msg
-    onClick msg =
-      on "click" (Decode.succeed msg)
-
-You first specify the name of the event in the same format as with JavaScript’s
-`addEventListener`. Next you give a JSON decoder, which lets you pull
-information out of the event object. If the decoder succeeds, it will produce
-a message and route it to your `update` function.
--}
-on : String -> Json.Decoder msg -> Attribute msg
-on eventName decoder =
-  onBubble eventName (Simple decoder)
-
-
 {-| **This is the default event primitive.**
 
 It lets you create very custom event handlers. These handlers activate during
@@ -239,13 +221,13 @@ the same way.
 
 [here]: https://www.quirksmode.org/js/events_order.html
 
-We actually define `on` using `onBubble` like this:
+You can define `on` using `onBubble` like this:
 
     import Json.Decode exposing (Decoder)
 
     on : String -> Decoder msg -> Attribute msg
     on eventName decoder =
-      onBubble eventName (Simple decoder)
+      onBubble eventName (Normal decoder)
 -}
 onBubble : String -> Handler msg -> Attribute msg
 onBubble =
@@ -276,7 +258,7 @@ a bit. There are two ways to do this:
   - `preventDefault = True` means any built-in browser behavior related to the
   event is prevented. This can be handy with key presses or touch gestures.
 
-**Note:** A [passive][] event listener will be created if you use `Simple`
+**Note:** A [passive][] event listener will be created if you use `Normal`
 or `MayStopPropagation`. In both cases `preventDefault` cannot be used, so
 we can enable optimizations for touch, scroll, and wheel events in some
 browsers.
@@ -284,10 +266,31 @@ browsers.
 [passive]: https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
 -}
 type Handler msg
-  = Simple (Json.Decoder msg)
-  | MayStopPropagation (Json.Decoder (msg, Bool))
-  | MayPreventDefault (Json.Decoder (msg, Bool))
-  | Fancy (Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool })
+  = Normal (Json.Decoder (Timed msg))
+  | MayStopPropagation (Json.Decoder (Timed msg, Bool))
+  | MayPreventDefault (Json.Decoder (Timed msg, Bool))
+  | Custom (Json.Decoder { message : Timed msg, stopPropagation : Bool, preventDefault : Bool })
+
+
+{-| Elm is able to do all `view` logic in `requestAnimationFrame` to smooth
+out animations and avoid doing pointless work. This type lets you control this
+optimization:
+
+  - `Sync` &mdash; the DOM changes in the same cycle as the user input. **(default)**
+  - `Async` &mdash; the DOM changes asynchronously in a `requestAnimationFrame` call.
+
+Why wouldn’t you always want `Async` though? That just seems better!
+
+Well, say you have an `<input>` node and you are listening for `onInput`
+events. And say you are managing the `value` attribute by hand. Maybe you are
+filtering out numbers, so it is a letters only field. If you update the DOM
+asynchronously, it can get ahead of your `Model` and start dropping inputs.
+
+So when it comes to user input, `Sync` is the safe default. It can be
+worthwhile to use `Async` if you have other animations running or if you are
+managing `mousemove` and `scroll` events. Definitely test though!
+-}
+type Timed msg = Sync msg | Async msg
 
 
 

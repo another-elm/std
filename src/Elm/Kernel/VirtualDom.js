@@ -613,24 +613,15 @@ function _VirtualDom_equalEvents(x, y)
 
 function _VirtualDom_eventToMessage(event, tag, value)
 {
-	switch (tag)
+	if (tag === 'Simple')
 	{
-		case 'Simple':
-			return value;
-
-		case 'MayStopPropagation':
-			if (value.b) event.stopPropagation();
-			return value.a;
-
-		case 'MayPreventDefault':
-			if (value.b) event.preventDefault();
-			return value.a;
-
-		case 'Custom':
-			if (value.stopPropagation) event.stopPropagation();
-			if (value.preventDefault) event.preventDefault();
-			return value.message;
+		return value;
 	}
+
+	if (value.stopPropagation || tag === 'MayStopPropagation' && value.b) event.stopPropagation();
+	if (value.preventDefault || tag === 'MayPreventDefault' && value.b) event.preventDefault();
+
+	return tag === 'Custom' ? value.message : value.a;
 }
 
 

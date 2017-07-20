@@ -595,7 +595,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 	function eventHandler(event)
 	{
 		var handler = eventHandler.__handler;
-		var result = A2(__Json_runHelp, handler.__decoder, event);
+		var result = __Json_runHelp(handler.__decoder, event);
 
 		if (result.$ !== 'Ok')
 		{
@@ -1604,7 +1604,7 @@ function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
 			__Error_throw(1);
 		}
 
-		var result = A2(__Json_runHelp, flagDecoder, flags);
+		var result = __Json_runHelp(flagDecoder, flags);
 		if (result.$ === 'Ok')
 		{
 			return init(result.a);

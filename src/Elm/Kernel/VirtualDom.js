@@ -578,7 +578,7 @@ try
 			{
 				var tag = handler.$;
 				return {
-					passive: tag === 'Simple' || tag === 'MayStopPropagation',
+					passive: tag === 'Normal' || tag === 'MayStopPropagation',
 					capture: handler.__useCapture
 				};
 			}
@@ -639,7 +639,7 @@ function _VirtualDom_eventToMessage(event, tag, value)
 {
 	var isCustom = tag === 'Custom';
 
-	if (tag === 'Simple')
+	if (tag === 'Normal')
 	{
 		return value;
 	}

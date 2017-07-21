@@ -135,70 +135,69 @@ var _VirtualDom_map = F2(function(tagger, node)
 // LAZY
 
 
-function _VirtualDom_thunk(func, args, thunk)
+function _VirtualDom_thunk(refs, thunk)
 {
 	return {
 		$: __2_THUNK,
-		__func: func,
-		__args: args,
+		__refs: refs,
 		__thunk: thunk,
 		__node: undefined
 	};
 }
 
-var _VirtualDom_lazy = F2(function(fn, arg1)
+var _VirtualDom_lazy = F2(function(func, a)
 {
-	return _VirtualDom_thunk(fn, [arg1], function() {
-		return fn(arg1);
+	return _VirtualDom_thunk([func, a], function() {
+		return func(a);
 	});
 });
 
-var _VirtualDom_lazy2 = F3(function(fn, arg1, arg2)
+var _VirtualDom_lazy2 = F3(function(func, a, b)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2], function() {
-		return A2(fn, arg1, arg2);
+	return _VirtualDom_thunk([func, a, b], function() {
+		return A2(func, a, b);
 	});
 });
 
-var _VirtualDom_lazy3 = F4(function(fn, arg1, arg2, arg3)
+var _VirtualDom_lazy3 = F4(function(func, a, b, c)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3], function() {
-		return A3(fn, arg1, arg2, arg3);
+	return _VirtualDom_thunk([func, a, b, c], function() {
+		return A3(func, a, b, c);
 	});
 });
 
-var _VirtualDom_lazy4 = F5(function(fn, arg1, arg2, arg3, arg4)
+var _VirtualDom_lazy4 = F5(function(func, a, b, c, d)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4], function() {
-		return A4(fn, arg1, arg2, arg3, arg4);
+	return _VirtualDom_thunk([func, a, b, c, d], function() {
+		return A4(func, a, b, c, d);
 	});
 });
 
-var _VirtualDom_lazy5 = F6(function(fn, arg1, arg2, arg3, arg4, arg5)
+var _VirtualDom_lazy5 = F6(function(func, a, b, c, d, e)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5], function() {
-		return A5(fn, arg1, arg2, arg3, arg4, arg5);
+	return _VirtualDom_thunk([func, a, b, c, d, e], function() {
+		return A5(func, a, b, c, d, e);
 	});
 });
 
-var _VirtualDom_lazy6 = F7(function(fn, arg1, arg2, arg3, arg4, arg5, arg6)
+var _VirtualDom_lazy6 = F7(function(func, a, b, c, d, e, f)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6], function() {
-		return A6(fn, arg1, arg2, arg3, arg4, arg5, arg6);
+	return _VirtualDom_thunk([func, a, b, c, d, e, f], function() {
+		return A6(func, a, b, c, d, e, f);
 	});
 });
 
-var _VirtualDom_lazy7 = F8(function(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+var _VirtualDom_lazy7 = F8(function(func, a, b, c, d, e, f, g)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6,arg7], function() {
-		return A7(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+	return _VirtualDom_thunk([func, a, b, c, d, e, f, g], function() {
+		return A7(func, a, b, c, d, e, f, g);
 	});
 });
 
-var _VirtualDom_lazy8 = F9(function(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+var _VirtualDom_lazy8 = F9(function(func, a, b, c, d, e, f, g, h)
 {
-	return _VirtualDom_thunk(fn, [arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8], function() {
-		return A8(fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+	return _VirtualDom_thunk([func, a, b, c, d, e, f, g, h], function() {
+		return A8(func, a, b, c, d, e, f, g, h);
 	});
 });
 
@@ -714,13 +713,13 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 	switch (yType)
 	{
 		case __2_THUNK:
-			var xArgs = x.__args;
-			var yArgs = y.__args;
-			var i = xArgs.length;
-			var same = x.__func === y.__func && i === yArgs.length;
+			var xRefs = x.__refs;
+			var yRefs = y.__refs;
+			var i = xRefs.length;
+			var same = i === yRefs.length;
 			while (same && i--)
 			{
-				same = xArgs[i] === yArgs[i];
+				same = xRefs[i] === yRefs[i];
 			}
 			if (same)
 			{

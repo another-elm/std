@@ -784,41 +784,11 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			return;
 
 		case __2_NODE:
-			// Bail if obvious indicators have changed. Implies more serious
-			// structural changes such that it's not worth it to diff.
-			if (x.__tag !== y.__tag || x.__namespace !== y.__namespace)
-			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
-				return;
-			}
-
-			var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
-
-			if (typeof factsDiff !== 'undefined')
-			{
-				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
-			}
-
-			_VirtualDom_diffKids(x, y, patches, index);
+			_VirtualDom_diffNodes(x, y, patches, index, _VirtualDom_diffKids);
 			return;
 
 		case __2_KEYED_NODE:
-			// Bail if obvious indicators have changed. Implies more serious
-			// structural changes such that it's not worth it to diff.
-			if (x.__tag !== y.__tag || x.__namespace !== y.__namespace)
-			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
-				return;
-			}
-
-			var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
-
-			if (typeof factsDiff !== 'undefined')
-			{
-				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
-			}
-
-			_VirtualDom_diffKeyedKids(x, y, patches, index);
+			_VirtualDom_diffNodes(x, y, patches, index, _VirtualDom_diffKeyedKids);
 			return;
 
 		case __2_CUSTOM:
@@ -845,7 +815,6 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 	}
 }
 
-
 // assumes the incoming arrays are the same length
 function _VirtualDom_pairwiseRefEqual(as, bs)
 {
@@ -858,6 +827,26 @@ function _VirtualDom_pairwiseRefEqual(as, bs)
 	}
 
 	return true;
+}
+
+function _VirtualDom_diffNodes(x, y, patches, index, diffKids)
+{
+	// Bail if obvious indicators have changed. Implies more serious
+	// structural changes such that it's not worth it to diff.
+	if (x.__tag !== y.__tag || x.__namespace !== y.__namespace)
+	{
+		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+		return;
+	}
+
+	var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
+
+	if (typeof factsDiff !== 'undefined')
+	{
+		patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
+	}
+
+	diffKids(x, y, patches, index);
 }
 
 

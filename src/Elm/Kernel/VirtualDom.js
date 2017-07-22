@@ -799,7 +799,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			}
 
 			var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
-			if (typeof factsDiff !== 'undefined')
+			if (factsDiff)
 			{
 				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 			}
@@ -841,7 +841,7 @@ function _VirtualDom_diffNodes(x, y, patches, index, diffKids)
 
 	var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
 
-	if (typeof factsDiff !== 'undefined')
+	if (factsDiff)
 	{
 		patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
 	}
@@ -1112,7 +1112,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		yIndex++;
 	}
 
-	if (localPatches.length > 0 || inserts.length > 0 || typeof endInserts !== 'undefined')
+	if (localPatches.length > 0 || inserts.length > 0 || endInserts)
 	{
 		patches.push(_VirtualDom_makePatch(__3_REORDER, rootIndex, {
 			__patches: localPatches,
@@ -1135,7 +1135,7 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, yIndex, inser
 	var entry = changes[key];
 
 	// never seen this key before
-	if (typeof entry === 'undefined')
+	if (!entry)
 	{
 		entry = {
 			__tag: 'insert',
@@ -1177,7 +1177,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 	var entry = changes[key];
 
 	// never seen this key before
-	if (typeof entry === 'undefined')
+	if (!entry)
 	{
 		var patch = _VirtualDom_makePatch(__3_REMOVE, index, undefined);
 		localPatches.push(patch);
@@ -1259,7 +1259,7 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 			patch.__eventNode = eventNode;
 
 			var data = patch.__data;
-			if (typeof data !== 'undefined')
+			if (data)
 			{
 				data.__entry.__data = domNode;
 				var subPatches = data.__patches;
@@ -1419,7 +1419,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 
 		case __3_REMOVE:
 			var data = patch.__data;
-			if (typeof data === 'undefined')
+			if (!data)
 			{
 				domNode.parentNode.removeChild(domNode);
 				return domNode;
@@ -1486,7 +1486,7 @@ function _VirtualDom_applyPatchReorder(domNode, patch)
 	}
 
 	// add end inserts
-	if (typeof frag !== 'undefined')
+	if (frag)
 	{
 		domNode.appendChild(frag);
 	}
@@ -1497,7 +1497,7 @@ function _VirtualDom_applyPatchReorder(domNode, patch)
 
 function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 {
-	if (typeof endInserts === 'undefined')
+	if (!endInserts)
 	{
 		return;
 	}
@@ -1532,7 +1532,7 @@ function _VirtualDom_makeProgram(flagChecker)
 			return function(object, moduleName, debugMetadata)
 			{
 				var checker = flagChecker(flagDecoder, moduleName);
-				if (typeof debugMetadata === 'undefined')
+				if (!debugMetadata)
 				{
 					_VirtualDom_setup(impl, object, moduleName, checker);
 				}

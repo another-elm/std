@@ -1103,10 +1103,9 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		xIndex++;
 	}
 
-	var endInserts;
 	while (yIndex < yLen)
 	{
-		endInserts = endInserts || [];
+		var endInserts = endInserts || [];
 		var y = yKids[yIndex];
 		_VirtualDom_insertNode(changes, localPatches, y.a, y.b, undefined, endInserts);
 		yIndex++;

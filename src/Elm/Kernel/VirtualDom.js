@@ -1,5 +1,6 @@
 /*
 
+import Basics exposing (identity)
 import Elm.Kernel.Error exposing (throw)
 import Elm.Kernel.Json exposing (equality, runHelp)
 import Elm.Kernel.List exposing (Cons, Nil)
@@ -8,7 +9,7 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
 import Platform.Cmd as Cmd exposing (none)
 import Platform.Sub as Sub exposing (none)
-import Tuple exposing (mapFirst)
+import Tuple exposing (mapFirst, second)
 
 */
 
@@ -386,42 +387,32 @@ function _VirtualDom_render(vNode, eventNode)
 			return _VirtualDom_doc.createTextNode(vNode.__text);
 
 		case __2_NODE:
-			var domNode = vNode.__namespace
-				? _VirtualDom_doc.createElementNS(vNode.__namespace, vNode.__tag)
-				: _VirtualDom_doc.createElement(vNode.__tag);
-
-			_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
-
-			var kids = vNode.__kids;
-
-			for (var i = 0; i < kids.length; i++)
-			{
-				domNode.appendChild(_VirtualDom_render(kids[i], eventNode));
-			}
-
-			return domNode;
+			return _VirtualDom_renderNode(vNode, eventNode, __Basics_identity);
 
 		case __2_KEYED_NODE:
-			var domNode = vNode.__namespace
-				? _VirtualDom_doc.createElementNS(vNode.__namespace, vNode.__tag)
-				: _VirtualDom_doc.createElement(vNode.__tag);
-
-			_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
-
-			var kids = vNode.__kids;
-
-			for (var i = 0; i < kids.length; i++)
-			{
-				domNode.appendChild(_VirtualDom_render(kids[i].b, eventNode));
-			}
-
-			return domNode;
+			return _VirtualDom_renderNode(vNode, eventNode, __Tuple_second);
 
 		case __2_CUSTOM:
 			var domNode = vNode.__impl.render(vNode.__model);
 			_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
 			return domNode;
 	}
+}
+
+function _VirtualDom_renderNode(vNode, eventNode, getKid)
+{
+	var domNode = vNode.__namespace
+		? _VirtualDom_doc.createElementNS(vNode.__namespace, vNode.__tag)
+		: _VirtualDom_doc.createElement(vNode.__tag);
+
+	_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
+
+	for (var kids = vNode.__kids, i = 0; i < kids.length; i++)
+	{
+		domNode.appendChild(_VirtualDom_render(getKid(kids[i]), eventNode));
+	}
+
+	return domNode;
 }
 
 

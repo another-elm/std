@@ -356,51 +356,47 @@ function _VirtualDom_addClass(object, key, newClass)
 
 function _VirtualDom_render(vNode, eventNode)
 {
-	switch (vNode.$)
+	var tag = vNode.$;
+
+	if (tag === __2_THUNK)
 	{
-		case __2_THUNK:
-			if (!vNode.__node)
-			{
-				vNode.__node = vNode.__thunk();
-			}
-			return _VirtualDom_render(vNode.__node, eventNode);
-
-		case __2_TAGGER:
-			var subNode = vNode.__node;
-			var tagger = vNode.__tagger;
-
-			while (subNode.$ === __2_TAGGER)
-			{
-				typeof tagger !== 'object'
-					? tagger = [tagger, subNode.__tagger]
-					: tagger.push(subNode.__tagger);
-
-				subNode = subNode.__node;
-			}
-
-			var subEventRoot = { __tagger: tagger, __parent: eventNode };
-			var domNode = _VirtualDom_render(subNode, subEventRoot);
-			domNode.elm_event_node_ref = subEventRoot;
-			return domNode;
-
-		case __2_TEXT:
-			return _VirtualDom_doc.createTextNode(vNode.__text);
-
-		case __2_NODE:
-			return _VirtualDom_renderNode(vNode, eventNode, __Basics_identity);
-
-		case __2_KEYED_NODE:
-			return _VirtualDom_renderNode(vNode, eventNode, __Tuple_second);
-
-		case __2_CUSTOM:
-			var domNode = vNode.__impl.render(vNode.__model);
-			_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
-			return domNode;
+		return _VirtualDom_render(vNode.__node || (vNode.__node = vNode.__thunk()), eventNode);
 	}
-}
 
-function _VirtualDom_renderNode(vNode, eventNode, getKid)
-{
+	if (tag === __2_TEXT)
+	{
+		return _VirtualDom_doc.createTextNode(vNode.__text);
+	}
+
+	if (tag === __2_TAGGER)
+	{
+		var subNode = vNode.__node;
+		var tagger = vNode.__tagger;
+
+		while (subNode.$ === __2_TAGGER)
+		{
+			typeof tagger !== 'object'
+				? tagger = [tagger, subNode.__tagger]
+				: tagger.push(subNode.__tagger);
+
+			subNode = subNode.__node;
+		}
+
+		var subEventRoot = { __tagger: tagger, __parent: eventNode };
+		var domNode = _VirtualDom_render(subNode, subEventRoot);
+		domNode.elm_event_node_ref = subEventRoot;
+		return domNode;
+	}
+
+	if (tag === __2_CUSTOM)
+	{
+		var domNode = vNode.__impl.render(vNode.__model);
+		_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
+		return domNode;
+	}
+
+	// at this point `tag` must be __2_NODE or __2_KEYED_NODE
+
 	var domNode = vNode.__namespace
 		? _VirtualDom_doc.createElementNS(vNode.__namespace, vNode.__tag)
 		: _VirtualDom_doc.createElement(vNode.__tag);
@@ -409,7 +405,7 @@ function _VirtualDom_renderNode(vNode, eventNode, getKid)
 
 	for (var kids = vNode.__kids, i = 0; i < kids.length; i++)
 	{
-		domNode.appendChild(_VirtualDom_render(getKid(kids[i]), eventNode));
+		domNode.appendChild(_VirtualDom_render(tag === __2_NODE ? kids[i] : kids[i].b, eventNode));
 	}
 
 	return domNode;

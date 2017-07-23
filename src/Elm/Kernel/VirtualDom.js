@@ -511,39 +511,34 @@ function _VirtualDom_applyAttrsNS(domNode, nsAttrs)
 
 function _VirtualDom_applyEvents(domNode, eventNode, events)
 {
-	var callbacks = domNode.elmFs || (domNode.elmFs = {});
+	var allCallbacks = domNode.elmFs || (domNode.elmFs = {});
 
 	for (var key in events)
 	{
 		var newHandler = events[key];
-		var cb = callbacks[key];
+		var oldCallback = allCallbacks[key];
 
 		if (!newHandler)
 		{
-			domNode.removeEventListener(key, cb);
-			callbacks[key] = undefined;
+			domNode.removeEventListener(key, oldCallback);
+			allCallbacks[key] = undefined;
 			continue;
 		}
 
-		if (!cb)
+		if (oldCallback)
 		{
-			cb = _VirtualDom_makeCallback(eventNode, newHandler);
-			domNode.addEventListener(key, cb, _VirtualDom_toOptions(newHandler));
-			callbacks[key] = cb;
-			continue;
+			var oldHandler = oldCallback.__handler;
+			if (oldHandler.$ === newHandler.$ && oldHandler.__useCapture === newHandler.__useCapture)
+			{
+				oldCallback.__handler = newHandler;
+				continue;
+			}
+			domNode.removeEventListener(key, oldCallback);
 		}
 
-		var oldHandler = cb.__handler;
-		if (oldHandler.$ === newHandler.$ && oldHandler.__useCapture === newHandler.__useCapture)
-		{
-			cb.__handler = newHandler;
-			continue
-		}
-
-		domNode.removeEventListener(key, cb);
-		cb = _VirtualDom_makeCallback(eventNode, newHandler);
-		domNode.addEventListener(key, cb, _VirtualDom_toOptions(newHandler));
-		callbacks[key] = cb;
+		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
+		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newHandler));
+		allCallbacks[key] = oldCallback;
 	}
 }
 

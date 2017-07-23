@@ -1282,62 +1282,40 @@ function _VirtualDom_addDomNodesHelp(domNode, vNode, patches, i, low, high, even
 		}
 	}
 
-	switch (vNode.$)
+	var tag = vNode.$;
+
+	if (tag === __2_TAGGER)
 	{
-		case __2_TAGGER:
-			var subNode = vNode.__node;
+		var subNode = vNode.__node;
 
-			while (subNode.$ === __2_TAGGER)
-			{
-				subNode = subNode.__node;
-			}
+		while (subNode.$ === __2_TAGGER)
+		{
+			subNode = subNode.__node;
+		}
 
-			return _VirtualDom_addDomNodesHelp(domNode, subNode, patches, i, low + 1, high, domNode.elm_event_node_ref);
-
-		case __2_NODE:
-			var vKids = vNode.__kids;
-			var childNodes = domNode.childNodes;
-			for (var j = 0; j < vKids.length; j++)
-			{
-				low++;
-				var vKid = vKids[j];
-				var nextLow = low + (vKid.__descendantsCount || 0);
-				if (low <= index && index <= nextLow)
-				{
-					i = _VirtualDom_addDomNodesHelp(childNodes[j], vKid, patches, i, low, nextLow, eventNode);
-					if (!(patch = patches[i]) || (index = patch.__index) > high)
-					{
-						return i;
-					}
-				}
-				low = nextLow;
-			}
-			return i;
-
-		case __2_KEYED_NODE:
-			var vKids = vNode.__kids;
-			var childNodes = domNode.childNodes;
-			for (var j = 0; j < vKids.length; j++)
-			{
-				low++;
-				var vKid = vKids[j].b;
-				var nextLow = low + (vKid.__descendantsCount || 0);
-				if (low <= index && index <= nextLow)
-				{
-					i = _VirtualDom_addDomNodesHelp(childNodes[j], vKid, patches, i, low, nextLow, eventNode);
-					if (!(patch = patches[i]) || (index = patch.__index) > high)
-					{
-						return i;
-					}
-				}
-				low = nextLow;
-			}
-			return i;
-
-		case __2_TEXT:
-		case __2_THUNK:
-			__Error_throw(10); // 'should never traverse `text` or `thunk` nodes like this'
+		return _VirtualDom_addDomNodesHelp(domNode, subNode, patches, i, low + 1, high, domNode.elm_event_node_ref);
 	}
+
+	// tag must be __2_NODE or __2_KEYED_NODE at this point
+
+	var vKids = vNode.__kids;
+	var childNodes = domNode.childNodes;
+	for (var j = 0; j < vKids.length; j++)
+	{
+		low++;
+		var vKid = tag === __2_NODE ? vKids[j] : vKids[j].b;
+		var nextLow = low + (vKid.__descendantsCount || 0);
+		if (low <= index && index <= nextLow)
+		{
+			i = _VirtualDom_addDomNodesHelp(childNodes[j], vKid, patches, i, low, nextLow, eventNode);
+			if (!(patch = patches[i]) || (index = patch.__index) > high)
+			{
+				return i;
+			}
+		}
+		low = nextLow;
+	}
+	return i;
 }
 
 

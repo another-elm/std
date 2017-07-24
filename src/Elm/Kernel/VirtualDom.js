@@ -515,10 +515,10 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 	for (var key in events)
 	{
-		var newHandler = events[key];
+		var newInfo = events[key];
 		var oldCallback = allCallbacks[key];
 
-		if (!newHandler)
+		if (!newInfo)
 		{
 			domNode.removeEventListener(key, oldCallback);
 			allCallbacks[key] = undefined;
@@ -527,17 +527,17 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 		if (oldCallback)
 		{
-			var oldHandler = oldCallback.__handler;
-			if (oldHandler.$ === newHandler.$ && oldHandler.__useCapture === newHandler.__useCapture)
+			var oldInfo = oldCallback.__info;
+			if (oldInfo.$ === newInfo.$ && oldInfo.__useCapture === newInfo.__useCapture)
 			{
-				oldCallback.__handler = newHandler;
+				oldCallback.__info = newInfo;
 				continue;
 			}
 			domNode.removeEventListener(key, oldCallback);
 		}
 
-		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
-		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newHandler));
+		oldCallback = _VirtualDom_makeCallback(eventNode, newInfo);
+		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newInfo));
 		allCallbacks[key] = oldCallback;
 	}
 }
@@ -545,9 +545,9 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 // EVENT OPTIONS
 
-function _VirtualDom_toOptions(handler)
+function _VirtualDom_toOptions(info)
 {
-	return handler.__useCapture;
+	return info.__useCapture;
 }
 
 try
@@ -555,12 +555,12 @@ try
 	window.addEventListener("test", null, Object.defineProperty({}, "passive", {
 		get: function()
 		{
-			_VirtualDom_toOptions = function(handler)
+			_VirtualDom_toOptions = function(info)
 			{
-				var tag = handler.$;
+				var tag = info.$;
 				return {
 					passive: tag === 'Normal' || tag === 'MayStopPropagation',
-					capture: handler.__useCapture
+					capture: info.__useCapture
 				};
 			}
 		}
@@ -571,12 +571,12 @@ catch(e) {}
 
 // EVENT HANDLERS
 
-function _VirtualDom_makeCallback(eventNode, initialHandler)
+function _VirtualDom_makeCallback(eventNode, initialInfo)
 {
-	function eventHandler(event)
+	function callback(event)
 	{
-		var handler = eventHandler.__handler;
-		var result = __Json_runHelp(handler.__decoder, event);
+		var info = callback.__info;
+		var result = __Json_runHelp(info.__decoder, event);
 
 		if (result.$ !== 'Ok')
 		{
@@ -584,7 +584,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 		}
 
 		var timedMsg = result.a;
-		var message = _VirtualDom_eventToMessage(event, handler.$, timedMsg.a);
+		var message = _VirtualDom_eventToMessage(event, info.$, timedMsg.a);
 		var currentEventNode = eventNode;
 		var tagger;
 		var i;
@@ -604,9 +604,9 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 		currentEventNode(message, timedMsg.$ === 'Sync');
 	}
 
-	eventHandler.__handler = initialHandler;
+	callback.__info = initialInfo;
 
-	return eventHandler;
+	return callback;
 }
 
 function _VirtualDom_equalEvents(x, y)

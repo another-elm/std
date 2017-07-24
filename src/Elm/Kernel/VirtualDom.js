@@ -653,15 +653,17 @@ function _VirtualDom_diff(x, y)
 }
 
 
-function _VirtualDom_makePatch(type, index, data)
+function _VirtualDom_pushPatch(patches, type, index, data)
 {
-	return {
+	var patch = {
 		$: type,
 		__index: index,
 		__data: data,
 		__domNode: undefined,
 		__eventNode: undefined
 	};
+	patches.push(patch);
+	return patch;
 }
 
 
@@ -686,7 +688,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 		}
 		else
 		{
-			patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+			_VirtualDom_pushPatch(patches, __3_REDRAW, index, y);
 			return;
 		}
 	}
@@ -711,10 +713,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			y.__node = y.__thunk();
 			var subPatches = [];
 			_VirtualDom_diffHelp(x.__node, y.__node, subPatches, 0);
-			if (subPatches.length > 0)
-			{
-				patches.push(_VirtualDom_makePatch(__3_THUNK, index, subPatches));
-			}
+			subPatches.length > 0 && _VirtualDom_pushPatch(patches, __3_THUNK, index, subPatches);
 			return;
 
 		case __2_TAGGER:
@@ -751,14 +750,14 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			// structure of the virtual DOM has changed.
 			if (nesting && xTaggers.length !== yTaggers.length)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+				_VirtualDom_pushPatch(patches, __3_REDRAW, index, y);
 				return;
 			}
 
 			// check if taggers are "the same"
 			if (nesting ? !_VirtualDom_pairwiseRefEqual(xTaggers, yTaggers) : xTaggers !== yTaggers)
 			{
-				patches.push(_VirtualDom_makePatch(__3_TAGGER, index, yTaggers));
+				_VirtualDom_pushPatch(patches, __3_TAGGER, index, yTaggers);
 			}
 
 			// diff everything below the taggers
@@ -768,10 +767,8 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 		case __2_TEXT:
 			if (x.__text !== y.__text)
 			{
-				patches.push(_VirtualDom_makePatch(__3_TEXT, index, y.__text));
-				return;
+				_VirtualDom_pushPatch(patches, __3_TEXT, index, y.__text);
 			}
-
 			return;
 
 		case __2_NODE:
@@ -785,22 +782,15 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 		case __2_CUSTOM:
 			if (x.__impl !== y.__impl)
 			{
-				patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+				_VirtualDom_pushPatch(patches, __3_REDRAW, index, y);
 				return;
 			}
 
 			var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
-			if (factsDiff)
-			{
-				patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
-			}
+			factsDiff && _VirtualDom_pushPatch(patches, __3_FACTS, index, factsDiff);
 
 			var patch = y.__impl.diff(x,y);
-			if (patch)
-			{
-				patches.push(_VirtualDom_makePatch(__3_CUSTOM, index, patch));
-				return;
-			}
+			patch && _VirtualDom_pushPatch(patches, __3_CUSTOM, index, patch);
 
 			return;
 	}
@@ -826,16 +816,12 @@ function _VirtualDom_diffNodes(x, y, patches, index, diffKids)
 	// structural changes such that it's not worth it to diff.
 	if (x.__tag !== y.__tag || x.__namespace !== y.__namespace)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REDRAW, index, y));
+		_VirtualDom_pushPatch(patches, __3_REDRAW, index, y);
 		return;
 	}
 
 	var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
-
-	if (factsDiff)
-	{
-		patches.push(_VirtualDom_makePatch(__3_FACTS, index, factsDiff));
-	}
+	factsDiff && _VirtualDom_pushPatch(patches, __3_FACTS, index, factsDiff);
 
 	diffKids(x, y, patches, index);
 }
@@ -929,11 +915,11 @@ function _VirtualDom_diffKids(xParent, yParent, patches, rootIndex)
 
 	if (xLen > yLen)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REMOVE_LAST, rootIndex, xLen - yLen));
+		_VirtualDom_pushPatch(patches, __3_REMOVE_LAST, rootIndex, xLen - yLen);
 	}
 	else if (xLen < yLen)
 	{
-		patches.push(_VirtualDom_makePatch(__3_APPEND, rootIndex, yKids.slice(xLen)));
+		_VirtualDom_pushPatch(patches, __3_APPEND, rootIndex, yKids.slice(xLen));
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE
@@ -1104,11 +1090,11 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 
 	if (localPatches.length > 0 || inserts.length > 0 || endInserts)
 	{
-		patches.push(_VirtualDom_makePatch(__3_REORDER, rootIndex, {
+		_VirtualDom_pushPatch(patches, __3_REORDER, rootIndex, {
 			__patches: localPatches,
 			__inserts: inserts,
 			__endInserts: endInserts
-		}));
+		});
 	}
 }
 
@@ -1169,8 +1155,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 	// never seen this key before
 	if (!entry)
 	{
-		var patch = _VirtualDom_makePatch(__3_REMOVE, index, undefined);
-		localPatches.push(patch);
+		var patch = _VirtualDom_pushPatch(localPatches, __3_REMOVE, index, undefined);
 
 		changes[key] = {
 			__tag: 'remove',
@@ -1189,11 +1174,10 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 		var subPatches = [];
 		_VirtualDom_diffHelp(vnode, entry.__vnode, subPatches, index);
 
-		var patch = _VirtualDom_makePatch(__3_REMOVE, index, {
+		_VirtualDom_pushPatch(localPatches, __3_REMOVE, index, {
 			__patches: subPatches,
 			__entry: entry
 		});
-		localPatches.push(patch);
 
 		return;
 	}

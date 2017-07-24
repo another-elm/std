@@ -903,7 +903,7 @@ function _VirtualDom_diffFacts(x, y, category)
 // DIFF KIDS
 
 
-function _VirtualDom_diffKids(xParent, yParent, patches, rootIndex)
+function _VirtualDom_diffKids(xParent, yParent, patches, index)
 {
 	var xKids = xParent.__kids;
 	var yKids = yParent.__kids;
@@ -915,22 +915,19 @@ function _VirtualDom_diffKids(xParent, yParent, patches, rootIndex)
 
 	if (xLen > yLen)
 	{
-		_VirtualDom_pushPatch(patches, __3_REMOVE_LAST, rootIndex, xLen - yLen);
+		_VirtualDom_pushPatch(patches, __3_REMOVE_LAST, index, xLen - yLen);
 	}
 	else if (xLen < yLen)
 	{
-		_VirtualDom_pushPatch(patches, __3_APPEND, rootIndex, yKids.slice(xLen));
+		_VirtualDom_pushPatch(patches, __3_APPEND, index, yKids.slice(xLen));
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE
 
-	var index = rootIndex;
-	var minLen = xLen < yLen ? xLen : yLen;
-	for (var i = 0; i < minLen; i++)
+	for (var minLen = xLen < yLen ? xLen : yLen, i = 0; i < minLen; i++)
 	{
-		index++;
 		var xKid = xKids[i];
-		_VirtualDom_diffHelp(xKid, yKids[i], patches, index);
+		_VirtualDom_diffHelp(xKid, yKids[i], patches, ++index);
 		index += xKid.__descendantsCount || 0;
 	}
 }

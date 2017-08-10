@@ -164,7 +164,7 @@ get update index { snapshots, recent, numMessages } =
 
         Just { model, messages } ->
           undone <|
-            Array.foldr (getHelp update) (Stepping (rem index maxSnapshotSize) model) messages
+            Array.foldr (getHelp update) (Stepping (remainderBy maxSnapshotSize index) model) messages
 
 
 type GetResult model msg

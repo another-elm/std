@@ -979,20 +979,18 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 
 		// look ahead 1 to detect insertions and removals.
 
-		var xLookAhead = xIndex + 1 < xLen;
-		var yLookAhead = yIndex + 1 < yLen;
+		var xNext = xKids[xIndex + 1];
+		var yNext = yKids[yIndex + 1];
 
-		if (xLookAhead)
+		if (xNext)
 		{
-			var xNext = xKids[xIndex + 1];
 			var xNextKey = xNext.a;
 			var xNextNode = xNext.b;
 			var oldMatch = yKey === xNextKey;
 		}
 
-		if (yLookAhead)
+		if (yNext)
 		{
-			var yNext = yKids[yIndex + 1];
 			var yNextKey = yNext.a;
 			var yNextNode = yNext.b;
 			var newMatch = xKey === yNextKey;
@@ -1000,7 +998,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 
 
 		// swap x and y
-		if (xLookAhead && yLookAhead && newMatch && oldMatch)
+		if (newMatch && oldMatch)
 		{
 			index++;
 			_VirtualDom_diffHelp(xNode, yNextNode, localPatches, index);
@@ -1017,7 +1015,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		}
 
 		// insert y
-		if (yLookAhead && newMatch)
+		if (newMatch)
 		{
 			index++;
 			_VirtualDom_insertNode(changes, localPatches, yKey, yNode, yIndex, inserts);
@@ -1030,7 +1028,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		}
 
 		// remove x
-		if (xLookAhead && oldMatch)
+		if (oldMatch)
 		{
 			index++;
 			_VirtualDom_removeNode(changes, localPatches, xKey, xNode, index);
@@ -1046,7 +1044,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		}
 
 		// remove x, insert y
-		if (xLookAhead && yLookAhead && xNextKey === yNextKey)
+		if (xNextKey === yNextKey)
 		{
 			index++;
 			_VirtualDom_removeNode(changes, localPatches, xKey, xNode, index);

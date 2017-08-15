@@ -1109,7 +1109,7 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, yIndex, inser
 	if (!entry)
 	{
 		entry = {
-			__tag: 'insert',
+			__tag: __5_INSERT,
 			__vnode: vnode,
 			__index: yIndex,
 			__data: undefined
@@ -1122,11 +1122,11 @@ function _VirtualDom_insertNode(changes, localPatches, key, vnode, yIndex, inser
 	}
 
 	// this key was removed earlier, a match!
-	if (entry.__tag === 'remove')
+	if (entry.__tag === __5_REMOVE)
 	{
 		inserts.push({ __index: yIndex, __entry: entry });
 
-		entry.__tag = 'move';
+		entry.__tag = __5_MOVE;
 		var subPatches = [];
 		_VirtualDom_diffHelp(entry.__vnode, vnode, subPatches, entry.__index);
 		entry.__index = yIndex;
@@ -1153,7 +1153,7 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 		var patch = _VirtualDom_pushPatch(localPatches, __3_REMOVE, index, undefined);
 
 		changes[key] = {
-			__tag: 'remove',
+			__tag: __5_REMOVE,
 			__vnode: vnode,
 			__index: index,
 			__data: patch
@@ -1163,9 +1163,9 @@ function _VirtualDom_removeNode(changes, localPatches, key, vnode, index)
 	}
 
 	// this key was inserted earlier, a match!
-	if (entry.__tag === 'insert')
+	if (entry.__tag === __5_INSERT)
 	{
-		entry.__tag = 'move';
+		entry.__tag = __5_MOVE;
 		var subPatches = [];
 		_VirtualDom_diffHelp(vnode, entry.__vnode, subPatches, index);
 
@@ -1426,7 +1426,7 @@ function _VirtualDom_applyPatchReorder(domNode, patch)
 	{
 		var insert = inserts[i];
 		var entry = insert.__entry;
-		var node = entry.__tag === 'move'
+		var node = entry.__tag === __5_MOVE
 			? entry.__data
 			: _VirtualDom_render(entry.__vnode, patch.__eventNode);
 		domNode.insertBefore(node, domNode.childNodes[insert.__index]);
@@ -1454,7 +1454,7 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 	{
 		var insert = endInserts[i];
 		var entry = insert.__entry;
-		frag.appendChild(entry.__tag === 'move'
+		frag.appendChild(entry.__tag === __5_MOVE
 			? entry.__data
 			: _VirtualDom_render(entry.__vnode, patch.__eventNode)
 		);

@@ -6,7 +6,6 @@ module VirtualDom exposing
   , map, mapAttribute
   , keyedNode, keyedNodeNS
   , lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
-  , program, programWithFlags
   )
 
 {-| API to the core diffing algorithm. Can serve as a foundation for libraries
@@ -29,9 +28,6 @@ that expose more helper functions for HTML or SVG.
 
 # Lazy Nodes
 @docs lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
-
-# Programs
-@docs program, programWithFlags
 
 -}
 
@@ -385,40 +381,3 @@ could be defined like this:
 keyedNodeNS : String -> String -> List (Attribute msg) -> List ( String, Node msg ) -> Node msg
 keyedNodeNS =
   Elm.Kernel.VirtualDom.keyedNodeNS
-
-
-
--- PROGRAMS
-
-
-{-| Check out the docs for [`Html.App.program`][prog].
-It works exactly the same way.
-
-[prog]: http://package.elm-lang.org/packages/elm-lang/html/latest/Html-App#program
--}
-program
-  : { init : (model, Cmd msg)
-    , update : msg -> model -> (model, Cmd msg)
-    , subscriptions : model -> Sub msg
-    , view : model -> Node msg
-    }
-  -> Program Never model msg
-program impl =
-  Elm.Kernel.VirtualDom.program Debug.wrap impl
-
-
-{-| Check out the docs for [`Html.App.programWithFlags`][prog].
-It works exactly the same way.
-
-[prog]: http://package.elm-lang.org/packages/elm-lang/html/latest/Html-App#programWithFlags
--}
-programWithFlags
-  : { init : flags -> (model, Cmd msg)
-    , update : msg -> model -> (model, Cmd msg)
-    , subscriptions : model -> Sub msg
-    , view : model -> Node msg
-    }
-  -> Program flags model msg
-programWithFlags impl =
-  Elm.Kernel.VirtualDom.programWithFlags Debug.wrapWithFlags impl
-

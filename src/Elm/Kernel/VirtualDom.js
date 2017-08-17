@@ -1464,112 +1464,6 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 
 
 
-// PROGRAMS
-
-
-var _VirtualDom_program = _VirtualDom_makeProgram(_VirtualDom_checkNoFlags);
-var _VirtualDom_programWithFlags = _VirtualDom_makeProgram(_VirtualDom_checkYesFlags);
-
-function _VirtualDom_makeProgram(flagChecker)
-{
-	return F2(function(debugWrap, impl)
-	{
-		return function(flagDecoder)
-		{
-			return function(object, moduleName, debugMetadata)
-			{
-				var checker = flagChecker(flagDecoder, moduleName);
-				if (!debugMetadata)
-				{
-					_VirtualDom_setup(impl, object, moduleName, checker);
-				}
-				else
-				{
-					_Degug_setup(A2(debugWrap, debugMetadata, impl), object, moduleName, checker);
-				}
-			};
-		};
-	});
-}
-
-function _VirtualDom_staticProgram(vNode)
-{
-	var nothing = __Utils_Tuple2( __Utils_Tuple0, __Cmd_none );
-	return A2(_VirtualDom_program, elm_lang$virtual_dom$VirtualDom_Debug$wrap, {
-		__$init: nothing,
-		__$view: function() { return vNode; },
-		__$update: F2(function() { return nothing; }),
-		__$subscriptions: function() { return __Sub_none; }
-	})();
-}
-
-
-
-// FLAG CHECKERS
-
-
-function _VirtualDom_checkNoFlags(flagDecoder, moduleName)
-{
-	return function(init, flags, domNode)
-	{
-		if (typeof flags === 'undefined')
-		{
-			return init;
-		}
-
-		__Error_throw(0);
-	};
-}
-
-function _VirtualDom_checkYesFlags(flagDecoder, moduleName)
-{
-	return function(init, flags, domNode)
-	{
-		if (typeof flagDecoder === 'undefined')
-		{
-			__Error_throw(1);
-		}
-
-		var result = __Json_runHelp(flagDecoder, flags);
-		if (result.$ === 'Ok')
-		{
-			return init(result.a);
-		}
-
-		__Error_throw(2);
-	};
-}
-
-
-
-//  NORMAL SETUP
-
-
-function _VirtualDom_setup(impl, object, moduleName, flagChecker)
-{
-	object['embed'] = function embed(node, flags)
-	{
-		return __Platform_initialize(
-			flagChecker(impl.__$init, flags, node),
-			impl.__$update,
-			impl.__$subscriptions,
-			_VirtualDom_renderer(node, impl.__$view)
-		);
-	};
-
-	object['fullscreen'] = function fullscreen(flags)
-	{
-		return __Platform_initialize(
-			flagChecker(impl.__$init, flags, document.body),
-			impl.__$update,
-			impl.__$subscriptions,
-			_VirtualDom_renderer(document.body, impl.__$view)
-		);
-	};
-}
-
-
-
 // RENDERER
 
 
@@ -1578,13 +1472,14 @@ var _VirtualDom_requestAnimationFrame =
 		? requestAnimationFrame
 		: function(callback) { setTimeout(callback, 1000 / 60); };
 
+
 function _VirtualDom_renderer(domNode, view)
 {
 	return function(sendToApp, nextModel)
 	{
 		// initial setup
 
-		var currNode = virtualize(domNode);
+		var currNode = _VirtualDom_virtualize(domNode);
 
 		function draw(model)
 		{
@@ -1635,7 +1530,7 @@ function _VirtualDom_renderer(domNode, view)
 	};
 }
 
-function virtualize(node)
+function _VirtualDom_virtualize(node)
 {
 	// TEXT NODES
 
@@ -1666,7 +1561,7 @@ function virtualize(node)
 
 	for (var i = kids.length; i--; )
 	{
-		kidList = __List_Cons(virtualize(kids[i]), kidList);
+		kidList = __List_Cons(_VirtualDom_virtualize(kids[i]), kidList);
 	}
 	return A3(_VirtualDom_node, tag, attrList, kidList);
 }

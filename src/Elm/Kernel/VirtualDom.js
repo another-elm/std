@@ -14,7 +14,17 @@ import Tuple exposing (mapFirst, second)
 */
 
 
+
+// HELPERS
+
+
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
+
+
+function _VirtualDom_appendChild(parent, child)
+{
+	parent.appendChild(child);
+}
 
 
 
@@ -401,7 +411,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 	for (var kids = vNode.__kids, i = 0; i < kids.length; i++)
 	{
-		domNode.appendChild(_VirtualDom_render(tag === __2_NODE ? kids[i] : kids[i].b, eventNode));
+		_VirtualDom_appendChild(domNode, _VirtualDom_render(tag === __2_NODE ? kids[i] : kids[i].b, eventNode));
 	}
 
 	return domNode;
@@ -1356,7 +1366,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			var newNodes = patch.__data;
 			for (var i = 0; i < newNodes.length; i++)
 			{
-				domNode.appendChild(_VirtualDom_render(newNodes[i], patch.__eventNode));
+				_VirtualDom_appendChild(domNode, _VirtualDom_render(newNodes[i], patch.__eventNode));
 			}
 			return domNode;
 
@@ -1431,7 +1441,7 @@ function _VirtualDom_applyPatchReorder(domNode, patch)
 	// add end inserts
 	if (frag)
 	{
-		domNode.appendChild(frag);
+		_VirtualDom_appendChild(domNode, frag);
 	}
 
 	return domNode;
@@ -1450,7 +1460,7 @@ function _VirtualDom_applyPatchReorderEndInsertsHelp(endInserts, patch)
 	{
 		var insert = endInserts[i];
 		var entry = insert.__entry;
-		frag.appendChild(entry.__tag === __5_MOVE
+		_VirtualDom_appendChild(frag, entry.__tag === __5_MOVE
 			? entry.__data
 			: _VirtualDom_render(entry.__vnode, patch.__eventNode)
 		);

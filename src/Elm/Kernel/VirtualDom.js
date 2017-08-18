@@ -14,10 +14,6 @@ import Tuple exposing (mapFirst, second)
 */
 
 
-var elm_lang$virtual_dom$VirtualDom_Debug$wrap;
-var elm_lang$virtual_dom$VirtualDom_Debug$wrapWithFlags;
-
-
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
 

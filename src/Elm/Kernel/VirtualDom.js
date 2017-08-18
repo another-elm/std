@@ -1,15 +1,10 @@
 /*
 
-import Basics exposing (identity)
 import Elm.Kernel.Error exposing (throw)
 import Elm.Kernel.Json exposing (equality, runHelp)
 import Elm.Kernel.List exposing (Cons, Nil)
-import Elm.Kernel.Platform exposing (initialize)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Utils exposing (Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
-import Platform.Cmd as Cmd exposing (none)
-import Platform.Sub as Sub exposing (none)
-import Tuple exposing (mapFirst, second)
 
 */
 

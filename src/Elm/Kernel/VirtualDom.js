@@ -423,35 +423,19 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 	{
 		var value = facts[key];
 
-		switch (key)
-		{
-			case __1_STYLE:
-				_VirtualDom_applyStyles(domNode, value);
-				break;
-
-			case __1_EVENT:
-				_VirtualDom_applyEvents(domNode, eventNode, value);
-				break;
-
-			case __1_ATTR:
-				_VirtualDom_applyAttrs(domNode, value);
-				break;
-
-			case __1_ATTR_NS:
-				_VirtualDom_applyAttrsNS(domNode, value);
-				break;
-
-			case 'value':
-				if (domNode[key] !== value)
-				{
-					domNode[key] = value;
-				}
-				break;
-
-			default:
-				domNode[key] = value;
-				break;
-		}
+		key === __1_STYLE
+			? _VirtualDom_applyStyles(domNode, value);
+			:
+		key === __1_EVENT
+			? _VirtualDom_applyEvents(domNode, eventNode, value);
+			:
+		key === __1_ATTR
+			? _VirtualDom_applyAttrs(domNode, value);
+			:
+		key === __1_ATTR_NS
+			? _VirtualDom_applyAttrsNS(domNode, value);
+			:
+		(key !== 'value' || domNode[key] !== value) && domNode[key] = value;
 	}
 }
 

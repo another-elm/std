@@ -435,7 +435,7 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 		key === __1_ATTR_NS
 			? _VirtualDom_applyAttrsNS(domNode, value)
 			:
-		(key !== 'value' || domNode[key] !== __Json_unwrap(value)) && domNode[key] = __Json_unwrap(value);
+		(key !== 'value' || domNode[key] !== value) && (domNode[key] = value);
 	}
 }
 
@@ -575,15 +575,17 @@ function _VirtualDom_makeCallback(eventNode, initialInfo)
 		var i;
 		while (tagger = currentEventNode.__tagger)
 		{
-			if (i = tagger.length)
-			{
-				while (i--) { message = tagger[i](message); }
-			}
-			else
+			if (typeof tagger === 'function')
 			{
 				message = tagger(message);
 			}
-
+			else
+			{
+				for (var i = tagger.length; i--; )
+				{
+					message = tagger[i](message);
+				}
+			}
 			currentEventNode = currentEventNode.__parent;
 		}
 		currentEventNode(message, timedMsg.$ === 'Sync');

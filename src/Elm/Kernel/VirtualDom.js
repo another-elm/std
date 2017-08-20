@@ -568,8 +568,9 @@ function _VirtualDom_makeCallback(eventNode, initialInfo)
 			return;
 		}
 
-		var timedMsg = result.a;
-		var message = _VirtualDom_eventToMessage(event, info.$, timedMsg.a);
+		var ok = result.a;
+		var timedMsg = _VirtualDom_eventToMessage(event, info.$, ok);
+		var message = timedMsg.a;
 		var currentEventNode = eventNode;
 		var tagger;
 		var i;

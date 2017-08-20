@@ -1,7 +1,7 @@
 /*
 
 import Elm.Kernel.Error exposing (throw)
-import Elm.Kernel.Json exposing (equality, runHelp)
+import Elm.Kernel.Json exposing (equality, runHelp, unwrap)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
@@ -329,8 +329,8 @@ function _VirtualDom_organizeFacts(factList)
 		if (tag === __1_PROP)
 		{
 			(key === 'className')
-				? _VirtualDom_addClass(facts, key, value)
-				: facts[key] = value;
+				? _VirtualDom_addClass(facts, key, __Json_unwrap(value))
+				: facts[key] = __Json_unwrap(value);
 
 			continue;
 		}
@@ -435,7 +435,7 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 		key === __1_ATTR_NS
 			? _VirtualDom_applyAttrsNS(domNode, value);
 			:
-		(key !== 'value' || domNode[key] !== value) && domNode[key] = value;
+		(key !== 'value' || domNode[key] !== __Json_unwrap(value)) && domNode[key] = __Json_unwrap(value);
 	}
 }
 

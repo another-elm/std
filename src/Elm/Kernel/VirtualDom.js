@@ -424,16 +424,16 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 		var value = facts[key];
 
 		key === __1_STYLE
-			? _VirtualDom_applyStyles(domNode, value);
+			? _VirtualDom_applyStyles(domNode, value)
 			:
 		key === __1_EVENT
-			? _VirtualDom_applyEvents(domNode, eventNode, value);
+			? _VirtualDom_applyEvents(domNode, eventNode, value)
 			:
 		key === __1_ATTR
-			? _VirtualDom_applyAttrs(domNode, value);
+			? _VirtualDom_applyAttrs(domNode, value)
 			:
 		key === __1_ATTR_NS
-			? _VirtualDom_applyAttrsNS(domNode, value);
+			? _VirtualDom_applyAttrsNS(domNode, value)
 			:
 		(key !== 'value' || domNode[key] !== __Json_unwrap(value)) && domNode[key] = __Json_unwrap(value);
 	}

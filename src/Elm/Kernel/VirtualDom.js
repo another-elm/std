@@ -1032,7 +1032,7 @@ function _VirtualDom_diffKeyedKids(xParent, yParent, patches, rootIndex)
 		}
 
 		// remove x, insert y
-		if (xNextKey === yNextKey)
+		if (xNext && xNextKey === yNextKey)
 		{
 			index++;
 			_VirtualDom_removeNode(changes, localPatches, xKey, xNode, index);

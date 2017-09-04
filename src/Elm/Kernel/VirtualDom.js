@@ -107,15 +107,16 @@ var _VirtualDom_keyedNode = _VirtualDom_keyedNodeNS(undefined);
 // CUSTOM
 
 
-var _VirtualDom_custom = F3(function(factList, model, impl)
+function _VirtualDom_custom(factList, model, render, diff)
 {
 	return {
 		$: __2_CUSTOM,
 		__facts: _VirtualDom_organizeFacts(factList),
 		__model: model,
-		__impl: impl
+		__render: render,
+		__diff: diff
 	};
-});
+}
 
 
 
@@ -391,7 +392,7 @@ function _VirtualDom_render(vNode, eventNode)
 
 	if (tag === __2_CUSTOM)
 	{
-		var domNode = vNode.__impl.render(vNode.__model);
+		var domNode = vNode.__render(vNode.__model);
 		_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
 		return domNode;
 	}
@@ -768,7 +769,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			return;
 
 		case __2_CUSTOM:
-			if (x.__impl !== y.__impl)
+			if (x.__render !== y.__render)
 			{
 				_VirtualDom_pushPatch(patches, __3_REDRAW, index, y);
 				return;
@@ -777,7 +778,7 @@ function _VirtualDom_diffHelp(x, y, patches, index)
 			var factsDiff = _VirtualDom_diffFacts(x.__facts, y.__facts);
 			factsDiff && _VirtualDom_pushPatch(patches, __3_FACTS, index, factsDiff);
 
-			var patch = y.__impl.diff(x,y);
+			var patch = y.__diff(x.__model, y.__model);
 			patch && _VirtualDom_pushPatch(patches, __3_CUSTOM, index, patch);
 
 			return;
@@ -1371,8 +1372,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return _VirtualDom_applyPatchReorder(domNode, patch);
 
 		case __3_CUSTOM:
-			var impl = patch.__data;
-			return impl.applyPatch(domNode, impl.__data);
+			return patch.__data(domNode);
 
 		default:
 			__Error_throw(10); // 'Ran into an unknown patch!'

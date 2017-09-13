@@ -209,12 +209,13 @@ var _VirtualDom_lazy8 = F9(function(func, a, b, c, d, e, f, g, h)
 // FACTS
 
 
-var _VirtualDom_on = F3(function(useCapture, key, handler)
+var _VirtualDom_on = F3(function(key, handler)
 {
 	return {
 		$: __1_EVENT,
 		__key: key,
-		__value: { $: handler.$, __useCapture: useCapture, __decoder: handler.a } };
+		__value: handler
+	};
 });
 var _VirtualDom_style = F2(function(key, value)
 {
@@ -257,30 +258,25 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 var _VirtualDom_mapAttribute = F2(function(func, attr)
 {
 	return (attr.$ === __1_EVENT)
-		? _VirtualDom_mapEvent(attr.__key, func, attr.__value)
+		? _VirtualDom_on(attr.__key, _VirtualDom_mapHandler(func, attr.__value)
 		: attr;
 });
 
-function _VirtualDom_mapEvent(key, func, value)
+function _VirtualDom_mapHandler(func, handler)
 {
-	var tag = value.$;
+	var tag = handler.$;
 
 	return {
-		$: __1_EVENT,
-		__key: key,
-		__value: {
-			$: tag,
-			__useCapture: value.__useCapture,
-			__decoder:
-				tag === 'Normal'
-					? A2(__Json_map, func, value.__decoder)
-					:
-				A3(__Json_map2,
-					tag !== 'Custom' ? _VirtualDom_mapEventTuple : _VirtualDom_mapEventRecord,
-					__Json_succeed(func),
-					value.__decoder
-				)
-		}
+		$: tag,
+		a:
+			tag === 'Normal'
+				? A2(__Json_map, func, handler.a)
+				:
+			A3(__Json_map2,
+				tag !== 'Custom' ? _VirtualDom_mapEventTuple : _VirtualDom_mapEventRecord,
+				__Json_succeed(func),
+				handler.a
+			)
 	};
 }
 
@@ -501,10 +497,10 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 	for (var key in events)
 	{
-		var newInfo = events[key];
+		var newHandler = events[key];
 		var oldCallback = allCallbacks[key];
 
-		if (!newInfo)
+		if (!newHandler)
 		{
 			domNode.removeEventListener(key, oldCallback);
 			allCallbacks[key] = undefined;
@@ -513,17 +509,17 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 		if (oldCallback)
 		{
-			var oldInfo = oldCallback.__info;
-			if (oldInfo.$ === newInfo.$ && oldInfo.__useCapture === newInfo.__useCapture)
+			var oldHandler = oldCallback.__handler;
+			if (oldHandler.$ === newHandler.$)
 			{
-				oldCallback.__info = newInfo;
+				oldCallback.__handler = newHandler;
 				continue;
 			}
 			domNode.removeEventListener(key, oldCallback);
 		}
 
-		oldCallback = _VirtualDom_makeCallback(eventNode, newInfo);
-		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newInfo));
+		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
+		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newHandler));
 		allCallbacks[key] = oldCallback;
 	}
 }
@@ -531,22 +527,19 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 
 // EVENT OPTIONS
 
-function _VirtualDom_toOptions(info)
-{
-	return info.__useCapture;
-}
+function _VirtualDom_toOptions() {}
 
 try
 {
 	window.addEventListener("test", null, Object.defineProperty({}, "passive", {
 		get: function()
 		{
-			_VirtualDom_toOptions = function(info)
+			_VirtualDom_toOptions = function(handler)
 			{
-				var tag = info.$;
 				return {
-					passive: tag === 'Normal' || tag === 'MayStopPropagation',
-					capture: info.__useCapture
+					passive:
+						handler.$ === 'Normal'
+						|| handler.$ === 'MayStopPropagation'
 				};
 			}
 		}
@@ -557,12 +550,12 @@ catch(e) {}
 
 // EVENT HANDLERS
 
-function _VirtualDom_makeCallback(eventNode, initialInfo)
+function _VirtualDom_makeCallback(eventNode, initialHandler)
 {
 	function callback(event)
 	{
-		var info = callback.__info;
-		var result = __Json_runHelp(info.__decoder, event);
+		var handler = callback.__handler;
+		var result = __Json_runHelp(handler.a, event);
 
 		if (result.$ !== 'Ok')
 		{
@@ -570,7 +563,7 @@ function _VirtualDom_makeCallback(eventNode, initialInfo)
 		}
 
 		var ok = result.a;
-		var timedMsg = _VirtualDom_eventToMessage(event, info.$, ok);
+		var timedMsg = _VirtualDom_eventToMessage(event, handler.$, ok);
 		var message = timedMsg.a;
 		var currentEventNode = eventNode;
 		var tagger;
@@ -593,16 +586,14 @@ function _VirtualDom_makeCallback(eventNode, initialInfo)
 		currentEventNode(message, timedMsg.$ === 'Sync');
 	}
 
-	callback.__info = initialInfo;
+	callback.__handler = initialHandler;
 
 	return callback;
 }
 
 function _VirtualDom_equalEvents(x, y)
 {
-	return x.$ === y.$
-		&& x.__useCapture === y.__useCapture
-		&& __Json_equality(x.__decoder, y.__decoder);
+	return x.$ === y.$ && __Json_equality(x.a, y.a);
 }
 
 function _VirtualDom_eventToMessage(event, tag, value)

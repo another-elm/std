@@ -2,7 +2,7 @@ module VirtualDom exposing
   ( Node
   , text, node, nodeNS
   , Attribute, style, property, attribute, attributeNS
-  , onBubble, onCapture, Handler(..), Timed(..)
+  , on, Handler(..), Timed(..)
   , map, mapAttribute
   , keyedNode, keyedNodeNS
   , lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
@@ -18,7 +18,7 @@ that expose more helper functions for HTML or SVG.
 @docs Attribute, style, property, attribute, attributeNS
 
 # Events
-@docs onBubble, onCapture, Handler, Timed
+@docs on, Handler, Timed
 
 # Routing Messages
 @docs map, mapAttribute
@@ -208,40 +208,24 @@ mapAttribute =
 -- EVENTS
 
 
-{-| **This is the default event primitive.**
+{-| Create custom event handlers.
 
-It lets you create very custom event handlers. These handlers activate during
-the “bubble” phase, as described [here][]. This is the default behavior of
-event handlers in JavaScript, so using `addEventListener` normally will work
-the same way.
+You can define `onClick` like this:
 
-[here]: https://www.quirksmode.org/js/events_order.html
+    import Json.Decode as Decode
 
-You can define `on` using `onBubble` like this:
+    onClick : msg -> Attribute msg
+    onClick msg =
+      on "click" (Normal (Decode.succeed msg))
 
-    import Json.Decode exposing (Decoder)
+**Note:** These event handlers trigger in the bubble phase. You can learn more
+about what that means [here][].
 
-    on : String -> Decoder msg -> Attribute msg
-    on eventName decoder =
-      onBubble eventName (Normal decoder)
+[here]: https://github.com/elm-lang/virtual-dom/blob/master/hints/capture-vs-bubble.md
 -}
-onBubble : String -> Handler msg -> Attribute msg
-onBubble =
-  Elm.Kernel.VirtualDom.on False
-
-
-{-| **This is the weird event primitive.**
-
-It lets you create very custom event handlers. These handlers activate during
-the “capture” phase, as described [here][]. This is only useful in very odd
-circumstances and is generally advised against. This is included mainly to
-have parity with the underlying browser API just in case.
-
-[here]: https://www.quirksmode.org/js/events_order.html
--}
-onCapture : String -> Handler msg -> Attribute msg
-onCapture =
-  Elm.Kernel.VirtualDom.on True
+on : String -> Handler msg -> Attribute msg
+on =
+  Elm.Kernel.VirtualDom.on
 
 
 {-| When using `onBubble` or `onCapture` you can customize the event behavior

@@ -187,7 +187,7 @@ touch, scroll, and wheel events in some browsers.
 -}
 on : String -> Json.Decoder msg -> Attribute msg
 on event decoder =
-  VirtualDom.onBubble event (VirtualDom.Normal (Json.map VirtualDom.Sync decoder))
+  VirtualDom.on event (VirtualDom.Normal (Json.map VirtualDom.Sync decoder))
 
 
 {-| Create an event listener that may [`stopPropagation`][stop]. Your decoder
@@ -203,7 +203,7 @@ touch, scroll, and wheel events in some browsers.
 -}
 stopPropagationOn : String -> Json.Decoder (msg, Bool) -> Attribute msg
 stopPropagationOn event decoder =
-  VirtualDom.onBubble event (VirtualDom.MayStopPropagation (Json.map syncTuple decoder))
+  VirtualDom.on event (VirtualDom.MayStopPropagation (Json.map syncTuple decoder))
 
 
 {-| Create an event listener that may [`preventDefault`][prevent]. Your decoder
@@ -225,7 +225,7 @@ default behavior:
 -}
 preventDefaultOn : String -> Json.Decoder (msg, Bool) -> Attribute msg
 preventDefaultOn event decoder =
-  VirtualDom.onBubble event (VirtualDom.MayPreventDefault (Json.map syncTuple decoder))
+  VirtualDom.on event (VirtualDom.MayPreventDefault (Json.map syncTuple decoder))
 
 
 {-| Create an event listener that may [`stopPropagation`][stop] or
@@ -239,7 +239,7 @@ out the lower-level event API in `elm-lang/virtual-dom`.
 -}
 custom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
 custom event decoder =
-  VirtualDom.onBubble event (VirtualDom.Custom (Json.map syncRecord decoder))
+  VirtualDom.on event (VirtualDom.Custom (Json.map syncRecord decoder))
 
 
 

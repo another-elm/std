@@ -258,7 +258,7 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 var _VirtualDom_mapAttribute = F2(function(func, attr)
 {
 	return (attr.$ === __1_EVENT)
-		? _VirtualDom_on(attr.__key, _VirtualDom_mapHandler(func, attr.__value)
+		? _VirtualDom_on(attr.__key, _VirtualDom_mapHandler(func, attr.__value))
 		: attr;
 });
 
@@ -519,36 +519,33 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 		}
 
 		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
-		domNode.addEventListener(key, oldCallback, _VirtualDom_toOptions(newHandler));
+		domNode.addEventListener(key, oldCallback,
+			_VirtualDom_passiveSupported
+			&& { passive: newHandler.$ === 'Normal' || newHandler.$ === 'MayStopPropagation' }
+		);
 		allCallbacks[key] = oldCallback;
 	}
 }
 
 
-// EVENT OPTIONS
 
-function _VirtualDom_toOptions() {}
+// PASSIVE EVENTS
+
+
+var _VirtualDom_passiveSupported;
 
 try
 {
 	window.addEventListener("test", null, Object.defineProperty({}, "passive", {
-		get: function()
-		{
-			_VirtualDom_toOptions = function(handler)
-			{
-				return {
-					passive:
-						handler.$ === 'Normal'
-						|| handler.$ === 'MayStopPropagation'
-				};
-			}
-		}
+		get: function() { _VirtualDom_passiveSupported = true; }
 	}));
 }
 catch(e) {}
 
 
+
 // EVENT HANDLERS
+
 
 function _VirtualDom_makeCallback(eventNode, initialHandler)
 {

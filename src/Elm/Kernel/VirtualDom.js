@@ -209,7 +209,7 @@ var _VirtualDom_lazy8 = F9(function(func, a, b, c, d, e, f, g, h)
 // FACTS
 
 
-var _VirtualDom_on = F3(function(key, handler)
+var _VirtualDom_on = F2(function(key, handler)
 {
 	return {
 		$: __1_EVENT,
@@ -258,7 +258,7 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 var _VirtualDom_mapAttribute = F2(function(func, attr)
 {
 	return (attr.$ === __1_EVENT)
-		? _VirtualDom_on(attr.__key, _VirtualDom_mapHandler(func, attr.__value))
+		? A2(_VirtualDom_on, attr.__key, _VirtualDom_mapHandler(func, attr.__value))
 		: attr;
 });
 

@@ -45,6 +45,19 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 
 var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
 
+function _VirtualDom_body(kidList)
+{
+	var output = '';
+
+	while (kidList.$ !== '[]')
+	{
+		output += kidList.a;
+		kidList = kidList.b;
+	}
+
+	return output;
+}
+
 
 // KEYED NODES
 

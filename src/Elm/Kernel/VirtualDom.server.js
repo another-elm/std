@@ -1,7 +1,5 @@
 /*
 
-import Elm.Kernel.Json exposing (run)
-
 */
 
 
@@ -9,12 +7,12 @@ import Elm.Kernel.Json exposing (run)
 
 function _VirtualDom_text(string)
 {
-	return string.replace(badChars, replaceBadChars);
+	return string.replace(_VirtualDom_badChars, _VirtualDom_replaceBadChars);
 }
 
-var badChars = /[&<>"']/g;
+var _VirtualDom_badChars = /[&<>"']/g;
 
-var table = {
+var _VirtualDom_table = {
 	'&': "&amp;",
 	'<': "&lt;",
 	'>': "&gt;",
@@ -22,9 +20,9 @@ var table = {
 	"'": "&#039;"
 };
 
-function replaceBadChars(m)
+function _VirtualDom_replaceBadChars(m)
 {
-	return table[m];
+	return _VirtualDom_table[m];
 }
 
 
@@ -77,6 +75,14 @@ var _VirtualDom_custom = F3(function(factList, model, impl)
 });
 
 
+// MAP
+
+var _VirtualDom_map = F2(function(tagger, node)
+{
+	return node;
+});
+
+
 // LAZY
 
 var _VirtualDom_lazy = F2(function(fn, a)
@@ -94,17 +100,29 @@ var _VirtualDom_lazy3 = F4(function(fn, a, b, c)
 	return A3(fn, a, b, c);
 });
 
-
-// MAP
-
-var _VirtualDom_map = F2(function(tagger, node)
+var _VirtualDom_lazy4 = F5(function(fn, a, b, c, d)
 {
-	return node;
+	return A4(fn, a, b, c, d);
 });
 
-var _VirtualDom_mapAttribute = F2(function(func, attr)
+var _VirtualDom_lazy5 = F6(function(fn, a, b, c, d, e)
 {
-	return attr;
+	return A5(fn, a, b, c, d, e);
+});
+
+var _VirtualDom_lazy6 = F7(function(fn, a, b, c, d, e, f)
+{
+	return A6(fn, a, b, c, d, e, f);
+});
+
+var _VirtualDom_lazy7 = F8(function(fn, a, b, c, d, e, f, g)
+{
+	return A7(fn, a, b, c, d, e, f, g);
+});
+
+var _VirtualDom_lazy8 = F9(function(fn, a, b, c, d, e, f, g, h)
+{
+	return A8(fn, a, b, c, d, e, f, g, h);
 });
 
 
@@ -152,7 +170,7 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 	return '';
 });
 
-var _VirtualDom_on = F3(function(useCapture, name, decoder)
+var _VirtualDom_on = F2(function(name, decoder)
 {
 	return '';
 });
@@ -170,77 +188,9 @@ var propertyToAttribute = {
 };
 
 
+// MAP ATTRIBUTE
 
-// PROGRAMS
-
-function _VirtualDom_staticProgram(html)
+var _VirtualDom_mapAttribute = F2(function(func, attr)
 {
-	return function(flagDecoder)
-	{
-		return function(object, moduleName)
-		{
-			object['freeze'] = function freeze(flags)
-			{
-				_VirtualDom_checkNoFlags(moduleName, flags);
-				return html;
-			};
-		};
-	};
-}
-
-var _VirtualDom_program = F2(function(_, impl)
-{
-	return function(flagDecoder)
-	{
-		return function(object, moduleName)
-		{
-			var model = impl.init.a;
-			var html = impl.view(model);
-
-			object['freeze'] = function freeze(flags)
-			{
-				_VirtualDom_checkNoFlags(moduleName, flags);
-				return html;
-			};
-		};
-	};
+	return attr;
 });
-
-var _VirtualDom_programWithFlags = F2(function(_, impl)
-{
-	return function(flagDecoder)
-	{
-		return function(object, moduleName)
-		{
-			object['freeze'] = function freeze(flags)
-			{
-				var result = A2(__Json_run, flagDecoder, flags);
-				if (result.$ === 'Ok')
-				{
-					var model = impl.init(result.a).a;
-					return impl.view(model);
-				}
-
-				throw new Error(
-					'Trying to initialize the `' + moduleName + '` module with an unexpected flag.\n'
-					+ 'I tried to convert it to an Elm value, but ran into this problem:\n\n'
-					+ result.a
-				);
-			};
-		};
-	};
-});
-
-
-// FLAG CHECKERS
-
-function _VirtualDom_checkNoFlags(moduleName, flags)
-{
-	if (typeof flags !== 'undefined')
-	{
-		throw new Error(
-			'The `' + moduleName + '` module does not need flags.\n'
-			+ 'Initialize it with no arguments and you should be all set!'
-		);
-	}
-}

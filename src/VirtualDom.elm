@@ -33,7 +33,6 @@ that expose more helper functions for HTML or SVG.
 
 import Elm.Kernel.VirtualDom
 import Json.Decode as Json
-import VirtualDom.Debug as Debug
 
 
 {-| An immutable chunk of data representing a DOM node. This can be HTML or SVG.

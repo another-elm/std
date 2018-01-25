@@ -1,10 +1,12 @@
 /*
 
+import Basics exposing (identity)
 import Elm.Kernel.Error exposing (throw)
 import Elm.Kernel.Json exposing (equality, runHelp, unwrap)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
+import Result exposing (isOk)
 
 */
 
@@ -43,14 +45,11 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 {
 	return F2(function(factList, kidList)
 	{
-		var kids = [];
-		var descendantsCount = 0;
-		while (kidList.$ !== '[]')
+		for (var kids = [], descendantsCount = 0; kidList.b; kidList = kidList.b) // WHILE_CONS
 		{
 			var kid = kidList.a;
 			descendantsCount += (kid.__descendantsCount || 0);
 			kids.push(kid);
-			kidList = kidList.b;
 		}
 		descendantsCount += kids.length;
 
@@ -77,14 +76,11 @@ var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 {
 	return F2(function(factList, kidList)
 	{
-		var kids = [];
-		var descendantsCount = 0;
-		while (kidList.$ !== '[]')
+		for (var kids = [], descendantsCount = 0; kidList.b; kidList = kidList.b) // WHILE_CONS
 		{
 			var kid = kidList.a;
 			descendantsCount += (kid.b.__descendantsCount || 0);
 			kids.push(kid);
-			kidList = kidList.b;
 		}
 		descendantsCount += kids.length;
 
@@ -312,12 +308,9 @@ var _VirtualDom_mapEventRecord = F2(function(func, record)
 
 function _VirtualDom_organizeFacts(factList)
 {
-	var facts = {};
-
-	while (factList.$ !== '[]')
+	for (var facts = {}; factList.b; factList = factList.b) // WHILE_CONS
 	{
 		var entry = factList.a;
-		factList = factList.b;
 
 		var tag = entry.$;
 		var key = entry.__key;

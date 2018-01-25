@@ -26,17 +26,32 @@ function _VirtualDom_replaceBadChars(m)
 }
 
 
+// BODY
+
+function _VirtualDom_body(kidList)
+{
+	var output = '';
+
+	for (; kidList.b; kidList = kidList.b) // WHILE_CONS
+	{
+		output += kidList.a;
+	}
+
+	return output;
+}
+
+
 // NODES
 
 var _VirtualDom_nodeNS = F2(function(namespace, tag)
 {
-	return F2(function(factList, kidList) {
+	return F2(function(factList, kidList)
+	{
 		var output = _VirtualDom_openTag(tag, factList);
 
-		while (kidList.$ !== '[]')
+		for (; kidList.b; kidList = kidList.b) // WHILE_CONS
 		{
 			output += kidList.a;
-			kidList = kidList.b;
 		}
 
 		return output + '</' + tag + '>';
@@ -44,19 +59,6 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 });
 
 var _VirtualDom_node = _VirtualDom_nodeNS(undefined);
-
-function _VirtualDom_body(kidList)
-{
-	var output = '';
-
-	while (kidList.$ !== '[]')
-	{
-		output += kidList.a;
-		kidList = kidList.b;
-	}
-
-	return output;
-}
 
 
 // KEYED NODES
@@ -67,10 +69,9 @@ var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 	{
 		var output = _VirtualDom_openTag(tag, factList);
 
-		while (kidList.$ !== '[]')
+		for (; kidList.b; kidList = kidList.b) // WHILE_CONS
 		{
 			output += kidList.a.b;
-			kidList = kidList.b;
 		}
 
 		return output + '</' + tag + '>';
@@ -145,7 +146,7 @@ function _VirtualDom_openTag(tag, facts)
 {
 	var output = '<' + tag;
 	var styles = ' style="';
-	while (facts.$ !== '[]')
+	for (; facts.b; facts = facts.b) // WHILE_CONS
 	{
 		var fact = facts.a;
 		if (fact instanceof String)
@@ -156,7 +157,6 @@ function _VirtualDom_openTag(tag, facts)
 		{
 			output += fact;
 		}
-		facts = facts.b;
 	}
 
 	return (styles.length > 8

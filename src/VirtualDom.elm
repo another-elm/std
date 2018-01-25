@@ -364,3 +364,20 @@ could be defined like this:
 keyedNodeNS : String -> String -> List (Attribute msg) -> List ( String, Node msg ) -> Node msg
 keyedNodeNS =
   Elm.Kernel.VirtualDom.keyedNodeNS
+
+
+
+-- FOR INTERNAL USE ONLY
+
+
+isPassive : Handler msg -> Bool
+isPassive handler =
+  case handler of
+    Normal _ ->
+      True
+
+    MayStopPropagation _ ->
+      True
+
+    _ ->
+      False

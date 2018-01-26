@@ -7,7 +7,7 @@ import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
 import Result exposing (isOk)
-import VirtualDom exposing (isPassive, isSync, toHandlerInt)
+import VirtualDom exposing (isSync, toHandlerInt)
 
 */
 
@@ -522,7 +522,7 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
 		domNode.addEventListener(key, oldCallback,
 			_VirtualDom_passiveSupported
-			&& { passive: __VirtualDom_isPassive(newHandler) }
+			&& { passive: __VirtualDom_toHandlerInt(newHandler) < 2 }
 		);
 		allCallbacks[key] = oldCallback;
 	}

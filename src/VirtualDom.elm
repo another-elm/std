@@ -370,14 +370,20 @@ keyedNodeNS =
 -- FOR INTERNAL USE ONLY
 
 
-isPassive : Handler msg -> Bool
-isPassive handler =
+toHandlerInt : Handler msg -> Int
+toHandlerInt handler =
   case handler of
-    Normal _ ->
+    Normal _ -> 0
+    MayStopPropagation _ -> 1
+    MayPreventDefault _ -> 2
+    Custom _ -> 3
+
+
+isSync : Timed msg -> Bool
+isSync timed =
+  case timed of
+    Sync _ ->
       True
 
-    MayStopPropagation _ ->
-      True
-
-    _ ->
+    Async _ ->
       False

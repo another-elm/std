@@ -7,6 +7,7 @@ import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Json.Decode as Json exposing (map, map2, succeed)
 import Result exposing (isOk)
+import VirtualDom exposing (isPassive, isSync, toHandlerInt)
 
 */
 
@@ -208,7 +209,7 @@ var _VirtualDom_lazy8 = F9(function(func, a, b, c, d, e, f, g, h)
 var _VirtualDom_on = F2(function(key, handler)
 {
 	return {
-		$: __1_EVENT,
+		$: 'a__1_EVENT',
 		__key: key,
 		__value: handler
 	};
@@ -216,7 +217,7 @@ var _VirtualDom_on = F2(function(key, handler)
 var _VirtualDom_style = F2(function(key, value)
 {
 	return {
-		$: __1_STYLE,
+		$: 'a__1_STYLE',
 		__key: key,
 		__value: value
 	};
@@ -224,7 +225,7 @@ var _VirtualDom_style = F2(function(key, value)
 var _VirtualDom_property = F2(function(key, value)
 {
 	return {
-		$: __1_PROP,
+		$: 'a__1_PROP',
 		__key: key,
 		__value: value
 	};
@@ -232,7 +233,7 @@ var _VirtualDom_property = F2(function(key, value)
 var _VirtualDom_attribute = F2(function(key, value)
 {
 	return {
-		$: __1_ATTR,
+		$: 'a__1_ATTR',
 		__key: key,
 		__value: value
 	};
@@ -240,7 +241,7 @@ var _VirtualDom_attribute = F2(function(key, value)
 var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 {
 	return {
-		$: __1_ATTR_NS,
+		$: 'a__1_ATTR_NS',
 		__key: key,
 		__value: { __namespace: namespace, __value: value }
 	};
@@ -253,36 +254,43 @@ var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 
 var _VirtualDom_mapAttribute = F2(function(func, attr)
 {
-	return (attr.$ === __1_EVENT)
+	return (attr.$ === 'a__1_EVENT')
 		? A2(_VirtualDom_on, attr.__key, _VirtualDom_mapHandler(func, attr.__value))
 		: attr;
 });
 
 function _VirtualDom_mapHandler(func, handler)
 {
-	var tag = handler.$;
+	var tag = __VirtualDom_toHandlerInt(handler);
+
+	// 0 = Normal
+	// 1 = MayStopPropagation
+	// 2 = MayPreventDefault
+	// 3 = Custom
 
 	return {
-		$: tag,
+		$: handler.$,
 		a:
-			tag === 'Normal'
-				? A2(__Json_map, func, handler.a)
-				:
 			A3(__Json_map2,
-				tag !== 'Custom' ? _VirtualDom_mapEventTuple : _VirtualDom_mapEventRecord,
+				!tag
+					? _VirtualDom_mapTimed
+					:
+				tag < 3
+					? _VirtualDom_mapEventTuple
+					: _VirtualDom_mapEventRecord,
 				__Json_succeed(func),
 				handler.a
 			)
 	};
 }
 
-function _VirtualDom_mapTimed(func, timed)
+var _VirtualDom_mapTimed = F2(function(func, timed)
 {
 	return {
 		$: timed.$,
 		a: func(timed.a)
 	};
-}
+});
 
 var _VirtualDom_mapEventTuple = F2(function(func, tuple)
 {
@@ -316,7 +324,7 @@ function _VirtualDom_organizeFacts(factList)
 		var key = entry.__key;
 		var value = entry.__value;
 
-		if (tag === __1_PROP)
+		if (tag === 'a__1_PROP')
 		{
 			(key === 'className')
 				? _VirtualDom_addClass(facts, key, __Json_unwrap(value))
@@ -326,7 +334,7 @@ function _VirtualDom_organizeFacts(factList)
 		}
 
 		var subFacts = facts[tag] || (facts[tag] = {});
-		(tag === __1_ATTR && key === 'class')
+		(tag === 'a__1_ATTR' && key === 'class')
 			? _VirtualDom_addClass(subFacts, key, value)
 			: subFacts[key] = value;
 	}
@@ -413,16 +421,16 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 	{
 		var value = facts[key];
 
-		key === __1_STYLE
+		key === 'a__1_STYLE'
 			? _VirtualDom_applyStyles(domNode, value)
 			:
-		key === __1_EVENT
+		key === 'a__1_EVENT'
 			? _VirtualDom_applyEvents(domNode, eventNode, value)
 			:
-		key === __1_ATTR
+		key === 'a__1_ATTR'
 			? _VirtualDom_applyAttrs(domNode, value)
 			:
-		key === __1_ATTR_NS
+		key === 'a__1_ATTR_NS'
 			? _VirtualDom_applyAttrsNS(domNode, value)
 			:
 		(key !== 'value' || domNode[key] !== value) && (domNode[key] = value);
@@ -514,7 +522,7 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 		oldCallback = _VirtualDom_makeCallback(eventNode, newHandler);
 		domNode.addEventListener(key, oldCallback,
 			_VirtualDom_passiveSupported
-			&& { passive: newHandler.$ === 'Normal' || newHandler.$ === 'MayStopPropagation' }
+			&& { passive: __VirtualDom_isPassive(newHandler) }
 		);
 		allCallbacks[key] = oldCallback;
 	}
@@ -529,7 +537,7 @@ var _VirtualDom_passiveSupported;
 
 try
 {
-	window.addEventListener("test", null, Object.defineProperty({}, "passive", {
+	window.addEventListener('t', null, Object.defineProperty({}, 'passive', {
 		get: function() { _VirtualDom_passiveSupported = true; }
 	}));
 }
@@ -547,13 +555,13 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 		var handler = callback.__handler;
 		var result = __Json_runHelp(handler.a, event);
 
-		if (result.$ !== 'Ok')
+		if (!__Result_isOk(result))
 		{
 			return;
 		}
 
 		var ok = result.a;
-		var timedMsg = _VirtualDom_eventToMessage(event, handler.$, ok);
+		var timedMsg = _VirtualDom_eventToTimedMsg(event, __VirtualDom_toHandlerInt(handler), ok);
 		var message = timedMsg.a;
 		var currentEventNode = eventNode;
 		var tagger;
@@ -573,7 +581,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 			}
 			currentEventNode = currentEventNode.__parent;
 		}
-		currentEventNode(message, timedMsg.$ === 'Sync');
+		currentEventNode(message, __VirtualDom_isSync(timedMsg));
 	}
 
 	callback.__handler = initialHandler;
@@ -586,19 +594,22 @@ function _VirtualDom_equalEvents(x, y)
 	return x.$ === y.$ && __Json_equality(x.a, y.a);
 }
 
-function _VirtualDom_eventToMessage(event, tag, value)
+function _VirtualDom_eventToTimedMsg(event, tag, value)
 {
-	var isCustom = tag === 'Custom';
+	// 0 = Normal
+	// 1 = MayStopPropagation
+	// 2 = MayPreventDefault
+	// 3 = Custom
 
-	if (tag === 'Normal')
+	if (!tag)
 	{
 		return value;
 	}
 
-	if (tag === 'MayStopPropagation' ? value.b : isCustom && value.__$stopPropagation) event.stopPropagation();
-	if (tag === 'MayPreventDefault' ? value.b : isCustom && value.__$preventDefault) event.preventDefault();
+	if (tag === 1 ? value.b : tag === 3 && value.__$stopPropagation) event.stopPropagation();
+	if (tag === 2 ? value.b : tag === 3 && value.__$preventDefault) event.preventDefault();
 
-	return isCustom ? value.__$message : value.a;
+	return tag < 3 ? value.a : value.__$message;
 }
 
 
@@ -811,7 +822,7 @@ function _VirtualDom_diffFacts(x, y, category)
 	// look for changes and removals
 	for (var xKey in x)
 	{
-		if (xKey === __1_STYLE || xKey === __1_EVENT || xKey === __1_ATTR || xKey === __1_ATTR_NS)
+		if (xKey === 'a__1_STYLE' || xKey === 'a__1_EVENT' || xKey === 'a__1_ATTR' || xKey === 'a__1_ATTR_NS')
 		{
 			var subDiff = _VirtualDom_diffFacts(x[xKey], y[xKey] || {}, xKey);
 			if (subDiff)
@@ -830,10 +841,10 @@ function _VirtualDom_diffFacts(x, y, category)
 				!category
 					? (typeof x[xKey] === 'string' ? '' : null)
 					:
-				(category === __1_STYLE)
+				(category === 'a__1_STYLE')
 					? ''
 					:
-				(category === __1_EVENT || category === __1_ATTR)
+				(category === 'a__1_EVENT' || category === 'a__1_ATTR')
 					? undefined
 					:
 				{ __namespace: x[xKey].__namespace, __value: undefined };
@@ -846,7 +857,7 @@ function _VirtualDom_diffFacts(x, y, category)
 
 		// reference equal, so don't worry about it
 		if (xValue === yValue && xKey !== 'value'
-			|| category === __1_EVENT && _VirtualDom_equalEvents(xValue, yValue))
+			|| category === 'a__1_EVENT' && _VirtualDom_equalEvents(xValue, yValue))
 		{
 			continue;
 		}

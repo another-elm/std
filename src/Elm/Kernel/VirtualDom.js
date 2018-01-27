@@ -1319,7 +1319,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return _VirtualDom_applyPatchesHelp(domNode, patch.__data);
 
 		case __3_TAGGER:
-			if (typeof domNode.elm_event_node_ref !== 'undefined')
+			if (domNode.elm_event_node_ref)
 			{
 				domNode.elm_event_node_ref.__tagger = patch.__data;
 			}
@@ -1377,7 +1377,7 @@ function _VirtualDom_applyPatchRedraw(domNode, vNode, eventNode)
 	var parentNode = domNode.parentNode;
 	var newNode = _VirtualDom_render(vNode, eventNode);
 
-	if (typeof newNode.elm_event_node_ref === 'undefined')
+	if (!newNode.elm_event_node_ref)
 	{
 		newNode.elm_event_node_ref = domNode.elm_event_node_ref;
 	}

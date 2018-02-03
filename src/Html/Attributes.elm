@@ -423,8 +423,8 @@ srcdoc =
 -- INPUT
 
 
-{-| Defines the type of a `button`, `input`, `embed`, `object`, `script`,
-`source`, `style`, or `menu`.
+{-| Defines the type of a `button`, `checkbox`, `input`, `embed`, `menu`,
+`object`, `script`, `source`, or `style`.
 -}
 type_ : String -> Attribute msg
 type_ =

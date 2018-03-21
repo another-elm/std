@@ -56,7 +56,7 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 
 		return {
 			$: __2_NODE,
-			__tag: tag,
+			__tag: tag == 'script' ? 'p' : tag,
 			__facts: _VirtualDom_organizeFacts(factList),
 			__kids: kids,
 			__namespace: namespace,
@@ -87,7 +87,7 @@ var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 
 		return {
 			$: __2_KEYED_NODE,
-			__tag: tag,
+			__tag: tag == 'script' ? 'p' : tag,
 			__facts: _VirtualDom_organizeFacts(factList),
 			__kids: kids,
 			__namespace: namespace,
@@ -226,27 +226,43 @@ var _VirtualDom_property = F2(function(key, value)
 {
 	return {
 		$: 'a__1_PROP',
-		__key: key,
-		__value: value
+		__key: _VirtualDom_toSafeKey(key),
+		__value: _VirtualDom_toSafeValue(value)
 	};
 });
 var _VirtualDom_attribute = F2(function(key, value)
 {
 	return {
 		$: 'a__1_ATTR',
-		__key: key,
-		__value: value
+		__key: _VirtualDom_toSafeKey(key),
+		__value: _VirtualDom_toSafeValue(value)
 	};
 });
 var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 {
 	return {
 		$: 'a__1_ATTR_NS',
-		__key: key,
-		__value: { __namespace: namespace, __value: value }
+		__key: _VirtualDom_toSafeKey(key),
+		__value: { __namespace: namespace, __value: _VirtualDom_toSafeValue(value) }
 	};
 });
 
+function _VirtualDom_toSafeKey(key)
+{
+	return (key[0] == 'o' && key[1] == 'n' || key == 'innerHTML') ? 'data-' + key : key;
+}
+
+function _VirtualDom_toSafeValue__PROD(value)
+{
+	return value.indexOf('javascript:') == 0 ? '' : value;
+}
+
+function _VirtualDom_toSafeValue__DEBUG(value)
+{
+	return value.indexOf('javascript:') == 0
+		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
+		: value;
+}
 
 
 // MAP FACTS

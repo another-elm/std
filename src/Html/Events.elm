@@ -16,22 +16,22 @@ of events as seen in the [TodoMVC][] example.
 [Union Type]: http://elm-lang.org/learn/Union-Types.elm
 [TodoMVC]: https://github.com/evancz/elm-todomvc/blob/master/Todo.elm
 
-# Mouse Helpers
+# Mouse
 @docs onClick, onDoubleClick,
       onMouseDown, onMouseUp,
       onMouseEnter, onMouseLeave,
       onMouseOver, onMouseOut
 
-# Form Helpers
+# Forms
 @docs onInput, onCheck, onSubmit
 
-# Focus Helpers
+# Focus
 @docs onBlur, onFocus
 
-# Custom Event Handlers
+# Custom
 @docs on, stopPropagationOn, preventDefaultOn, custom
 
-# Custom Decoders
+## Custom Decoders
 @docs targetValue, targetChecked, keyCode
 -}
 
@@ -177,7 +177,7 @@ If this is confusing, work through the [Elm Architecture Tutorial][tutorial].
 It really helps!
 
 [aEL]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-[decoder]: http://package.elm-lang.org/packages/elm-lang/core/latest/Json-Decode
+[decoder]: http://package.elm-lang.org/packages/elm-lang/json/latest/Json-Decode
 [tutorial]: https://github.com/evancz/elm-architecture-tutorial/
 
 **Note:** This creates a [passive][] event listener, enabling optimizations for

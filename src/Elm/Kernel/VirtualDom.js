@@ -5,6 +5,7 @@ import Elm.Kernel.Error exposing (throw)
 import Elm.Kernel.Json exposing (equality, runHelp, unwrap)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
+import Elm.Kernel.Platform exposing (export)
 import Json.Decode as Json exposing (map, map2, succeed)
 import Result exposing (isOk)
 import VirtualDom exposing (isSync, toHandlerInt)
@@ -26,6 +27,7 @@ function _VirtualDom_appendChild(parent, child)
 
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, object)
 {
+	// NOTE: this function needs __Platform_export available to work
 	object['init'] = function(node)
 	{
 		node.parentNode.replaceChild(

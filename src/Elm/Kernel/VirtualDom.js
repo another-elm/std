@@ -24,6 +24,18 @@ function _VirtualDom_appendChild(parent, child)
 	parent.appendChild(child);
 }
 
+var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, object)
+{
+	object['init'] = function(node)
+	{
+		node.parentNode.replaceChild(
+			_VirtualDom_render(virtualNode, function() {}),
+			node
+		);
+	};
+	return object;
+});
+
 
 
 // TEXT

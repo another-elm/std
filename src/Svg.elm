@@ -14,7 +14,7 @@ module Svg exposing
   , feFuncB, feFuncG, feFuncR, feGaussianBlur, feImage, feMerge, feMergeNode
   , feMorphology, feOffset, feSpecularLighting, feTile, feTurbulence
   , feDistantLight, fePointLight, feSpotLight
-  , clipPath, colorProfile, cursor, filter, script, style, view
+  , clipPath, colorProfile, cursor, filter, style, view
   )
 
 {-|
@@ -57,7 +57,7 @@ module Svg exposing
 @docs feDistantLight, fePointLight, feSpotLight
 
 # Miscellaneous
-@docs clipPath, colorProfile, cursor, filter, script, style, view
+@docs clipPath, colorProfile, cursor, filter, style, view
 -}
 
 
@@ -601,12 +601,6 @@ cursor =
 filter : List (Attribute msg) -> List (Svg msg) -> Svg msg
 filter =
   trustedNode "filter"
-
-
-{-|-}
-script : List (Attribute msg) -> List (Svg msg) -> Svg msg
-script =
-  trustedNode "script"
 
 
 {-|-}

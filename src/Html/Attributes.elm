@@ -3,7 +3,7 @@ module Html.Attributes exposing
   , class, classList, id, title, hidden
   , type_, value, defaultValue, checked, placeholder, selected
   , accept, acceptCharset, action, autocomplete, autofocus
-  , disabled, enctype, formaction, list, maxlength, minlength, method, multiple
+  , disabled, enctype, list, maxlength, minlength, method, multiple
   , name, novalidate, pattern, readonly, required, size, for, form
   , max, min, step
   , cols, rows, wrap
@@ -34,7 +34,7 @@ just search the page for `video` if you want video stuff.
 
 ## Input Helpers
 @docs accept, acceptCharset, action, autocomplete, autofocus,
-    disabled, enctype, formaction, list, maxlength, minlength, method, multiple,
+    disabled, enctype, list, maxlength, minlength, method, multiple,
     name, novalidate, pattern, readonly, required, size, for, form
 
 ## Input Ranges
@@ -305,8 +305,8 @@ tabindex n =
 `input`, `script`, `source`, `track`, and `video`.
 -}
 src : String -> Attribute msg
-src =
-  stringProperty "src"
+src value =
+  stringProperty "src" (Elm.Kernel.Html.noJavaScriptOrHtmlUri value)
 
 
 {-| Declare the height of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -492,8 +492,8 @@ acceptCharset =
 {-| The URI of a program that processes the information submitted via a `form`.
 -}
 action : String -> Attribute msg
-action =
-  stringProperty "action"
+action value =
+  stringProperty "action" (Elm.Kernel.Html.noJavaScriptUri value)
 
 
 {-| Indicates whether a `form` or an `input` can have their values automatically
@@ -527,14 +527,6 @@ text/plain.
 enctype : String -> Attribute msg
 enctype =
   stringProperty "enctype"
-
-
-{-| Indicates the action of an `input` or `button`. This overrides the action
-defined in the surrounding `form`.
--}
-formaction : String -> Attribute msg
-formaction =
-  Elm.Kernel.Html.attribute "formAction"
 
 
 {-| Associates an `input` with a `datalist` tag. The datalist gives some
@@ -762,8 +754,8 @@ cite =
 
 {-| The URL of a linked resource, such as `a`, `area`, `base`, or `link`. -}
 href : String -> Attribute msg
-href =
-  stringProperty "href"
+href value =
+  stringProperty "href" (Elm.Kernel.Html.noJavaScriptUri value)
 
 
 {-| Specify where the results of clicking an `a`, `area`, `base`, or `form`

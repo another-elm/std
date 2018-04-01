@@ -28,7 +28,7 @@ function _VirtualDom_appendChild(parent, child)
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, object)
 {
 	// NOTE: this function needs __Platform_export available to work
-	object['init'] = function(node)
+	object['embed'] = function(node)
 	{
 		node.parentNode.replaceChild(
 			_VirtualDom_render(virtualNode, function() {}),

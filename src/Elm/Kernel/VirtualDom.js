@@ -271,14 +271,14 @@ function _VirtualDom_noScript(tag)
 	return tag == 'script' ? 'p' : tag;
 }
 
-function _VirtualDom_noOn(key)
+function _VirtualDom_noOnOrFormAction(key)
 {
-	return /^on/i.test(key) ? 'data-' + key : key;
+	return /^(on|formAction$)/i.test(key) ? 'data-' + key : key;
 }
 
-function _VirtualDom_noInnerHtml(key)
+function _VirtualDom_noInnerHtmlOrFormAction(key)
 {
-	return key == 'innerHTML' ? 'data-' + key : key;
+	return key == 'innerHTML' || key == 'formAction' ? 'data-' + key : key;
 }
 
 function _VirtualDom_noJavaScriptUri__PROD(value)

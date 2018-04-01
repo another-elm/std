@@ -305,8 +305,8 @@ tabindex n =
 `input`, `script`, `source`, `track`, and `video`.
 -}
 src : String -> Attribute msg
-src value =
-  stringProperty "src" (Elm.Kernel.Html.noJavaScriptOrHtmlUri value)
+src url =
+  stringProperty "src" (Elm.Kernel.Html.noJavaScriptOrHtmlUri url)
 
 
 {-| Declare the height of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -492,8 +492,8 @@ acceptCharset =
 {-| The URI of a program that processes the information submitted via a `form`.
 -}
 action : String -> Attribute msg
-action value =
-  stringProperty "action" (Elm.Kernel.Html.noJavaScriptUri value)
+action uri =
+  stringProperty "action" (Elm.Kernel.Html.noJavaScriptUri uri)
 
 
 {-| Indicates whether a `form` or an `input` can have their values automatically
@@ -754,8 +754,8 @@ cite =
 
 {-| The URL of a linked resource, such as `a`, `area`, `base`, or `link`. -}
 href : String -> Attribute msg
-href value =
-  stringProperty "href" (Elm.Kernel.Html.noJavaScriptUri value)
+href url =
+  stringProperty "href" (Elm.Kernel.Html.noJavaScriptUri url)
 
 
 {-| Specify where the results of clicking an `a`, `area`, `base`, or `form`

@@ -76,6 +76,8 @@ Attributes that can be attached to any HTML tag but are less commonly used.
 
 -}
 
+
+import Elm.Kernel.Html
 import Html exposing (Attribute)
 import Json.Encode as Json
 import VirtualDom
@@ -159,12 +161,12 @@ property =
 
 stringProperty : String -> String -> Attribute msg
 stringProperty key string =
-  property key (Json.string string)
+  Elm.Kernel.Html.property key (Json.string string)
 
 
 boolProperty : String -> Bool -> Attribute msg
 boolProperty key bool =
-  property key (Json.bool bool)
+  Elm.Kernel.Html.property key (Json.bool bool)
 
 
 {-| Create *attributes*, like saying `domNode.setAttribute('class', 'greeting')`

@@ -70,7 +70,7 @@ var _VirtualDom_nodeNS = F2(function(namespace, tag)
 
 		return {
 			$: __2_NODE,
-			__tag: tag == 'script' ? 'p' : tag,
+			__tag: tag,
 			__facts: _VirtualDom_organizeFacts(factList),
 			__kids: kids,
 			__namespace: namespace,
@@ -101,7 +101,7 @@ var _VirtualDom_keyedNodeNS = F2(function(namespace, tag)
 
 		return {
 			$: __2_KEYED_NODE,
-			__tag: tag == 'script' ? 'p' : tag,
+			__tag: tag,
 			__facts: _VirtualDom_organizeFacts(factList),
 			__kids: kids,
 			__namespace: namespace,
@@ -240,43 +240,71 @@ var _VirtualDom_property = F2(function(key, value)
 {
 	return {
 		$: 'a__1_PROP',
-		__key: _VirtualDom_toSafeKey(key),
-		__value: _VirtualDom_toSafeValue(value)
+		__key: key,
+		__value: value
 	};
 });
 var _VirtualDom_attribute = F2(function(key, value)
 {
 	return {
 		$: 'a__1_ATTR',
-		__key: _VirtualDom_toSafeKey(key),
-		__value: _VirtualDom_toSafeValue(value)
+		__key: key,
+		__value: value
 	};
 });
 var _VirtualDom_attributeNS = F3(function(namespace, key, value)
 {
 	return {
 		$: 'a__1_ATTR_NS',
-		__key: _VirtualDom_toSafeKey(key),
-		__value: { __namespace: namespace, __value: _VirtualDom_toSafeValue(value) }
+		__key: key,
+		__value: { __namespace: namespace, __value: value }
 	};
 });
 
-function _VirtualDom_toSafeKey(key)
+
+
+// XSS ATTACK VECTOR CHECKS
+
+
+function _VirtualDom_noScript(tag)
 {
-	return (key[0] == 'o' && key[1] == 'n' || key == 'innerHTML') ? 'data-' + key : key;
+	return tag == 'script' ? 'p' : tag;
 }
 
-function _VirtualDom_toSafeValue__PROD(value)
+function _VirtualDom_noOn(key)
 {
-	return value.indexOf('javascript:') == 0 ? '' : value;
+	return /^on/i.test(key) ? 'data-' + key : key;
 }
 
-function _VirtualDom_toSafeValue__DEBUG(value)
+function _VirtualDom_noInnerHtml(key)
 {
-	return value.indexOf('javascript:') == 0
+	return key == 'innerHTML' ? 'data-' + key : key;
+}
+
+function _VirtualDom_noJavaScriptUri__PROD(value)
+{
+	return /^\s*javascript:/i.test(value) == 0 ? '' : value;
+}
+
+function _VirtualDom_noJavaScriptUri__DEBUG(value)
+{
+	return /^\s*javascript:/i.test(value) == 0
 		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
 		: value;
 }
+
+function _VirtualDom_noJavaScriptOrHtmlUri__PROD(value)
+{
+	return /^\s*(javascript:|data:text\/html)/i.test(value) == 0 ? '' : value;
+}
+
+function _VirtualDom_noJavaScriptOrHtmlUri__DEBUG(value)
+{
+	return /^\s*(javascript:|data:text\/html)/i.test(value) == 0
+		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
+		: value;
+}
+
 
 
 // MAP FACTS

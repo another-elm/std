@@ -209,8 +209,8 @@ bias =
 
 {-|-}
 by : String -> Attribute msg
-by =
-  Elm.Kernel.Svg.attribute "by"
+by value =
+  Elm.Kernel.Svg.attribute "by" (Elm.Kernel.Svg.noJavaScriptUri value)
 
 
 {-|-}
@@ -359,8 +359,8 @@ format =
 
 {-|-}
 from : String -> Attribute msg
-from =
-  Elm.Kernel.Svg.attribute "from"
+from value =
+  Elm.Kernel.Svg.attribute "from" (Elm.Kernel.Svg.noJavaScriptUri value)
 
 
 {-|-}
@@ -1001,8 +1001,8 @@ title =
 
 {-|-}
 to : String -> Attribute msg
-to =
-  Elm.Kernel.Svg.attribute "to"
+to value =
+  Elm.Kernel.Svg.attribute "to" (Elm.Kernel.Svg.noJavaScriptUri value)
 
 
 {-|-}
@@ -1085,8 +1085,8 @@ vMathematical =
 
 {-|-}
 values : String -> Attribute msg
-values =
-  Elm.Kernel.Svg.attribute "values"
+values value =
+  Elm.Kernel.Svg.attribute "values" (Elm.Kernel.Svg.noJavaScriptUri value)
 
 
 {-|-}
@@ -1181,8 +1181,8 @@ xlinkArcrole =
 
 {-|-}
 xlinkHref : String -> Attribute msg
-xlinkHref =
-  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
+xlinkHref value =
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:href" (Elm.Kernel.Svg.noJavaScriptUri value)
 
 
 {-|-}

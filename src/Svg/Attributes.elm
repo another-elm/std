@@ -90,1529 +90,1533 @@ module Svg.Attributes exposing
 
 -}
 
+
+import Elm.Kernel.Svg
 import Svg exposing (Attribute)
-import VirtualDom exposing (attribute, attributeNS)
 
 
--- Regular attributes
+
+-- REGULAR ATTRIBUTES
+
 
 {-|-}
 accentHeight : String -> Attribute msg
 accentHeight =
-  attribute "accent-height"
+  Elm.Kernel.Svg.attribute "accent-height"
 
 
 {-|-}
 accelerate : String -> Attribute msg
 accelerate =
-  attribute "accelerate"
+  Elm.Kernel.Svg.attribute "accelerate"
 
 
 {-|-}
 accumulate : String -> Attribute msg
 accumulate =
-  attribute "accumulate"
+  Elm.Kernel.Svg.attribute "accumulate"
 
 
 {-|-}
 additive : String -> Attribute msg
 additive =
-  attribute "additive"
+  Elm.Kernel.Svg.attribute "additive"
 
 
 {-|-}
 alphabetic : String -> Attribute msg
 alphabetic =
-  attribute "alphabetic"
+  Elm.Kernel.Svg.attribute "alphabetic"
 
 
 {-|-}
 allowReorder : String -> Attribute msg
 allowReorder =
-  attribute "allowReorder"
+  Elm.Kernel.Svg.attribute "allowReorder"
 
 
 {-|-}
 amplitude : String -> Attribute msg
 amplitude =
-  attribute "amplitude"
+  Elm.Kernel.Svg.attribute "amplitude"
 
 
 {-|-}
 arabicForm : String -> Attribute msg
 arabicForm =
-  attribute "arabic-form"
+  Elm.Kernel.Svg.attribute "arabic-form"
 
 
 {-|-}
 ascent : String -> Attribute msg
 ascent =
-  attribute "ascent"
+  Elm.Kernel.Svg.attribute "ascent"
 
 
 {-|-}
 attributeName : String -> Attribute msg
 attributeName =
-  attribute "attributeName"
+  Elm.Kernel.Svg.attribute "attributeName"
 
 
 {-|-}
 attributeType : String -> Attribute msg
 attributeType =
-  attribute "attributeType"
+  Elm.Kernel.Svg.attribute "attributeType"
 
 
 {-|-}
 autoReverse : String -> Attribute msg
 autoReverse =
-  attribute "autoReverse"
+  Elm.Kernel.Svg.attribute "autoReverse"
 
 
 {-|-}
 azimuth : String -> Attribute msg
 azimuth =
-  attribute "azimuth"
+  Elm.Kernel.Svg.attribute "azimuth"
 
 
 {-|-}
 baseFrequency : String -> Attribute msg
 baseFrequency =
-  attribute "baseFrequency"
+  Elm.Kernel.Svg.attribute "baseFrequency"
 
 
 {-|-}
 baseProfile : String -> Attribute msg
 baseProfile =
-  attribute "baseProfile"
+  Elm.Kernel.Svg.attribute "baseProfile"
 
 
 {-|-}
 bbox : String -> Attribute msg
 bbox =
-  attribute "bbox"
+  Elm.Kernel.Svg.attribute "bbox"
 
 
 {-|-}
 begin : String -> Attribute msg
 begin =
-  attribute "begin"
+  Elm.Kernel.Svg.attribute "begin"
 
 
 {-|-}
 bias : String -> Attribute msg
 bias =
-  attribute "bias"
+  Elm.Kernel.Svg.attribute "bias"
 
 
 {-|-}
 by : String -> Attribute msg
 by =
-  attribute "by"
+  Elm.Kernel.Svg.attribute "by"
 
 
 {-|-}
 calcMode : String -> Attribute msg
 calcMode =
-  attribute "calcMode"
+  Elm.Kernel.Svg.attribute "calcMode"
 
 
 {-|-}
 capHeight : String -> Attribute msg
 capHeight =
-  attribute "cap-height"
+  Elm.Kernel.Svg.attribute "cap-height"
 
 
 {-|-}
 class : String -> Attribute msg
 class =
-  attribute "class"
+  Elm.Kernel.Svg.attribute "class"
 
 
 {-|-}
 clipPathUnits : String -> Attribute msg
 clipPathUnits =
-  attribute "clipPathUnits"
+  Elm.Kernel.Svg.attribute "clipPathUnits"
 
 
 {-|-}
 contentScriptType : String -> Attribute msg
 contentScriptType =
-  attribute "contentScriptType"
+  Elm.Kernel.Svg.attribute "contentScriptType"
 
 
 {-|-}
 contentStyleType : String -> Attribute msg
 contentStyleType =
-  attribute "contentStyleType"
+  Elm.Kernel.Svg.attribute "contentStyleType"
 
 
 {-|-}
 cx : String -> Attribute msg
 cx =
-  attribute "cx"
+  Elm.Kernel.Svg.attribute "cx"
 
 
 {-|-}
 cy : String -> Attribute msg
 cy =
-  attribute "cy"
+  Elm.Kernel.Svg.attribute "cy"
 
 
 {-|-}
 d : String -> Attribute msg
 d =
-  attribute "d"
+  Elm.Kernel.Svg.attribute "d"
 
 
 {-|-}
 decelerate : String -> Attribute msg
 decelerate =
-  attribute "decelerate"
+  Elm.Kernel.Svg.attribute "decelerate"
 
 
 {-|-}
 descent : String -> Attribute msg
 descent =
-  attribute "descent"
+  Elm.Kernel.Svg.attribute "descent"
 
 
 {-|-}
 diffuseConstant : String -> Attribute msg
 diffuseConstant =
-  attribute "diffuseConstant"
+  Elm.Kernel.Svg.attribute "diffuseConstant"
 
 
 {-|-}
 divisor : String -> Attribute msg
 divisor =
-  attribute "divisor"
+  Elm.Kernel.Svg.attribute "divisor"
 
 
 {-|-}
 dur : String -> Attribute msg
 dur =
-  attribute "dur"
+  Elm.Kernel.Svg.attribute "dur"
 
 
 {-|-}
 dx : String -> Attribute msg
 dx =
-  attribute "dx"
+  Elm.Kernel.Svg.attribute "dx"
 
 
 {-|-}
 dy : String -> Attribute msg
 dy =
-  attribute "dy"
+  Elm.Kernel.Svg.attribute "dy"
 
 
 {-|-}
 edgeMode : String -> Attribute msg
 edgeMode =
-  attribute "edgeMode"
+  Elm.Kernel.Svg.attribute "edgeMode"
 
 
 {-|-}
 elevation : String -> Attribute msg
 elevation =
-  attribute "elevation"
+  Elm.Kernel.Svg.attribute "elevation"
 
 
 {-|-}
 end : String -> Attribute msg
 end =
-  attribute "end"
+  Elm.Kernel.Svg.attribute "end"
 
 
 {-|-}
 exponent : String -> Attribute msg
 exponent =
-  attribute "exponent"
+  Elm.Kernel.Svg.attribute "exponent"
 
 
 {-|-}
 externalResourcesRequired : String -> Attribute msg
 externalResourcesRequired =
-  attribute "externalResourcesRequired"
+  Elm.Kernel.Svg.attribute "externalResourcesRequired"
 
 
 {-|-}
 filterRes : String -> Attribute msg
 filterRes =
-  attribute "filterRes"
+  Elm.Kernel.Svg.attribute "filterRes"
 
 
 {-|-}
 filterUnits : String -> Attribute msg
 filterUnits =
-  attribute "filterUnits"
+  Elm.Kernel.Svg.attribute "filterUnits"
 
 
 {-|-}
 format : String -> Attribute msg
 format =
-  attribute "format"
+  Elm.Kernel.Svg.attribute "format"
 
 
 {-|-}
 from : String -> Attribute msg
 from =
-  attribute "from"
+  Elm.Kernel.Svg.attribute "from"
 
 
 {-|-}
 fx : String -> Attribute msg
 fx =
-  attribute "fx"
+  Elm.Kernel.Svg.attribute "fx"
 
 
 {-|-}
 fy : String -> Attribute msg
 fy =
-  attribute "fy"
+  Elm.Kernel.Svg.attribute "fy"
 
 
 {-|-}
 g1 : String -> Attribute msg
 g1 =
-  attribute "g1"
+  Elm.Kernel.Svg.attribute "g1"
 
 
 {-|-}
 g2 : String -> Attribute msg
 g2 =
-  attribute "g2"
+  Elm.Kernel.Svg.attribute "g2"
 
 
 {-|-}
 glyphName : String -> Attribute msg
 glyphName =
-  attribute "glyph-name"
+  Elm.Kernel.Svg.attribute "glyph-name"
 
 
 {-|-}
 glyphRef : String -> Attribute msg
 glyphRef =
-  attribute "glyphRef"
+  Elm.Kernel.Svg.attribute "glyphRef"
 
 
 {-|-}
 gradientTransform : String -> Attribute msg
 gradientTransform =
-  attribute "gradientTransform"
+  Elm.Kernel.Svg.attribute "gradientTransform"
 
 
 {-|-}
 gradientUnits : String -> Attribute msg
 gradientUnits =
-  attribute "gradientUnits"
+  Elm.Kernel.Svg.attribute "gradientUnits"
 
 
 {-|-}
 hanging : String -> Attribute msg
 hanging =
-  attribute "hanging"
+  Elm.Kernel.Svg.attribute "hanging"
 
 
 {-|-}
 height : String -> Attribute msg
 height =
-  attribute "height"
+  Elm.Kernel.Svg.attribute "height"
 
 
 {-|-}
 horizAdvX : String -> Attribute msg
 horizAdvX =
-  attribute "horiz-adv-x"
+  Elm.Kernel.Svg.attribute "horiz-adv-x"
 
 
 {-|-}
 horizOriginX : String -> Attribute msg
 horizOriginX =
-  attribute "horiz-origin-x"
+  Elm.Kernel.Svg.attribute "horiz-origin-x"
 
 
 {-|-}
 horizOriginY : String -> Attribute msg
 horizOriginY =
-  attribute "horiz-origin-y"
+  Elm.Kernel.Svg.attribute "horiz-origin-y"
 
 
 {-|-}
 id : String -> Attribute msg
 id =
-  attribute "id"
+  Elm.Kernel.Svg.attribute "id"
 
 
 {-|-}
 ideographic : String -> Attribute msg
 ideographic =
-  attribute "ideographic"
+  Elm.Kernel.Svg.attribute "ideographic"
 
 
 {-|-}
 in_ : String -> Attribute msg
 in_ =
-  attribute "in"
+  Elm.Kernel.Svg.attribute "in"
 
 
 {-|-}
 in2 : String -> Attribute msg
 in2 =
-  attribute "in2"
+  Elm.Kernel.Svg.attribute "in2"
 
 
 {-|-}
 intercept : String -> Attribute msg
 intercept =
-  attribute "intercept"
+  Elm.Kernel.Svg.attribute "intercept"
 
 
 {-|-}
 k : String -> Attribute msg
 k =
-  attribute "k"
+  Elm.Kernel.Svg.attribute "k"
 
 
 {-|-}
 k1 : String -> Attribute msg
 k1 =
-  attribute "k1"
+  Elm.Kernel.Svg.attribute "k1"
 
 
 {-|-}
 k2 : String -> Attribute msg
 k2 =
-  attribute "k2"
+  Elm.Kernel.Svg.attribute "k2"
 
 
 {-|-}
 k3 : String -> Attribute msg
 k3 =
-  attribute "k3"
+  Elm.Kernel.Svg.attribute "k3"
 
 
 {-|-}
 k4 : String -> Attribute msg
 k4 =
-  attribute "k4"
+  Elm.Kernel.Svg.attribute "k4"
 
 
 {-|-}
 kernelMatrix : String -> Attribute msg
 kernelMatrix =
-  attribute "kernelMatrix"
+  Elm.Kernel.Svg.attribute "kernelMatrix"
 
 
 {-|-}
 kernelUnitLength : String -> Attribute msg
 kernelUnitLength =
-  attribute "kernelUnitLength"
+  Elm.Kernel.Svg.attribute "kernelUnitLength"
 
 
 {-|-}
 keyPoints : String -> Attribute msg
 keyPoints =
-  attribute "keyPoints"
+  Elm.Kernel.Svg.attribute "keyPoints"
 
 
 {-|-}
 keySplines : String -> Attribute msg
 keySplines =
-  attribute "keySplines"
+  Elm.Kernel.Svg.attribute "keySplines"
 
 
 {-|-}
 keyTimes : String -> Attribute msg
 keyTimes =
-  attribute "keyTimes"
+  Elm.Kernel.Svg.attribute "keyTimes"
 
 
 {-|-}
 lang : String -> Attribute msg
 lang =
-  attribute "lang"
+  Elm.Kernel.Svg.attribute "lang"
 
 
 {-|-}
 lengthAdjust : String -> Attribute msg
 lengthAdjust =
-  attribute "lengthAdjust"
+  Elm.Kernel.Svg.attribute "lengthAdjust"
 
 
 {-|-}
 limitingConeAngle : String -> Attribute msg
 limitingConeAngle =
-  attribute "limitingConeAngle"
+  Elm.Kernel.Svg.attribute "limitingConeAngle"
 
 
 {-|-}
 local : String -> Attribute msg
 local =
-  attribute "local"
+  Elm.Kernel.Svg.attribute "local"
 
 
 {-|-}
 markerHeight : String -> Attribute msg
 markerHeight =
-  attribute "markerHeight"
+  Elm.Kernel.Svg.attribute "markerHeight"
 
 
 {-|-}
 markerUnits : String -> Attribute msg
 markerUnits =
-  attribute "markerUnits"
+  Elm.Kernel.Svg.attribute "markerUnits"
 
 
 {-|-}
 markerWidth : String -> Attribute msg
 markerWidth =
-  attribute "markerWidth"
+  Elm.Kernel.Svg.attribute "markerWidth"
 
 
 {-|-}
 maskContentUnits : String -> Attribute msg
 maskContentUnits =
-  attribute "maskContentUnits"
+  Elm.Kernel.Svg.attribute "maskContentUnits"
 
 
 {-|-}
 maskUnits : String -> Attribute msg
 maskUnits =
-  attribute "maskUnits"
+  Elm.Kernel.Svg.attribute "maskUnits"
 
 
 {-|-}
 mathematical : String -> Attribute msg
 mathematical =
-  attribute "mathematical"
+  Elm.Kernel.Svg.attribute "mathematical"
 
 
 {-|-}
 max : String -> Attribute msg
 max =
-  attribute "max"
+  Elm.Kernel.Svg.attribute "max"
 
 
 {-|-}
 media : String -> Attribute msg
 media =
-  attribute "media"
+  Elm.Kernel.Svg.attribute "media"
 
 
 {-|-}
 method : String -> Attribute msg
 method =
-  attribute "method"
+  Elm.Kernel.Svg.attribute "method"
 
 
 {-|-}
 min : String -> Attribute msg
 min =
-  attribute "min"
+  Elm.Kernel.Svg.attribute "min"
 
 
 {-|-}
 mode : String -> Attribute msg
 mode =
-  attribute "mode"
+  Elm.Kernel.Svg.attribute "mode"
 
 
 {-|-}
 name : String -> Attribute msg
 name =
-  attribute "name"
+  Elm.Kernel.Svg.attribute "name"
 
 
 {-|-}
 numOctaves : String -> Attribute msg
 numOctaves =
-  attribute "numOctaves"
+  Elm.Kernel.Svg.attribute "numOctaves"
 
 
 {-|-}
 offset : String -> Attribute msg
 offset =
-  attribute "offset"
+  Elm.Kernel.Svg.attribute "offset"
 
 
 {-|-}
 operator : String -> Attribute msg
 operator =
-  attribute "operator"
+  Elm.Kernel.Svg.attribute "operator"
 
 
 {-|-}
 order : String -> Attribute msg
 order =
-  attribute "order"
+  Elm.Kernel.Svg.attribute "order"
 
 
 {-|-}
 orient : String -> Attribute msg
 orient =
-  attribute "orient"
+  Elm.Kernel.Svg.attribute "orient"
 
 
 {-|-}
 orientation : String -> Attribute msg
 orientation =
-  attribute "orientation"
+  Elm.Kernel.Svg.attribute "orientation"
 
 
 {-|-}
 origin : String -> Attribute msg
 origin =
-  attribute "origin"
+  Elm.Kernel.Svg.attribute "origin"
 
 
 {-|-}
 overlinePosition : String -> Attribute msg
 overlinePosition =
-  attribute "overline-position"
+  Elm.Kernel.Svg.attribute "overline-position"
 
 
 {-|-}
 overlineThickness : String -> Attribute msg
 overlineThickness =
-  attribute "overline-thickness"
+  Elm.Kernel.Svg.attribute "overline-thickness"
 
 
 {-|-}
 panose1 : String -> Attribute msg
 panose1 =
-  attribute "panose-1"
+  Elm.Kernel.Svg.attribute "panose-1"
 
 
 {-|-}
 path : String -> Attribute msg
 path =
-  attribute "path"
+  Elm.Kernel.Svg.attribute "path"
 
 
 {-|-}
 pathLength : String -> Attribute msg
 pathLength =
-  attribute "pathLength"
+  Elm.Kernel.Svg.attribute "pathLength"
 
 
 {-|-}
 patternContentUnits : String -> Attribute msg
 patternContentUnits =
-  attribute "patternContentUnits"
+  Elm.Kernel.Svg.attribute "patternContentUnits"
 
 
 {-|-}
 patternTransform : String -> Attribute msg
 patternTransform =
-  attribute "patternTransform"
+  Elm.Kernel.Svg.attribute "patternTransform"
 
 
 {-|-}
 patternUnits : String -> Attribute msg
 patternUnits =
-  attribute "patternUnits"
+  Elm.Kernel.Svg.attribute "patternUnits"
 
 
 {-|-}
 pointOrder : String -> Attribute msg
 pointOrder =
-  attribute "point-order"
+  Elm.Kernel.Svg.attribute "point-order"
 
 
 {-|-}
 points : String -> Attribute msg
 points =
-  attribute "points"
+  Elm.Kernel.Svg.attribute "points"
 
 
 {-|-}
 pointsAtX : String -> Attribute msg
 pointsAtX =
-  attribute "pointsAtX"
+  Elm.Kernel.Svg.attribute "pointsAtX"
 
 
 {-|-}
 pointsAtY : String -> Attribute msg
 pointsAtY =
-  attribute "pointsAtY"
+  Elm.Kernel.Svg.attribute "pointsAtY"
 
 
 {-|-}
 pointsAtZ : String -> Attribute msg
 pointsAtZ =
-  attribute "pointsAtZ"
+  Elm.Kernel.Svg.attribute "pointsAtZ"
 
 
 {-|-}
 preserveAlpha : String -> Attribute msg
 preserveAlpha =
-  attribute "preserveAlpha"
+  Elm.Kernel.Svg.attribute "preserveAlpha"
 
 
 {-|-}
 preserveAspectRatio : String -> Attribute msg
 preserveAspectRatio =
-  attribute "preserveAspectRatio"
+  Elm.Kernel.Svg.attribute "preserveAspectRatio"
 
 
 {-|-}
 primitiveUnits : String -> Attribute msg
 primitiveUnits =
-  attribute "primitiveUnits"
+  Elm.Kernel.Svg.attribute "primitiveUnits"
 
 
 {-|-}
 r : String -> Attribute msg
 r =
-  attribute "r"
+  Elm.Kernel.Svg.attribute "r"
 
 
 {-|-}
 radius : String -> Attribute msg
 radius =
-  attribute "radius"
+  Elm.Kernel.Svg.attribute "radius"
 
 
 {-|-}
 refX : String -> Attribute msg
 refX =
-  attribute "refX"
+  Elm.Kernel.Svg.attribute "refX"
 
 
 {-|-}
 refY : String -> Attribute msg
 refY =
-  attribute "refY"
+  Elm.Kernel.Svg.attribute "refY"
 
 
 {-|-}
 renderingIntent : String -> Attribute msg
 renderingIntent =
-  attribute "rendering-intent"
+  Elm.Kernel.Svg.attribute "rendering-intent"
 
 
 {-|-}
 repeatCount : String -> Attribute msg
 repeatCount =
-  attribute "repeatCount"
+  Elm.Kernel.Svg.attribute "repeatCount"
 
 
 {-|-}
 repeatDur : String -> Attribute msg
 repeatDur =
-  attribute "repeatDur"
+  Elm.Kernel.Svg.attribute "repeatDur"
 
 
 {-|-}
 requiredExtensions : String -> Attribute msg
 requiredExtensions =
-  attribute "requiredExtensions"
+  Elm.Kernel.Svg.attribute "requiredExtensions"
 
 
 {-|-}
 requiredFeatures : String -> Attribute msg
 requiredFeatures =
-  attribute "requiredFeatures"
+  Elm.Kernel.Svg.attribute "requiredFeatures"
 
 
 {-|-}
 restart : String -> Attribute msg
 restart =
-  attribute "restart"
+  Elm.Kernel.Svg.attribute "restart"
 
 
 {-|-}
 result : String -> Attribute msg
 result =
-  attribute "result"
+  Elm.Kernel.Svg.attribute "result"
 
 
 {-|-}
 rotate : String -> Attribute msg
 rotate =
-  attribute "rotate"
+  Elm.Kernel.Svg.attribute "rotate"
 
 
 {-|-}
 rx : String -> Attribute msg
 rx =
-  attribute "rx"
+  Elm.Kernel.Svg.attribute "rx"
 
 
 {-|-}
 ry : String -> Attribute msg
 ry =
-  attribute "ry"
+  Elm.Kernel.Svg.attribute "ry"
 
 
 {-|-}
 scale : String -> Attribute msg
 scale =
-  attribute "scale"
+  Elm.Kernel.Svg.attribute "scale"
 
 
 {-|-}
 seed : String -> Attribute msg
 seed =
-  attribute "seed"
+  Elm.Kernel.Svg.attribute "seed"
 
 
 {-|-}
 slope : String -> Attribute msg
 slope =
-  attribute "slope"
+  Elm.Kernel.Svg.attribute "slope"
 
 
 {-|-}
 spacing : String -> Attribute msg
 spacing =
-  attribute "spacing"
+  Elm.Kernel.Svg.attribute "spacing"
 
 
 {-|-}
 specularConstant : String -> Attribute msg
 specularConstant =
-  attribute "specularConstant"
+  Elm.Kernel.Svg.attribute "specularConstant"
 
 
 {-|-}
 specularExponent : String -> Attribute msg
 specularExponent =
-  attribute "specularExponent"
+  Elm.Kernel.Svg.attribute "specularExponent"
 
 
 {-|-}
 speed : String -> Attribute msg
 speed =
-  attribute "speed"
+  Elm.Kernel.Svg.attribute "speed"
 
 
 {-|-}
 spreadMethod : String -> Attribute msg
 spreadMethod =
-  attribute "spreadMethod"
+  Elm.Kernel.Svg.attribute "spreadMethod"
 
 
 {-|-}
 startOffset : String -> Attribute msg
 startOffset =
-  attribute "startOffset"
+  Elm.Kernel.Svg.attribute "startOffset"
 
 
 {-|-}
 stdDeviation : String -> Attribute msg
 stdDeviation =
-  attribute "stdDeviation"
+  Elm.Kernel.Svg.attribute "stdDeviation"
 
 
 {-|-}
 stemh : String -> Attribute msg
 stemh =
-  attribute "stemh"
+  Elm.Kernel.Svg.attribute "stemh"
 
 
 {-|-}
 stemv : String -> Attribute msg
 stemv =
-  attribute "stemv"
+  Elm.Kernel.Svg.attribute "stemv"
 
 
 {-|-}
 stitchTiles : String -> Attribute msg
 stitchTiles =
-  attribute "stitchTiles"
+  Elm.Kernel.Svg.attribute "stitchTiles"
 
 
 {-|-}
 strikethroughPosition : String -> Attribute msg
 strikethroughPosition =
-  attribute "strikethrough-position"
+  Elm.Kernel.Svg.attribute "strikethrough-position"
 
 
 {-|-}
 strikethroughThickness : String -> Attribute msg
 strikethroughThickness =
-  attribute "strikethrough-thickness"
+  Elm.Kernel.Svg.attribute "strikethrough-thickness"
 
 
 {-|-}
 string : String -> Attribute msg
 string =
-  attribute "string"
+  Elm.Kernel.Svg.attribute "string"
 
 
 {-|-}
 style : String -> Attribute msg
 style =
-  attribute "style"
+  Elm.Kernel.Svg.attribute "style"
 
 
 {-|-}
 surfaceScale : String -> Attribute msg
 surfaceScale =
-  attribute "surfaceScale"
+  Elm.Kernel.Svg.attribute "surfaceScale"
 
 
 {-|-}
 systemLanguage : String -> Attribute msg
 systemLanguage =
-  attribute "systemLanguage"
+  Elm.Kernel.Svg.attribute "systemLanguage"
 
 
 {-|-}
 tableValues : String -> Attribute msg
 tableValues =
-  attribute "tableValues"
+  Elm.Kernel.Svg.attribute "tableValues"
 
 
 {-|-}
 target : String -> Attribute msg
 target =
-  attribute "target"
+  Elm.Kernel.Svg.attribute "target"
 
 
 {-|-}
 targetX : String -> Attribute msg
 targetX =
-  attribute "targetX"
+  Elm.Kernel.Svg.attribute "targetX"
 
 
 {-|-}
 targetY : String -> Attribute msg
 targetY =
-  attribute "targetY"
+  Elm.Kernel.Svg.attribute "targetY"
 
 
 {-|-}
 textLength : String -> Attribute msg
 textLength =
-  attribute "textLength"
+  Elm.Kernel.Svg.attribute "textLength"
 
 
 {-|-}
 title : String -> Attribute msg
 title =
-  attribute "title"
+  Elm.Kernel.Svg.attribute "title"
 
 
 {-|-}
 to : String -> Attribute msg
 to =
-  attribute "to"
+  Elm.Kernel.Svg.attribute "to"
 
 
 {-|-}
 transform : String -> Attribute msg
 transform =
-  attribute "transform"
+  Elm.Kernel.Svg.attribute "transform"
 
 
 {-|-}
 type_ : String -> Attribute msg
 type_ =
-  attribute "type"
+  Elm.Kernel.Svg.attribute "type"
 
 
 {-|-}
 u1 : String -> Attribute msg
 u1 =
-  attribute "u1"
+  Elm.Kernel.Svg.attribute "u1"
 
 
 {-|-}
 u2 : String -> Attribute msg
 u2 =
-  attribute "u2"
+  Elm.Kernel.Svg.attribute "u2"
 
 
 {-|-}
 underlinePosition : String -> Attribute msg
 underlinePosition =
-  attribute "underline-position"
+  Elm.Kernel.Svg.attribute "underline-position"
 
 
 {-|-}
 underlineThickness : String -> Attribute msg
 underlineThickness =
-  attribute "underline-thickness"
+  Elm.Kernel.Svg.attribute "underline-thickness"
 
 
 {-|-}
 unicode : String -> Attribute msg
 unicode =
-  attribute "unicode"
+  Elm.Kernel.Svg.attribute "unicode"
 
 
 {-|-}
 unicodeRange : String -> Attribute msg
 unicodeRange =
-  attribute "unicode-range"
+  Elm.Kernel.Svg.attribute "unicode-range"
 
 
 {-|-}
 unitsPerEm : String -> Attribute msg
 unitsPerEm =
-  attribute "units-per-em"
+  Elm.Kernel.Svg.attribute "units-per-em"
 
 
 {-|-}
 vAlphabetic : String -> Attribute msg
 vAlphabetic =
-  attribute "v-alphabetic"
+  Elm.Kernel.Svg.attribute "v-alphabetic"
 
 
 {-|-}
 vHanging : String -> Attribute msg
 vHanging =
-  attribute "v-hanging"
+  Elm.Kernel.Svg.attribute "v-hanging"
 
 
 {-|-}
 vIdeographic : String -> Attribute msg
 vIdeographic =
-  attribute "v-ideographic"
+  Elm.Kernel.Svg.attribute "v-ideographic"
 
 
 {-|-}
 vMathematical : String -> Attribute msg
 vMathematical =
-  attribute "v-mathematical"
+  Elm.Kernel.Svg.attribute "v-mathematical"
 
 
 {-|-}
 values : String -> Attribute msg
 values =
-  attribute "values"
+  Elm.Kernel.Svg.attribute "values"
 
 
 {-|-}
 version : String -> Attribute msg
 version =
-  attribute "version"
+  Elm.Kernel.Svg.attribute "version"
 
 
 {-|-}
 vertAdvY : String -> Attribute msg
 vertAdvY =
-  attribute "vert-adv-y"
+  Elm.Kernel.Svg.attribute "vert-adv-y"
 
 
 {-|-}
 vertOriginX : String -> Attribute msg
 vertOriginX =
-  attribute "vert-origin-x"
+  Elm.Kernel.Svg.attribute "vert-origin-x"
 
 
 {-|-}
 vertOriginY : String -> Attribute msg
 vertOriginY =
-  attribute "vert-origin-y"
+  Elm.Kernel.Svg.attribute "vert-origin-y"
 
 
 {-|-}
 viewBox : String -> Attribute msg
 viewBox =
-  attribute "viewBox"
+  Elm.Kernel.Svg.attribute "viewBox"
 
 
 {-|-}
 viewTarget : String -> Attribute msg
 viewTarget =
-  attribute "viewTarget"
+  Elm.Kernel.Svg.attribute "viewTarget"
 
 
 {-|-}
 width : String -> Attribute msg
 width =
-  attribute "width"
+  Elm.Kernel.Svg.attribute "width"
 
 
 {-|-}
 widths : String -> Attribute msg
 widths =
-  attribute "widths"
+  Elm.Kernel.Svg.attribute "widths"
 
 
 {-|-}
 x : String -> Attribute msg
 x =
-  attribute "x"
+  Elm.Kernel.Svg.attribute "x"
 
 
 {-|-}
 xHeight : String -> Attribute msg
 xHeight =
-  attribute "x-height"
+  Elm.Kernel.Svg.attribute "x-height"
 
 
 {-|-}
 x1 : String -> Attribute msg
 x1 =
-  attribute "x1"
+  Elm.Kernel.Svg.attribute "x1"
 
 
 {-|-}
 x2 : String -> Attribute msg
 x2 =
-  attribute "x2"
+  Elm.Kernel.Svg.attribute "x2"
 
 
 {-|-}
 xChannelSelector : String -> Attribute msg
 xChannelSelector =
-  attribute "xChannelSelector"
+  Elm.Kernel.Svg.attribute "xChannelSelector"
 
 
 {-|-}
 xlinkActuate : String -> Attribute msg
 xlinkActuate =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:actuate"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:actuate"
 
 
 {-|-}
 xlinkArcrole : String -> Attribute msg
 xlinkArcrole =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:arcrole"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:arcrole"
 
 
 {-|-}
 xlinkHref : String -> Attribute msg
 xlinkHref =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:href"
 
 
 {-|-}
 xlinkRole : String -> Attribute msg
 xlinkRole =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:role"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:role"
 
 
 {-|-}
 xlinkShow : String -> Attribute msg
 xlinkShow =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:show"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:show"
 
 
 {-|-}
 xlinkTitle : String -> Attribute msg
 xlinkTitle =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:title"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:title"
 
 
 {-|-}
 xlinkType : String -> Attribute msg
 xlinkType =
-  attributeNS "http://www.w3.org/1999/xlink" "xlink:type"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/1999/xlink" "xlink:type"
 
 
 {-|-}
 xmlBase : String -> Attribute msg
 xmlBase =
-  attributeNS "http://www.w3.org/XML/1998/namespace" "xml:base"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/XML/1998/namespace" "xml:base"
 
 
 {-|-}
 xmlLang : String -> Attribute msg
 xmlLang =
-  attributeNS "http://www.w3.org/XML/1998/namespace" "xml:lang"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/XML/1998/namespace" "xml:lang"
 
 
 {-|-}
 xmlSpace : String -> Attribute msg
 xmlSpace =
-  attributeNS "http://www.w3.org/XML/1998/namespace" "xml:space"
+  Elm.Kernel.Svg.attributeNS "http://www.w3.org/XML/1998/namespace" "xml:space"
 
 
 {-|-}
 y : String -> Attribute msg
 y =
-  attribute "y"
+  Elm.Kernel.Svg.attribute "y"
 
 
 {-|-}
 y1 : String -> Attribute msg
 y1 =
-  attribute "y1"
+  Elm.Kernel.Svg.attribute "y1"
 
 
 {-|-}
 y2 : String -> Attribute msg
 y2 =
-  attribute "y2"
+  Elm.Kernel.Svg.attribute "y2"
 
 
 {-|-}
 yChannelSelector : String -> Attribute msg
 yChannelSelector =
-  attribute "yChannelSelector"
+  Elm.Kernel.Svg.attribute "yChannelSelector"
 
 
 {-|-}
 z : String -> Attribute msg
 z =
-  attribute "z"
+  Elm.Kernel.Svg.attribute "z"
 
 
 {-|-}
 zoomAndPan : String -> Attribute msg
 zoomAndPan =
-  attribute "zoomAndPan"
+  Elm.Kernel.Svg.attribute "zoomAndPan"
 
 
 
--- Presentation attributes
+-- PRESENTATION ATTRIBUTES
+
 
 {-|-}
 alignmentBaseline : String -> Attribute msg
 alignmentBaseline =
-  attribute "alignment-baseline"
+  Elm.Kernel.Svg.attribute "alignment-baseline"
 
 
 {-|-}
 baselineShift : String -> Attribute msg
 baselineShift =
-  attribute "baseline-shift"
+  Elm.Kernel.Svg.attribute "baseline-shift"
 
 
 {-|-}
 clipPath : String -> Attribute msg
 clipPath =
-  attribute "clip-path"
+  Elm.Kernel.Svg.attribute "clip-path"
 
 
 {-|-}
 clipRule : String -> Attribute msg
 clipRule =
-  attribute "clip-rule"
+  Elm.Kernel.Svg.attribute "clip-rule"
 
 
 {-|-}
 clip : String -> Attribute msg
 clip =
-  attribute "clip"
+  Elm.Kernel.Svg.attribute "clip"
 
 
 {-|-}
 colorInterpolationFilters : String -> Attribute msg
 colorInterpolationFilters =
-  attribute "color-interpolation-filters"
+  Elm.Kernel.Svg.attribute "color-interpolation-filters"
 
 
 {-|-}
 colorInterpolation : String -> Attribute msg
 colorInterpolation =
-  attribute "color-interpolation"
+  Elm.Kernel.Svg.attribute "color-interpolation"
 
 
 {-|-}
 colorProfile : String -> Attribute msg
 colorProfile =
-  attribute "color-profile"
+  Elm.Kernel.Svg.attribute "color-profile"
 
 
 {-|-}
 colorRendering : String -> Attribute msg
 colorRendering =
-  attribute "color-rendering"
+  Elm.Kernel.Svg.attribute "color-rendering"
 
 
 {-|-}
 color : String -> Attribute msg
 color =
-  attribute "color"
+  Elm.Kernel.Svg.attribute "color"
 
 
 {-|-}
 cursor : String -> Attribute msg
 cursor =
-  attribute "cursor"
+  Elm.Kernel.Svg.attribute "cursor"
 
 
 {-|-}
 direction : String -> Attribute msg
 direction =
-  attribute "direction"
+  Elm.Kernel.Svg.attribute "direction"
 
 
 {-|-}
 display : String -> Attribute msg
 display =
-  attribute "display"
+  Elm.Kernel.Svg.attribute "display"
 
 
 {-|-}
 dominantBaseline : String -> Attribute msg
 dominantBaseline =
-  attribute "dominant-baseline"
+  Elm.Kernel.Svg.attribute "dominant-baseline"
 
 
 {-|-}
 enableBackground : String -> Attribute msg
 enableBackground =
-  attribute "enable-background"
+  Elm.Kernel.Svg.attribute "enable-background"
 
 
 {-|-}
 fillOpacity : String -> Attribute msg
 fillOpacity =
-  attribute "fill-opacity"
+  Elm.Kernel.Svg.attribute "fill-opacity"
 
 
 {-|-}
 fillRule : String -> Attribute msg
 fillRule =
-  attribute "fill-rule"
+  Elm.Kernel.Svg.attribute "fill-rule"
 
 
 {-|-}
 fill : String -> Attribute msg
 fill =
-  attribute "fill"
+  Elm.Kernel.Svg.attribute "fill"
 
 
 {-|-}
 filter : String -> Attribute msg
 filter =
-  attribute "filter"
+  Elm.Kernel.Svg.attribute "filter"
 
 
 {-|-}
 floodColor : String -> Attribute msg
 floodColor =
-  attribute "flood-color"
+  Elm.Kernel.Svg.attribute "flood-color"
 
 
 {-|-}
 floodOpacity : String -> Attribute msg
 floodOpacity =
-  attribute "flood-opacity"
+  Elm.Kernel.Svg.attribute "flood-opacity"
 
 
 {-|-}
 fontFamily : String -> Attribute msg
 fontFamily =
-  attribute "font-family"
+  Elm.Kernel.Svg.attribute "font-family"
 
 
 {-|-}
 fontSizeAdjust : String -> Attribute msg
 fontSizeAdjust =
-  attribute "font-size-adjust"
+  Elm.Kernel.Svg.attribute "font-size-adjust"
 
 
 {-|-}
 fontSize : String -> Attribute msg
 fontSize =
-  attribute "font-size"
+  Elm.Kernel.Svg.attribute "font-size"
 
 
 {-|-}
 fontStretch : String -> Attribute msg
 fontStretch =
-  attribute "font-stretch"
+  Elm.Kernel.Svg.attribute "font-stretch"
 
 
 {-|-}
 fontStyle : String -> Attribute msg
 fontStyle =
-  attribute "font-style"
+  Elm.Kernel.Svg.attribute "font-style"
 
 
 {-|-}
 fontVariant : String -> Attribute msg
 fontVariant =
-  attribute "font-variant"
+  Elm.Kernel.Svg.attribute "font-variant"
 
 
 {-|-}
 fontWeight : String -> Attribute msg
 fontWeight =
-  attribute "font-weight"
+  Elm.Kernel.Svg.attribute "font-weight"
 
 
 {-|-}
 glyphOrientationHorizontal : String -> Attribute msg
 glyphOrientationHorizontal =
-  attribute "glyph-orientation-horizontal"
+  Elm.Kernel.Svg.attribute "glyph-orientation-horizontal"
 
 
 {-|-}
 glyphOrientationVertical : String -> Attribute msg
 glyphOrientationVertical =
-  attribute "glyph-orientation-vertical"
+  Elm.Kernel.Svg.attribute "glyph-orientation-vertical"
 
 
 {-|-}
 imageRendering : String -> Attribute msg
 imageRendering =
-  attribute "image-rendering"
+  Elm.Kernel.Svg.attribute "image-rendering"
 
 
 {-|-}
 kerning : String -> Attribute msg
 kerning =
-  attribute "kerning"
+  Elm.Kernel.Svg.attribute "kerning"
 
 
 {-|-}
 letterSpacing : String -> Attribute msg
 letterSpacing =
-  attribute "letter-spacing"
+  Elm.Kernel.Svg.attribute "letter-spacing"
 
 
 {-|-}
 lightingColor : String -> Attribute msg
 lightingColor =
-  attribute "lighting-color"
+  Elm.Kernel.Svg.attribute "lighting-color"
 
 
 {-|-}
 markerEnd : String -> Attribute msg
 markerEnd =
-  attribute "marker-end"
+  Elm.Kernel.Svg.attribute "marker-end"
 
 
 {-|-}
 markerMid : String -> Attribute msg
 markerMid =
-  attribute "marker-mid"
+  Elm.Kernel.Svg.attribute "marker-mid"
 
 
 {-|-}
 markerStart : String -> Attribute msg
 markerStart =
-  attribute "marker-start"
+  Elm.Kernel.Svg.attribute "marker-start"
 
 
 {-|-}
 mask : String -> Attribute msg
 mask =
-  attribute "mask"
+  Elm.Kernel.Svg.attribute "mask"
 
 
 {-|-}
 opacity : String -> Attribute msg
 opacity =
-  attribute "opacity"
+  Elm.Kernel.Svg.attribute "opacity"
 
 
 {-|-}
 overflow : String -> Attribute msg
 overflow =
-  attribute "overflow"
+  Elm.Kernel.Svg.attribute "overflow"
 
 
 {-|-}
 pointerEvents : String -> Attribute msg
 pointerEvents =
-  attribute "pointer-events"
+  Elm.Kernel.Svg.attribute "pointer-events"
 
 
 {-|-}
 shapeRendering : String -> Attribute msg
 shapeRendering =
-  attribute "shape-rendering"
+  Elm.Kernel.Svg.attribute "shape-rendering"
 
 
 {-|-}
 stopColor : String -> Attribute msg
 stopColor =
-  attribute "stop-color"
+  Elm.Kernel.Svg.attribute "stop-color"
 
 
 {-|-}
 stopOpacity : String -> Attribute msg
 stopOpacity =
-  attribute "stop-opacity"
+  Elm.Kernel.Svg.attribute "stop-opacity"
 
 
 {-|-}
 strokeDasharray : String -> Attribute msg
 strokeDasharray =
-  attribute "stroke-dasharray"
+  Elm.Kernel.Svg.attribute "stroke-dasharray"
 
 
 {-|-}
 strokeDashoffset : String -> Attribute msg
 strokeDashoffset =
-  attribute "stroke-dashoffset"
+  Elm.Kernel.Svg.attribute "stroke-dashoffset"
 
 
 {-|-}
 strokeLinecap : String -> Attribute msg
 strokeLinecap =
-  attribute "stroke-linecap"
+  Elm.Kernel.Svg.attribute "stroke-linecap"
 
 
 {-|-}
 strokeLinejoin : String -> Attribute msg
 strokeLinejoin =
-  attribute "stroke-linejoin"
+  Elm.Kernel.Svg.attribute "stroke-linejoin"
 
 
 {-|-}
 strokeMiterlimit : String -> Attribute msg
 strokeMiterlimit =
-  attribute "stroke-miterlimit"
+  Elm.Kernel.Svg.attribute "stroke-miterlimit"
 
 
 {-|-}
 strokeOpacity : String -> Attribute msg
 strokeOpacity =
-  attribute "stroke-opacity"
+  Elm.Kernel.Svg.attribute "stroke-opacity"
 
 
 {-|-}
 strokeWidth : String -> Attribute msg
 strokeWidth =
-  attribute "stroke-width"
+  Elm.Kernel.Svg.attribute "stroke-width"
 
 
 {-|-}
 stroke : String -> Attribute msg
 stroke =
-  attribute "stroke"
+  Elm.Kernel.Svg.attribute "stroke"
 
 
 {-|-}
 textAnchor : String -> Attribute msg
 textAnchor =
-  attribute "text-anchor"
+  Elm.Kernel.Svg.attribute "text-anchor"
 
 
 {-|-}
 textDecoration : String -> Attribute msg
 textDecoration =
-  attribute "text-decoration"
+  Elm.Kernel.Svg.attribute "text-decoration"
 
 
 {-|-}
 textRendering : String -> Attribute msg
 textRendering =
-  attribute "text-rendering"
+  Elm.Kernel.Svg.attribute "text-rendering"
 
 
 {-|-}
 unicodeBidi : String -> Attribute msg
 unicodeBidi =
-  attribute "unicode-bidi"
+  Elm.Kernel.Svg.attribute "unicode-bidi"
 
 
 {-|-}
 visibility : String -> Attribute msg
 visibility =
-  attribute "visibility"
+  Elm.Kernel.Svg.attribute "visibility"
 
 
 {-|-}
 wordSpacing : String -> Attribute msg
 wordSpacing =
-  attribute "word-spacing"
+  Elm.Kernel.Svg.attribute "word-spacing"
 
 
 {-|-}
 writingMode : String -> Attribute msg
 writingMode =
-  attribute "writing-mode"
+  Elm.Kernel.Svg.attribute "writing-mode"
 

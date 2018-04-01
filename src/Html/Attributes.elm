@@ -248,7 +248,7 @@ context menu.
 -}
 contextmenu : String -> Attribute msg
 contextmenu =
-  attribute "contextmenu"
+  Elm.Kernel.Html.attribute "contextmenu"
 
 
 {-| Defines the text direction. Allowed values are ltr (Left-To-Right) or rtl
@@ -262,7 +262,7 @@ dir =
 {-| Defines whether the element can be dragged. -}
 draggable : String -> Attribute msg
 draggable =
-  attribute "draggable"
+  Elm.Kernel.Html.attribute "draggable"
 
 
 {-| Indicates that the element accept the dropping of content on it. -}
@@ -274,7 +274,7 @@ dropzone =
 {-|-}
 itemprop : String -> Attribute msg
 itemprop =
-  attribute "itemprop"
+  Elm.Kernel.Html.attribute "itemprop"
 
 
 {-| Defines the language used in the element. -}
@@ -294,7 +294,7 @@ instead.
 -}
 tabindex : Int -> Attribute msg
 tabindex n =
-  attribute "tabIndex" (String.fromInt n)
+  Elm.Kernel.Html.attribute "tabIndex" (String.fromInt n)
 
 
 
@@ -314,7 +314,7 @@ src =
 -}
 height : Int -> Attribute msg
 height n =
-  attribute "height" (String.fromInt n)
+  Elm.Kernel.Html.attribute "height" (String.fromInt n)
 
 
 {-| Declare the width of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -322,7 +322,7 @@ height n =
 -}
 width : Int -> Attribute msg
 width n =
-  attribute "width" (String.fromInt n)
+  Elm.Kernel.Html.attribute "width" (String.fromInt n)
 
 
 {-| Alternative text in case an image can't be displayed. Works with `img`,
@@ -534,7 +534,7 @@ defined in the surrounding `form`.
 -}
 formaction : String -> Attribute msg
 formaction =
-  attribute "formAction"
+  Elm.Kernel.Html.attribute "formAction"
 
 
 {-| Associates an `input` with a `datalist` tag. The datalist gives some
@@ -544,7 +544,7 @@ For `input`.
 -}
 list : String -> Attribute msg
 list =
-  attribute "list"
+  Elm.Kernel.Html.attribute "list"
 
 
 {-| Defines the minimum number of characters allowed in an `input` or
@@ -552,7 +552,7 @@ list =
 -}
 minlength : Int -> Attribute msg
 minlength n =
-  attribute "minLength" (String.fromInt n)
+  Elm.Kernel.Html.attribute "minLength" (String.fromInt n)
 
 
 {-| Defines the maximum number of characters allowed in an `input` or
@@ -560,7 +560,7 @@ minlength n =
 -}
 maxlength : Int -> Attribute msg
 maxlength n =
-  attribute "maxlength" (String.fromInt n)
+  Elm.Kernel.Html.attribute "maxlength" (String.fromInt n)
 
 
 {-| Defines which HTTP method to use when submitting a `form`. Can be GET
@@ -624,7 +624,7 @@ For `select` specifies the number of visible options in a drop-down list.
 -}
 size : Int -> Attribute msg
 size n =
-  attribute "size" (String.fromInt n)
+  Elm.Kernel.Html.attribute "size" (String.fromInt n)
 
 
 {-| The element ID described by this `label` or the element IDs that are used
@@ -641,7 +641,7 @@ for =
 -}
 form : String -> Attribute msg
 form =
-  attribute "form"
+  Elm.Kernel.Html.attribute "form"
 
 
 
@@ -678,13 +678,13 @@ step n =
 {-| Defines the number of columns in a `textarea`. -}
 cols : Int -> Attribute msg
 cols n =
-  attribute "cols" (String.fromInt n)
+  Elm.Kernel.Html.attribute "cols" (String.fromInt n)
 
 
 {-| Defines the number of rows in a `textarea`. -}
 rows : Int -> Attribute msg
 rows n =
-  attribute "rows" (String.fromInt n)
+  Elm.Kernel.Html.attribute "rows" (String.fromInt n)
 
 
 {-| Indicates whether the text should be wrapped in a `textarea`. Possible
@@ -817,7 +817,7 @@ or `style`.
 -}
 media : String -> Attribute msg
 media =
-  attribute "media"
+  Elm.Kernel.Html.attribute "media"
 
 
 {-| Specify a URL to send a short POST request to when the user clicks on an
@@ -833,7 +833,7 @@ For `a`, `area`, `link`.
 -}
 rel : String -> Attribute msg
 rel =
-  attribute "rel"
+  Elm.Kernel.Html.attribute "rel"
 
 
 
@@ -845,7 +845,7 @@ For `del`, `ins`, `time`.
 -}
 datetime : String -> Attribute msg
 datetime =
-  attribute "datetime"
+  Elm.Kernel.Html.attribute "datetime"
 
 
 {-| Indicates whether this date and time is the date of the nearest `article`
@@ -853,7 +853,7 @@ ancestor element. For `time`.
 -}
 pubdate : String -> Attribute msg
 pubdate =
-  attribute "pubdate"
+  Elm.Kernel.Html.attribute "pubdate"
 
 
 
@@ -885,7 +885,7 @@ For `td` and `th`.
 -}
 colspan : Int -> Attribute msg
 colspan n =
-  attribute "colspan" (String.fromInt n)
+  Elm.Kernel.Html.attribute "colspan" (String.fromInt n)
 
 
 {-| A space separated list of element IDs indicating which `th` elements are
@@ -901,7 +901,7 @@ For `td` and `th`.
 -}
 rowspan : Int -> Attribute msg
 rowspan n =
-  attribute "rowspan" (String.fromInt n)
+  Elm.Kernel.Html.attribute "rowspan" (String.fromInt n)
 
 
 {-| Specifies the scope of a header cell `th`. Possible values are: col, row,
@@ -915,7 +915,7 @@ scope =
 {-| Specifies the URL of the cache manifest for an `html` tag. -}
 manifest : String -> Attribute msg
 manifest =
-  attribute "manifest"
+  Elm.Kernel.Html.attribute "manifest"
 
 
 {-- TODO: maybe reintroduce once there's a better way to disambiguate imports

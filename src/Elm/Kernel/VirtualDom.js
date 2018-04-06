@@ -283,24 +283,24 @@ function _VirtualDom_noInnerHtmlOrFormAction(key)
 
 function _VirtualDom_noJavaScriptUri__PROD(value)
 {
-	return /^\s*javascript:/i.test(value) == 0 ? '' : value;
+	return /^\s*javascript:/i.test(value) ? '' : value;
 }
 
 function _VirtualDom_noJavaScriptUri__DEBUG(value)
 {
-	return /^\s*javascript:/i.test(value) == 0
+	return /^\s*javascript:/i.test(value)
 		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
 		: value;
 }
 
 function _VirtualDom_noJavaScriptOrHtmlUri__PROD(value)
 {
-	return /^\s*(javascript:|data:text\/html)/i.test(value) == 0 ? '' : value;
+	return /^\s*(javascript:|data:text\/html)/i.test(value) ? '' : value;
 }
 
 function _VirtualDom_noJavaScriptOrHtmlUri__DEBUG(value)
 {
-	return /^\s*(javascript:|data:text\/html)/i.test(value) == 0
+	return /^\s*(javascript:|data:text\/html)/i.test(value)
 		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
 		: value;
 }

@@ -133,11 +133,9 @@ trustedNode =
 {-| The root `<svg>` node for any SVG scene. This example shows a scene
 containing a rounded rectangle:
 
-    import Html
     import Svg exposing (..)
     import Svg.Attributes exposing (..)
 
-    roundRect : Html.Html msg
     roundRect =
         svg
           [ width "120", height "120", viewBox "0 0 120 120" ]

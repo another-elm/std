@@ -77,7 +77,7 @@ Attributes that can be attached to any HTML tag but are less commonly used.
 -}
 
 
-import Elm.Kernel.Html
+import Elm.Kernel.VirtualDom
 import Html exposing (Attribute)
 import Json.Encode as Json
 import VirtualDom
@@ -161,12 +161,12 @@ property =
 
 stringProperty : String -> String -> Attribute msg
 stringProperty key string =
-  Elm.Kernel.Html.property key (Json.string string)
+  Elm.Kernel.VirtualDom.property key (Json.string string)
 
 
 boolProperty : String -> Bool -> Attribute msg
 boolProperty key bool =
-  Elm.Kernel.Html.property key (Json.bool bool)
+  Elm.Kernel.VirtualDom.property key (Json.bool bool)
 
 
 {-| Create *attributes*, like saying `domNode.setAttribute('class', 'greeting')`
@@ -248,7 +248,7 @@ context menu.
 -}
 contextmenu : String -> Attribute msg
 contextmenu =
-  Elm.Kernel.Html.attribute "contextmenu"
+  Elm.Kernel.VirtualDom.attribute "contextmenu"
 
 
 {-| Defines the text direction. Allowed values are ltr (Left-To-Right) or rtl
@@ -262,7 +262,7 @@ dir =
 {-| Defines whether the element can be dragged. -}
 draggable : String -> Attribute msg
 draggable =
-  Elm.Kernel.Html.attribute "draggable"
+  Elm.Kernel.VirtualDom.attribute "draggable"
 
 
 {-| Indicates that the element accept the dropping of content on it. -}
@@ -274,7 +274,7 @@ dropzone =
 {-|-}
 itemprop : String -> Attribute msg
 itemprop =
-  Elm.Kernel.Html.attribute "itemprop"
+  Elm.Kernel.VirtualDom.attribute "itemprop"
 
 
 {-| Defines the language used in the element. -}
@@ -294,7 +294,7 @@ instead.
 -}
 tabindex : Int -> Attribute msg
 tabindex n =
-  Elm.Kernel.Html.attribute "tabIndex" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "tabIndex" (String.fromInt n)
 
 
 
@@ -306,7 +306,7 @@ tabindex n =
 -}
 src : String -> Attribute msg
 src url =
-  stringProperty "src" (Elm.Kernel.Html.noJavaScriptOrHtmlUri url)
+  stringProperty "src" (Elm.Kernel.VirtualDom.noJavaScriptOrHtmlUri url)
 
 
 {-| Declare the height of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -314,7 +314,7 @@ src url =
 -}
 height : Int -> Attribute msg
 height n =
-  Elm.Kernel.Html.attribute "height" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "height" (String.fromInt n)
 
 
 {-| Declare the width of a `canvas`, `embed`, `iframe`, `img`, `input`,
@@ -322,7 +322,7 @@ height n =
 -}
 width : Int -> Attribute msg
 width n =
-  Elm.Kernel.Html.attribute "width" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "width" (String.fromInt n)
 
 
 {-| Alternative text in case an image can't be displayed. Works with `img`,
@@ -493,7 +493,7 @@ acceptCharset =
 -}
 action : String -> Attribute msg
 action uri =
-  stringProperty "action" (Elm.Kernel.Html.noJavaScriptUri uri)
+  stringProperty "action" (Elm.Kernel.VirtualDom.noJavaScriptUri uri)
 
 
 {-| Indicates whether a `form` or an `input` can have their values automatically
@@ -536,7 +536,7 @@ For `input`.
 -}
 list : String -> Attribute msg
 list =
-  Elm.Kernel.Html.attribute "list"
+  Elm.Kernel.VirtualDom.attribute "list"
 
 
 {-| Defines the minimum number of characters allowed in an `input` or
@@ -544,7 +544,7 @@ list =
 -}
 minlength : Int -> Attribute msg
 minlength n =
-  Elm.Kernel.Html.attribute "minLength" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "minLength" (String.fromInt n)
 
 
 {-| Defines the maximum number of characters allowed in an `input` or
@@ -552,7 +552,7 @@ minlength n =
 -}
 maxlength : Int -> Attribute msg
 maxlength n =
-  Elm.Kernel.Html.attribute "maxlength" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "maxlength" (String.fromInt n)
 
 
 {-| Defines which HTTP method to use when submitting a `form`. Can be GET
@@ -616,7 +616,7 @@ For `select` specifies the number of visible options in a drop-down list.
 -}
 size : Int -> Attribute msg
 size n =
-  Elm.Kernel.Html.attribute "size" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "size" (String.fromInt n)
 
 
 {-| The element ID described by this `label` or the element IDs that are used
@@ -633,7 +633,7 @@ for =
 -}
 form : String -> Attribute msg
 form =
-  Elm.Kernel.Html.attribute "form"
+  Elm.Kernel.VirtualDom.attribute "form"
 
 
 
@@ -670,13 +670,13 @@ step n =
 {-| Defines the number of columns in a `textarea`. -}
 cols : Int -> Attribute msg
 cols n =
-  Elm.Kernel.Html.attribute "cols" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "cols" (String.fromInt n)
 
 
 {-| Defines the number of rows in a `textarea`. -}
 rows : Int -> Attribute msg
 rows n =
-  Elm.Kernel.Html.attribute "rows" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "rows" (String.fromInt n)
 
 
 {-| Indicates whether the text should be wrapped in a `textarea`. Possible
@@ -755,7 +755,7 @@ cite =
 {-| The URL of a linked resource, such as `a`, `area`, `base`, or `link`. -}
 href : String -> Attribute msg
 href url =
-  stringProperty "href" (Elm.Kernel.Html.noJavaScriptUri url)
+  stringProperty "href" (Elm.Kernel.VirtualDom.noJavaScriptUri url)
 
 
 {-| Specify where the results of clicking an `a`, `area`, `base`, or `form`
@@ -809,7 +809,7 @@ or `style`.
 -}
 media : String -> Attribute msg
 media =
-  Elm.Kernel.Html.attribute "media"
+  Elm.Kernel.VirtualDom.attribute "media"
 
 
 {-| Specify a URL to send a short POST request to when the user clicks on an
@@ -825,7 +825,7 @@ For `a`, `area`, `link`.
 -}
 rel : String -> Attribute msg
 rel =
-  Elm.Kernel.Html.attribute "rel"
+  Elm.Kernel.VirtualDom.attribute "rel"
 
 
 
@@ -837,7 +837,7 @@ For `del`, `ins`, `time`.
 -}
 datetime : String -> Attribute msg
 datetime =
-  Elm.Kernel.Html.attribute "datetime"
+  Elm.Kernel.VirtualDom.attribute "datetime"
 
 
 {-| Indicates whether this date and time is the date of the nearest `article`
@@ -845,7 +845,7 @@ ancestor element. For `time`.
 -}
 pubdate : String -> Attribute msg
 pubdate =
-  Elm.Kernel.Html.attribute "pubdate"
+  Elm.Kernel.VirtualDom.attribute "pubdate"
 
 
 
@@ -877,7 +877,7 @@ For `td` and `th`.
 -}
 colspan : Int -> Attribute msg
 colspan n =
-  Elm.Kernel.Html.attribute "colspan" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "colspan" (String.fromInt n)
 
 
 {-| A space separated list of element IDs indicating which `th` elements are
@@ -893,7 +893,7 @@ For `td` and `th`.
 -}
 rowspan : Int -> Attribute msg
 rowspan n =
-  Elm.Kernel.Html.attribute "rowspan" (String.fromInt n)
+  Elm.Kernel.VirtualDom.attribute "rowspan" (String.fromInt n)
 
 
 {-| Specifies the scope of a header cell `th`. Possible values are: col, row,
@@ -907,7 +907,7 @@ scope =
 {-| Specifies the URL of the cache manifest for an `html` tag. -}
 manifest : String -> Attribute msg
 manifest =
-  Elm.Kernel.Html.attribute "manifest"
+  Elm.Kernel.VirtualDom.attribute "manifest"
 
 
 {-- TODO: maybe reintroduce once there's a better way to disambiguate imports

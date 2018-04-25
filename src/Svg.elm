@@ -61,7 +61,7 @@ module Svg exposing
 -}
 
 
-import Elm.Kernel.Svg
+import Elm.Kernel.VirtualDom
 import Html
 import VirtualDom
 import Json.Encode as Json
@@ -123,7 +123,7 @@ map =
 
 trustedNode : String -> List (Attribute msg) -> List (Svg msg) -> Svg msg
 trustedNode =
-  Elm.Kernel.Svg.nodeNS "http://www.w3.org/2000/svg"
+  Elm.Kernel.VirtualDom.nodeNS "http://www.w3.org/2000/svg"
 
 
 

@@ -1,7 +1,7 @@
 module Html.Attributes exposing
   ( style, property, attribute, map
   , class, classList, id, title, hidden
-  , type_, value, defaultValue, checked, placeholder, selected
+  , type_, value, checked, placeholder, selected
   , accept, acceptCharset, action, autocomplete, autofocus
   , disabled, enctype, list, maxlength, minlength, method, multiple
   , name, novalidate, pattern, readonly, required, size, for, form
@@ -30,7 +30,7 @@ just search the page for `video` if you want video stuff.
 @docs class, classList, id, title, hidden
 
 # Inputs
-@docs type_, value, defaultValue, checked, placeholder, selected
+@docs type_, value, checked, placeholder, selected
 
 ## Input Helpers
 @docs accept, acceptCharset, action, autocomplete, autofocus,
@@ -439,15 +439,6 @@ type_ =
 value : String -> Attribute msg
 value =
   stringProperty "value"
-
-
-{-| Defines an initial value which will be displayed in an `input` when that
-`input` is added to the DOM. Unlike `value`, altering `defaultValue` after the
-`input` element has been added to the DOM has no effect.
--}
-defaultValue : String -> Attribute msg
-defaultValue =
-  stringProperty "defaultValue"
 
 
 {-| Indicates whether an `input` of type checkbox is checked. -}

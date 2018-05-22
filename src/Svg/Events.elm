@@ -80,7 +80,7 @@ If this is confusing, work through the [Elm Architecture Tutorial][tutorial].
 It really helps!
 
 [aEL]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-[decoder]: http://package.elm-lang.org/packages/elm-lang/json/latest/Json-Decode
+[decoder]: /packages/elm-lang/json/latest/Json-Decode
 [tutorial]: https://github.com/evancz/elm-architecture-tutorial/
 
 **Note:** This creates a [passive][] event listener, enabling optimizations for

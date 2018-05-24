@@ -13,7 +13,7 @@ module Html.Events exposing
 It is often helpful to create an [Union Type][] so you can have many different kinds
 of events as seen in the [TodoMVC][] example.
 
-[Union Type]: http://elm-lang.org/learn/Union-Types.elm
+[Union Type]: https://elm-lang.org/learn/Union-Types.elm
 [TodoMVC]: https://github.com/evancz/elm-todomvc/blob/master/Todo.elm
 
 # Mouse
@@ -177,7 +177,7 @@ If this is confusing, work through the [Elm Architecture Tutorial][tutorial].
 It really helps!
 
 [aEL]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-[decoder]: http://package.elm-lang.org/packages/elm-lang/json/latest/Json-Decode
+[decoder]: /packages/elm/json/latest/Json-Decode
 [tutorial]: https://github.com/evancz/elm-architecture-tutorial/
 
 **Note:** This creates a [passive][] event listener, enabling optimizations for
@@ -235,7 +235,7 @@ preventDefaultOn event decoder =
 [prevent]: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
 
 **Note:** If you need something even more custom (like capture phase) check
-out the lower-level event API in `elm-lang/virtual-dom`.
+out the lower-level event API in `elm/virtual-dom`.
 -}
 custom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
 custom event decoder =

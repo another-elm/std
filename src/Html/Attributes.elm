@@ -152,7 +152,7 @@ JavaScript.
 
 Read more about the difference between properties and attributes [here][].
 
-[here]: https://github.com/elm-lang/html/blob/master/properties-vs-attributes.md
+[here]: https://github.com/elm/html/blob/master/properties-vs-attributes.md
 -}
 property : String -> Json.Value -> Attribute msg
 property =
@@ -178,7 +178,7 @@ in JavaScript.
 
 Read more about the difference between properties and attributes [here][].
 
-[here]: https://github.com/elm-lang/html/blob/master/properties-vs-attributes.md
+[here]: https://github.com/elm/html/blob/master/properties-vs-attributes.md
 -}
 attribute : String -> String -> Attribute msg
 attribute =

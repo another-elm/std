@@ -188,7 +188,7 @@ attribute key value =
 {-| Would you believe that there is another way to do this?! This uses
 JavaScript's `setAttributeNS` function behind the scenes. It is doing pretty
 much the same thing as `attribute` but you are able to have namespaced
-attributes. As an example, the `elm-lang/svg` package defines an attribute
+attributes. As an example, the `elm/svg` package defines an attribute
 like this:
 
     xlinkHref : String -> Attribute msg
@@ -227,7 +227,7 @@ You can define `onClick` like this:
 **Note:** These event handlers trigger in the bubble phase. You can learn more
 about what that means [here][].
 
-[here]: https://github.com/elm-lang/virtual-dom/blob/master/hints/capture-vs-bubble.md
+[here]: https://github.com/elm/virtual-dom/blob/master/hints/capture-vs-bubble.md
 -}
 on : String -> Handler msg -> Attribute msg
 on =

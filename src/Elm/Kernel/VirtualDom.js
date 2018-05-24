@@ -1509,10 +1509,17 @@ function _VirtualDom_virtualize(node)
 	{
 		return _VirtualDom_text(node.textContent);
 	}
-	// else is normal NODE
 
 
-	// ATTRIBUTES
+	// WEIRD NODES
+
+	if (node.nodeType !== 1)
+	{
+		return _VirtualDom_text('');
+	}
+
+
+	// ELEMENT NODES
 
 	var attrList = __List_Nil;
 	var attrs = node.attributes;
@@ -1527,8 +1534,6 @@ function _VirtualDom_virtualize(node)
 	var tag = node.tagName.toLowerCase();
 	var kidList = __List_Nil;
 	var kids = node.childNodes;
-
-	// NODES
 
 	for (var i = kids.length; i--; )
 	{

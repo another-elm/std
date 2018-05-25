@@ -1,7 +1,7 @@
 /*
 
 import Basics exposing (identity)
-import Elm.Kernel.Error exposing (throw)
+import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (equality, runHelp, unwrap)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
@@ -1425,7 +1425,7 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return patch.__data(domNode);
 
 		default:
-			__Error_throw(10); // 'Ran into an unknown patch!'
+			__Debug_crash(10); // 'Ran into an unknown patch!'
 	}
 }
 

@@ -44,7 +44,7 @@ You can play with a bunch of other examples [here](http://elm-lang.org/examples)
 
 ## Implementation
 
-This library is backed by [elm-lang/virtual-dom](http://package.elm-lang.org/packages/elm-lang/virtual-dom/latest/) which handles the dirty details of rendering DOM nodes quickly. You can read some blog posts about it here:
+This library is backed by [elm/virtual-dom](http://package.elm-lang.org/packages/elm/virtual-dom/latest/) which handles the dirty details of rendering DOM nodes quickly. You can read some blog posts about it here:
 
   - [Blazing Fast HTML, Round Two](http://elm-lang.org/blog/blazing-fast-html-round-two)
   - [Blazing Fast HTML](http://elm-lang.org/blog/blazing-fast-html)

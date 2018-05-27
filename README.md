@@ -44,12 +44,12 @@ SVG is great for data visualizations, and I really want people in the Elm commun
 
 ### Make visualization packages?
 
-I think [`terezka/line-charts`](https://terezka.github.io/line-charts/) is a really great effort in this direction. Notice that [the docs](http://package.elm-lang.org/packages/terezka/line-charts/1.0.0/LineChart) present a really smooth learning path. Getting something on screen is really simple, and then it builds on that basic understanding to give you more capabilities. There are tons of examples as well. I really love seeing work like this!
+I think [`terezka/line-charts`](https://terezka.github.io/line-charts/) is a really great effort in this direction. Notice that [the docs](https://package.elm-lang.org/packages/terezka/line-charts/1.0.0/LineChart) present a really smooth learning path. Getting something on screen is really simple, and then it builds on that basic understanding to give you more capabilities. There are tons of examples as well. I really love seeing work like this!
 
 So if you are interested in doing something like this, I recommend:
 
 - Reading [The Visual Display of Quantitative Information](https://www.edwardtufte.com/tufte/books_vdqi) by Edward Tufte.
-- Learning about [designing for color blindness](http://www.alanzucconi.com/2015/12/16/color-blindness/)
+- Learning about [designing for color blindness](https://www.alanzucconi.com/2015/12/16/color-blindness/)
 - Learning about different color spaces, like [CIELUV](https://en.wikipedia.org/wiki/CIELUV) for changing colors without changing the perceived brightness, [cubehelix](https://www.mrao.cam.ac.uk/~dag/CUBEHELIX/) for heatmaps with nice brightness properties, and how to do [color conversions](https://www.cs.rit.edu/~ncs/color/t_convert.html) in general
 
 In other words, try to learn as much as possible first! Anyone can show dots on a grid, but a great package will build expertise into the API itself, quietly leading people towards better design and accessibility. Ideally it will help people learn the important principles as well, because it is not just about getting data on screen, it is about helping people understand complex information!

@@ -59,4 +59,4 @@ In other words, try to learn as much as possible first! Anyone can show dots on 
 
 This package should only change to account for new SVG tags and attributes.
 
-Just like [`elm-lang/html`](http://package.elm-lang.org/packages/elm-lang/html/latest), this package is designed to be predictable. Every node takes two arguments (a list of attributes and a list of children) even though in many cases it is possible to do something nicer. So if you want nice helpers for simple shapes (for example) I recommend creating a separate package that builds upon this one.
+Just like [`elm/html`](https://package.elm-lang.org/packages/elm/html/latest), this package is designed to be predictable. Every node takes two arguments (a list of attributes and a list of children) even though in many cases it is possible to do something nicer. So if you want nice helpers for simple shapes (for example) I recommend creating a separate package that builds upon this one.

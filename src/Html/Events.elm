@@ -143,7 +143,7 @@ alwaysPreventDefault msg =
 {-|-}
 onBlur : msg -> Attribute msg
 onBlur msg =
-  on "blur" (Json.succeed msg)
+  VirtualDom.on "blur" (VirtualDom.Normal (Json.map VirtualDom.Async (Json.succeed msg)))
 
 
 {-|-}

@@ -954,11 +954,17 @@ function _VirtualDom_diffKids(xParent, yParent, patches, index)
 
 	if (xLen > yLen)
 	{
-		_VirtualDom_pushPatch(patches, __3_REMOVE_LAST, index, xLen - yLen);
+		_VirtualDom_pushPatch(patches, __3_REMOVE_LAST, index, {
+			__length: yLen,
+			__diff: xLen - yLen
+		});
 	}
 	else if (xLen < yLen)
 	{
-		_VirtualDom_pushPatch(patches, __3_APPEND, index, yKids.slice(xLen));
+		_VirtualDom_pushPatch(patches, __3_APPEND, index, {
+			__length: xLen,
+			__kids: yKids
+		});
 	}
 
 	// PAIRWISE DIFF EVERYTHING ELSE
@@ -1388,18 +1394,21 @@ function _VirtualDom_applyPatch(domNode, patch)
 			return domNode;
 
 		case __3_REMOVE_LAST:
-			var i = patch.__data;
-			while (i--)
+			var data = patch.__data;
+			for (var i = 0; i < data.__diff; i++)
 			{
-				domNode.removeChild(domNode.lastChild);
+				domNode.removeChild(domNode.childNodes[data.__length]);
 			}
 			return domNode;
 
 		case __3_APPEND:
-			var newNodes = patch.__data;
-			for (var i = 0; i < newNodes.length; i++)
+			var data = patch.__data;
+			var kids = data.__kids;
+			var i = data.__length;
+			var theEnd = domNode.childNodes[i];
+			for (; i < kids.length; i++)
 			{
-				_VirtualDom_appendChild(domNode, _VirtualDom_render(newNodes[i], patch.__eventNode));
+				domNode.insertBefore(_VirtualDom_render(kids[i], patch.__eventNode), theEnd);
 			}
 			return domNode;
 

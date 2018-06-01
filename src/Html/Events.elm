@@ -99,15 +99,27 @@ onMouseOut msg =
 {-| Detect [input](https://developer.mozilla.org/en-US/docs/Web/Events/input)
 events for things like text fields or text areas.
 
-It grabs the **string** value at `event.target.value`, so it will not work if
-you need some other type of information. For example, if you want to track
+For more details on how `onInput` works, check out [`targetValue`](#targetValue).
+
+**Note 1:** It grabs the **string** value at `event.target.value`, so it will
+not work if you need some other information. For example, if you want to track
 inputs on a range slider, make a custom handler with [`on`](#on).
 
-For more details on how `onInput` works, check out [`targetValue`](#targetValue).
+**Note 2:** It uses `stopPropagationOn` internally to allways stop propagation
+of the event. This is important for complicated reasons explained [here][1] and
+[here][2].
+
+[1]: /packages/elm/virtual-dom/latest/VirtualDom#Handler
+[2]: https://github.com/elm/virtual-dom/issues/125
 -}
 onInput : (String -> msg) -> Attribute msg
 onInput tagger =
-  on "input" (Json.map tagger targetValue)
+  stopPropagationOn "input" (Json.map alwaysStop (Json.map tagger targetValue))
+
+
+alwaysStop : a -> (a, Bool)
+alwaysStop x =
+  (x, True)
 
 
 {-| Detect [change](https://developer.mozilla.org/en-US/docs/Web/Events/change)
@@ -143,7 +155,7 @@ alwaysPreventDefault msg =
 {-|-}
 onBlur : msg -> Attribute msg
 onBlur msg =
-  VirtualDom.on "blur" (VirtualDom.Normal (Json.map VirtualDom.Async (Json.succeed msg)))
+  on "blur" (Json.succeed msg)
 
 
 {-|-}
@@ -187,7 +199,7 @@ touch, scroll, and wheel events in some browsers.
 -}
 on : String -> Json.Decoder msg -> Attribute msg
 on event decoder =
-  VirtualDom.on event (VirtualDom.Normal (Json.map VirtualDom.Sync decoder))
+  VirtualDom.on event (VirtualDom.Normal decoder)
 
 
 {-| Create an event listener that may [`stopPropagation`][stop]. Your decoder
@@ -203,7 +215,7 @@ touch, scroll, and wheel events in some browsers.
 -}
 stopPropagationOn : String -> Json.Decoder (msg, Bool) -> Attribute msg
 stopPropagationOn event decoder =
-  VirtualDom.on event (VirtualDom.MayStopPropagation (Json.map syncTuple decoder))
+  VirtualDom.on event (VirtualDom.MayStopPropagation decoder)
 
 
 {-| Create an event listener that may [`preventDefault`][prevent]. Your decoder
@@ -225,7 +237,7 @@ default behavior:
 -}
 preventDefaultOn : String -> Json.Decoder (msg, Bool) -> Attribute msg
 preventDefaultOn event decoder =
-  VirtualDom.on event (VirtualDom.MayPreventDefault (Json.map syncTuple decoder))
+  VirtualDom.on event (VirtualDom.MayPreventDefault decoder)
 
 
 {-| Create an event listener that may [`stopPropagation`][stop] or
@@ -239,24 +251,7 @@ out the lower-level event API in `elm/virtual-dom`.
 -}
 custom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
 custom event decoder =
-  VirtualDom.on event (VirtualDom.Custom (Json.map syncRecord decoder))
-
-
-
--- SYNC HELPERS
-
-
-syncTuple : (msg, Bool) -> (VirtualDom.Timed msg, Bool)
-syncTuple (msg, bool) =
-  ( VirtualDom.Sync msg, bool )
-
-
-syncRecord : { message : msg, stopPropagation : Bool, preventDefault : Bool } -> { message : VirtualDom.Timed msg, stopPropagation : Bool, preventDefault : Bool }
-syncRecord { message, stopPropagation, preventDefault } =
-  { message = VirtualDom.Sync message
-  , stopPropagation = stopPropagation
-  , preventDefault = preventDefault
-  }
+  VirtualDom.on event (VirtualDom.Custom decoder)
 
 
 
@@ -270,7 +265,12 @@ syncRecord { message, stopPropagation, preventDefault } =
 
     onInput : (String -> msg) -> Attribute msg
     onInput tagger =
-      on "input" (Json.map tagger targetValue)
+      stopPropagationOn "input" <|
+        Json.map alwaysStop (Json.map tagger targetValue)
+
+    alwaysStop : a -> (a, Bool)
+    alwaysStop x =
+      (x, True)
 
 You probably will never need this, but hopefully it gives some insights into
 how to make custom event handlers.

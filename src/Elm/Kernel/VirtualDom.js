@@ -8,7 +8,7 @@ import Elm.Kernel.Utils exposing (Tuple2)
 import Elm.Kernel.Platform exposing (export)
 import Json.Decode as Json exposing (map, map2, succeed)
 import Result exposing (isOk)
-import VirtualDom exposing (isSync, toHandlerInt)
+import VirtualDom exposing (toHandlerInt)
 
 */
 
@@ -329,10 +329,10 @@ function _VirtualDom_mapHandler(func, handler)
 	return {
 		$: handler.$,
 		a:
+			!tag
+				? A2(__Json_map, func, handler.a)
+				:
 			A3(__Json_map2,
-				!tag
-					? _VirtualDom_mapTimed
-					:
 				tag < 3
 					? _VirtualDom_mapEventTuple
 					: _VirtualDom_mapEventRecord,
@@ -342,26 +342,15 @@ function _VirtualDom_mapHandler(func, handler)
 	};
 }
 
-var _VirtualDom_mapTimed = F2(function(func, timed)
-{
-	return {
-		$: timed.$,
-		a: func(timed.a)
-	};
-});
-
 var _VirtualDom_mapEventTuple = F2(function(func, tuple)
 {
-	return __Utils_Tuple2(
-		_VirtualDom_mapTimed(func, tuple.a),
-		tuple.b
-	);
+	return __Utils_Tuple2(func(tuple.a), tuple.b);
 });
 
 var _VirtualDom_mapEventRecord = F2(function(func, record)
 {
 	return {
-		__$message: _VirtualDom_mapTimed(func, record.__$message),
+		__$message: func(record.__$message),
 		__$stopPropagation: record.__$stopPropagation,
 		__$preventDefault: record.__$preventDefault
 	}
@@ -618,15 +607,26 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 			return;
 		}
 
-		var ok = result.a;
-		var timedMsg = _VirtualDom_eventToTimedMsg(event, __VirtualDom_toHandlerInt(handler), ok);
-		var message = timedMsg.a;
-		var currentEventNode = eventNode;
+		var tag = __VirtualDom_toHandlerInt(handler);
+
+		// 0 = Normal
+		// 1 = MayStopPropagation
+		// 2 = MayPreventDefault
+		// 3 = Custom
+
+		var value = result.a;
+		var message = !tag ? value : tag < 3 ? value.a : value.__$message;
+		var stopPropagation = tag == 1 ? value.b : tag == 3 && value.__$stopPropagation;
+		var currentEventNode = (
+			stopPropagation && event.stopPropagation(),
+			(tag == 2 ? value.b : tag == 3 && value.__$preventDefault) && event.preventDefault(),
+			eventNode
+		);
 		var tagger;
 		var i;
 		while (tagger = currentEventNode.__tagger)
 		{
-			if (typeof tagger === 'function')
+			if (typeof tagger == 'function')
 			{
 				message = tagger(message);
 			}
@@ -639,7 +639,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 			}
 			currentEventNode = currentEventNode.__parent;
 		}
-		currentEventNode(message, __VirtualDom_isSync(timedMsg));
+		currentEventNode(message, stopPropagation); // stopPropagation implies isSync
 	}
 
 	callback.__handler = initialHandler;
@@ -649,25 +649,7 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 
 function _VirtualDom_equalEvents(x, y)
 {
-	return x.$ === y.$ && __Json_equality(x.a, y.a);
-}
-
-function _VirtualDom_eventToTimedMsg(event, tag, value)
-{
-	// 0 = Normal
-	// 1 = MayStopPropagation
-	// 2 = MayPreventDefault
-	// 3 = Custom
-
-	if (!tag)
-	{
-		return value;
-	}
-
-	if (tag === 1 ? value.b : tag === 3 && value.__$stopPropagation) event.stopPropagation();
-	if (tag === 2 ? value.b : tag === 3 && value.__$preventDefault) event.preventDefault();
-
-	return tag < 3 ? value.a : value.__$message;
+	return x.$ == y.$ && __Json_equality(x.a, y.a);
 }
 
 

@@ -2,7 +2,7 @@ module VirtualDom exposing
   ( Node
   , text, node, nodeNS
   , Attribute, style, property, attribute, attributeNS
-  , on, Handler(..), Timed(..)
+  , on, Handler(..)
   , map, mapAttribute
   , keyedNode, keyedNodeNS
   , lazy, lazy2, lazy3, lazy4, lazy5, lazy6, lazy7, lazy8
@@ -18,7 +18,7 @@ that expose more helper functions for HTML or SVG.
 @docs Attribute, style, property, attribute, attributeNS
 
 # Events
-@docs on, Handler, Timed
+@docs on, Handler
 
 # Routing Messages
 @docs map, mapAttribute
@@ -225,7 +225,8 @@ You can define `onClick` like this:
       on "click" (Normal (Decode.succeed msg))
 
 **Note:** These event handlers trigger in the bubble phase. You can learn more
-about what that means [here][].
+about what that means [here][]. There is not support within Elm for doing
+tricks with the capture phase. We recommend doing that in JS through ports.
 
 [here]: https://github.com/elm/virtual-dom/blob/master/hints/capture-vs-bubble.md
 -}
@@ -234,7 +235,7 @@ on =
   Elm.Kernel.VirtualDom.on
 
 
-{-| When using `onBubble` or `onCapture` you can customize the event behavior
+{-| When using `on` you can customize the event behavior
 a bit. There are two ways to do this:
 
   - [`stopPropagation`][sp] means the event stops traveling through the DOM.
@@ -244,41 +245,35 @@ a bit. There are two ways to do this:
   - [`preventDefault`][pd] means any built-in browser behavior related to the
   event is prevented. This can be handy with key presses or touch gestures.
 
-**Note:** A [passive][] event listener will be created if you use `Normal`
+**Note 1:** A [passive][] event listener will be created if you use `Normal`
 or `MayStopPropagation`. In both cases `preventDefault` cannot be used, so
 we can enable optimizations for touch, scroll, and wheel events in some
 browsers.
+
+**Note 2:** Some actions, like uploading and downloading files, are only
+allowed when the JavaScript event loop is running because of user input. This
+is for security! So when an event occurs, we call `update` and send any `port`
+messages immediately, all within the same tick of the event loop. This makes
+it possible to handle user-instigated events in ports.
+
+**Note 3:** Normally the `view` is shown in the next `requestAnimationFrame`
+call. This allows us to save some work if messages are coming in very quickly.
+But if `stopPropagation` is used, we update the DOM immediately, within the
+same tick of the event loop. This is useful for DOM nodes that hold their own
+state, like `<input type="text">`. If someone types very fast, the state in the
+DOM can diverge from the state in your `Model` while waiting on the next
+`requestAnimationFrame` call. So updating the DOM synchronously makes this
+divergence impossible.
 
 [sp]: https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
 [pd]: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
 [passive]: https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
 -}
 type Handler msg
-  = Normal (Json.Decoder (Timed msg))
-  | MayStopPropagation (Json.Decoder (Timed msg, Bool))
-  | MayPreventDefault (Json.Decoder (Timed msg, Bool))
-  | Custom (Json.Decoder { message : Timed msg, stopPropagation : Bool, preventDefault : Bool })
-
-
-{-| Elm is able to do all `view` logic in `requestAnimationFrame` to smooth
-out animations and avoid doing pointless work. This type lets you control this
-optimization:
-
-  - `Sync` &mdash; the DOM changes in the same cycle as the user input. **(default)**
-  - `Async` &mdash; the DOM changes asynchronously in a `requestAnimationFrame` call.
-
-Why wouldn’t you always want `Async` though? That just seems better!
-
-Well, say you have an `<input>` node and you are listening for `onInput`
-events. And say you are managing the `value` attribute by hand. Maybe you are
-filtering out numbers, so it is a letters only field. If you update the DOM
-asynchronously, it can get ahead of your `Model` and start dropping inputs.
-
-So when it comes to user input, `Sync` is the safe default. It can be
-worthwhile to use `Async` if you have other animations running or if you are
-managing `mousemove` and `scroll` events. Definitely test though!
--}
-type Timed msg = Sync msg | Async msg
+  = Normal (Json.Decoder msg)
+  | MayStopPropagation (Json.Decoder (msg, Bool))
+  | MayPreventDefault (Json.Decoder (msg, Bool))
+  | Custom (Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool })
 
 
 
@@ -384,13 +379,3 @@ toHandlerInt handler =
     MayStopPropagation _ -> 1
     MayPreventDefault _ -> 2
     Custom _ -> 3
-
-
-isSync : Timed msg -> Bool
-isSync timed =
-  case timed of
-    Sync _ ->
-      True
-
-    Async _ ->
-      False

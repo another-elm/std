@@ -25,17 +25,23 @@ function _VirtualDom_appendChild(parent, child)
 	parent.appendChild(child);
 }
 
-var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, object)
+var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
 	// NOTE: this function needs __Platform_export available to work
-	object['embed'] = function(node)
-	{
-		node.parentNode.replaceChild(
-			_VirtualDom_render(virtualNode, function() {}),
-			node
-		);
-	};
-	return object;
+
+	/**__PROD/
+	var node = args['node'];
+	//*/
+	/**__DEBUG/
+	var node = args && args['node'] ? args['node'] : __Debug_crash(0);
+	//*/
+
+	node.parentNode.replaceChild(
+		_VirtualDom_render(virtualNode, function() {}),
+		node
+	);
+
+	return {};
 });
 
 

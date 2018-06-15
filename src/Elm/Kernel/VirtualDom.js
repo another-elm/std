@@ -17,6 +17,8 @@ import VirtualDom exposing (toHandlerInt)
 // HELPERS
 
 
+var _VirtualDom_divertHrefToApp;
+
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
 
@@ -452,6 +454,11 @@ function _VirtualDom_render(vNode, eventNode)
 	var domNode = vNode.__namespace
 		? _VirtualDom_doc.createElementNS(vNode.__namespace, vNode.__tag)
 		: _VirtualDom_doc.createElement(vNode.__tag);
+
+	if (_VirtualDom_divertHrefToApp && vNode.__tag == 'a')
+	{
+		domNode.addEventListener('click', _VirtualDom_divertHrefToApp(domNode));
+	}
 
 	_VirtualDom_applyFacts(domNode, eventNode, vNode.__facts);
 

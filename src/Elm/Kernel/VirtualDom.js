@@ -291,12 +291,12 @@ function _VirtualDom_noInnerHtmlOrFormAction(key)
 
 function _VirtualDom_noJavaScriptUri__PROD(value)
 {
-	return /^\s*javascript:/i.test(value) ? '' : value;
+	return /^javascript:/i.test(value.replace(/\s/g,'')) ? '' : value;
 }
 
 function _VirtualDom_noJavaScriptUri__DEBUG(value)
 {
-	return /^\s*javascript:/i.test(value)
+	return /^javascript:/i.test(value.replace(/\s/g,''))
 		? 'javascript:alert("This is an XSS vector. Please use ports or web components instead.")'
 		: value;
 }

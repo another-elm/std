@@ -493,7 +493,7 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 		key === 'a__1_ATTR_NS'
 			? _VirtualDom_applyAttrsNS(domNode, value)
 			:
-		(key !== 'value' || domNode[key] !== value) && (domNode[key] = value);
+		(key !== 'value' || key !== 'checked' || domNode[key] !== value) && (domNode[key] = value);
 	}
 }
 
@@ -909,7 +909,7 @@ function _VirtualDom_diffFacts(x, y, category)
 		var yValue = y[xKey];
 
 		// reference equal, so don't worry about it
-		if (xValue === yValue && xKey !== 'value'
+		if (xValue === yValue && xKey !== 'value' && xKey !== 'checked'
 			|| category === 'a__1_EVENT' && _VirtualDom_equalEvents(xValue, yValue))
 		{
 			continue;

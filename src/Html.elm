@@ -481,7 +481,7 @@ b =
   Elm.Kernel.VirtualDom.node "b"
 
 
-{-| Represents a non-textual annoatation for which the conventional
+{-| Represents a non-textual annotation for which the conventional
 presentation is underlining, such labeling the text as being misspelt or
 labeling a proper name in Chinese text.
 -}

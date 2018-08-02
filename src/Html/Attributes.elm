@@ -96,7 +96,7 @@ import VirtualDom
     greeting : Node msg
     greeting =
       div
-        [ style "backgroundColor" "red"
+        [ style "background-color" "red"
         , style "height" "90px"
         , style "width" "100%"
         ]
@@ -682,7 +682,7 @@ wrap =
 -- MAPS
 
 
-{-| When an `img` is a descendent of an `a` tag, the `ismap` attribute
+{-| When an `img` is a descendant of an `a` tag, the `ismap` attribute
 indicates that the click location should be added to the parent `a`'s href as
 a query string.
 -}

@@ -105,7 +105,7 @@ For more details on how `onInput` works, check out [`targetValue`](#targetValue)
 not work if you need some other information. For example, if you want to track
 inputs on a range slider, make a custom handler with [`on`](#on).
 
-**Note 2:** It uses `stopPropagationOn` internally to allways stop propagation
+**Note 2:** It uses `stopPropagationOn` internally to always stop propagation
 of the event. This is important for complicated reasons explained [here][1] and
 [here][2].
 

@@ -155,10 +155,16 @@ into `Msg` values in `view`.
     viewButton name =
       button [ onClick () ] [ text name ]
 
-This should not come in handy too often. Definitely read [this][reuse] before
-deciding if this is what you want.
+If you are growing your project as recommended in [the official
+guide](https://guide.elm-lang.org/), this should not come in handy in most
+projects. Usually it is easier to just pass things in as arguments.
 
-[reuse]: https://guide.elm-lang.org/reuse/
+**Note:** Some folks have tried to use this to make “components” in their
+projects, but they run into the fact that components are objects. Both are
+local mutable state with methods. Elm is not an object-oriented language, so
+you run into all sorts of friction if you try to use it like one. I definitely
+recommend against going down that path! Instead, make the simplest function
+possible and repeat.
 -}
 map : (a -> msg) -> Html a -> Html msg
 map =

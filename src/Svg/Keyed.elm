@@ -21,17 +21,11 @@ import VirtualDom
 import Json.Encode as Json
 
 
-svgNamespace : Attribute msg
-svgNamespace =
-  VirtualDom.property "namespace" (Json.string "http://www.w3.org/2000/svg")
-
-
 {-| Works just like `Svg.node`, but you add a unique identifier to each child
 node. You want this when you have a list of nodes that is changing: adding
 nodes, removing nodes, etc. In these cases, the unique identifiers help make
 the DOM modifications more efficient.
 -}
 node : String -> List (Attribute msg) -> List ( String, Svg msg ) -> Svg msg
-node name =
-  \attributes children ->
-    VirtualDom.keyedNode name (svgNamespace :: attributes) children
+node =
+  VirtualDom.keyedNodeNS "http://www.w3.org/2000/svg"

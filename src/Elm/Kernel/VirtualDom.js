@@ -493,7 +493,7 @@ function _VirtualDom_applyFacts(domNode, eventNode, facts)
 		key === 'a__1_ATTR_NS'
 			? _VirtualDom_applyAttrsNS(domNode, value)
 			:
-		(key !== 'value' || key !== 'checked' || domNode[key] !== value) && (domNode[key] = value);
+		((key !== 'value' && key !== 'checked') || domNode[key] !== value) && (domNode[key] = value);
 	}
 }
 

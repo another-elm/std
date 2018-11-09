@@ -74,7 +74,7 @@ import Json.Encode as Json
 {-| The core building block to create SVG. This library is filled with helper
 functions to create these `Svg` values.
 
-This is backed by `VirtualDom.Node` in `evancz/virtual-dom`, but you do not
+This is backed by `VirtualDom.Node` in `elm/virtual-dom`, but you do not
 need to know any details about that to use this library!
 -}
 type alias Svg msg =

@@ -39,7 +39,10 @@ echo "seeding framework for test dependencies ...";
 # '|| true' lets us ignore failures here and keep the script running.
 # useful when developing a fix for a bug that exists in the version of
 # elm/core hosted on package.elm-lang.org
+
 "${ELM_TEST}" tests/Main.elm --fuzz=1 > /dev/null || true;
+
+# elm make tests/Main2.elm --output ./tmp.js
 
 # clear out the copy of elm-core fetched by the above and replace it
 # with the local source code we want to actually test
@@ -68,3 +71,6 @@ echo "running tests ...";
 echo;
 
 "${ELM_TEST}" tests/Main.elm $@;
+
+# elm make tests/Main2.elm --output ./tmp.js
+# node tmp

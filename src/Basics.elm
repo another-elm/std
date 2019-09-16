@@ -166,8 +166,11 @@ conversions (as Scala does) it can be even more confusing. Elm has opted for a
 design that makes all conversions explicit.
 -}
 add : number -> number -> number
-add =
-  Elm.Kernel.Basics.add
+add lhs rhs =
+  let
+    sum = add lhs rhs
+  in
+    sum
 
 
 {-| Subtract numbers like `4 - 3 == 1`.
@@ -175,8 +178,11 @@ add =
 See [`(+)`](#+) for docs on the `number` type variable.
 -}
 sub : number -> number -> number
-sub =
-  Elm.Kernel.Basics.sub
+sub lhs rhs =
+  let
+    difference = sub lhs rhs
+  in
+    difference
 
 
 {-| Multiply numbers like `2 * 3 == 6`.
@@ -184,9 +190,11 @@ sub =
 See [`(+)`](#+) for docs on the `number` type variable.
 -}
 mul : number -> number -> number
-mul =
-  Elm.Kernel.Basics.mul
-
+mul lhs rhs =
+  let
+    product = mul lhs rhs
+  in
+    product
 
 {-| Floating-point division:
 
@@ -201,8 +209,11 @@ mul =
 
 -}
 fdiv : Float -> Float -> Float
-fdiv =
-  Elm.Kernel.Basics.fdiv
+fdiv lhs rhs =
+  let
+    quotient = fdiv lhs rhs
+  in
+    quotient
 
 
 {-| Integer division:
@@ -223,8 +234,11 @@ It may sometimes be useful to pair this with the [`remainderBy`](#remainderBy)
 function.
 -}
 idiv : Int -> Int -> Int
-idiv =
-  Elm.Kernel.Basics.idiv
+idiv lhs rhs =
+  let
+    quotient = idiv lhs rhs
+  in
+    quotient
 
 
 {-| Exponentiation
@@ -233,8 +247,8 @@ idiv =
     3^3 == 27
 -}
 pow : number -> number -> number
-pow =
-  Elm.Kernel.Basics.pow
+pow base exponent =
+  Elm.Kernel.Basics.pow base exponent
 
 
 
@@ -250,8 +264,11 @@ values like this:
 
 -}
 toFloat : Int -> Float
-toFloat =
-  Elm.Kernel.Basics.toFloat
+toFloat x =
+  let
+    asFloat = toFloat x
+  in
+    asFloat
 
 
 {-| Round a number to the nearest integer.
@@ -314,8 +331,11 @@ ceiling =
     truncate -1.8 == -1
 -}
 truncate : Float -> Int
-truncate =
-  Elm.Kernel.Basics.truncate
+truncate x =
+  let
+    truncated = truncate x
+  in
+    truncated
 
 
 
@@ -342,8 +362,11 @@ if passed through a port.
 [undecidable]: https://en.wikipedia.org/wiki/Undecidable_problem
 -}
 eq : a -> a -> Bool
-eq =
-  Elm.Kernel.Utils.equal
+eq lhs rhs =
+  let
+    areEqual = eq lhs rhs
+  in
+    areEqual
 
 
 {-| Check if values are not &ldquo;the same&rdquo;.
@@ -351,8 +374,11 @@ eq =
 So `(a /= b)` is the same as `(not (a == b))`.
 -}
 neq : a -> a -> Bool
-neq =
-  Elm.Kernel.Utils.notEqual
+neq lhs rhs =
+  let
+    areNotEqual = neq lhs rhs
+  in
+    areNotEqual
 
 
 
@@ -361,26 +387,38 @@ neq =
 
 {-|-}
 lt : comparable -> comparable -> Bool
-lt =
-  Elm.Kernel.Utils.lt
+lt lhs rhs =
+  let
+    lhsSmaller = lt lhs rhs
+  in
+    lhsSmaller
 
 
 {-|-}
 gt : comparable -> comparable -> Bool
-gt =
-  Elm.Kernel.Utils.gt
+gt lhs rhs =
+  let
+    lhsLarger = gt lhs rhs
+  in
+    lhsLarger
 
 
 {-|-}
 le : comparable -> comparable -> Bool
-le =
-  Elm.Kernel.Utils.le
+le lhs rhs =
+  let
+    lhsSmallerOrEqual = le lhs rhs
+  in
+    lhsSmallerOrEqual
 
 
 {-|-}
 ge : comparable -> comparable -> Bool
-ge =
-  Elm.Kernel.Utils.ge
+ge lhs rhs =
+  let
+    lhsLargerOrEqual = ge lhs rhs
+  in
+    lhsLargerOrEqual
 
 
 {-| Find the smaller of two comparables.
@@ -446,8 +484,11 @@ type Bool = True | False
     not False == True
 -}
 not : Bool -> Bool
-not =
-  Elm.Kernel.Basics.not
+not x =
+  let
+    complement = not x
+  in
+    complement
 
 
 {-| The logical AND operator. `True` if both inputs are `True`.
@@ -462,8 +503,11 @@ short-circuits. This means if `left` is `False` we do not bother evaluating `rig
 and just return `False` overall.
 -}
 and : Bool -> Bool -> Bool
-and =
-  Elm.Kernel.Basics.and
+and lhs rhs =
+  let
+    areBothTrue = and lhs rhs
+  in
+    areBothTrue
 
 
 {-| The logical OR operator. `True` if one or both inputs are `True`.
@@ -478,8 +522,11 @@ short-circuits. This means if `left` is `True` we do not bother evaluating `righ
 and just return `True` overall.
 -}
 or : Bool -> Bool -> Bool
-or =
-  Elm.Kernel.Basics.or
+or lhs rhs =
+  let
+    areEitherTrue = or lhs rhs
+  in
+    areEitherTrue
 
 
 {-| The exclusive-or operator. `True` if exactly one input is `True`.
@@ -490,8 +537,11 @@ or =
     xor False False == False
 -}
 xor : Bool -> Bool -> Bool
-xor =
-  Elm.Kernel.Basics.xor
+xor lhs rhs =
+  let
+    isOneTrue = xor lhs rhs
+  in
+    isOneTrue
 
 
 
@@ -504,8 +554,11 @@ xor =
     [1,1,2] ++ [3,5,8] == [1,1,2,3,5,8]
 -}
 append : appendable -> appendable -> appendable
-append =
-  Elm.Kernel.Utils.append
+append lhs rhs =
+  let
+    appended = append lhs rhs
+  in
+    appended
 
 
 
@@ -533,12 +586,20 @@ information.
 [dm]: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/divmodnote-letter.pdf
 -}
 modBy : Int -> Int -> Int
-modBy =
-  Elm.Kernel.Basics.modBy
+modBy modulus x =
+  let
+    answer =
+      remainderBy modulus x
+  in
+    if eq modulus 0 then
+      Elm.Kernel.Basics.modBy0 ()
+    else if or (and (gt answer 0) (lt modulus 0)) (and (lt answer 0) (gt modulus 0)) then
+      add answer modulus
+    else
+      answer
 
 
 {-| Get the remainder after division. Here are bunch of examples of dividing by four:
-
     List.map (remainderBy 4) [ -5, -4, -3, -2, -1,  0,  1,  2,  3,  4,  5 ]
     --                       [ -1,  0, -3, -2, -1,  0,  1,  2,  3,  0,  1 ]
 
@@ -549,8 +610,11 @@ information.
 [dm]: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/divmodnote-letter.pdf
 -}
 remainderBy : Int -> Int -> Int
-remainderBy =
-  Elm.Kernel.Basics.remainderBy
+remainderBy divisor dividend =
+  let
+    remainder = remainderBy divisor dividend
+  in
+    remainder
 
 
 {-| Negate a number.
@@ -560,8 +624,12 @@ remainderBy =
     negate 0 == 0
 -}
 negate : number -> number
-negate n =
-  -n
+negate x =
+  let
+    negated = negate x
+  in
+    negated
+
 
 
 {-| Get the [absolute value][abs] of a number.
@@ -623,7 +691,7 @@ logBase base number =
 -}
 e : Float
 e =
-  Elm.Kernel.Basics.e
+  2.7182818284590452353602874713526624977572470
 
 
 
@@ -665,7 +733,7 @@ turns angleInTurns =
 -}
 pi : Float
 pi =
-  Elm.Kernel.Basics.pi
+  3.14159265358979323851280895
 
 
 {-| Figure out the cosine given an angle in radians.
@@ -805,8 +873,8 @@ numbers](https://en.wikipedia.org/wiki/NaN).
     isNaN 1         == False
 -}
 isNaN : Float -> Bool
-isNaN =
-  Elm.Kernel.Basics.isNaN
+isNaN n =
+  neq n n
 
 
 {-| Determine whether a float is positive or negative infinity.
@@ -820,8 +888,8 @@ Notice that NaN is not infinite! For float `n` to be finite implies that
 `not (isInfinite n || isNaN n)` evaluates to `True`.
 -}
 isInfinite : Float -> Bool
-isInfinite =
-  Elm.Kernel.Basics.isInfinite
+isInfinite n =
+  eq (abs n) (fdiv 1 0)
 
 
 
@@ -889,7 +957,10 @@ Testing the logic gets easier too. Nice side benefit!
 -}
 apR : a -> (a -> b) -> b
 apR x f =
-  f x
+  let
+    applied = apR x f
+  in
+    applied
 
 
 {-| Saying `f <| x` is exactly the same as `f x`.
@@ -899,7 +970,10 @@ to apply a function to a `case` expression? That sort of thing.
 -}
 apL : (a -> b) -> a -> b
 apL f x =
-  f x
+  let
+    applied = apL f x
+  in
+    applied
 
 
 {-| Given a value, returns exactly the same value. This is called

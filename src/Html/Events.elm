@@ -10,10 +10,10 @@ module Html.Events exposing
   )
 
 {-|
-It is often helpful to create an [Union Type][] so you can have many different kinds
+It is often helpful to create an [Custom Type][] so you can have many different kinds
 of events as seen in the [TodoMVC][] example.
 
-[Union Type]: https://elm-lang.org/learn/Union-Types.elm
+[Custom Type]: https://guide.elm-lang.org/types/custom_types.html
 [TodoMVC]: https://github.com/evancz/elm-todomvc/blob/master/Todo.elm
 
 # Mouse
@@ -245,9 +245,11 @@ preventDefaultOn event decoder =
 
 [stop]: https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
 [prevent]: https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
+[handler]: https://package.elm-lang.org/packages/elm/virtual-dom/latest/VirtualDom#Handler
 
-**Note:** If you need something even more custom (like capture phase) check
-out the lower-level event API in `elm/virtual-dom`.
+**Note:** Check out the lower-level event API in `elm/virtual-dom` for more
+information on exactly how events work, especially the [`Handler`][handler]
+docs.
 -}
 custom : String -> Json.Decoder { message : msg, stopPropagation : Bool, preventDefault : Bool } -> Attribute msg
 custom event decoder =

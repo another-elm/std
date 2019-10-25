@@ -21,30 +21,43 @@ import Elm.Kernel.Bitwise
 {-| Bitwise AND
 -}
 and : Int -> Int -> Int
-and =
-  Elm.Kernel.Bitwise.and
+and lhs rhs =
+  let
+    res = and lhs rhs
+  in
+    res
 
 
 {-| Bitwise OR
 -}
 or : Int -> Int -> Int
-or =
-  Elm.Kernel.Bitwise.or
+or lhs rhs =
+  let
+    res = or lhs rhs
+  in
+    res
+
 
 
 {-| Bitwise XOR
 -}
 xor : Int -> Int -> Int
-xor =
-  Elm.Kernel.Bitwise.xor
+xor lhs rhs =
+  let
+    res = xor lhs rhs
+  in
+    res
+
 
 
 {-| Flip each bit individually, often called bitwise NOT
 -}
 complement : Int -> Int
-complement =
-  Elm.Kernel.Bitwise.complement
-
+complement x =
+  let
+    res = complement x
+  in
+    res
 
 {-| Shift bits to the left by a given offset, filling new bits with zeros.
 This can be used to multiply numbers by powers of two.
@@ -53,8 +66,12 @@ This can be used to multiply numbers by powers of two.
     shiftLeftBy 5 1 == 32
 -}
 shiftLeftBy : Int -> Int -> Int
-shiftLeftBy =
-  Elm.Kernel.Bitwise.shiftLeftBy
+shiftLeftBy lhs rhs =
+  let
+    res = shiftLeftBy lhs rhs
+  in
+    res
+
 
 
 {-| Shift bits to the right by a given offset, filling new bits with
@@ -71,8 +88,12 @@ with copies of the highest bit.
 [ars]: https://en.wikipedia.org/wiki/Bitwise_operation#Arithmetic_shift
 -}
 shiftRightBy : Int -> Int -> Int
-shiftRightBy =
-  Elm.Kernel.Bitwise.shiftRightBy
+shiftRightBy lhs rhs =
+  let
+    res = shiftRightBy lhs rhs
+  in
+    res
+
 
 
 {-| Shift bits to the right by a given offset, filling new bits with zeros.
@@ -88,6 +109,9 @@ zeros.
 [lrs]: https://en.wikipedia.org/wiki/Bitwise_operation#Logical_shift
 -}
 shiftRightZfBy : Int -> Int -> Int
-shiftRightZfBy =
-  Elm.Kernel.Bitwise.shiftRightZfBy
+shiftRightZfBy lhs rhs =
+  let
+    res = shiftRightZfBy lhs rhs
+  in
+    res
 

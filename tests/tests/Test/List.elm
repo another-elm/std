@@ -41,6 +41,9 @@ testListOfN n =
 
         mid =
             n // 2
+
+        possiblySingletonHi =
+            List.repeat (min 1 n) "hi"
     in
         describe (String.fromInt n ++ " elements")
             [ describe "foldl"
@@ -103,6 +106,18 @@ testListOfN n =
                 [ test "same length" <| \() -> Expect.equal (map ((*) 2) xs) (map2 (+) xs xs)
                 , test "long first" <| \() -> Expect.equal (map (\x -> x * 2 - 1) xs) (map2 (+) zs xs)
                 , test "short first" <| \() -> Expect.equal (map (\x -> x * 2 - 1) xs) (map2 (+) xs zs)
+                ]
+            , describe "map3"
+                [ test "same length" <| \() -> Expect.equal (map ((*) 3) xs) (map3 (\a b c -> a + b + c) xs xs xs)
+                , test "length is the shortest" <| \() -> Expect.equal possiblySingletonHi (map3 (\_ x _ -> x) xs [ "hi" ] xs)
+                ]
+            , describe "map4"
+                [ test "same length" <| \() -> Expect.equal (map ((*) 4) xs) (map4 (\a b c d -> a + b + c + d) xs xs xs xs)
+                , test "length is the shortest" <| \() -> Expect.equal possiblySingletonHi (map4 (\_ _ x _ -> x) xs xs [ "hi" ] xs)
+                ]
+            , describe "map5"
+                [ test "same length" <| \() -> Expect.equal (map ((*) 5) xs) (map5 (\a b c d e -> a + b + c + d + e) xs xs xs xs xs)
+                , test "length is the shortest" <| \() -> Expect.equal possiblySingletonHi (map5 (\_ x _ _ _ -> x) xs [ "hi" ] xs xs xs)
                 ]
             , test "unzip" <| \() -> Expect.equal ( xsNeg, xs ) (map (\x -> ( -x, x )) xs |> unzip)
             , describe "filterMap"

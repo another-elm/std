@@ -10,6 +10,7 @@ import Expect exposing (FloatingPointTolerance(..))
 import List
 import String
 import Debug exposing (toString)
+import Fuzz
 
 
 tests : Test
@@ -202,6 +203,24 @@ tests =
                                 |> Expect.equal [ "SaN" ]
                     ]
                 ]
+
+        operatorTests =
+            describe "Operators"
+                [ describe "Comutivity"
+                    [ fuzz2 Fuzz.int Fuzz.int "Int + Int" <| \a b -> Expect.equal (a + b) (b + a)
+                    , fuzz2 Fuzz.float Fuzz.float "Float + Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a + b) (b + a)
+                    , fuzz2 Fuzz.int Fuzz.int "Int - Int" <| \a b -> Expect.equal (a - b) (-(b - a))
+                    , fuzz2 Fuzz.float Fuzz.float "Float - Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a - b) (-(b - a))
+                    , fuzz2 Fuzz.int Fuzz.int "Int * Int" <| \a b -> Expect.equal (a * b) (b * a)
+                    , fuzz2 Fuzz.float Fuzz.float "Float * Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a * b) (b * a)
+                    , fuzz2 Fuzz.float Fuzz.float "Float / Float" <|
+                        \a b ->
+                            if b == 0 then
+                                Expect.pass
+                            else
+                                Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a / b)  (1 / (b / a))
+                    ]
+                ]
     in
         describe "Basics"
             [ comparison
@@ -211,4 +230,5 @@ tests =
             , booleanTests
             , miscTests
             , higherOrderTests
+            , operatorTests
             ]

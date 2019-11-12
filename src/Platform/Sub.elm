@@ -23,8 +23,9 @@ module Platform.Sub exposing
 @docs map
 -}
 
-import Elm.Kernel.Platform
-
+import Platform.Bag
+import Basics exposing ((>>))
+import List
 
 
 -- SUBSCRIPTIONS
@@ -46,7 +47,8 @@ ever, subscriptions will make more sense as you work through [the Elm Architectu
 Tutorial](https://guide.elm-lang.org/architecture/) and see how they fit
 into a real application!
 -}
-type Sub msg = Sub
+type Sub msg
+  = Value (Platform.Bag.Bag msg)
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -64,7 +66,9 @@ subscriptions.
 -}
 batch : List (Sub msg) -> Sub msg
 batch =
-  Elm.Kernel.Platform.batch
+  List.map (\(Value bag) -> bag)
+    >> Platform.Bag.batch
+    >> Value
 
 
 
@@ -80,5 +84,5 @@ section on [structure][] in the guide before reaching for this!
 [structure]: https://guide.elm-lang.org/webapps/structure.html
 -}
 map : (a -> msg) -> Sub a -> Sub msg
-map =
-  Elm.Kernel.Platform.map
+map fn (Value bag) =
+  Value (Platform.Bag.map fn bag)

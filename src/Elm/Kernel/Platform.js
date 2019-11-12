@@ -173,37 +173,31 @@ var _Platform_sendToSelf = F2(function(router, msg)
 // BAGS
 
 
+// Called by compiler generated js for event managers
 function _Platform_leaf(home)
 {
 	return function(value)
 	{
+		/**__DEBUG/
 		return {
-			$: __2_LEAF,
+			$: 'Value',
+			a: {
+				$: 'Leaf',
+				__home: home,
+				__value: value
+			}
+		};
+		//*/
+
+		/**__PROD/
+		return {
+			$: 0,
 			__home: home,
 			__value: value
 		};
+		//*/
 	};
 }
-
-
-function _Platform_batch(list)
-{
-	return {
-		$: __2_NODE,
-		__bags: list
-	};
-}
-
-
-var _Platform_map = F2(function(tagger, bag)
-{
-	return {
-		$: __2_MAP,
-		__func: tagger,
-		__bag: bag
-	}
-});
-
 
 
 // PIPE BAGS INTO EFFECT MANAGERS
@@ -212,8 +206,8 @@ var _Platform_map = F2(function(tagger, bag)
 function _Platform_dispatchEffects(managers, cmdBag, subBag)
 {
 	var effectsDict = {};
-	_Platform_gatherEffects(true, cmdBag, effectsDict, null);
-	_Platform_gatherEffects(false, subBag, effectsDict, null);
+	_Platform_gatherEffects(true, _Platform__unwrap_bag(cmdBag), effectsDict, null);
+	_Platform_gatherEffects(false, _Platform__unwrap_bag(subBag), effectsDict, null);
 
 	for (var home in managers)
 	{
@@ -224,27 +218,48 @@ function _Platform_dispatchEffects(managers, cmdBag, subBag)
 	}
 }
 
+function _Platform__unwrap_bag(cmdOrSub)
+{
+	/**__DEBUG/
+	return cmdOrSub.a;
+	//*/
+
+	/**__PROD/
+	return cmdOrSub;
+	//*/
+}
 
 function _Platform_gatherEffects(isCmd, bag, effectsDict, taggers)
 {
+	/**__DEBUG/
+	const LEAF = 'Leaf';
+	const BATCH = 'Batch';
+	const MAP = 'Map';
+	//*/
+
+	/**__PROD/
+	const LEAF = 0;
+	const BATCH = 1;
+	const MAP = 2;
+	//*/
 	switch (bag.$)
 	{
-		case __2_LEAF:
+		case LEAF:
 			var home = bag.__home;
 			var effect = _Platform_toEffect(isCmd, home, taggers, bag.__value);
 			effectsDict[home] = _Platform_insert(isCmd, effect, effectsDict[home]);
 			return;
 
-		case __2_NODE:
-			for (var list = bag.__bags; list.b; list = list.b) // WHILE_CONS
+		case BATCH:
+			for (let list = bag.a; list.b; list = list.b) // WHILE_CONS
 			{
 				_Platform_gatherEffects(isCmd, list.a, effectsDict, taggers);
 			}
 			return;
 
-		case __2_MAP:
-			_Platform_gatherEffects(isCmd, bag.__bag, effectsDict, {
-				__tagger: bag.__func,
+		case MAP:
+			_Platform_gatherEffects(isCmd, bag.a, effectsDict, {
+				__tagger: bag.b,
 				__rest: taggers
 			});
 			return;

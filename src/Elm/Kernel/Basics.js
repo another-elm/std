@@ -27,3 +27,7 @@ var _Basics_modBy0 = function()
 {
 	__Debug_crash(11)
 };
+
+var _Basics_fudge_type = function(x) {
+	return x;
+};

@@ -14,7 +14,6 @@ module Bitwise exposing
 
 
 import Basics exposing (Int)
-import Elm.Kernel.Bitwise
 
 
 

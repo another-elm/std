@@ -131,7 +131,13 @@ function _Platform_instantiateManager(info, sendToApp)
 		{
 			var value = msg.a;
 
-			if (msg.$ === __2_SELF)
+			/**__DEBUG/
+			if (msg.$ === 'Self')
+			//*/
+
+			/**__PROD/
+			if (msg.$ === 3)
+			//*/
 			{
 				return A3(onSelfMsg, router, value, state);
 			}
@@ -163,8 +169,18 @@ var _Platform_sendToApp = F2(function(router, msg)
 var _Platform_sendToSelf = F2(function(router, msg)
 {
 	return A2(__Scheduler_send, router.__selfProcess, {
-		$: __2_SELF,
+		/**__DEBUG/
+		$: 'Value',
+		a: {
+			$: 'Self',
+			a: msg
+		}
+		//*/
+
+		/**__PROD/
+		$: 3,
 		a: msg
+		//*/
 	});
 });
 

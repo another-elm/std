@@ -258,8 +258,8 @@ function _Platform_gatherEffects(isCmd, bag, effectsDict, taggers)
 			return;
 
 		case MAP:
-			_Platform_gatherEffects(isCmd, bag.a, effectsDict, {
-				__tagger: bag.b,
+			_Platform_gatherEffects(isCmd, bag.b, effectsDict, {
+				__tagger: bag.a,
 				__rest: taggers
 			});
 			return;

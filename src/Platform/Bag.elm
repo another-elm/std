@@ -4,26 +4,6 @@ module Platform.Bag exposing
   , map
   )
 
-{-|
-
-> **Note:** Elm has **managed effects**, meaning that things like HTTP
-> requests or writing to disk are all treated as *data* in Elm. When this
-> data is given to the Elm runtime system, it can do some “query optimization”
-> before actually performing the effect. Perhaps unexpectedly, this managed
-> effects idea is the heart of why Elm is so nice for testing, reuse,
-> reproducibility, etc.
->
-> Elm has two kinds of managed effects: commands and subscriptions.
-
-# Commands
-@docs Bag, none, batch
-
-# Fancy Stuff
-@docs map
-
--}
-
-import String exposing (String)
 import Basics exposing (Never)
 
 {-| Generic bag type, for Cmds or Subs.

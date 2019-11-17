@@ -162,7 +162,7 @@ var _Platform_sendToApp = F2(function(router, msg)
 	{
 		router.__sendToApp(msg);
 		callback(__Scheduler_succeed(__Utils_Tuple0));
-	});
+	}, false);
 });
 
 

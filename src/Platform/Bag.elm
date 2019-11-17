@@ -1,5 +1,5 @@
 module Platform.Bag exposing
-  ( Bag
+  ( Bag(..)
   , batch
   , map
   )
@@ -14,7 +14,7 @@ type Bag msg
     = Leaf -- let kernel code handle this one
     | Batch (List (Bag msg))
     | Map (BagHiddenValue -> msg) (Bag BagHiddenValue)
-    | Self -- kernel code gets this one too
+    | Self msg
 
 
 batch : List (Bag msg) -> Bag msg

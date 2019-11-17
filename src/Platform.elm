@@ -27,9 +27,11 @@ curious? Public discussions of your explorations should be framed accordingly.
 
 import Basics exposing (Never)
 import Elm.Kernel.Platform
-import Elm.Kernel.Scheduler
+import Platform.Scheduler as Scheduler
 import Platform.Cmd exposing (Cmd)
 import Platform.Sub exposing (Sub)
+import Platform.Bag as Bag
+import Maybe exposing (Maybe(..))
 
 
 
@@ -80,14 +82,13 @@ worker =
 information on this. It is only defined here because it is a platform
 primitive.
 -}
-type Task err ok = Task
-
+type alias Task err ok = Scheduler.Task err ok
 
 {-| Head over to the documentation for the [`Process`](Process) module for
 information on this. It is only defined here because it is a platform
 primitive.
 -}
-type ProcessId = ProcessId
+type alias ProcessId = Scheduler.Id
 
 
 
@@ -99,14 +100,27 @@ the main app and your individual effect manager.
 -}
 type Router appMsg selfMsg =
   Router
-
+    { sendToApp: appMsg -> ()
+    , selfProcess: ProcessId
+    }
 
 {-| Send the router a message for the main loop of your app. This message will
 be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
-sendToApp =
-  Elm.Kernel.Platform.sendToApp
+sendToApp (Router router) msg =
+  Scheduler.binding
+    (\doneCallback ->
+      let
+        _ =
+          router.sendToApp msg
+      in
+        let
+            _ =
+              doneCallback (Scheduler.Succeed ())
+        in
+          Nothing
+    )
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -116,5 +130,7 @@ effect manager as necessary.
 As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
-sendToSelf =
-  Elm.Kernel.Platform.sendToSelf
+sendToSelf (Router router) msg =
+  Scheduler.send
+    router.selfProcess
+    (Bag.Self msg)

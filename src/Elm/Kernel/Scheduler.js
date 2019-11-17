@@ -9,187 +9,178 @@ import Elm.Kernel.Utils exposing (Tuple0)
 
 function _Scheduler_succeed(value)
 {
+	/**__DEBUG/
 	return {
-		$: __1_SUCCEED,
-		__value: value
+		$: 'Succeed',
+		a: value
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 0,
+		a: value
+	};
+	//*/
 }
 
 function _Scheduler_fail(error)
 {
+	/**__DEBUG/
 	return {
-		$: __1_FAIL,
-		__value: error
+		$: 'Fail',
+		a: error
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 1,
+		a: error
+	};
+	//*/
 }
 
-function _Scheduler_binding(callback)
+function _Scheduler_binding(callback, killable)
 {
+	/**__DEBUG/
 	return {
-		$: __1_BINDING,
-		__callback: callback,
-		__kill: null
+		$: 'Binding',
+		a: killable
+			? function(x) {
+				return {
+					$: 'Just',
+					a: callback(x),
+				};
+			}
+			: function(x) {
+				callback(x);
+				return {
+					$: 'Nothing',
+				}
+			}
+		b: {$: 'Nothing'}
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 2,
+		a: killable
+			? function(x) {
+				return {
+					$: 0,
+					a: callback(x),
+				};
+			}
+			: function(x) {
+				callback(x);
+				return {
+					$: 1,
+				}
+			}
+		b: {$: 1}
+	};
+	//*/
 }
 
 var _Scheduler_andThen = F2(function(callback, task)
 {
+	/**__DEBUG/
 	return {
-		$: __1_AND_THEN,
-		__callback: callback,
-		__task: task
+		$: 'AndThen',
+		a: callback
+		b: task
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 3,
+		a: callback
+		b: task
+	};
+	//*/
 });
 
 var _Scheduler_onError = F2(function(callback, task)
 {
+	/**__DEBUG/
 	return {
-		$: __1_ON_ERROR,
-		__callback: callback,
-		__task: task
+		$: 'OnError',
+		a: callback
+		b: task
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 4,
+		a: callback
+		b: task
+	};
+	//*/
 });
 
 function _Scheduler_receive(callback)
 {
+	/**__DEBUG/
 	return {
-		$: __1_RECEIVE,
-		__callback: callback
+		$: 'Receive',
+		a: callback
 	};
+	//*/
+
+	/**__PROD/
+	return {
+		$: 5,
+		a: callback
+	};
+	//*/
 }
 
 
 // PROCESSES
 
 var _Scheduler_guid = 0;
+var _Scheduler_processes = new WeakMap();
 
-function _Scheduler_rawSpawn(task)
-{
-	var proc = {
-		$: __2_PROCESS,
-		__id: _Scheduler_guid++,
-		__root: task,
-		__stack: null,
-		__mailbox: []
-	};
+function _Sceduler_getGuid() {
+	return Object.create({ id: _Scheduler_guid++ });
+}
 
-	_Scheduler_enqueue(proc);
-
+function _Sceduler_register(proc) {
+	_Scheduler_processes.set(proc.id, proc);
 	return proc;
 }
 
-function _Scheduler_spawn(task)
-{
-	return _Scheduler_binding(function(callback) {
-		callback(_Scheduler_succeed(_Scheduler_rawSpawn(task)));
-	});
+function _Sceduler_getProcess(id) {
+	const proc = _Scheduler_processes.get(id);
+	/**__DEBUG/
+	if (proc === undefined) {
+		console.error(`INTERNAL ERROR: Process with id ${id} is not in map!`);
+	}
+	//*/
+	return proc;
 }
-
-function _Scheduler_rawSend(proc, msg)
-{
-	proc.__mailbox.push(msg);
-	_Scheduler_enqueue(proc);
-}
-
-var _Scheduler_send = F2(function(proc, msg)
-{
-	return _Scheduler_binding(function(callback) {
-		_Scheduler_rawSend(proc, msg);
-		callback(_Scheduler_succeed(__Utils_Tuple0));
-	});
-});
-
-function _Scheduler_kill(proc)
-{
-	return _Scheduler_binding(function(callback) {
-		var task = proc.__root;
-		if (task.$ === __1_BINDING && task.__kill)
-		{
-			task.__kill();
-		}
-
-		proc.__root = null;
-
-		callback(_Scheduler_succeed(__Utils_Tuple0));
-	});
-}
-
-
-/* STEP PROCESSES
-
-type alias Process =
-  { $ : tag
-  , id : unique_id
-  , root : Task
-  , stack : null | { $: SUCCEED | FAIL, a: callback, b: stack }
-  , mailbox : [msg]
-  }
-
-*/
-
 
 var _Scheduler_working = false;
 var _Scheduler_queue = [];
 
-
-function _Scheduler_enqueue(proc)
+var _Scheduler_enqueue = F2(function(stepper, procId)
 {
-	_Scheduler_queue.push(proc);
+	_Scheduler_queue.push(procId);
 	if (_Scheduler_working)
 	{
 		return;
 	}
 	_Scheduler_working = true;
-	while (proc = _Scheduler_queue.shift())
+	while (procId = _Scheduler_queue.shift())
 	{
-		_Scheduler_step(proc);
+		const process = _Scheduler_processes.get(procId);
+		newProcess = stepper(process);
+		_Scheduler_processes.set(procId, process);
 	}
 	_Scheduler_working = false;
-}
+});
 
-
-function _Scheduler_step(proc)
-{
-	while (proc.__root)
-	{
-		var rootTag = proc.__root.$;
-		if (rootTag === __1_SUCCEED || rootTag === __1_FAIL)
-		{
-			while (proc.__stack && proc.__stack.$ !== rootTag)
-			{
-				proc.__stack = proc.__stack.__rest;
-			}
-			if (!proc.__stack)
-			{
-				return;
-			}
-			proc.__root = proc.__stack.__callback(proc.__root.__value);
-			proc.__stack = proc.__stack.__rest;
-		}
-		else if (rootTag === __1_BINDING)
-		{
-			proc.__root.__kill = proc.__root.__callback(function(newRoot) {
-				proc.__root = newRoot;
-				_Scheduler_enqueue(proc);
-			});
-			return;
-		}
-		else if (rootTag === __1_RECEIVE)
-		{
-			if (proc.__mailbox.length === 0)
-			{
-				return;
-			}
-			proc.__root = proc.__root.__callback(proc.__mailbox.shift());
-		}
-		else // if (rootTag === __1_AND_THEN || rootTag === __1_ON_ERROR)
-		{
-			proc.__stack = {
-				$: rootTag === __1_AND_THEN ? __1_SUCCEED : __1_FAIL,
-				__callback: proc.__root.__callback,
-				__rest: proc.__stack
-			};
-			proc.__root = proc.__root.__task;
-		}
-	}
-}

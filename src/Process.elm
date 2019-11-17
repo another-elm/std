@@ -81,7 +81,7 @@ come in a later release!
 -}
 spawn : Task x a -> Task y Id
 spawn =
-  Elm.Kernel.Scheduler.spawn
+  Scheduler.spawn
 
 
 {-| Block progress on the current process for the given number of milliseconds.
@@ -102,5 +102,5 @@ flight, it will also abort the request.
 -}
 kill : Id -> Task x ()
 kill =
-  Elm.Kernel.Scheduler.kill
+  Scheduler.kill
 

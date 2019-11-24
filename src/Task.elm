@@ -26,11 +26,11 @@ HTTP requests or writing to a database.
 -}
 
 import Basics exposing (Never, (|>), (<<))
-import Elm.Kernel.Scheduler
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
+import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 
 
@@ -77,7 +77,7 @@ type alias Task x a =
 -}
 succeed : a -> Task x a
 succeed =
-  Elm.Kernel.Scheduler.succeed
+  Scheduler.succeed
 
 
 {-| A task that fails immediately when run. Like with `succeed`, this can be
@@ -91,7 +91,7 @@ used with `andThen` to check on the outcome of another task.
 -}
 fail : x -> Task x a
 fail =
-  Elm.Kernel.Scheduler.fail
+  Scheduler.fail
 
 
 
@@ -206,7 +206,7 @@ First the process sleeps for an hour **and then** it tells us what time it is.
 -}
 andThen : (a -> Task x b) -> Task x a -> Task x b
 andThen =
-  Elm.Kernel.Scheduler.andThen
+  Scheduler.andThen
 
 
 
@@ -226,7 +226,7 @@ callback to recover.
 -}
 onError : (x -> Task y a) -> Task x a -> Task y a
 onError =
-  Elm.Kernel.Scheduler.onError
+  Scheduler.onError
 
 
 {-| Transform the error value. This can be useful if you need a bunch of error
@@ -343,9 +343,9 @@ onSelfMsg _ _ _ =
   succeed ()
 
 
-spawnCmd : Platform.Router msg Never -> MyCmd msg -> Task x ()
+spawnCmd : Platform.Router msg Never -> MyCmd msg -> Task x Platform.ProcessId
 spawnCmd router (Perform task) =
-  Elm.Kernel.Scheduler.spawn (
+  Scheduler.spawn (
     task
       |> andThen (Platform.sendToApp router)
   )

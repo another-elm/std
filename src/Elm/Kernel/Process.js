@@ -6,13 +6,11 @@ import Elm.Kernel.Utils exposing (Tuple0)
 */
 
 
-function _Process_sleep(time)
+var _Process_delay = F3(function (time, value, callback)
 {
-	return __Scheduler_binding(function(callback) {
-		var id = setTimeout(function() {
-			callback(__Scheduler_succeed(__Utils_Tuple0));
-		}, time);
+	var id = setTimeout(function() {
+		callback(value);
+	}, time);
 
-		return function() { clearTimeout(id); };
-	});
-}
+	return function(x) { clearTimeout(id); return x; };
+})

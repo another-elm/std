@@ -78,10 +78,69 @@ function _Platform_registerPreload(url)
 
 var _Platform_effectManagers = {};
 
+var _Platform_effectMangerFold = F2(function(func, initial) {
+	for (const key of  Object.items(_Platform_effectManagers)) {
+		const info = _Platform_effectManagers[key];
+		// TODO(harry) confirm this is valid
+		let effectTag;
 
-function _Platform_setupEffects(managers, sendToApp)
+		if (info.__cmdMap === undefined) {
+			/**__DEBUG/
+			effectTag = 'SubOnlyEffectModule';
+			//*/
+
+			/**__PROD/
+			effectTag = 0;
+			//*/
+		} else {
+			if (info.__subMap === undefined) {
+				/**__DEBUG/
+				effectTag = 'CmdOnlyEffectModule';
+				//*/
+
+				/**__PROD/
+				effectTag = 1;
+				//*/
+			} else {
+				/**__DEBUG/
+				effectTag = 'CmdAndSubEffectModule';
+				//*/
+
+				/**__PROD/
+				effectTag = 2;
+				//*/
+			}
+		}
+
+		const elmRecord = {
+			__$portSetup: info.__portSetup,
+			__$onSelfMsg: info.__onSelfMsg,
+			__$init: info.__init,
+			__$effects: {
+				$: effectTag,
+				a: {
+					__$onEffects: info.__onEffects,
+					__$cmdMap: info.__cmdMap,
+					__$subMap: info.__subMap
+				}
+			}
+		};
+
+
+		initial = func(
+			key,
+			elmRecord,
+			initial
+		);
+	}
+	return initial;
+});
+
+
+function _Platform_setupEffects(sendToApp)
 {
 	var ports;
+	let managers
 
 	// setup all necessary effect managers
 	for (var key in _Platform_effectManagers)

@@ -26,9 +26,6 @@ module Platform.Scheduler exposing (..)
 
 
 
-
-
-
 ## Differences between this and offical elm/core
 
 * `Process.mailbox` is a (mutable) js array in elm/core and an elm list here.
@@ -39,294 +36,111 @@ module Platform.Scheduler exposing (..)
 
 -}
 
-import Basics exposing (Never, Int, (++), Bool(..))
-import Maybe exposing (Maybe(..))
-import Elm.Kernel.Basics
-import Debug
-import List exposing ((::))
-
-type Task err ok
-  = Succeed ok
-  | Fail err
-  | Binding (BindingCallbackAlias err ok) (Maybe KillThunk)
-    -- todo binding callback type args
-  | AndThen (HiddenOk -> Task err ok) (Task err HiddenOk)
-  | OnError (HiddenErr -> Task err ok) (Task HiddenErr ok)
-  | Receive (HiddenMsg -> Task err ok)
+import Platform
+import Platform.RawScheduler as RawScheduler
+import Result exposing (Result(..))
+import Basics exposing (Never)
 
 
-type Process msg
-  = Process
-    { id : Id msg
-    , root : Task HiddenErr HiddenOk
-    , stack : List (StackItem HiddenErr HiddenOk)
-    , mailbox : List msg
-    }
+type alias ProcessId msg
+  = RawScheduler.ProcessId msg
+
+type alias DoneCallback err ok =
+  Platform.Task err ok -> ()
 
 
-binding : BindingCallbackAlias err ok -> Task err ok
+type alias TryAbortAction =
+  RawScheduler.TryAbortAction
+
+
+succeed : ok -> Platform.Task never ok
+succeed val =
+  Platform.Task (RawScheduler.Value (Ok val))
+
+
+fail : err -> Platform.Task err never
+fail e =
+  Platform.Task (RawScheduler.Value (Err e))
+
+
+binding : (DoneCallback err ok -> TryAbortAction) -> Platform.Task err ok
 binding callback =
-  Binding
-    callback
-    Nothing
+  Platform.Task
+    (RawScheduler.binding
+      (\doneCallback -> callback (\(Platform.Task task) -> doneCallback task))
+    )
 
-{-| NON PURE!
 
-Will create, **enqueue** and return a new process.
+andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
+andThen func (Platform.Task task) =
+  Platform.Task
+    (RawScheduler.andThen
+      (\r ->
+        case r of
+          Ok val ->
+            let
+              (Platform.Task rawTask) =
+                func val
+            in
+              rawTask
 
--}
-rawSpawn : Task err ok -> Process msg
-rawSpawn task =
-  enqueue (Elm.Kernel.Scheduler.register
-      (Process
-        { id = Elm.Kernel.Sceduler.getGuid()
-        , root = Elm.Kernel.Basics.fudgeType task
-        , stack = []
-        , mailbox = []
-        }
+          Err e ->
+            RawScheduler.Value (Err e)
       )
-  )
+      task
+    )
 
 
-{-| NON PURE!
+onError : (err1 -> Platform.Task err2 ok) -> Platform.Task err1 ok -> Platform.Task err2 ok
+onError func (Platform.Task task) =
+  Platform.Task
+    (RawScheduler.andThen
+      (\r ->
+        case r of
+          Ok val ->
+            RawScheduler.Value (Ok val)
 
-Send a message to a process and **enqueue** that process so that it
-can perform actions based on the message.
+          Err e ->
+            let
+              (Platform.Task rawTask) =
+                func e
+            in
+              rawTask
+      )
+      task
+    )
 
+
+{-| Create a task, if run, will make the process deal with a message.
 -}
-rawSend : Process msg -> msg -> Process msg
-rawSend (Process proc) msg =
-  enqueue (Elm.Kernel.Scheduler.register
-    (Process { proc | mailbox = proc.mailbox ++ [msg]})
-  )
-
-
-{-| Create a task for that has a process deal with a message.
--}
-send : Id msg -> msg -> Task x ()
-send processId msg =
-  binding
-    (\doneCallback ->
-      let
-        proc =
-          Elm.Kernel.Scheduler.getProcess processId
-
-        _ =
-          Succeed (rawSend proc msg)
-      in
-        let
-          _ =
-            doneCallback (Succeed ())
-        in
-        Nothing
+send : ProcessId msg -> msg -> Platform.Task never ()
+send proc msg =
+  Platform.Task
+    (RawScheduler.andThen
+      (\() -> RawScheduler.Value (Ok ()))
+      (RawScheduler.send proc msg)
     )
 
 
 {-| Create a task that spawns a processes.
 -}
-spawn : Task err ok -> Task never (Id msg)
-spawn task =
-  binding
-    (\doneCallback ->
-    let
-      (Process proc) =
-        rawSpawn task
-
-      _ =
-        doneCallback (Succeed proc.id)
-    in
-      Nothing
+spawn : Platform.Task err ok -> Platform.Task never Platform.ProcessId
+spawn (Platform.Task task) =
+  Platform.Task
+    (RawScheduler.andThen
+      (\proc -> RawScheduler.Value (Ok (Platform.ProcessId proc)))
+      (RawScheduler.spawn task)
     )
+
 
 
 {-| Create a task kills a process.
 -}
-kill : Process msg -> Task x ()
-kill (Process { root }) =
-  binding
-    (\doneCallback ->
-      let
-        _ = case root of
-          Binding _ (Just (killer)) ->
-            let
-              (KillThunk thunk) = killer
-            in
-              thunk ()
-
-          _ ->
-            ()
-      in
-        let
-          _ =
-            doneCallback (Succeed ())
-        in
-        Nothing
+kill : ProcessId msg -> Platform.Task never ()
+kill proc =
+  Platform.Task
+    (RawScheduler.andThen
+      (\() -> RawScheduler.Value (Ok ()))
+      (RawScheduler.kill proc)
     )
-
-
-{-| NON PURE!
-
-Add a `Process` to the run queue and, unless this is a reenterant
-call, drain the run queue but stepping all processes.
-Returns the enqueued `Process`.
-
--}
-enqueue : Process msg -> Process msg
-enqueue (Process process) =
-  let
-    _ = Elm.Kernel.Scheduler.enqueue stepper process.id
-  in
-    (Process process)
-
--- Helper types --
-
-
-type Id msg = Id Never
-
-
-type HiddenOk = HiddenOk Never
-
-
-type HiddenErr = HiddenErr Never
-
-
-type HiddenMsg = HiddenMsg Never
-
-
-type KillThunk = KillThunk (() -> ())
-
-
-type alias BindingCallbackAlias err ok =
-  ((Task err ok -> ()) -> Maybe KillThunk)
-
-
-type StackItem err ok
-  = StackSucceed (HiddenOk -> Task err ok)
-  | StackFail (HiddenErr-> Task err ok)
-
-
--- Helper functions --
-
-
--- {-| NON PURE!
--- -}
--- rawStepper : Process -> Process
--- rawStepper (Process process) =
---   let
---     (doEnqueue, newProcess) =
---       stepper process
-
---     _ =
---       if doEnqueue then
---         enqueue newProcess
---       else
---         newProcess
---   in
---     newProcess
-
-
-
-{-| NON PURE!
-
-This function **must** return a process with the **same ID** as
-the process it is passed as  an argument
-
--}
-stepper : Process msg -> Process msg
-stepper (Process process) =
-  case process.root of
-    Succeed val ->
-      let
-        moveStackFowards stack =
-          case stack of
-            (StackFail _) :: rest ->
-              moveStackFowards rest
-
-            (StackSucceed callback) :: rest ->
-              stepper (Process
-                  { process
-                    | root = callback val
-                    , stack = rest
-                  }
-                )
-
-            _ ->
-              (Process process)
-
-      in
-        moveStackFowards process.stack
-    Fail error ->
-      let
-        moveStackFowards stack =
-          case stack of
-            (StackSucceed _) :: rest ->
-              moveStackFowards rest
-
-            (StackFail callback) :: rest ->
-              stepper (Process
-                  { process
-                    | root = callback error
-                    , stack = rest
-                  }
-                )
-
-            _ ->
-              (Process process)
-
-      in
-        moveStackFowards process.stack
-    Binding doEffect killer ->
-      let
-        newProcess =
-          { process
-          | root = killableRoot
-          }
-
-        killableRoot =
-          Binding
-            (Debug.todo "put an assert(false) function here?")
-            (doEffect (\newRoot ->
-              let
-                -- todo: avoid enqueue here
-                _ =
-                  enqueue
-                    (Elm.Kernel.Scheduler.register
-                      (Process { process | root = newRoot })
-                    )
-              in
-              ()
-            ))
-      in
-      Process newProcess
-    Receive callback ->
-      case process.mailbox of
-        [] ->
-          Process process
-        first :: rest ->
-          stepper
-            (Process
-              { process
-                | root = callback first
-                , mailbox = rest
-              }
-            )
-    AndThen callback task ->
-      stepper
-        (Process
-          { process
-            | root = task
-            , stack = (StackSucceed callback) :: process.stack
-          }
-        )
-    OnError callback task ->
-      stepper
-        (Process
-          { process
-            | root = task
-            , stack = (StackFail callback) :: process.stack
-          }
-        )
-
-
-
 

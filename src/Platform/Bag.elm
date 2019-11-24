@@ -14,7 +14,6 @@ type Bag msg
     = Leaf -- let kernel code handle this one
     | Batch (List (Bag msg))
     | Map (BagHiddenValue -> msg) (Bag BagHiddenValue)
-    | Self msg
 
 
 batch : List (Bag msg) -> Bag msg

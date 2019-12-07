@@ -1,5 +1,5 @@
 module Platform.Cmd exposing
-  ( Cmd
+  ( Cmd(..)
   , none
   , batch
   , map
@@ -24,9 +24,10 @@ module Platform.Cmd exposing
 
 -}
 
-import Platform.Bag
-import Basics exposing ((>>))
+import Elm.Kernel.Basics
+import Basics exposing (..)
 import List
+import Platform.Bag as Bag
 
 
 
@@ -46,9 +47,17 @@ ever, commands will make more sense as you work through [the Elm Architecture
 Tutorial](https://guide.elm-lang.org/architecture/) and see how they
 fit into a real application!
 -}
-type Cmd msg =
-  Value (Platform.Bag.Bag msg)
-
+type Cmd msg
+  -- Constructor name **must** be same as that used in _Platform_leaf() and
+  -- the order of record fields **must** be the same too.
+  = Data
+    (List
+      { home : Bag.EffectManagerName
+      , value : (Bag.LeafType msg)
+      , cmdMapper : (HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB
+      , subMapper : Never
+      }
+    )
 
 {-| Tell the runtime that there are no commands.
 
@@ -68,10 +77,9 @@ all do the same thing.
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-  List.map (\(Value bag) -> bag)
-    >> Platform.Bag.batch
-    >> Value
-
+  List.map (\(Data cmd) -> cmd)
+    >> List.concat
+    >> Data
 
 
 -- FANCY STUFF
@@ -86,5 +94,26 @@ section on [structure][] in the guide before reaching for this!
 [structure]: https://guide.elm-lang.org/webapps/structure.html
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
-map fn (Value bag) =
-  Value (Platform.Bag.map fn bag)
+map fn (Data data) =
+  data
+    |> List.map
+      (\{home, value, cmdMapper, subMapper} ->
+        { home = home
+        , value = (fudgeCmdMapperType cmdMapper) fn value
+        , cmdMapper = cmdMapper
+        , subMapper = subMapper
+        }
+      )
+    |> Data
+
+-- HELPERS --
+
+type HiddenA = HiddenA Never
+
+
+type HiddenB = HiddenB Never
+
+
+fudgeCmdMapperType : ((HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB) -> ((a -> msg) -> (Bag.LeafType a -> Bag.LeafType msg))
+fudgeCmdMapperType =
+  Elm.Kernel.Basics.fudgeType

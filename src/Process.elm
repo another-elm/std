@@ -44,9 +44,7 @@ the Elm community will be supportive of being more ambitious, even if it takes
 longer. That’s kind of what Elm is all about.
 -}
 
-import Basics exposing (Float, Never)
-import Elm.Kernel.Scheduler
-import Elm.Kernel.Process
+import Basics exposing (..)
 import Platform
 import Platform.Scheduler as Scheduler
 import Task exposing (Task)
@@ -92,8 +90,8 @@ delay work until later.
 [setTimeout]: https://developer.mozilla.org/en-US/docs/Web/API/WindowTimers/setTimeout
 -}
 sleep : Float -> Task x ()
-sleep time =
-  Scheduler.binding (delay time (Task.succeed ()))
+sleep =
+  Scheduler.sleep
 
 
 {-| Sometimes you `spawn` a process, but later decide it would be a waste to
@@ -104,9 +102,3 @@ flight, it will also abort the request.
 kill : Id -> Task x ()
 kill (Platform.ProcessId proc) =
   Scheduler.kill proc
-
--- KERNEL FUNCTIONS --
-
-delay : Float -> Task err ok -> Scheduler.DoneCallback err ok -> Scheduler.TryAbortAction
-delay =
-  Elm.Kernel.Process.delay

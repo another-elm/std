@@ -1,143 +1,3 @@
-/*
-
-import Elm.Kernel.Utils exposing (Tuple0)
-
-*/
-
-
-// TASKS
-
-function _Scheduler_succeed(value)
-{
-	/**__DEBUG/
-	return {
-		$: 'Succeed',
-		a: value
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 0,
-		a: value
-	};
-	//*/
-}
-
-function _Scheduler_fail(error)
-{
-	/**__DEBUG/
-	return {
-		$: 'Fail',
-		a: error
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 1,
-		a: error
-	};
-	//*/
-}
-
-function _Scheduler_binding(callback, killable)
-{
-	/**__DEBUG/
-	return {
-		$: 'Binding',
-		a: killable
-			? function(x) {
-				return {
-					$: 'Just',
-					a: callback(x),
-				};
-			}
-			: function(x) {
-				callback(x);
-				return {
-					$: 'Nothing',
-				}
-			}
-		b: {$: 'Nothing'}
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 2,
-		a: killable
-			? function(x) {
-				return {
-					$: 0,
-					a: callback(x),
-				};
-			}
-			: function(x) {
-				callback(x);
-				return {
-					$: 1,
-				}
-			}
-		b: {$: 1}
-	};
-	//*/
-}
-
-var _Scheduler_andThen = F2(function(callback, task)
-{
-	/**__DEBUG/
-	return {
-		$: 'AndThen',
-		a: callback
-		b: task
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 3,
-		a: callback
-		b: task
-	};
-	//*/
-});
-
-var _Scheduler_onError = F2(function(callback, task)
-{
-	/**__DEBUG/
-	return {
-		$: 'OnError',
-		a: callback
-		b: task
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 4,
-		a: callback
-		b: task
-	};
-	//*/
-});
-
-function _Scheduler_receive(callback)
-{
-	/**__DEBUG/
-	return {
-		$: 'Receive',
-		a: callback
-	};
-	//*/
-
-	/**__PROD/
-	return {
-		$: 5,
-		a: callback
-	};
-	//*/
-}
 
 
 // PROCESSES
@@ -195,3 +55,12 @@ var _Scheduler_enqueueWithStepper = F2(function(stepper, procId)
 	return procId;
 });
 
+
+var _Scheduler_delay = F3(function (time, value, callback)
+{
+	var id = setTimeout(function() {
+		callback(value);
+	}, time);
+
+	return function(x) { clearTimeout(id); return x; };
+})

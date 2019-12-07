@@ -36,17 +36,18 @@ module Platform.RawScheduler exposing (..)
 
 -}
 
-import Basics exposing (Never, Int, identity, (++), Bool(..))
+import Basics exposing (..)
 import Maybe exposing (Maybe(..))
 import Elm.Kernel.Basics
+import Elm.Kernel.Scheduler
 import Debug
-import Platform.Bag exposing (Bag)
 import List exposing ((::))
 
 type Task val
   = Value val
   | AndThen (HiddenValA -> Task val) (Task val)
   | AsyncAction (DoneCallback val -> TryAbortAction) TryAbortAction
+  | SyncAction (() -> Task val)
 
 
 type alias DoneCallback val =
@@ -56,18 +57,18 @@ type alias DoneCallback val =
 type alias TryAbortAction =
   () -> ()
 
-type ProcessState msg
+type ProcessState msg state
   = ProcessState
-    { root : Task HiddenValA
+    { root : Task state
     , stack : List (HiddenValB -> Task HiddenValC)
     , mailbox : List msg
+    , receiver : Maybe (msg -> Task state)
     }
 
 
 type ProcessId msg
   = ProcessId
     { id : UniqueId
-    , receiver : Maybe (msg -> Task HiddenValA)
     }
 
 
@@ -86,11 +87,16 @@ type HiddenValC
 type UniqueId = UniqueId Never
 
 
-binding : (DoneCallback val -> TryAbortAction) -> Task val
-binding callback =
+async : (DoneCallback val -> TryAbortAction) -> Task val
+async callback =
   AsyncAction
     callback
     identity
+
+
+sync : (() -> Task val) -> Task val
+sync =
+  SyncAction
 
 
 andThen : (a -> Task b) -> Task a -> Task b
@@ -110,15 +116,29 @@ rawSpawn task =
     (registerNewProcess
       (ProcessId
         { id = Elm.Kernel.Sceduler.getGuid()
-        , receiver = Nothing
         }
       )
       (ProcessState
         { root = (Elm.Kernel.Basics.fudgeType task)
         , mailbox = []
         , stack = []
+        , receiver = Nothing
         }
       )
+    )
+
+
+{-| NON PURE!
+
+Will modify an existing process, **enqueue** and return it.
+
+-}
+rawSetReceiver : ProcessId msg -> (msg -> a -> Task a) -> ProcessId msg
+rawSetReceiver proc receiver =
+  enqueue
+    (updateProcessState
+      (\(ProcessState state) -> ProcessState { state | receiver = Just (Elm.Kernel.Basics.fudgeType receiver) } )
+      proc
     )
 
 
@@ -141,7 +161,7 @@ rawSend processId msg =
 -}
 send : ProcessId msg -> msg -> Task ()
 send processId msg =
-  binding
+  async
     (\doneCallback ->
       let
         _ =
@@ -159,7 +179,7 @@ send processId msg =
 -}
 spawn : Task a -> Task (ProcessId never)
 spawn task =
-  binding
+  async
     (\doneCallback ->
       let
         _ =
@@ -167,6 +187,12 @@ spawn task =
       in
       (\() -> ())
     )
+
+{-| Create a task that sleeps for `time` milliseconds
+-}
+sleep : Float -> Task ()
+sleep time =
+  async (delay time (Value ()))
 
 
 {-| Create a task kills a process.
@@ -177,7 +203,7 @@ kill processId =
       (ProcessState { root }) =
         getProcessState processId
   in
-  binding
+  async
     (\doneCallback ->
       let
         _ = case root of
@@ -247,7 +273,7 @@ This function **must** return a process with the **same ID** as
 the process it is passed as  an argument
 
 -}
-stepper : ProcessId msg -> ProcessState msg -> ProcessState msg
+stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
 stepper (ProcessId processId) (ProcessState process) =
   let
       (ProcessState steppedProcess) =
@@ -271,6 +297,7 @@ stepper (ProcessId processId) (ProcessState process) =
 
             in
               moveStackFowards process.stack
+
           AsyncAction doEffect killer ->
             let
               newProcess =
@@ -294,6 +321,16 @@ stepper (ProcessId processId) (ProcessState process) =
                   ))
             in
             ProcessState newProcess
+
+          SyncAction doEffect->
+            let
+              newProcess =
+                { process
+                | root = doEffect ()
+                }
+            in
+            ProcessState newProcess
+
           AndThen callback task ->
             stepper
               (ProcessId processId)
@@ -304,7 +341,7 @@ stepper (ProcessId processId) (ProcessState process) =
                 }
               )
   in
-    case (steppedProcess.mailbox, processId.receiver) of
+    case (steppedProcess.mailbox, steppedProcess.receiver) of
       (first :: rest, Just receiver) ->
         stepper
           (ProcessId processId)
@@ -325,17 +362,17 @@ stepper (ProcessId processId) (ProcessState process) =
 -- Kernel function redefinitons --
 
 
-updateProcessState : (ProcessState msg -> ProcessState msg) -> ProcessId msg -> ProcessId msg
+updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessId msg
 updateProcessState =
   Elm.Kernel.Scheduler.updateProcessState
 
 
-getProcessState : ProcessId msg -> ProcessState msg
+getProcessState : ProcessId msg -> ProcessState msg state
 getProcessState =
   Elm.Kernel.Scheduler.getProcess
 
 
-registerNewProcess : ProcessId msg -> ProcessState msg -> ProcessId msg
+registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg
 registerNewProcess =
   Elm.Kernel.Scheduler.registerNewProcess
 
@@ -343,3 +380,7 @@ registerNewProcess =
 enqueueWithStepper : (ProcessId msg -> ()) -> ProcessId msg -> ProcessId msg
 enqueueWithStepper =
   Elm.Kernel.Scheduler.enqueue
+
+delay : Float -> Task val -> DoneCallback val -> TryAbortAction
+delay =
+  Elm.Kernel.Scheduler.delay

@@ -2,54 +2,70 @@
 
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
-import Elm.Kernel.List exposing (Cons, Nil)
-import Elm.Kernel.Process exposing (sleep)
-import Elm.Kernel.Scheduler exposing (andThen, binding, rawSend, rawSpawn, receive, send, succeed)
+import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Utils exposing (Tuple0)
 import Result exposing (isOk)
 
 */
 
+// State
 
-
-// PROGRAMS
-
-
-var _Platform_worker = F4(function(impl, flagDecoder, debugMetadata, args)
-{
-	return _Platform_initialize(
-		flagDecoder,
-		args,
-		impl.__$init,
-		impl.__$update,
-		impl.__$subscriptions,
-		function() { return function() {} }
-	);
-});
-
-
+var _Platform_outgoingPorts = {};
+var _Platform_incomingPorts = {};
+var _Platform_effectManagers = {};
+var _Platform_compiledEffectManagers = {};
 
 // INITIALIZE A PROGRAM
 
 
-function _Platform_initialize(flagDecoder, args, init, update, subscriptions, stepperBuilder)
+function _Platform_initialize(flagDecoder, args, impl, functions)
 {
-	var result = A2(__Json_run, flagDecoder, __Json_wrap(args ? args['flags'] : undefined));
-	__Result_isOk(result) || __Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
-	var managers = {};
-	result = init(result.a);
-	var model = result.a;
-	var stepper = stepperBuilder(sendToApp, model);
-	var ports = _Platform_setupEffects(managers, sendToApp);
+	// Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
+	// Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
+	const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args['flags'] : undefined));
 
-	function sendToApp(msg, viewMetadata)
-	{
-		result = A2(update, msg, model);
-		stepper(model = result.a, viewMetadata);
-		_Platform_dispatchEffects(managers, result.b, subscriptions(model));
+	if (!__Result_isOk(flagsResult)) {
+		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
 	}
 
-	_Platform_dispatchEffects(managers, result.b, subscriptions(model));
+	const managers = {};
+	const ports = {};
+	const initValue = impl.__$init(flagsResult.a);
+	var model = initValue.a;
+	const stepper = A2(functions.__$stepperBuilder, sendToApp, model);
+
+	for (var key in _Platform_effectManagers)
+	{
+		const setup = _Platform_effectManagers[key];
+		_Platform_compiledEffectManagers[key] =
+			setup(functions.__$setupEffects, sendToApp);
+		managers[key] = setup;
+	}
+	for (var key in _Platform_outgoingPorts)
+	{
+		const setup = _Platform_outgoingPorts[key];
+		_Platform_compiledEffectManagers[key] =
+			setup(functions.__$setupOutgoingPort, sendToApp);
+		ports[key] = setup.ports;
+		managers[key] = setup.manger;
+	}
+	for (var key in _Platform_incomingPorts)
+	{
+		const setup = _Platform_incomingPorts[key];
+		_Platform_compiledEffectManagers[key] =
+			setup(functions.__$setupIncomingPort, sendToApp);
+		ports[key] = setup.ports;
+		managers[key] = setup.manger;
+	}
+
+	const sendToApp = F2((msg, viewMetadata) => {
+		const updateValue = A2(impl.__$update, msg, model);
+		model = updateValue.a
+		A2(stepper, model, viewMetadata);
+		A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
+	})
+
+	A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
 
 	return ports ? { ports: ports } : {};
 }
@@ -76,302 +92,115 @@ function _Platform_registerPreload(url)
 // EFFECT MANAGERS
 
 
-var _Platform_effectManagers = {};
 
-var _Platform_effectMangerFold = F2(function(func, initial) {
-	for (const key of  Object.items(_Platform_effectManagers)) {
-		const info = _Platform_effectManagers[key];
-		// TODO(harry) confirm this is valid
-		let effectTag;
+function _Platform_getEffectManager(name) {
+	return _Platform_compiledEffectManagers[name];
+}
 
-		if (info.__cmdMap === undefined) {
-			/**__DEBUG/
-			effectTag = 'SubOnlyEffectModule';
-			//*/
-
-			/**__PROD/
-			effectTag = 0;
-			//*/
-		} else {
-			if (info.__subMap === undefined) {
-				/**__DEBUG/
-				effectTag = 'CmdOnlyEffectModule';
-				//*/
-
-				/**__PROD/
-				effectTag = 1;
-				//*/
-			} else {
-				/**__DEBUG/
-				effectTag = 'CmdAndSubEffectModule';
-				//*/
-
-				/**__PROD/
-				effectTag = 2;
-				//*/
-			}
-		}
-
-		const elmRecord = {
-			__$portSetup: info.__portSetup,
-			__$onSelfMsg: info.__onSelfMsg,
-			__$init: info.__init,
-			__$effects: {
-				$: effectTag,
-				a: {
-					__$onEffects: info.__onEffects,
-					__$cmdMap: info.__cmdMap,
-					__$subMap: info.__subMap
-				}
-			}
-		};
-
-
-		initial = func(
-			key,
-			elmRecord,
-			initial
-		);
-	}
-	return initial;
-});
-
-
-function _Platform_setupEffects(sendToApp)
-{
-	var ports;
-	let managers
-
-	// setup all necessary effect managers
-	for (var key in _Platform_effectManagers)
-	{
-		var manager = _Platform_effectManagers[key];
-
-		if (manager.__portSetup)
-		{
-			ports = ports || {};
-			ports[key] = manager.__portSetup(key, sendToApp);
-		}
-
-		managers[key] = _Platform_instantiateManager(manager, sendToApp);
-	}
-
-	return ports;
+function _Platform_effectManagerNameToString(name) {
+	return name;
 }
 
 
+// Called by compiler generated js when creating event mangers
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 {
-	return {
-		__init: init,
-		__onEffects: onEffects,
-		__onSelfMsg: onSelfMsg,
-		__cmdMap: cmdMap,
-		__subMap: subMap
-	};
-}
-
-
-function _Platform_instantiateManager(info, sendToApp)
-{
-	var router = {
-		__sendToApp: sendToApp,
-		__selfProcess: undefined
-	};
-
-	var onEffects = info.__onEffects;
-	var onSelfMsg = info.__onSelfMsg;
-	var cmdMap = info.__cmdMap;
-	var subMap = info.__subMap;
-
-	function loop(state)
-	{
-		return A2(__Scheduler_andThen, loop, __Scheduler_receive(function(msg)
-		{
-			var value = msg.a;
-
+	// TODO(harry) confirm this is valid
+	let fullOnEffects, fullCmdMap, fullSubMap;
+	if (cmdMap === undefined) {
+		// Subscription only effect module
+		fullOnEffects = F4(function(router, cmds, subs, state) {
+			return A3(onEffects, router, subs, state);
+		});
+		fullCmdMap = F2(function(tagger, _val) {
 			/**__DEBUG/
-			if (msg.$ === 'Self')
-			//*/
-
-			/**__PROD/
-			if (msg.$ === 3)
-			//*/
-			{
-				return A3(onSelfMsg, router, value, state);
+			if (procState === undefined) {
+				console.error(`INTERNAL ERROR: attempt to map Cmd for subscription only effect module!`);
 			}
-
-			return cmdMap && subMap
-				? A4(onEffects, router, value.__cmds, value.__subs, state)
-				: A3(onEffects, router, cmdMap ? value.__cmds : value.__subs, state);
-		}));
+			//*/
+		});
+		fullSubMap = subMap;
+	} else if (subMap === undefined) {
+		// Command only effect module
+		fullOnEffects = F4(function(router, cmds, subs, state) {
+			return A3(onEffects, router, cmds, state);
+		});
+		fullCmdMap = cmdMap;
+		fullSubMap = F2(function(tagger, _val) {
+			/**__DEBUG/
+			if (procState === undefined) {
+				console.error(`INTERNAL ERROR: attempt to map Sub for command only effect module!`);
+			}
+			//*/
+		});
+	} else {
+		fullOnEffects = onEffects;
+		fullCmdMap = cmdMap;
+		fullSubMap = subMap;
 	}
-
-	return router.__selfProcess = __Scheduler_rawSpawn(A2(__Scheduler_andThen, loop, info.__init));
+	// Command **and** subscription event manager
+	return function(setup, sendToApp) {
+		return A6(setup, sendToApp, init, fullOnEffects, onSelfMsg, fullCmdMap, fullSubMap)
+	};
 }
-
-
-
-// ROUTING
-
-
-var _Platform_sendToApp = F2(function(router, msg)
-{
-	return __Scheduler_binding(function(callback)
-	{
-		router.__sendToApp(msg);
-		callback(__Scheduler_succeed(__Utils_Tuple0));
-	}, false);
-});
-
-
-var _Platform_sendToSelf = F2(function(router, msg)
-{
-	return A2(__Scheduler_send, router.__selfProcess, {
-		/**__DEBUG/
-		$: 'Value',
-		a: {
-			$: 'Self',
-			a: msg
-		}
-		//*/
-
-		/**__PROD/
-		$: 3,
-		a: msg
-		//*/
-	});
-});
-
-
 
 // BAGS
 
 
-// Called by compiler generated js for event managers
+/* Called by compiler generated js for event managers for the
+ * `command` or `subscription` function within an event manager
+ */
 function _Platform_leaf(home)
 {
 	return function(value)
 	{
 		/**__DEBUG/
 		return {
-			$: 'Value',
+			$: 'Data',
 			a: {
-				$: 'Leaf',
-				__home: home,
-				__value: value
+				$: '::',
+				a: {
+					a: {
+						$: __1_EFFECTMANAGERNAME,
+						a: home
+					},
+					b: {
+						$: __2_LEAFTYPE
+						a: value
+					},
+					c: _Platform_compiledEffectManagers[home].__$cmdMap,
+					d: _Platform_compiledEffectManagers[home].__$subMap
+				b: {
+					$: '[]'
+				}
 			}
 		};
 		//*/
 
 		/**__PROD/
 		return {
-			$: 0,
-			__home: home,
-			__value: value
+			$: ,
+			a: {
+				$: 1,
+				a: {
+					a: {
+						$: __1_EFFECTMANAGERNAME,
+						a: home
+					},
+					b: {
+						$: __2_LEAFTYPE
+						a: value
+					},
+					c: _Platform_compiledEffectManagers[home].__$cmdMap,
+					d: _Platform_compiledEffectManagers[home].__$subMap
+				b: {
+					$: 0
+				}
+			}
 		};
 		//*/
 	};
 }
-
-
-// PIPE BAGS INTO EFFECT MANAGERS
-
-
-function _Platform_dispatchEffects(managers, cmdBag, subBag)
-{
-	var effectsDict = {};
-	_Platform_gatherEffects(true, _Platform__unwrap_bag(cmdBag), effectsDict, null);
-	_Platform_gatherEffects(false, _Platform__unwrap_bag(subBag), effectsDict, null);
-
-	for (var home in managers)
-	{
-		__Scheduler_rawSend(managers[home], {
-			$: 'fx',
-			a: effectsDict[home] || { __cmds: __List_Nil, __subs: __List_Nil }
-		});
-	}
-}
-
-function _Platform__unwrap_bag(cmdOrSub)
-{
-	/**__DEBUG/
-	return cmdOrSub.a;
-	//*/
-
-	/**__PROD/
-	return cmdOrSub;
-	//*/
-}
-
-function _Platform_gatherEffects(isCmd, bag, effectsDict, taggers)
-{
-	/**__DEBUG/
-	const LEAF = 'Leaf';
-	const BATCH = 'Batch';
-	const MAP = 'Map';
-	//*/
-
-	/**__PROD/
-	const LEAF = 0;
-	const BATCH = 1;
-	const MAP = 2;
-	//*/
-	switch (bag.$)
-	{
-		case LEAF:
-			var home = bag.__home;
-			var effect = _Platform_toEffect(isCmd, home, taggers, bag.__value);
-			effectsDict[home] = _Platform_insert(isCmd, effect, effectsDict[home]);
-			return;
-
-		case BATCH:
-			for (let list = bag.a; list.b; list = list.b) // WHILE_CONS
-			{
-				_Platform_gatherEffects(isCmd, list.a, effectsDict, taggers);
-			}
-			return;
-
-		case MAP:
-			_Platform_gatherEffects(isCmd, bag.b, effectsDict, {
-				__tagger: bag.a,
-				__rest: taggers
-			});
-			return;
-	}
-}
-
-
-function _Platform_toEffect(isCmd, home, taggers, value)
-{
-	function applyTaggers(x)
-	{
-		for (var temp = taggers; temp; temp = temp.__rest)
-		{
-			x = temp.__tagger(x);
-		}
-		return x;
-	}
-
-	var map = isCmd
-		? _Platform_effectManagers[home].__cmdMap
-		: _Platform_effectManagers[home].__subMap;
-
-	return A2(map, applyTaggers, value)
-}
-
-
-function _Platform_insert(isCmd, newEffect, effects)
-{
-	effects = effects || { __cmds: __List_Nil, __subs: __List_Nil };
-
-	isCmd
-		? (effects.__cmds = __List_Cons(newEffect, effects.__cmds))
-		: (effects.__subs = __List_Cons(newEffect, effects.__subs));
-
-	return effects;
-}
-
 
 
 // PORTS
@@ -379,140 +208,100 @@ function _Platform_insert(isCmd, newEffect, effects)
 
 function _Platform_checkPortName(name)
 {
-	if (_Platform_effectManagers[name])
+	if (_Platform_compiledEffectManagers[name])
 	{
 		__Debug_crash(3, name)
 	}
 }
 
 
-
-// OUTGOING PORTS
-
-
 function _Platform_outgoingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_effectManagers[name] = {
-		__cmdMap: _Platform_outgoingPortMap,
-		__converter: converter,
-		__portSetup: _Platform_setupOutgoingPort
-	};
-	return _Platform_leaf(name);
-}
+	_Platform_outgoingPorts[name] = function(setup, sendToApp) {
+		let subs = [];
 
-
-var _Platform_outgoingPortMap = F2(function(tagger, value) { return value; });
-
-
-function _Platform_setupOutgoingPort(name)
-{
-	var subs = [];
-	var converter = _Platform_effectManagers[name].__converter;
-
-	// CREATE MANAGER
-
-	var init = __Process_sleep(0);
-
-	_Platform_effectManagers[name].__init = init;
-	_Platform_effectManagers[name].__onEffects = F3(function(router, cmdList, state)
-	{
-		for ( ; cmdList.b; cmdList = cmdList.b) // WHILE_CONS
+		function subscribe(callback)
 		{
-			// grab a separate reference to subs in case unsubscribe is called
-			var currentSubs = subs;
-			var value = __Json_unwrap(converter(cmdList.a));
-			for (var i = 0; i < currentSubs.length; i++)
+			subs.push(callback);
+		}
+
+		function unsubscribe(callback)
+		{
+			// copy subs into a new array in case unsubscribe is called within a
+			// subscribed callback
+			subs = subs.slice();
+			var index = subs.indexOf(callback);
+			if (index >= 0)
 			{
-				currentSubs[i](value);
+				subs.splice(index, 1);
 			}
 		}
-		return init;
-	});
 
-	// PUBLIC API
+		const outgoingPortSend = payload => {
+			var value = __Json_unwrap(payload);
+			for (const sub of subs)
+			{
+				sub(value);
+			}
+			return __Utils_Tuple0;
+		};
 
-	function subscribe(callback)
-	{
-		subs.push(callback);
-	}
 
-	function unsubscribe(callback)
-	{
-		// copy subs into a new array in case unsubscribe is called within a
-		// subscribed callback
-		subs = subs.slice();
-		var index = subs.indexOf(callback);
-		if (index >= 0)
-		{
-			subs.splice(index, 1);
+		const manager = A3(
+			setup,
+			sendToApp,
+			outgoingPortSend,
+			{
+				subscribe: subscribe,
+				unsubscribe: unsubscribe
+			},
+		);
+
+		return {
+			ports: {
+				subscribe,
+				unsubscribe,
+			},
+			manager,
 		}
 	}
 
-	return {
-		subscribe: subscribe,
-		unsubscribe: unsubscribe
-	};
+	return _Platform_leaf(name)
 }
-
-
-
-// INCOMING PORTS
 
 
 function _Platform_incomingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_effectManagers[name] = {
-		__subMap: _Platform_incomingPortMap,
-		__converter: converter,
-		__portSetup: _Platform_setupIncomingPort
-	};
-	return _Platform_leaf(name);
-}
+	_Platform_incomingPorts[name] = function(setup, sendToApp) {
+		let subs = __List_Nil;
 
+		function updateSubs(subsList) {
+			subs = subsList;
+		}
 
-var _Platform_incomingPortMap = F2(function(tagger, finalTagger)
-{
-	return function(value)
-	{
-		return tagger(finalTagger(value));
-	};
-});
+		const setupTuple = A2(setup, sendToApp, updateSubs);
 
-
-function _Platform_setupIncomingPort(name, sendToApp)
-{
-	var subs = __List_Nil;
-	var converter = _Platform_effectManagers[name].__converter;
-
-	// CREATE MANAGER
-
-	var init = __Scheduler_succeed(null);
-
-	_Platform_effectManagers[name].__init = init;
-	_Platform_effectManagers[name].__onEffects = F3(function(router, subList, state)
-	{
-		subs = subList;
-		return init;
-	});
-
-	// PUBLIC API
-
-	function send(incomingValue)
-	{
-		var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
-
-		__Result_isOk(result) || __Debug_crash(4, name, result.a);
-
-		var value = result.a;
-		for (var temp = subs; temp.b; temp = temp.b) // WHILE_CONS
+		function send(incomingValue)
 		{
-			sendToApp(temp.a(value));
+			var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
+
+			__Result_isOk(result) || __Debug_crash(4, name, result.a);
+
+			var value = result.a;
+			A2(setupTuple.b, value, subs);
+		}
+
+		return {
+			ports: {
+				send,
+			},
+			manager: setupTuple.a,
 		}
 	}
 
-	return { send: send };
+	return _Platform_leaf(name)
 }
 
 

@@ -26,8 +26,8 @@ curious? Public discussions of your explorations should be framed accordingly.
 
 ## Unresolve questions
 
-* Each app has a dict of effect mangers, it also has a dict of "mangers".
-  I have called these `OtherMangers` but what do they do and how shouuld they be named?
+* Each app has a dict of effect managers, it also has a dict of "managers".
+  I have called these `OtherManagers` but what do they do and how shouuld they be named?
 
 -}
 
@@ -41,15 +41,21 @@ import Tuple
 
 import Debug
 
-import Platform.Cmd as Cmd exposing ( Cmd )
-import Platform.Sub as Sub exposing ( Sub )
+import Platform.Cmd as Cmd exposing ( Cmd(..) )
+import Platform.Sub as Sub exposing ( Sub(..) )
 
+import Elm.Kernel.Basics
+import Elm.Kernel.Debug
 import Elm.Kernel.Platform
 import Platform.Bag as Bag
-import Json.Decode exposing (Decoder)
-import Json.Encode as Encode
+-- import Json.Decode exposing (Decoder)
+-- import Json.Encode as Encode
 import Dict exposing (Dict)
 import Platform.RawScheduler as RawScheduler
+
+
+type Decoder flags = Decoder (Decoder flags)
+type EncodeValue = EncodeValue EncodeValue
 
 -- PROGRAMS
 
@@ -58,8 +64,17 @@ import Platform.RawScheduler as RawScheduler
 show anything on screen? Etc.
 -}
 type Program flags model msg =
-  Program ((Decoder flags) -> DebugMetadata -> flags -> { ports: Encode.Value })
-
+  Program (
+    (Decoder flags) ->
+    DebugMetadata ->
+    RawJsObject { args: Maybe (RawJsObject flags) } ->
+    RawJsObject
+      { ports : RawJsObject
+        { outgoingPortName: OutgoingPort
+        , incomingPortName: IncomingPort
+        }
+      }
+  )
 
 {-| Create a [headless][] program with no user interface.
 
@@ -89,12 +104,17 @@ worker
   -> Program flags model msg
 worker impl =
   Program
-    (\flagsDecoder _ flags ->
+    (\flagsDecoder _ args ->
       initialize
         flagsDecoder
-        flags
+        args
         impl
-        (StepperBuilder (\ _ _ -> SendToApp (\ _ _ -> ())))
+        { stepperBuilder = \ _ _ -> (\ _ _ -> ())
+        , setupOutgoingPort = setupOutgoingPort
+        , setupIncomingPort = setupIncomingPort
+        , setupEffects = hiddenSetupEffects
+        , dispatchEffects = dispatchEffects
+        }
     )
 
 
@@ -108,6 +128,7 @@ primitive.
 -}
 type Task err ok
     = Task (RawScheduler.Task (Result err ok))
+
 
 {-| Head over to the documentation for the [`Process`](Process) module for
 information on this. It is only defined here because it is a platform
@@ -136,7 +157,7 @@ be handled by the overall `update` function, just like events from `Html`.
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
   Task
-    (RawScheduler.binding
+    (RawScheduler.async
       (\doneCallback ->
         let
           _ =
@@ -169,150 +190,291 @@ sendToSelf (Router router) msg =
     )
 
 
+setupOutgoingPort : SendToApp msg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () msg Never
+setupOutgoingPort sendToApp2 outgoingPort outgoingPortSend =
+  let
+    init =
+      Task (RawScheduler.Value (Ok ()))
+
+    onSelfMsg _ selfMsg () =
+      never selfMsg
+
+    execInOrder : List EncodeValue -> RawScheduler.Task (Result Never ())
+    execInOrder cmdList =
+      case cmdList of
+        first :: rest ->
+          RawScheduler.sync (\() ->
+            let
+                _ = outgoingPortSend first
+            in
+              execInOrder rest
+          )
+
+        _ ->
+          RawScheduler.Value (Ok ())
+
+    onEffects : Router msg selfMsg
+      -> List (HiddenMyCmd msg)
+      -> List (HiddenMySub msg)
+      -> ()
+      -> Task Never ()
+    onEffects _ cmdList _ () =
+      let
+          typedCmdList = Elm.Kernel.Basics.fudgeType cmdList
+      in
+      Task (execInOrder typedCmdList)
+
+  in
+  EffectManager
+    { onSelfMsg = onSelfMsg
+    , init = init
+    , onEffects = onEffects
+    , cmdMap = (\ _ value -> Elm.Kernel.Basics.fudgeType value)
+    , subMap = (\ _ _ -> Elm.Kernel.Debug.crash 11) -- TODO(harry) crash better here
+    , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
+    }
+
+
+setupIncomingPort : SendToApp msg -> (List (HiddenMySub msg) -> ()) -> (EffectManager () msg Never, msg -> List (HiddenMySub msg) -> ())
+setupIncomingPort sendToApp2 updateSubs =
+  let
+    init =
+      Task (RawScheduler.Value (Ok ()))
+
+    onSelfMsg _ selfMsg () =
+      never selfMsg
+
+    onEffects _ _ subList () =
+      Task
+        (RawScheduler.sync
+          (\() ->
+            let
+                _ = updateSubs subList
+            in
+              RawScheduler.Value (Ok ())
+          )
+        )
+
+    onSend : msg -> List (HiddenMySub msg) -> ()
+    onSend value subs =
+      let
+          typedSubs : List (msg -> msg)
+          typedSubs =
+            Elm.Kernel.Basics.fudgeType subs
+      in
+
+      List.foldr
+        (\sub () -> sendToApp2 (sub value) AsyncUpdate)
+        ()
+        typedSubs
+
+    typedSubMap : (msg1 -> msg2) -> (a -> msg1) -> (a -> msg2)
+    typedSubMap tagger finalTagger =
+      (\val -> tagger (finalTagger val))
+
+    subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
+    subMap tagger finalTagger =
+      Elm.Kernel.Basics.fudgeType typedSubMap
+  in
+  (EffectManager
+    { onSelfMsg = onSelfMsg
+    , init = init
+    , onEffects = onEffects
+    , cmdMap = (\ _ _ -> Elm.Kernel.Debug.crash 11) -- TODO(harry) crash better here
+    , subMap = subMap
+    , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
+    }
+  , onSend
+  )
+
+
 
 -- HELPERS --
 
-initialize : Decoder flags -> flags -> { init : flags -> ( model, Cmd msg )
-    , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
-    } -> StepperBuilder model msg -> { ports : Encode.Value }
-initialize flagDecoder flags { init, update, subscriptions } stepperBuilder =
-  Debug.todo "initialise app"
--- {
--- 	var managers = {};
--- 	result = init(result.a);
--- 	var model = result.a;
--- 	var stepper = stepperBuilder(sendToApp, model);
--- 	var ports = _Platform_setupEffects(managers, sendToApp);
-
--- 	function sendToApp(msg, viewMetadata)
--- 	{
--- 		result = A2(update, msg, model);
--- 		stepper(model = result.a, viewMetadata);
--- 		_Platform_dispatchEffects(managers, result.b, subscriptions(model));
--- 	}
-
--- 	_Platform_dispatchEffects(managers, result.b, subscriptions(model));
-
--- 	return ports ? { ports: ports } : {};
--- }
-
--- effectManagerFold : List (String, EffectManager err state appMsg selfMsg)
-effectManagerFold : (String -> EffectManager cmdLeafData subLeafData state appMsg selfMsg -> a -> a) -> a -> a
-effectManagerFold =
-  Elm.Kernel.Platform.effectManagerFold
-
-
-setupEffects : SendToApp appMsg -> (Dict String OutgoingPort, OtherManagers)
-setupEffects sendToAppP =
-  effectManagerFold
-    (\key (EffectManager { portSetup } as effectManager) (ports, otherMangers) ->
-      ( case portSetup of
-          Just portSetupFunc ->
-            Dict.insert
-              key
-              (portSetupFunc key sendToAppP)
-              ports
-
-          Nothing ->
-            ports
-      , Dict.insert
-          key
-          (instantiateEffectManger effectManager sendToAppP)
-          otherMangers
+dispatchEffects : OtherManagers msg -> Cmd msg -> Sub msg -> ()
+dispatchEffects (OtherManagers processes) cmd sub =
+  let
+    effectsDict =
+      Dict.empty
+        |> gatherCmds cmd
+        |> gatherSubs sub
+  in
+    Dict.foldr
+      (\key managerProc _ ->
+        let
+            (cmdList, subList) =
+              Maybe.withDefault
+                ([], [])
+                (Dict.get key effectsDict)
+            _ =
+              RawScheduler.rawSend
+                managerProc
+                (App (Elm.Kernel.Basics.fudgeType cmdList) (Elm.Kernel.Basics.fudgeType subList))
+        in
+          ()
       )
-    )
-    (Dict.empty, Dict.empty)
-  |> Tuple.mapSecond OtherManagers
-
-instantiateEffectManger : EffectManager cmdLeafData subLeafData state appMsg selfMsg -> SendToApp appMsg -> ProcessId
-instantiateEffectManger (EffectManager effectManager) (SendToApp func) =
-  Debug.todo "instantiateEffectManger"
-  -- let
-  --   loop state =
-  --     RawScheduler.andThen
-  --       loop
-  --       (RawScheduler.Receive (\receivedData ->
-  --         case receivedData of
-  --           RawScheduler.Self value ->
-  --             effectManager.onSelfMsg router value state
-
-  --           RawScheduler.Bag cmds subs ->
-  --             Debug.todo "send bags to effect manager"
-  --             -- case effectManger.effects of
-  --             --   CmdOnlyEffectModule { onEffects } ->
+      ()
+      processes
 
 
-  --       ))
+gatherCmds : Cmd msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
+gatherCmds (Cmd.Data cmd) effectsDict =
+  cmd
+    |> List.foldr
+      (\{home, value} dict -> gatherHelper True home value dict)
+      effectsDict
 
 
-  --   (RawScheduler.Process selfProcess) =
-  --     RawScheduler.rawSpawn
-  --       (RawScheduler.andThen
-  --         (Debug.todo "mutal recursion needed")
-  --         effectManager.init
-  --       )
-  --   router =
-  --     Router
-  --       { sendToApp = (\appMsg -> func appMsg AsyncUpdate)
-  --       , selfProcess = selfProcess.id
-  --       }
-  -- in
-  --   RawScheduler.Id2 (Elm.Kernel.Basics.fudgeType selfProcess.id)
+gatherSubs : Sub msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
+gatherSubs (Sub.Data subs) effectsDict =
+  subs
+    |> List.foldr
+      (\{home, value} dict -> gatherHelper False home value dict)
+      effectsDict
 
-type SendToApp msg
-  = SendToApp (msg -> UpdateMetadate -> ())
 
-type StepperBuilder model msg
-  = StepperBuilder (SendToApp msg -> model -> (SendToApp msg))
+gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
+gatherHelper isCmd home value effectsDict =
+  let
+    effectManager =
+      getEffectManager home
 
-type alias DebugMetadata = Encode.Value
 
-type UpdateMetadate
+    effect =
+      (Elm.Kernel.Basics.fudgeType value)
+  in
+    Dict.insert
+      (effectManagerNameToString home)
+      (createEffect isCmd effect (Dict.get (effectManagerNameToString home) effectsDict))
+      effectsDict
+
+
+createEffect : Bool -> Bag.LeafType msg -> Maybe (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> (List (Bag.LeafType msg), List (Bag.LeafType msg))
+createEffect isCmd newEffect maybeEffects =
+  let
+    (cmdList, subList) =
+      case maybeEffects of
+        Just effects -> effects
+        Nothing -> ([], [])
+  in
+  if isCmd then
+    (newEffect :: cmdList, subList)
+  else
+    (cmdList, newEffect :: subList)
+
+
+setupEffects : SetupEffects state appMsg selfMsg
+setupEffects sendToAppP init onEffects onSelfMsg cmdMap subMap  =
+  EffectManager
+    { onSelfMsg = onSelfMsg
+    , init = init
+    , onEffects = onEffects
+    , cmdMap = cmdMap
+    , subMap = subMap
+    , selfProcess = instantiateEffectManager sendToAppP init onEffects onSelfMsg
+    }
+
+hiddenSetupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
+hiddenSetupEffects =
+  Elm.Kernel.Basics.fudgeType setupEffects
+
+
+instantiateEffectManager : SendToApp appMsg
+  -> Task Never state
+  -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
+  -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
+  -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
+  let
+    receiver msg state =
+      let
+        (Task task) =
+          case msg of
+            Self value ->
+              onSelfMsg router value state
+
+            App cmds subs ->
+              onEffects router cmds subs state
+      in
+        RawScheduler.andThen
+          (\res ->
+            case res of
+              Ok val ->
+                RawScheduler.andThen
+                  (\() -> RawScheduler.Value val)
+                  (RawScheduler.sleep 0)
+              Err e -> never e
+          )
+          task
+
+
+    selfProcess =
+      RawScheduler.rawSpawn (
+        RawScheduler.andThen
+          (\() -> init)
+          (RawScheduler.sleep 0)
+      )
+
+
+    router =
+      Router
+        { sendToApp = (\appMsg -> sendToAppFunc appMsg AsyncUpdate)
+        , selfProcess = selfProcess
+        }
+  in
+  RawScheduler.rawSetReceiver selfProcess receiver
+
+
+type alias SendToApp msg =
+  msg -> UpdateMetadata -> ()
+
+
+type alias StepperBuilder model msg =
+  SendToApp msg -> model -> (SendToApp msg)
+
+
+type alias DebugMetadata = EncodeValue
+
+
+{-| AsyncUpdate is default I think
+
+TODO(harry) understand this by reading source of VirtualDom
+-}
+type UpdateMetadata
   = SyncUpdate
   | AsyncUpdate
 
-type OtherManagers =
-  OtherManagers (Dict String ProcessId)
 
-type alias EffectMangerName = String
+type OtherManagers appMsg =
+  OtherManagers (Dict String (RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)))
 
-{-|
 
-I try to avoid naff comments when writing code. Saying that, I do feel
-compeled to remark on quite how nasty the following type definition is.
--}
-type Effects cmdLeafData subLeafData state appMsg selfMsg
-  = CmdOnlyEffectModule
-    { onEffects: (Router appMsg selfMsg -> List cmdLeafData -> state -> Task Never state)
-    , cmdMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA cmdLeafData -> LeafDataOfTypeB cmdLeafData
-    }
-  | SubOnlyEffectModule
-    { onEffects: (Router appMsg selfMsg -> List subLeafData -> state -> Task Never state)
-    , subMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA subLeafData -> LeafDataOfTypeB subLeafData
-    }
-  | CmdAndSubEffectModule
-    { onEffects: (Router appMsg selfMsg -> List cmdLeafData -> List subLeafData -> state -> Task Never state)
-    , cmdMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA cmdLeafData -> LeafDataOfTypeB cmdLeafData
-    , subMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA subLeafData -> LeafDataOfTypeB subLeafData
-    }
+type ReceivedData appMsg selfMsg
+  = Self selfMsg
+  | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
 
-type EffectManager cmdLeafData subLeafData state appMsg selfMsg =
-  EffectManager
-    { portSetup : Maybe (EffectMangerName -> SendToApp selfMsg -> OutgoingPort)
-    , onSelfMsg : Router appMsg selfMsg -> selfMsg -> state -> Task Never state
+
+type EffectManager state appMsg selfMsg
+  = EffectManager
+    { onSelfMsg : Router appMsg selfMsg -> selfMsg -> state -> Task Never state
     , init : Task Never state
-    , effects : Effects cmdLeafData subLeafData state appMsg selfMsg
-    , onEffects: (Router appMsg selfMsg -> List cmdLeafData -> List subLeafData -> state -> Task Never state)
-    , cmdMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA cmdLeafData -> LeafDataOfTypeB cmdLeafData
-    , subMap: (HiddenTypeA -> HiddenTypeA) -> LeafDataOfTypeA subLeafData -> LeafDataOfTypeB subLeafData
+    , onEffects: Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state
+    , cmdMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB
+    , subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
+    , selfProcess: RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
     }
 
 
 type OutgoingPort =
   OutgoingPort
-    { subscribe: (Encode.Value -> ())
-    , unsubscribe: (Encode.Value -> ())
+    { subscribe: (EncodeValue -> ())
+    , unsubscribe: (EncodeValue -> ())
+    }
+
+
+type IncomingPort =
+  IncomingPort
+    { send: (EncodeValue -> ())
     }
 
 type HiddenTypeA
@@ -321,17 +483,76 @@ type HiddenTypeA
 type HiddenTypeB
   = HiddenTypeB Never
 
-type LeafDataOfTypeA leafData
-  = LeafDataOfTypeA Never
 
-type LeafDataOfTypeB leafData
-  = LeafDataOfTypeB Never
-
-type UniqueId = UniqueId Never
-
-type HiddenErr = HiddenErr Never
+type HiddenMyCmd msg = HiddenMyCmd Never
 
 
-type HiddenOk = HiddenOk Never
+type HiddenMySub msg = HiddenMySub Never
 
 
+type HiddenSelfMsg = HiddenSelfMsg HiddenSelfMsg
+
+
+type HiddenState = HiddenState HiddenState
+
+
+type RawJsObject record
+  = JsRecord (RawJsObject record)
+  | JsAny
+
+
+type alias Impl flags model msg =
+  { init : flags -> ( model, Cmd msg )
+  , update : msg -> model -> ( model, Cmd msg )
+  , subscriptions : model -> Sub msg
+  }
+
+
+type alias SetupEffects state appMsg selfMsg =
+  SendToApp appMsg
+    -> Task Never state
+    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
+    -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
+    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB)
+    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB)
+    -> EffectManager state appMsg selfMsg
+
+
+type alias InitFunctions model appMsg =
+  { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
+  , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () appMsg Never
+  , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (EffectManager () appMsg Never, appMsg -> List (HiddenMySub appMsg) -> ())
+  , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
+  , dispatchEffects : OtherManagers appMsg -> Cmd appMsg -> Sub appMsg -> ()
+  }
+
+-- kernel --
+
+initialize :
+    Decoder flags ->
+    RawJsObject { args: Maybe (RawJsObject flags) } ->
+    Impl flags model msg ->
+    InitFunctions model msg ->
+    RawJsObject
+      { ports : RawJsObject
+        { outgoingPortName: OutgoingPort
+        , incomingPortName: IncomingPort
+        }
+      }
+initialize =
+  Elm.Kernel.Platform.initialize
+
+
+effectManagerNameToString : Bag.EffectManagerName -> String
+effectManagerNameToString =
+  Elm.Kernel.Platform.effectManagerNameToString
+
+
+getEffectManager : Bag.EffectManagerName -> EffectManager state appMsg selfMsg
+getEffectManager =
+  Elm.Kernel.Platform.getEffectManager
+
+
+effectManagerFold : (Bag.EffectManagerName -> EffectManager state appMsg selfMsg -> a -> a) -> a -> a
+effectManagerFold =
+  Elm.Kernel.Platform.effectManagerFold

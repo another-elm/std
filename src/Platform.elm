@@ -30,37 +30,32 @@ curious? Public discussions of your explorations should be framed accordingly.
   I have called these `OtherManagers` but what do they do and how shouuld they be named?
 
 -}
-import Basics exposing (Never)
-import Elm.Kernel.Platform
-import Elm.Kernel.Scheduler
-import Platform.Cmd exposing (Cmd)
-import Platform.Sub exposing (Sub)
 
--- import Basics exposing (..)
--- import List exposing ((::))
--- import Maybe exposing (Maybe(..))
--- import Result exposing (Result(..))
--- import String exposing (String)
--- import Char exposing (Char)
--- import Tuple
+import Basics exposing (..)
+import List exposing ((::))
+import Maybe exposing (Maybe(..))
+import Result exposing (Result(..))
+import String exposing (String)
+import Char exposing (Char)
+import Tuple
 
 import Debug
 
--- import Platform.Cmd as Cmd exposing ( Cmd )
--- import Platform.Sub as Sub exposing ( Sub )
+import Platform.Cmd as Cmd exposing ( Cmd )
+import Platform.Sub as Sub exposing ( Sub )
 
--- import Elm.Kernel.Basics
--- import Elm.Kernel.Debug
--- import Elm.Kernel.Platform
--- import Platform.Bag as Bag
--- -- import Json.Decode exposing (Decoder)
--- -- import Json.Encode as Encode
--- import Dict exposing (Dict)
--- import Platform.RawScheduler as RawScheduler
+import Elm.Kernel.Basics
+import Elm.Kernel.Debug
+import Elm.Kernel.Platform
+import Platform.Bag as Bag
+-- import Json.Decode exposing (Decoder)
+-- import Json.Encode as Encode
+import Dict exposing (Dict)
+import Platform.RawScheduler as RawScheduler
 
 
--- type Decoder flags = Decoder (Decoder flags)
--- type EncodeValue = EncodeValue EncodeValue
+type Decoder flags = Decoder (Decoder flags)
+type EncodeValue = EncodeValue EncodeValue
 
 -- PROGRAMS
 
@@ -70,16 +65,16 @@ show anything on screen? Etc.
 -}
 type Program flags model msg =
   Program
-    -- ((Decoder flags) ->
-    --   DebugMetadata ->
-    --   RawJsObject { args: Maybe (RawJsObject flags) } ->
-    --   RawJsObject
-    --     { ports : RawJsObject
-    --       { outgoingPortName: OutgoingPort
-    --       , incomingPortName: IncomingPort
-    --       }
-    --     }
-    -- )
+    ((Decoder flags) ->
+      DebugMetadata ->
+      RawJsObject { args: Maybe (RawJsObject flags) } ->
+      RawJsObject
+        { ports : RawJsObject
+          { outgoingPortName: OutgoingPort
+          , incomingPortName: IncomingPort
+          }
+        }
+    )
 
 {-| Create a [headless][] program with no user interface.
 
@@ -107,21 +102,23 @@ worker
     , subscriptions : model -> Sub msg
     }
   -> Program flags model msg
-worker =
-  Debug.todo "worker"
-  -- Program
-  --   (\flagsDecoder _ args ->
-  --     initialize
-  --       flagsDecoder
-  --       args
-  --       impl
-  --       { stepperBuilder = \ _ _ -> (\ _ _ -> ())
-  --       , setupOutgoingPort = setupOutgoingPort
-  --       , setupIncomingPort = setupIncomingPort
-  --       , setupEffects = hiddenSetupEffects
-  --       , dispatchEffects = dispatchEffects
-  --       }
-  --   )
+worker impl =
+  makeProgramCallable
+    (Program
+      (\flagsDecoder _ args ->
+        initialize
+          flagsDecoder
+          args
+          impl
+          { stepperBuilder = \ _ _ -> (\ _ _ -> ())
+          , setupOutgoingPort =  Debug.todo "setupOutgoingPort"
+          , setupIncomingPort = Debug.todo "setupIncomingPort"
+          , setupEffects = Debug.todo "hiddenSetupEffects"
+          , dispatchEffects = Debug.todo "dispatchEffects"
+          }
+      )
+    )
+
 
 
 
@@ -134,7 +131,7 @@ primitive.
 -}
 type Task err ok
     = Task
-      -- (RawScheduler.Task (Result err ok))
+      (RawScheduler.Task (Result err ok))
 
 
 {-| Head over to the documentation for the [`Process`](Process) module for
@@ -143,7 +140,7 @@ primitive.
 -}
 type ProcessId =
   ProcessId
-    -- (RawScheduler.ProcessId Never)
+    (RawScheduler.ProcessId Never)
 
 
 
@@ -435,122 +432,127 @@ sendToSelf (Router) msg =
 --   RawScheduler.rawSetReceiver selfProcess receiver
 
 
--- type alias SendToApp msg =
---   msg -> UpdateMetadata -> ()
+type alias SendToApp msg =
+  msg -> UpdateMetadata -> ()
 
 
--- type alias StepperBuilder model msg =
---   SendToApp msg -> model -> (SendToApp msg)
+type alias StepperBuilder model msg =
+  SendToApp msg -> model -> (SendToApp msg)
 
 
--- type alias DebugMetadata = EncodeValue
+type alias DebugMetadata = EncodeValue
 
 
--- {-| AsyncUpdate is default I think
+{-| AsyncUpdate is default I think
 
--- TODO(harry) understand this by reading source of VirtualDom
--- -}
--- type UpdateMetadata
---   = SyncUpdate
---   | AsyncUpdate
-
-
--- type OtherManagers appMsg =
---   OtherManagers (Dict String (RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)))
+TODO(harry) understand this by reading source of VirtualDom
+-}
+type UpdateMetadata
+  = SyncUpdate
+  | AsyncUpdate
 
 
--- type ReceivedData appMsg selfMsg
---   = Self selfMsg
---   | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
+type OtherManagers appMsg =
+  OtherManagers (Dict String (RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)))
 
 
--- type EffectManager state appMsg selfMsg
---   = EffectManager
---     { onSelfMsg : Router appMsg selfMsg -> selfMsg -> state -> Task Never state
---     , init : Task Never state
---     , onEffects: Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state
---     , cmdMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB
---     , subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
---     , selfProcess: RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
---     }
+type ReceivedData appMsg selfMsg
+  = Self selfMsg
+  | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
 
 
--- type OutgoingPort =
---   OutgoingPort
---     { subscribe: (EncodeValue -> ())
---     , unsubscribe: (EncodeValue -> ())
---     }
+type EffectManager state appMsg selfMsg
+  = EffectManager
+    { onSelfMsg : Router appMsg selfMsg -> selfMsg -> state -> Task Never state
+    , init : Task Never state
+    , onEffects: Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state
+    , cmdMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB
+    , subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
+    , selfProcess: RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+    }
 
 
--- type IncomingPort =
---   IncomingPort
---     { send: (EncodeValue -> ())
---     }
-
--- type HiddenTypeA
---   = HiddenTypeA Never
-
--- type HiddenTypeB
---   = HiddenTypeB Never
+type OutgoingPort =
+  OutgoingPort
+    { subscribe: (EncodeValue -> ())
+    , unsubscribe: (EncodeValue -> ())
+    }
 
 
--- type HiddenMyCmd msg = HiddenMyCmd Never
+type IncomingPort =
+  IncomingPort
+    { send: (EncodeValue -> ())
+    }
+
+type HiddenTypeA
+  = HiddenTypeA Never
+
+type HiddenTypeB
+  = HiddenTypeB Never
 
 
--- type HiddenMySub msg = HiddenMySub Never
+type HiddenMyCmd msg = HiddenMyCmd Never
 
 
--- type HiddenSelfMsg = HiddenSelfMsg HiddenSelfMsg
+type HiddenMySub msg = HiddenMySub Never
 
 
--- type HiddenState = HiddenState HiddenState
+type HiddenSelfMsg = HiddenSelfMsg HiddenSelfMsg
 
 
--- type RawJsObject record
---   = JsRecord (RawJsObject record)
---   | JsAny
+type HiddenState = HiddenState HiddenState
 
 
--- type alias Impl flags model msg =
---   { init : flags -> ( model, Cmd msg )
---   , update : msg -> model -> ( model, Cmd msg )
---   , subscriptions : model -> Sub msg
---   }
+type RawJsObject record
+  = JsRecord (RawJsObject record)
+  | JsAny
 
 
--- type alias SetupEffects state appMsg selfMsg =
---   SendToApp appMsg
---     -> Task Never state
---     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
---     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
---     -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB)
---     -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB)
---     -> EffectManager state appMsg selfMsg
+type alias Impl flags model msg =
+  { init : flags -> ( model, Cmd msg )
+  , update : msg -> model -> ( model, Cmd msg )
+  , subscriptions : model -> Sub msg
+  }
 
 
--- type alias InitFunctions model appMsg =
---   { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
---   , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () appMsg Never
---   , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (EffectManager () appMsg Never, appMsg -> List (HiddenMySub appMsg) -> ())
---   , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
---   , dispatchEffects : OtherManagers appMsg -> Cmd appMsg -> Sub appMsg -> ()
---   }
+type alias SetupEffects state appMsg selfMsg =
+  SendToApp appMsg
+    -> Task Never state
+    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
+    -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
+    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB)
+    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB)
+    -> EffectManager state appMsg selfMsg
+
+
+type alias InitFunctions model appMsg =
+  { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
+  , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () appMsg Never
+  , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (EffectManager () appMsg Never, appMsg -> List (HiddenMySub appMsg) -> ())
+  , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
+  , dispatchEffects : OtherManagers appMsg -> Cmd appMsg -> Sub appMsg -> ()
+  }
 
 -- -- kernel --
 
--- initialize :
---     Decoder flags ->
---     RawJsObject { args: Maybe (RawJsObject flags) } ->
---     Impl flags model msg ->
---     InitFunctions model msg ->
---     RawJsObject
---       { ports : RawJsObject
---         { outgoingPortName: OutgoingPort
---         , incomingPortName: IncomingPort
---         }
---       }
--- initialize =
---   Elm.Kernel.Platform.initialize
+initialize :
+    Decoder flags ->
+    RawJsObject { args: Maybe (RawJsObject flags) } ->
+    Impl flags model msg ->
+    InitFunctions model msg ->
+    RawJsObject
+      { ports : RawJsObject
+        { outgoingPortName: OutgoingPort
+        , incomingPortName: IncomingPort
+        }
+      }
+initialize =
+  Elm.Kernel.Platform.initialize
+
+
+makeProgramCallable :  Program flags model msg -> Program flags model msg
+makeProgramCallable (Program program) =
+  Elm.Kernel.Basics.fudgeType program
 
 
 -- effectManagerNameToString : Bag.EffectManagerName -> String

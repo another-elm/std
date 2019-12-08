@@ -1,5 +1,5 @@
 module Platform.Cmd exposing
-  ( Cmd
+  ( Cmd(..)
   , none
   , batch
   , map
@@ -24,11 +24,10 @@ module Platform.Cmd exposing
 
 -}
 
--- import Elm.Kernel.Basics
+import Elm.Kernel.Basics
 import Basics exposing (..)
 import List
-import Debug
--- import Platform.Bag as Bag
+import Platform.Bag as Bag
 
 
 
@@ -51,14 +50,14 @@ fit into a real application!
 type Cmd msg
   -- Constructor name **must** be same as that used in _Platform_leaf() and
   -- the order of record fields **must** be the same too.
-  = Cmd
-    -- (List
-    --   { home : Bag.EffectManagerName
-    --   , value : (Bag.LeafType msg)
-    --   , cmdMapper : (HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB
-    --   , subMapper : Never
-    --   }
-    -- )
+  = Data
+    (List
+      { home : Bag.EffectManagerName
+      , value : (Bag.LeafType msg)
+      , cmdMapper : (HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB
+      , subMapper : Never
+      }
+    )
 
 {-| Tell the runtime that there are no commands.
 
@@ -78,10 +77,9 @@ all do the same thing.
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-  Debug.todo "batch"
-  -- List.map (\(Data cmd) -> cmd)
-  --   >> List.concat
-  --   >> Data
+  List.map (\(Data cmd) -> cmd)
+    >> List.concat
+    >> Data
 
 
 -- FANCY STUFF
@@ -96,18 +94,17 @@ section on [structure][] in the guide before reaching for this!
 [structure]: https://guide.elm-lang.org/webapps/structure.html
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
-map fn _ =
-  Debug.todo "map"
-  -- data
-  --   |> List.map
-  --     (\{home, value, cmdMapper, subMapper} ->
-  --       { home = home
-  --       , value = (fudgeCmdMapperType cmdMapper) fn value
-  --       , cmdMapper = cmdMapper
-  --       , subMapper = subMapper
-  --       }
-  --     )
-  --   |> Data
+map fn (Data data) =
+  data
+    |> List.map
+      (\{home, value, cmdMapper, subMapper} ->
+        { home = home
+        , value = (fudgeCmdMapperType cmdMapper) fn value
+        , cmdMapper = cmdMapper
+        , subMapper = subMapper
+        }
+      )
+    |> Data
 
 -- HELPERS --
 
@@ -117,6 +114,6 @@ type HiddenA = HiddenA Never
 type HiddenB = HiddenB Never
 
 
--- fudgeCmdMapperType : ((HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB) -> ((a -> msg) -> (Bag.LeafType a -> Bag.LeafType msg))
--- fudgeCmdMapperType =
---   Elm.Kernel.Basics.fudgeType
+fudgeCmdMapperType : ((HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB) -> ((a -> msg) -> (Bag.LeafType a -> Bag.LeafType msg))
+fudgeCmdMapperType =
+  Elm.Kernel.Basics.fudgeType

@@ -115,7 +115,7 @@ rawSpawn task =
   enqueue
     (registerNewProcess
       (ProcessId
-        { id = Elm.Kernel.Sceduler.getGuid()
+        { id = Elm.Kernel.Scheduler.getGuid()
         }
       )
       (ProcessState
@@ -179,14 +179,17 @@ send processId msg =
 -}
 spawn : Task a -> Task (ProcessId never)
 spawn task =
-  async
-    (\doneCallback ->
+  let
+    thunk : DoneCallback (ProcessId never) -> TryAbortAction
+    thunk doneCallback =
       let
         _ =
           doneCallback (Value (rawSpawn task))
       in
       (\() -> ())
-    )
+  in
+  async
+    thunk
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
@@ -248,26 +251,7 @@ enqueue id =
 
 -- Helper functions --
 
-
--- {-| NON PURE!
--- -}
--- rawStepper : Process -> Process
--- rawStepper (Process process) =
---   let
---     (doEnqueue, newProcess) =
---       stepper process
-
---     _ =
---       if doEnqueue then
---         enqueue newProcess
---       else
---         newProcess
---   in
---     newProcess
-
-
-
-{-| NON PURE!
+{-| NON PURE! (calls enqueue)
 
 This function **must** return a process with the **same ID** as
 the process it is passed as  an argument
@@ -380,6 +364,7 @@ registerNewProcess =
 enqueueWithStepper : (ProcessId msg -> ()) -> ProcessId msg -> ProcessId msg
 enqueueWithStepper =
   Elm.Kernel.Scheduler.enqueue
+
 
 delay : Float -> Task val -> DoneCallback val -> TryAbortAction
 delay =

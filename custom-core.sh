@@ -12,22 +12,23 @@ printf "Sucess if ends with DONE: "
 
 ELM="${ELM:-elm}"
 ELM_VERSION="$($ELM --version)"
-CORE_GIT_DIR=$(realpath .)
-
-echo CORE_GIT_DIR $CORE_GIT_DIR
+CORE_GIT_DIR=$(realpath $1)
 
 rm -rf "$ELM_HOME/$ELM_VERSION/packages/elm/core/"
 
 cd $1
 
-if [[ ! -d elm-minimal-master ]]; then
+if [[ ! -d elm-minimal ]]; then
     git clone https://github.com/harrysarson/elm-minimal > /dev/null
 fi
 
-cd elm-minimal-master
+cd elm-minimal
+git reset master --hard > /dev/null
 rm -rf elm-stuff
-echo $(pwd)
+
+
 $ELM make src/Main.elm --output /dev/null > /dev/null || true;
+cd - > /dev/null
 
 
 CORE_VERSION="$(ls $ELM_HOME/$ELM_VERSION/packages/elm/core/)"

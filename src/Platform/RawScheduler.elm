@@ -363,7 +363,7 @@ registerNewProcess =
 
 enqueueWithStepper : (ProcessId msg -> ()) -> ProcessId msg -> ProcessId msg
 enqueueWithStepper =
-  Elm.Kernel.Scheduler.enqueue
+  Elm.Kernel.Scheduler.enqueueWithStepper
 
 
 delay : Float -> Task val -> DoneCallback val -> TryAbortAction

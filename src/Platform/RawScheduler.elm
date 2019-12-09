@@ -291,7 +291,7 @@ stepper (ProcessId processId) (ProcessState process) =
 
               killableRoot =
                 AsyncAction
-                  (Debug.todo "put an assert(false) function here?")
+                  (\_ -> Debug.todo "put an assert(false) function here?")
                   (doEffect (\newRoot ->
                     let
                       -- todo: avoid enqueue here

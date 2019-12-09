@@ -134,12 +134,14 @@ Will modify an existing process, **enqueue** and return it.
 
 -}
 rawSetReceiver : ProcessId msg -> (msg -> a -> Task a) -> ProcessId msg
-rawSetReceiver proc receiver =
-  enqueue
-    (updateProcessState
-      (\(ProcessState state) -> ProcessState { state | receiver = Just (Elm.Kernel.Basics.fudgeType receiver) } )
-      proc
-    )
+rawSetReceiver processId receiver =
+  let
+    _ =
+      updateProcessState
+        (\(ProcessState state) -> ProcessState { state | receiver = Just (Elm.Kernel.Basics.fudgeType receiver) } )
+        processId
+  in
+    enqueue processId
 
 
 {-| NON PURE!
@@ -150,11 +152,14 @@ can perform actions based on the message.
 -}
 rawSend : ProcessId msg -> msg-> ProcessId msg
 rawSend processId msg =
-  enqueue
-    (updateProcessState
-      (\(ProcessState procState) -> ProcessState { procState | mailbox = procState.mailbox ++ [msg]})
-      processId
-    )
+  let
+    _ =
+      updateProcessState
+        (\(ProcessState procState) -> ProcessState { procState | mailbox = procState.mailbox ++ [msg]})
+        processId
+  in
+    enqueue processId
+
 
 
 {-| Create a task, if run, will make the process deal with a message.
@@ -346,7 +351,7 @@ stepper (ProcessId processId) (ProcessState process) =
 -- Kernel function redefinitons --
 
 
-updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessId msg
+updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
 updateProcessState =
   Elm.Kernel.Scheduler.updateProcessState
 

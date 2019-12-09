@@ -312,10 +312,10 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 						throw new Error('Bug in elm runtime: attempting to cmdMap subscription only effect module.');
 
 					case 'procIdAlreadyRegistered':
-						throw new Error(`Bug in elm runtime: state for process ${fact1} is already registered!`);
+						throw new Error(`Bug in elm runtime: state for process ${fact2} is already registered!`);
 
 					case 'procIdNotRegistered':
-						throw new Error(`Bug in elm runtime: state for process ${fact1} has not registered!`);
+						throw new Error(`Bug in elm runtime: state for process ${fact2} has not registered!`);
 				}
 				throw new Error(`Unknown bug in elm runtime id: ${identifier}!`);
 			}

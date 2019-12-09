@@ -33,24 +33,25 @@ var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
 
 function _Scheduler_getGuid() {
-	return Object.create({ id: _Scheduler_guid++ });
+	return _Scheduler_guid++;
 }
 
 function _Scheduler_getProcessState(id) {
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered');
+		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.id);
 	}
 	//*/
 	return procState;
 }
 
 var _Scheduler_updateProcessState = F2((func, id) => {
+	console.log("update", id);
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered');
+		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.id);
 	}
 	//*/
 	_Scheduler_processes.set(id, func(procState));
@@ -58,9 +59,10 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 });
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
+	console.log("registering", procId);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdAlreadyRegistered');
+		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.id);
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);

@@ -64,7 +64,11 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		ports[key] = setup.ports;
 		managers[key] = setup.manger;
 	}
-	A3(functions.__$dispatchEffects, managers, initValue.b, impl.__$subscriptions(model));
+	const dispatcher = A3(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
+
+	for (const key in mangers) {
+		A2(dispatcher, key, mangers);
+	}
 
 	return ports ? { ports: ports } : {};
 });

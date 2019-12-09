@@ -298,46 +298,46 @@ setupIncomingPort sendToApp2 updateSubs =
 
 -- -- HELPERS --
 
-dispatchEffects : OtherManagers msg -> Cmd msg -> Sub msg -> ()
-dispatchEffects (OtherManagers processes) cmd sub =
+dispatchEffects : Cmd appMsg
+  -> Sub appMsg
+  -> Bag.EffectManagerName
+  -> Router appMsg (ReceivedData appMsg HiddenSelfMsg)
+  -> ()
+dispatchEffects cmd sub =
   let
     effectsDict =
       Dict.empty
         |> gatherCmds cmd
         |> gatherSubs sub
   in
-    Dict.foldr
-      (\key managerProc _ ->
-        let
-            (cmdList, subList) =
-              Maybe.withDefault
-                ([], [])
-                (Dict.get key effectsDict)
-            _ =
-              RawScheduler.rawSend
-                managerProc
-                (App (Elm.Kernel.Basics.fudgeType cmdList) (Elm.Kernel.Basics.fudgeType subList))
-        in
-          ()
-      )
-      ()
-      processes
+    \key (Router { selfProcess }) ->
+      let
+          (cmdList, subList) =
+            Maybe.withDefault
+              ([], [])
+              (Dict.get (effectManagerNameToString key) effectsDict)
+          _ =
+            RawScheduler.rawSend
+              selfProcess
+              (App (Elm.Kernel.Basics.fudgeType cmdList) (Elm.Kernel.Basics.fudgeType subList))
+      in
+        ()
 
 
 gatherCmds : Cmd msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
 gatherCmds (Cmd.Data cmd) effectsDict =
-  cmd
-    |> List.foldr
-      (\{home, value} dict -> gatherHelper True home value dict)
-      effectsDict
+  List.foldr
+    (\{home, value} dict -> gatherHelper True home value dict)
+    effectsDict
+    (Debug.log "cmds" cmd)
 
 
 gatherSubs : Sub msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
 gatherSubs (Sub.Data subs) effectsDict =
-  subs
-    |> List.foldr
-      (\{home, value} dict -> gatherHelper False home value dict)
-      effectsDict
+  List.foldr
+    (\{home, value} dict -> gatherHelper False home value dict)
+    effectsDict
+    (Debug.log "subs" subs)
 
 
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -530,7 +530,7 @@ type alias InitFunctions model appMsg =
   , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () appMsg Never
   , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (EffectManager () appMsg Never, appMsg -> List (HiddenMySub appMsg) -> ())
   , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
-  , dispatchEffects : OtherManagers appMsg -> Cmd appMsg -> Sub appMsg -> ()
+  , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> Router appMsg (ReceivedData appMsg HiddenSelfMsg) -> ()
   }
 
 -- -- kernel --
@@ -563,8 +563,3 @@ effectManagerNameToString =
 getEffectManager : Bag.EffectManagerName -> EffectManager state appMsg selfMsg
 getEffectManager =
   Elm.Kernel.Platform.getEffectManager
-
-
-effectManagerFold : (Bag.EffectManagerName -> EffectManager state appMsg selfMsg -> a -> a) -> a -> a
-effectManagerFold =
-  Elm.Kernel.Platform.effectManagerFold

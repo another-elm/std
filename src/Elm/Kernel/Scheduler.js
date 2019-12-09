@@ -1,7 +1,7 @@
 /*
 
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding)
-
+import Elm.Kernel.Debug exposing (crash)
 */
 
 // COMPATIBILITY
@@ -40,7 +40,7 @@ function _Scheduler_getProcessState(id) {
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
-		console.error(`INTERNAL ERROR: Process with id ${id} is not in map!`);
+		__Debug_crash(12, 'procIdNotRegistered');
 	}
 	//*/
 	return procState;
@@ -54,8 +54,8 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	/**__DEBUG/
-	if (_Scheduler_processes.has(procId)) {
-		console.error(`INTERNAL ERROR: Process with id ${id} is already in map!`);
+	if (procState === undefined) {
+		__Debug_crash(12, 'procIdAlreadyRegistered');
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);

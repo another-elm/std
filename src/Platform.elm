@@ -237,7 +237,7 @@ sendToSelf (Router) msg =
 --     , init = init
 --     , onEffects = onEffects
 --     , cmdMap = (\ _ value -> Elm.Kernel.Basics.fudgeType value)
---     , subMap = (\ _ _ -> Elm.Kernel.Debug.crash 11) -- TODO(harry) crash better here
+--     , subMap = (\ _ _ -> Elm.Kernel.Platform.cmdOnlySubMap)
 --     , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
 --     }
 
@@ -287,7 +287,7 @@ sendToSelf (Router) msg =
 --     { onSelfMsg = onSelfMsg
 --     , init = init
 --     , onEffects = onEffects
---     , cmdMap = (\ _ _ -> Elm.Kernel.Debug.crash 11) -- TODO(harry) crash better here
+--     , cmdMap = (\ _ _ -> Elm.Kernel.Platform.subOnlyCmdMap)
 --     , subMap = subMap
 --     , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
 --     }

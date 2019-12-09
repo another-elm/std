@@ -101,6 +101,22 @@ function _Platform_effectManagerNameToString(name) {
 	return name;
 }
 
+const _Platform_subOnlyCmdMap = F2(function(_1, _2) {
+	/**__DEBUG/
+	if (procState === undefined) {
+		__Debug_crash(12, 'cmdMap');
+	}
+	//*/
+});
+
+const _Platform_cmdOnlySubMap = F2(function(_1, _2) {
+	/**__DEBUG/
+	if (procState === undefined) {
+		__Debug_crash(12, 'subMap');
+	}
+	//*/
+});
+
 
 // Called by compiler generated js when creating event mangers
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
@@ -112,13 +128,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 		fullOnEffects = F4(function(router, cmds, subs, state) {
 			return A3(onEffects, router, subs, state);
 		});
-		fullCmdMap = F2(function(tagger, _val) {
-			/**__DEBUG/
-			if (procState === undefined) {
-				console.error(`INTERNAL ERROR: attempt to map Cmd for subscription only effect module!`);
-			}
-			//*/
-		});
+		fullCmdMap = _Platform_subOnlyCmdMap;
 		fullSubMap = subMap;
 	} else if (subMap === undefined) {
 		// Command only effect module
@@ -126,13 +136,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 			return A3(onEffects, router, cmds, state);
 		});
 		fullCmdMap = cmdMap;
-		fullSubMap = F2(function(tagger, _val) {
-			/**__DEBUG/
-			if (procState === undefined) {
-				console.error(`INTERNAL ERROR: attempt to map Sub for command only effect module!`);
-			}
-			//*/
-		});
+		fullSubMap = _Platform_cmdOnlySubMap;
 	} else {
 		fullOnEffects = onEffects;
 		fullCmdMap = cmdMap;

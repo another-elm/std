@@ -47,7 +47,12 @@ function _Scheduler_getProcessState(id) {
 }
 
 var _Scheduler_updateProcessState = F2((func, id) => {
-	const procState = _Scheduler_getProcessState.get(id);
+	const procState = _Scheduler_processes.get(id);
+	/**__DEBUG/
+	if (procState === undefined) {
+		__Debug_crash(12, 'procIdNotRegistered');
+	}
+	//*/
 	_Scheduler_processes.set(id, func(procState));
 	return procState;
 });
@@ -74,12 +79,15 @@ var _Scheduler_enqueueWithStepper = F2(function(stepper, procId)
 		return;
 	}
 	_Scheduler_working = true;
-	while (procId = _Scheduler_queue.shift())
+	while (true)
 	{
-		stepper(procId);
+		const newProcId = _Scheduler_queue.shift();
+		if (newProcId === undefined) {
+			_Scheduler_working = false;
+			return procId;
+		}
+		stepper(newProcId);
 	}
-	_Scheduler_working = false;
-	return procId;
 });
 
 

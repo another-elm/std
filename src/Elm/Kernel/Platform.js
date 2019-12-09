@@ -18,8 +18,7 @@ var _Platform_compiledEffectManagers = {};
 // INITIALIZE A PROGRAM
 
 
-function _Platform_initialize(flagDecoder, args, impl, functions)
-{
+const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	// Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
 	// Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
 	const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args['flags'] : undefined));
@@ -28,10 +27,18 @@ function _Platform_initialize(flagDecoder, args, impl, functions)
 		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
 	}
 
+	const sendToApp = F2((msg, viewMetadata) => {
+		const updateValue = A2(impl.__$update, msg, model);
+		model = updateValue.a
+		A2(stepper, model, viewMetadata);
+		A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
+	});
+
 	const managers = {};
 	const ports = {};
+
 	const initValue = impl.__$init(flagsResult.a);
-	var model = initValue.a;
+	let model = initValue.a;
 	const stepper = A2(functions.__$stepperBuilder, sendToApp, model);
 
 	for (var key in _Platform_effectManagers)
@@ -57,18 +64,10 @@ function _Platform_initialize(flagDecoder, args, impl, functions)
 		ports[key] = setup.ports;
 		managers[key] = setup.manger;
 	}
-
-	const sendToApp = F2((msg, viewMetadata) => {
-		const updateValue = A2(impl.__$update, msg, model);
-		model = updateValue.a
-		A2(stepper, model, viewMetadata);
-		A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
-	})
-
 	A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
 
 	return ports ? { ports: ports } : {};
-}
+});
 
 
 
@@ -245,7 +244,7 @@ function _Platform_outgoingPort(name, converter)
 		}
 
 		const outgoingPortSend = payload => {
-			var value = __Json_unwrap(payload);
+			var value = __Json_unwrap(converter(payload));
 			for (const sub of subs)
 			{
 				sub(value);

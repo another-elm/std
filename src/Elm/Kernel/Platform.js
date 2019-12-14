@@ -13,12 +13,14 @@ import Result exposing (isOk)
 var _Platform_outgoingPorts = {};
 var _Platform_incomingPorts = {};
 var _Platform_effectManagers = {};
-var _Platform_compiledEffectManagers = {};
+
+const _Platform_cmdMappers = {};
+const _Platform_subMappers = {};
 
 // INITIALIZE A PROGRAM
 
-
 const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
+
 	// Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
 	// Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
 	const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args['flags'] : undefined));
@@ -31,7 +33,12 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		const updateValue = A2(impl.__$update, msg, model);
 		model = updateValue.a
 		A2(stepper, model, viewMetadata);
-		A3(functions.__$dispatchEffects, managers, updateValue.b, impl.__$subscriptions(model));
+
+		const dispatcher = A3(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
+
+		for (const key in managers) {
+			A2(dispatcher, key, managers[key]);
+		}
 	});
 
 	const managers = {};
@@ -43,31 +50,26 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 
 	for (var key in _Platform_effectManagers)
 	{
-		const setup = _Platform_effectManagers[key];
-		_Platform_compiledEffectManagers[key] =
-			setup(functions.__$setupEffects, sendToApp);
-		managers[key] = setup;
+		const setup = _Platform_effectManagers[key].__setup;
+		managers[key] = setup(functions.__$setupEffects, sendToApp);
 	}
 	for (var key in _Platform_outgoingPorts)
 	{
-		const setup = _Platform_outgoingPorts[key];
-		_Platform_compiledEffectManagers[key] =
-			setup(functions.__$setupOutgoingPort, sendToApp);
+		const setup = _Platform_outgoingPorts[key](functions.__$setupOutgoingPort, sendToApp);
 		ports[key] = setup.ports;
-		managers[key] = setup.manger;
+		managers[key] = setup.manager;
 	}
 	for (var key in _Platform_incomingPorts)
 	{
-		const setup = _Platform_incomingPorts[key];
-		_Platform_compiledEffectManagers[key] =
-			setup(functions.__$setupIncomingPort, sendToApp);
+		const setup = _Platform_incomingPorts[key](functions.__$setupIncomingPort, sendToApp);
 		ports[key] = setup.ports;
-		managers[key] = setup.manger;
+		managers[key] = setup.manager;
 	}
 	const dispatcher = A3(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
 
-	for (const key in mangers) {
-		A2(dispatcher, key, mangers);
+	for (const key in managers) {
+		console.log(managers[key]);
+		A2(dispatcher, key, managers[key]);
 	}
 
 	return ports ? { ports: ports } : {};
@@ -95,11 +97,6 @@ function _Platform_registerPreload(url)
 // EFFECT MANAGERS
 
 
-
-function _Platform_getEffectManager(name) {
-	return _Platform_compiledEffectManagers[name];
-}
-
 function _Platform_effectManagerNameToString(name) {
 	return name;
 }
@@ -121,6 +118,22 @@ const _Platform_cmdOnlySubMap = F2(function(_1, _2) {
 });
 
 
+const _Platform_getCmdMapper = F2(function(portCmdMapper, home) {
+	if (_Platform_outgoingPorts.hasOwnProperty(home)) {
+		return portCmdMapper;
+	}
+	return _Platform_effectManagers[home].__cmdMapper;
+});
+
+
+const _Platform_getSubMapper = F2(function(portSubMapper, home) {
+	if (_Platform_incomingPorts.hasOwnProperty(home)) {
+		return portSubMapper;
+	}
+	return _Platform_effectManagers[home].__subMapper;
+});
+
+
 // Called by compiler generated js when creating event mangers
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 {
@@ -132,7 +145,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 			return A3(onEffects, router, subs, state);
 		});
 		fullCmdMap = _Platform_subOnlyCmdMap;
-		fullSubMap = subMap;
+		_Platform = subMap;
 	} else if (subMap === undefined) {
 		// Command only effect module
 		fullOnEffects = F4(function(router, cmds, subs, state) {
@@ -145,9 +158,14 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 		fullCmdMap = cmdMap;
 		fullSubMap = subMap;
 	}
+
 	// Command **and** subscription event manager
-	return function(setup, sendToApp) {
-		return A6(setup, sendToApp, init, fullOnEffects, onSelfMsg, fullCmdMap, fullSubMap)
+	return {
+		__cmdMapper: fullCmdMap,
+		__subMapper: fullSubMap,
+		__setup: function(setup, sendToApp) {
+			return A4(setup, sendToApp, init, fullOnEffects, onSelfMsg)
+		}
 	};
 }
 
@@ -174,9 +192,7 @@ function _Platform_leaf(home)
 					b: {
 						$: __2_LEAFTYPE,
 						a: value
-					},
-					c: _Platform_compiledEffectManagers[home].__$cmdMap,
-					d: _Platform_compiledEffectManagers[home].__$subMap
+					}
 				},
 				b: {
 					$: '[]'
@@ -198,9 +214,7 @@ function _Platform_leaf(home)
 					b: {
 						$: __2_LEAFTYPE,
 						a: value
-					},
-					c: _Platform_compiledEffectManagers[home].__$cmdMap,
-					d: _Platform_compiledEffectManagers[home].__$subMap
+					}
 				},
 				b: {
 					$: 0
@@ -217,7 +231,7 @@ function _Platform_leaf(home)
 
 function _Platform_checkPortName(name)
 {
-	if (_Platform_compiledEffectManagers[name])
+	if (_Platform_effectManagers[name])
 	{
 		__Debug_crash(3, name)
 	}

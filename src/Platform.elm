@@ -197,7 +197,7 @@ sendToSelf (Router router) msg =
   --   )
 
 
-setupOutgoingPort : SendToApp msg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () msg Never
+setupOutgoingPort : SendToApp msg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
 setupOutgoingPort sendToApp2 outgoingPort outgoingPortSend =
   let
     init =
@@ -232,17 +232,10 @@ setupOutgoingPort sendToApp2 outgoingPort outgoingPortSend =
       Task (execInOrder typedCmdList)
 
   in
-  EffectManager
-    { onSelfMsg = onSelfMsg
-    , init = init
-    , onEffects = onEffects
-    , cmdMap = (\ _ value -> Elm.Kernel.Basics.fudgeType value)
-    , subMap = (\ _ _ -> Elm.Kernel.Platform.cmdOnlySubMap)
-    , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
-    }
+  instantiateEffectManager sendToApp2 init onEffects onSelfMsg
 
 
-setupIncomingPort : SendToApp msg -> (List (HiddenMySub msg) -> ()) -> (EffectManager () msg Never, msg -> List (HiddenMySub msg) -> ())
+setupIncomingPort : SendToApp msg -> (List (HiddenMySub msg) -> ()) -> (RawScheduler.ProcessId (ReceivedData msg Never), msg -> List (HiddenMySub msg) -> ())
 setupIncomingPort sendToApp2 updateSubs =
   let
     init =
@@ -283,14 +276,7 @@ setupIncomingPort sendToApp2 updateSubs =
     subMap tagger finalTagger =
       Elm.Kernel.Basics.fudgeType typedSubMap
   in
-  (EffectManager
-    { onSelfMsg = onSelfMsg
-    , init = init
-    , onEffects = onEffects
-    , cmdMap = (\ _ _ -> Elm.Kernel.Platform.subOnlyCmdMap)
-    , subMap = subMap
-    , selfProcess = instantiateEffectManager sendToApp2 init onEffects onSelfMsg
-    }
+  ( instantiateEffectManager sendToApp2 init onEffects onSelfMsg
   , onSend
   )
 
@@ -343,10 +329,6 @@ gatherSubs (Sub.Data subs) effectsDict =
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
 gatherHelper isCmd home value effectsDict =
   let
-    effectManager =
-      getEffectManager home
-
-
     effect =
       (Elm.Kernel.Basics.fudgeType value)
   in
@@ -371,15 +353,9 @@ createEffect isCmd newEffect maybeEffects =
 
 
 setupEffects : SetupEffects state appMsg selfMsg
-setupEffects sendToAppP init onEffects onSelfMsg cmdMap subMap  =
-  EffectManager
-    { onSelfMsg = onSelfMsg
-    , init = init
-    , onEffects = onEffects
-    , cmdMap = cmdMap
-    , subMap = subMap
-    , selfProcess = instantiateEffectManager sendToAppP init onEffects onSelfMsg
-    }
+setupEffects sendToAppP init onEffects onSelfMsg =
+  instantiateEffectManager sendToAppP init onEffects onSelfMsg
+
 
 hiddenSetupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
 hiddenSetupEffects =
@@ -520,15 +496,13 @@ type alias SetupEffects state appMsg selfMsg =
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB)
-    -> ((HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB)
-    -> EffectManager state appMsg selfMsg
+    -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
 
 
 type alias InitFunctions model appMsg =
   { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
-  , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> EffectManager () appMsg Never
-  , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (EffectManager () appMsg Never, appMsg -> List (HiddenMySub appMsg) -> ())
+  , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData appMsg Never)
+  , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (RawScheduler.ProcessId (ReceivedData appMsg Never), appMsg -> List (HiddenMySub appMsg) -> ())
   , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
   , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> Router appMsg (ReceivedData appMsg HiddenSelfMsg) -> ()
   }
@@ -558,8 +532,3 @@ makeProgramCallable (Program program) =
 effectManagerNameToString : Bag.EffectManagerName -> String
 effectManagerNameToString =
   Elm.Kernel.Platform.effectManagerNameToString
-
-
-getEffectManager : Bag.EffectManagerName -> EffectManager state appMsg selfMsg
-getEffectManager =
-  Elm.Kernel.Platform.getEffectManager

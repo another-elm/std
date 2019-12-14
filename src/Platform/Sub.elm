@@ -55,8 +55,6 @@ type Sub msg
     (List
       { home : Bag.EffectManagerName
       , value : (Bag.LeafType msg)
-      , cmdMapper : Never
-      , subMapper : (HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB
       }
     )
 
@@ -99,12 +97,9 @@ map : (a -> msg) -> Sub a -> Sub msg
 map fn (Data data) =
   data
     |> List.map
-      (\{home, value, cmdMapper, subMapper} ->
+      (\{home, value} ->
         { home = home
-        , value = (fudgeSubMapperType subMapper) fn value
-        , cmdMapper = cmdMapper
-        , subMapper = subMapper
-        }
+        , value = (getSubMapper home) fn value}
       )
     |> Data
 
@@ -115,7 +110,19 @@ type HiddenA = HiddenA Never
 
 type HiddenB = HiddenB Never
 
+outgoingPortSubMap : (a -> b) -> (data -> a) -> (data -> b)
+outgoingPortSubMap tagger finalTagger =
+  (\val -> tagger (finalTagger val))
 
-fudgeSubMapperType : ((HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB) -> ((a -> msg) -> (Bag.LeafType a -> Bag.LeafType msg))
-fudgeSubMapperType =
+fudgedOutgoingPortSubMap : (a -> b) -> Bag.LeafType a -> Bag.LeafType b
+fudgedOutgoingPortSubMap tagger finalTagger =
+  Elm.Kernel.Basics.fudgeType outgoingPortSubMap
+
+getSubMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
+getSubMapper home =
+  Elm.Kernel.Platform.getSubMapper fudgedOutgoingPortSubMap home
+
+
+fudgeLeafType : Bag.LeafType a -> Bag.LeafType b
+fudgeLeafType =
   Elm.Kernel.Basics.fudgeType

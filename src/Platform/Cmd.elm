@@ -54,8 +54,6 @@ type Cmd msg
     (List
       { home : Bag.EffectManagerName
       , value : (Bag.LeafType msg)
-      , cmdMapper : (HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB
-      , subMapper : Never
       }
     )
 
@@ -97,16 +95,16 @@ map : (a -> msg) -> Cmd a -> Cmd msg
 map fn (Data data) =
   data
     |> List.map
-      (\{home, value, cmdMapper, subMapper} ->
+      (\{home, value} ->
         { home = home
-        , value = (fudgeCmdMapperType cmdMapper) fn value
-        , cmdMapper = cmdMapper
-        , subMapper = subMapper
+        , value = (getCmdMapper home) fn value
         }
       )
     |> Data
 
+
 -- HELPERS --
+
 
 type HiddenA = HiddenA Never
 
@@ -114,6 +112,16 @@ type HiddenA = HiddenA Never
 type HiddenB = HiddenB Never
 
 
-fudgeCmdMapperType : ((HiddenA -> HiddenB) -> Bag.LeafType HiddenA -> Bag.LeafType HiddenB) -> ((a -> msg) -> (Bag.LeafType a -> Bag.LeafType msg))
-fudgeCmdMapperType =
+outgoingPortCmdMap : (a -> b) -> Bag.LeafType a -> Bag.LeafType msg
+outgoingPortCmdMap _ value =
+  fudgeLeafType value
+
+
+getCmdMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
+getCmdMapper home =
+  Elm.Kernel.Platform.getCmdMapper outgoingPortCmdMap home
+
+
+fudgeLeafType : Bag.LeafType a -> Bag.LeafType b
+fudgeLeafType =
   Elm.Kernel.Basics.fudgeType

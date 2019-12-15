@@ -62,7 +62,7 @@ type ProcessState msg state
     { root : Task state
     , stack : List (HiddenValB -> Task HiddenValC)
     , mailbox : List msg
-    , receiver : Maybe (msg -> Task state)
+    , receiver : Maybe (msg -> state -> Task state)
     }
 
 
@@ -138,7 +138,10 @@ rawSetReceiver processId receiver =
   let
     _ =
       updateProcessState
-        (\(ProcessState state) -> ProcessState { state | receiver = Just (Elm.Kernel.Basics.fudgeType receiver) } )
+        (\(ProcessState state) ->
+          ProcessState
+            { state | receiver = Just receiver }
+        )
         processId
   in
     enqueue processId
@@ -155,7 +158,10 @@ rawSend processId msg =
   let
     _ =
       updateProcessState
-        (\(ProcessState procState) -> ProcessState { procState | mailbox = procState.mailbox ++ [msg]})
+        (\(ProcessState procState) ->
+          ProcessState
+          { procState | mailbox = procState.mailbox ++ [msg]}
+        )
         processId
   in
     enqueue processId
@@ -263,26 +269,28 @@ the process it is passed as  an argument
 
 -}
 stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
-stepper (ProcessId processId) (ProcessState process) =
+stepper processId (ProcessState process) =
   let
-      (ProcessState steppedProcess) =
-        case process.root of
+      (ProcessState steppedProcess, maybeFinalValue) =
+        case {- Debug.log "root" -} process.root of
           Value val ->
             let
               moveStackFowards stack =
                 case stack of
                   callback :: rest ->
-                    stepper
-                      (ProcessId processId)
-                      (ProcessState
+                    ( stepper
+                      processId
+                      ( ProcessState
                         { process
                           | root = (Elm.Kernel.Basics.fudgeType (callback (Elm.Kernel.Basics.fudgeType val)))
                           , stack = rest
                         }
                       )
+                    , Nothing
+                    )
 
                   _ ->
-                    (ProcessState process)
+                    (ProcessState process, Just val)
 
             in
               moveStackFowards process.stack
@@ -291,7 +299,7 @@ stepper (ProcessId processId) (ProcessState process) =
             let
               newProcess =
                 { process
-                | root = killableRoot
+                | root = {- Debug.log "killableRoot" -} killableRoot
                 }
 
               killableRoot =
@@ -299,52 +307,68 @@ stepper (ProcessId processId) (ProcessState process) =
                   (\_ -> Debug.todo "put an assert(false) function here?")
                   (doEffect (\newRoot ->
                     let
-                      -- todo: avoid enqueue here
                       _ =
-                        enqueue
-                          (Elm.Kernel.Scheduler.register
-                            (ProcessState { process | root = newRoot })
+                          (updateProcessState
+                            (\(ProcessState p) ->
+                              ProcessState
+                                { p | root = {- Debug.log "newRoot" -} newRoot }
+                            )
+                            processId
                           )
+                    in
+                    let
+                      -- todo: avoid enqueue here
+                        _ =
+                          enqueue processId
                     in
                     ()
                   ))
             in
-            ProcessState newProcess
+            (ProcessState newProcess, Nothing)
 
           SyncAction doEffect->
             let
               newProcess =
                 { process
-                | root = doEffect ()
+                | root = {- Debug.log "syncRoot" -} (doEffect ())
                 }
             in
-            ProcessState newProcess
+            ( stepper
+              processId
+              (ProcessState newProcess)
+            , Nothing
+            )
 
           AndThen callback task ->
-            stepper
-              (ProcessId processId)
+            ( stepper
+              processId
               (ProcessState
                 { process
-                  | root = task
+                  | root = {- Debug.log "andThenRoot" -} task
                   , stack = (Elm.Kernel.Basics.fudgeType callback) :: process.stack
                 }
               )
+            , Nothing
+            )
   in
-    case (steppedProcess.mailbox, steppedProcess.receiver) of
-      (first :: rest, Just receiver) ->
+    case (steppedProcess.mailbox, maybeFinalValue, steppedProcess.receiver) of
+      (first :: rest, Just val, Just receiver) ->
         stepper
-          (ProcessId processId)
+          processId
           (ProcessState
             { process
-              | root = receiver first
+              | root = {- Debug.log "receiverRoot" -} (receiver first val)
               , mailbox = rest
             }
           )
 
-      ([], _) ->
+      ([], _,  _) ->
         ProcessState process
 
-      (_, Nothing) ->
+      (_, Nothing, _) ->
+        ProcessState process
+
+      (_, _, Nothing) ->
         ProcessState process
 
 

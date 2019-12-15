@@ -37,6 +37,7 @@ function _Scheduler_getGuid() {
 }
 
 function _Scheduler_getProcessState(id) {
+	// console.log("get", id);
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
@@ -47,8 +48,8 @@ function _Scheduler_getProcessState(id) {
 }
 
 var _Scheduler_updateProcessState = F2((func, id) => {
-	console.log("update", id);
 	const procState = _Scheduler_processes.get(id);
+	// console.log("update", id, procState);
 	/**__DEBUG/
 	if (procState === undefined) {
 		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.id);
@@ -59,7 +60,7 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 });
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
-	console.log("registering", procId);
+	// console.log("registering", procId);
 	/**__DEBUG/
 	if (procState === undefined) {
 		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.id);

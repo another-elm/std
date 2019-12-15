@@ -197,8 +197,8 @@ sendToSelf (Router router) msg =
   --   )
 
 
-setupOutgoingPort : SendToApp msg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
-setupOutgoingPort sendToApp2 outgoingPort outgoingPortSend =
+setupOutgoingPort : SendToApp msg -> (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
+setupOutgoingPort sendToApp2 outgoingPortSend =
   let
     init =
       Task (RawScheduler.Value (Ok ()))
@@ -287,16 +287,17 @@ setupIncomingPort sendToApp2 updateSubs =
 dispatchEffects : Cmd appMsg
   -> Sub appMsg
   -> Bag.EffectManagerName
-  -> Router appMsg (ReceivedData appMsg HiddenSelfMsg)
+  -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
   -> ()
 dispatchEffects cmd sub =
   let
     effectsDict =
       Dict.empty
-        |> gatherCmds cmd
+        |> gatherCmds (Debug.log "cmd" cmd)
         |> gatherSubs sub
+        |> Debug.log "effects dict"
   in
-    \key (Router { selfProcess }) ->
+    \key selfProcess->
       let
           (cmdList, subList) =
             Maybe.withDefault
@@ -311,11 +312,11 @@ dispatchEffects cmd sub =
 
 
 gatherCmds : Cmd msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
-gatherCmds (Cmd.Data cmd) effectsDict =
+gatherCmds (Cmd.Data cmds) effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper True home value dict)
     effectsDict
-    (Debug.log "cmds" cmd)
+    cmds -- (Debug.log "cmds" cmds)
 
 
 gatherSubs : Sub msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -323,7 +324,7 @@ gatherSubs (Sub.Data subs) effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper False home value dict)
     effectsDict
-    (Debug.log "subs" subs)
+    subs -- (Debug.log "subs" subs)
 
 
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -394,7 +395,7 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
     selfProcess =
       RawScheduler.rawSpawn (
         RawScheduler.andThen
-          (\() -> init)
+          (\() -> Debug.log "init from instantiate" init)
           (RawScheduler.sleep 0)
       )
 
@@ -501,10 +502,10 @@ type alias SetupEffects state appMsg selfMsg =
 
 type alias InitFunctions model appMsg =
   { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
-  , setupOutgoingPort : SendToApp appMsg -> (RawJsObject Never -> ()) ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData appMsg Never)
+  , setupOutgoingPort : SendToApp appMsg ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData appMsg Never)
   , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (RawScheduler.ProcessId (ReceivedData appMsg Never), appMsg -> List (HiddenMySub appMsg) -> ())
   , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
-  , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> Router appMsg (ReceivedData appMsg HiddenSelfMsg) -> ()
+  , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg) -> ()
   }
 
 -- -- kernel --

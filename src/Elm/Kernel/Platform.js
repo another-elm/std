@@ -34,9 +34,10 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		model = updateValue.a
 		A2(stepper, model, viewMetadata);
 
-		const dispatcher = A3(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
+		const dispatcher = A2(functions.__$dispatchEffects, updateValue.b, impl.__$subscriptions(model));
 
 		for (const key in managers) {
+			// console.log(managers[key]);
 			A2(dispatcher, key, managers[key]);
 		}
 	});
@@ -65,10 +66,11 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		ports[key] = setup.ports;
 		managers[key] = setup.manager;
 	}
-	const dispatcher = A3(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
+	// console.log('managers', managers);
+	const dispatcher = A2(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
 
 	for (const key in managers) {
-		console.log(managers[key]);
+		// console.log(managers[key]);
 		A2(dispatcher, key, managers[key]);
 	}
 
@@ -98,6 +100,7 @@ function _Platform_registerPreload(url)
 
 
 function _Platform_effectManagerNameToString(name) {
+	console.log("effect to string", name);
 	return name;
 }
 
@@ -185,14 +188,8 @@ function _Platform_leaf(home)
 			a: {
 				$: '::',
 				a: {
-					a: {
-						$: __1_EFFECTMANAGERNAME,
-						a: home
-					},
-					b: {
-						$: __2_LEAFTYPE,
-						a: value
-					}
+					__$home: home,
+					__$value: value
 				},
 				b: {
 					$: '[]'
@@ -207,14 +204,8 @@ function _Platform_leaf(home)
 			a: {
 				$: 1,
 				a: {
-					a: {
-						$: __1_EFFECTMANAGERNAME,
-						a: home
-					},
-					b: {
-						$: __2_LEAFTYPE,
-						a: value
-					}
+					__$home: home,
+					__$value: value
 				},
 				b: {
 					$: 0
@@ -271,14 +262,10 @@ function _Platform_outgoingPort(name, converter)
 		};
 
 
-		const manager = A3(
+		const manager = A2(
 			setup,
 			sendToApp,
-			outgoingPortSend,
-			{
-				subscribe: subscribe,
-				unsubscribe: unsubscribe
-			},
+			outgoingPortSend
 		);
 
 		return {

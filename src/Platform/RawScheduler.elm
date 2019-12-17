@@ -41,11 +41,11 @@ import Maybe exposing (Maybe(..))
 import Elm.Kernel.Basics
 import Elm.Kernel.Scheduler
 import List exposing ((::))
+import Debug
 
 type Task val
   = Value val
-  | AndThen (HiddenValA -> Task val) (Task val)
-  | AsyncAction (DoneCallback val -> TryAbortAction) TryAbortAction
+  | AsyncAction (DoneCallback val -> TryAbortAction)
   | SyncAction (() -> Task val)
 
 
@@ -56,10 +56,15 @@ type alias DoneCallback val =
 type alias TryAbortAction =
   () -> ()
 
+
+type ProcessRoot state
+  = Ready (Task state)
+  | Running TryAbortAction
+
+
 type ProcessState msg state
   = ProcessState
-    { root : Task state
-    , stack : List (HiddenValB -> Task HiddenValC)
+    { root : ProcessRoot state
     , mailbox : List msg
     , receiver : Maybe (msg -> state -> Task state)
     }
@@ -71,26 +76,12 @@ type ProcessId msg
     }
 
 
-type HiddenValA
-  = HiddenValA Never
-
-
-type HiddenValB
-  = HiddenValB Never
-
-
-type HiddenValC
-  = HiddenValC Never
-
-
 type UniqueId = UniqueId Never
 
 
 async : (DoneCallback val -> TryAbortAction) -> Task val
-async callback =
+async =
   AsyncAction
-    callback
-    identity
 
 
 sync : (() -> Task val) -> Task val
@@ -100,9 +91,19 @@ sync =
 
 andThen : (a -> Task b) -> Task a -> Task b
 andThen func task =
-  AndThen
-    (Elm.Kernel.Basics.fudgeType func)
-    (Elm.Kernel.Basics.fudgeType task)
+  case task of
+    Value val ->
+      func val
+
+    SyncAction thunk ->
+      SyncAction (\() -> andThen func (thunk ()))
+
+    AsyncAction doEffect ->
+      AsyncAction
+        (\doneCallback ->
+          doEffect
+            (\newTask -> doneCallback (andThen func newTask))
+        )
 
 {-| NON PURE!
 
@@ -118,9 +119,8 @@ rawSpawn task =
         }
       )
       (ProcessState
-        { root = (Elm.Kernel.Basics.fudgeType task)
+        { root = Ready task
         , mailbox = []
-        , stack = []
         , receiver = Nothing
         }
       )
@@ -220,10 +220,10 @@ kill processId =
     (\doneCallback ->
       let
         _ = case root of
-          AsyncAction _ killer ->
+          Running killer ->
               killer ()
 
-          _ ->
+          Ready _ ->
             ()
       in
         let
@@ -270,105 +270,71 @@ the process it is passed as  an argument
 stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
 stepper processId (ProcessState process) =
   let
-      (ProcessState steppedProcess, maybeFinalValue) =
-        case {- Debug.log "root" -} process.root of
-          Value val ->
-            let
-              moveStackFowards stack =
-                case stack of
-                  callback :: rest ->
-                    ( stepper
-                      processId
-                      ( ProcessState
-                        { process
-                          | root = (Elm.Kernel.Basics.fudgeType (callback (Elm.Kernel.Basics.fudgeType val)))
-                          , stack = rest
-                        }
-                      )
-                    , Nothing
-                    )
-
-                  _ ->
-                    (ProcessState process, Just val)
-
-            in
-              moveStackFowards process.stack
-
-          AsyncAction doEffect killer ->
-            let
-              newProcess =
-                { process
-                | root = {- Debug.log "killableRoot" -} killableRoot
-                }
-
-              killableRoot =
-                AsyncAction
-                  (cannotBeStepped processId)
-                  (doEffect (\newRoot ->
-                    let
-                      _ =
-                          (updateProcessState
-                            (\(ProcessState p) ->
-                              ProcessState
-                                { p | root = {- Debug.log "newRoot" -} newRoot }
-                            )
-                            processId
-                          )
-                    in
-                    let
-                      -- todo: avoid enqueue here
-                        _ =
-                          enqueue processId
-                    in
-                    ()
-                  ))
-            in
-            (ProcessState newProcess, Nothing)
-
-          SyncAction doEffect->
-            let
-              newProcess =
-                { process
-                | root = {- Debug.log "syncRoot" -} (doEffect ())
-                }
-            in
-            ( stepper
-              processId
-              (ProcessState newProcess)
-            , Nothing
-            )
-
-          AndThen callback task ->
-            ( stepper
-              processId
-              (ProcessState
-                { process
-                  | root = {- Debug.log "andThenRoot" -} task
-                  , stack = (Elm.Kernel.Basics.fudgeType callback) :: process.stack
-                }
-              )
-            , Nothing
-            )
+      _ = Debug.log "id" processId
   in
-    case (steppedProcess.mailbox, maybeFinalValue, steppedProcess.receiver) of
-      (first :: rest, Just val, Just receiver) ->
-        stepper
-          processId
-          (ProcessState
-            { process
-              | root = {- Debug.log "receiverRoot" -} (receiver first val)
-              , mailbox = rest
-            }
-          )
 
-      ([], _,  _) ->
-        ProcessState process
+  case Debug.log "process" process.root of
+    Running _ ->
+      (ProcessState process)
 
-      (_, Nothing, _) ->
-        ProcessState process
+    Ready (Value val) ->
+      case Debug.log "receive" (process.mailbox, process.receiver) of
+        (first :: rest, Just receiver) ->
+          stepper
+            processId
+            (ProcessState
+              { process
+                | root = {- Debug.log "receiverRoot" -} Ready (receiver first val)
+                , mailbox = rest
+              }
+            )
 
-      (_, _, Nothing) ->
-        ProcessState process
+        ([], _) ->
+          ProcessState process
+
+        (_, Nothing) ->
+          ProcessState process
+
+    Ready (AsyncAction doEffect) ->
+      let
+        newProcess =
+          { process
+          | root = {- Debug.log "killableRoot" -} killableRoot
+          }
+
+        killableRoot =
+          Running
+            (doEffect (\newRoot ->
+              let
+                _ =
+                    (updateProcessState
+                      (\(ProcessState p) ->
+                        ProcessState
+                          { p | root = {- Debug.log "newRoot" -} Ready newRoot }
+                      )
+                      processId
+                    )
+              in
+              let
+                -- todo: avoid enqueue here
+                  _ =
+                    enqueue processId
+              in
+              ()
+            ))
+      in
+      ProcessState newProcess
+
+    Ready (SyncAction doEffect) ->
+      let
+        newProcess =
+          { process
+          | root = {- Debug.log "syncRoot" -} Ready (doEffect ())
+          }
+      in
+      stepper
+        processId
+        (ProcessState newProcess)
 
 
 -- Kernel function redefinitons --

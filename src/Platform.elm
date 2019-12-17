@@ -39,6 +39,8 @@ import String exposing (String)
 import Char exposing (Char)
 import Tuple
 
+import Debug
+
 import Platform.Cmd as Cmd exposing ( Cmd )
 import Platform.Sub as Sub exposing ( Sub )
 

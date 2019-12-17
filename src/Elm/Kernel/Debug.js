@@ -316,6 +316,9 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 					case 'procIdNotRegistered':
 						throw new Error(`Bug in elm runtime: state for process ${fact2} been has not registered!`);
+
+					case 'cannotBeStepped':
+						throw new Error(`Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`);
 				}
 				throw new Error(`Unknown bug in elm runtime id: ${identifier}!`);
 			}

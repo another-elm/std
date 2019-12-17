@@ -13,7 +13,6 @@ import Platform
 import Platform.RawScheduler as RawScheduler
 import Result exposing (Result(..))
 import Basics exposing (..)
-import Debug
 
 
 type alias ProcessId msg

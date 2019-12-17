@@ -40,7 +40,6 @@ import Basics exposing (..)
 import Maybe exposing (Maybe(..))
 import Elm.Kernel.Basics
 import Elm.Kernel.Scheduler
-import Debug
 import List exposing ((::))
 
 type Task val
@@ -304,7 +303,7 @@ stepper processId (ProcessState process) =
 
               killableRoot =
                 AsyncAction
-                  (\_ -> Debug.todo "put an assert(false) function here?")
+                  (cannotBeStepped processId)
                   (doEffect (\newRoot ->
                     let
                       _ =
@@ -398,3 +397,7 @@ enqueueWithStepper =
 delay : Float -> Task val -> DoneCallback val -> TryAbortAction
 delay =
   Elm.Kernel.Scheduler.delay
+
+cannotBeStepped : ProcessId msg -> DoneCallback state -> TryAbortAction
+cannotBeStepped =
+  Elm.Kernel.Scheduler.cannotBeStepped

@@ -100,7 +100,7 @@ function _Platform_registerPreload(url)
 
 
 function _Platform_effectManagerNameToString(name) {
-	console.log("effect to string", name);
+	// console.log("effect to string", name);
 	return name;
 }
 

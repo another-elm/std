@@ -25,7 +25,6 @@ HTTP requests or writing to a database.
 
 -}
 
-import Debug
 import Basics exposing (Never, (|>), (<<))
 import List exposing ((::))
 import Maybe exposing (Maybe(..))

@@ -52,7 +52,7 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 	// console.log("update", id, procState);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.id);
+		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(id, func(procState));
@@ -63,7 +63,7 @@ var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	// console.log("registering", procId);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.id);
+		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);
@@ -101,4 +101,8 @@ var _Scheduler_delay = F3(function (time, value, callback)
 	}, time);
 
 	return function(x) { clearTimeout(id); return x; };
+});
+
+const _Scheduler_cannotBeStepped = F2((procId, _1) => {
+	__Debug_crash(12, 'cannotBeStepped', procId && procId.a && procId.a.__$id)
 });

@@ -39,13 +39,10 @@ import String exposing (String)
 import Char exposing (Char)
 import Tuple
 
-import Debug
-
 import Platform.Cmd as Cmd exposing ( Cmd )
 import Platform.Sub as Sub exposing ( Sub )
 
 import Elm.Kernel.Basics
-import Elm.Kernel.Debug
 import Elm.Kernel.Platform
 import Platform.Bag as Bag
 -- import Json.Decode exposing (Decoder)
@@ -161,21 +158,16 @@ be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
-  Debug.todo "sendToApp"
-  -- Task
-  --   (RawScheduler.async
-  --     (\doneCallback ->
-  --       let
-  --         _ =
-  --           router.sendToApp msg
-  --       in
-  --         let
-  --             _ =
-  --               doneCallback (RawScheduler.Value (Ok ()))
-  --         in
-  --           (\() -> ())
-  --     )
-  --   )
+  Task
+    (RawScheduler.sync
+      (\() ->
+        let
+          _ =
+            router.sendToApp msg
+        in
+        RawScheduler.Value (Ok ())
+      )
+    )
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -186,15 +178,14 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-  Debug.todo "sendToSelf"
-  -- Task
-  --   (RawScheduler.andThen
-  --     (\() -> RawScheduler.Value (Ok ()))
-  --     (RawScheduler.send
-  --       router.selfProcess
-  --       msg
-  --     )
-  --   )
+  Task
+    (RawScheduler.andThen
+      (\() -> RawScheduler.Value (Ok ()))
+      (RawScheduler.send
+        router.selfProcess
+        msg
+      )
+    )
 
 
 setupOutgoingPort : SendToApp msg -> (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
@@ -293,9 +284,8 @@ dispatchEffects cmd sub =
   let
     effectsDict =
       Dict.empty
-        |> gatherCmds (Debug.log "cmd" cmd)
+        |> gatherCmds cmd
         |> gatherSubs sub
-        |> Debug.log "effects dict"
   in
     \key selfProcess->
       let
@@ -316,7 +306,7 @@ gatherCmds (Cmd.Data cmds) effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper True home value dict)
     effectsDict
-    cmds -- (Debug.log "cmds" cmds)
+    cmds
 
 
 gatherSubs : Sub msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -324,7 +314,7 @@ gatherSubs (Sub.Data subs) effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper False home value dict)
     effectsDict
-    subs -- (Debug.log "subs" subs)
+    subs
 
 
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -395,7 +385,7 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
     selfProcess =
       RawScheduler.rawSpawn (
         RawScheduler.andThen
-          (\() -> Debug.log "init from instantiate" init)
+          (\() -> init)
           (RawScheduler.sleep 0)
       )
 

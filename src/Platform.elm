@@ -112,7 +112,7 @@ worker impl =
           { stepperBuilder = \ _ _ -> (\ _ _ -> ())
           , setupOutgoingPort =  setupOutgoingPort
           , setupIncomingPort = setupIncomingPort
-          , setupEffects = hiddenSetupEffects
+          , setupEffects = setupEffects
           , dispatchEffects = dispatchEffects
           }
       )
@@ -252,24 +252,17 @@ setupIncomingPort sendToApp2 updateSubs =
 
     onSend : msg -> List (HiddenMySub msg) -> ()
     onSend value subs =
-      let
-          typedSubs : List (msg -> msg)
-          typedSubs =
-            Elm.Kernel.Basics.fudgeType subs
-      in
-
       List.foldr
-        (\sub () -> sendToApp2 (sub value) AsyncUpdate)
+        (\sub () ->
+          let
+              typedSub : msg -> msg
+              typedSub =
+                Elm.Kernel.Basics.fudgeType sub
+          in
+          sendToApp2 (typedSub value) AsyncUpdate
+        )
         ()
-        typedSubs
-
-    typedSubMap : (msg1 -> msg2) -> (a -> msg1) -> (a -> msg2)
-    typedSubMap tagger finalTagger =
-      (\val -> tagger (finalTagger val))
-
-    subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
-    subMap tagger finalTagger =
-      Elm.Kernel.Basics.fudgeType typedSubMap
+        subs
   in
   ( instantiateEffectManager sendToApp2 init onEffects onSelfMsg
   , onSend
@@ -324,14 +317,10 @@ gatherSubs (Sub.Data subs) effectsDict =
 
 
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
-gatherHelper isCmd home value effectsDict =
-  let
-    effect =
-      (Elm.Kernel.Basics.fudgeType value)
-  in
+gatherHelper isCmd home effectData effectsDict =
     Dict.insert
       (effectManagerNameToString home)
-      (createEffect isCmd effect (Dict.get (effectManagerNameToString home) effectsDict))
+      (createEffect isCmd effectData (Dict.get (effectManagerNameToString home) effectsDict))
       effectsDict
 
 
@@ -352,11 +341,6 @@ createEffect isCmd newEffect maybeEffects =
 setupEffects : SetupEffects state appMsg selfMsg
 setupEffects sendToAppP init onEffects onSelfMsg =
   instantiateEffectManager sendToAppP init onEffects onSelfMsg
-
-
-hiddenSetupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
-hiddenSetupEffects =
-  Elm.Kernel.Basics.fudgeType setupEffects
 
 
 instantiateEffectManager : SendToApp appMsg
@@ -432,17 +416,6 @@ type OtherManagers appMsg =
 type ReceivedData appMsg selfMsg
   = Self selfMsg
   | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
-
-
-type EffectManager state appMsg selfMsg
-  = EffectManager
-    { onSelfMsg : Router appMsg selfMsg -> selfMsg -> state -> Task Never state
-    , init : Task Never state
-    , onEffects: Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state
-    , cmdMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMyCmd HiddenTypeA -> HiddenMyCmd HiddenTypeB
-    , subMap : (HiddenTypeA -> HiddenTypeB) -> HiddenMySub HiddenTypeA -> HiddenMySub HiddenTypeB
-    , selfProcess: RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
-    }
 
 
 type OutgoingPort =

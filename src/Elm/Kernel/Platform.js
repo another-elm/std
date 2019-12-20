@@ -121,17 +121,17 @@ const _Platform_cmdOnlySubMap = F2(function(_1, _2) {
 });
 
 
-const _Platform_getCmdMapper = F2(function(portCmdMapper, home) {
+const _Platform_getCmdMapper = home => {
 	if (_Platform_outgoingPorts.hasOwnProperty(home)) {
-		return portCmdMapper;
+		return F2((_tagger, value) => value);
 	}
 	return _Platform_effectManagers[home].__cmdMapper;
-});
+};
 
 
 const _Platform_getSubMapper = F2(function(portSubMapper, home) {
 	if (_Platform_incomingPorts.hasOwnProperty(home)) {
-		return portSubMapper;
+		return F2((tagger, finalTagger) => value => tagger(finalTagger(value)));
 	}
 	return _Platform_effectManagers[home].__subMapper;
 });

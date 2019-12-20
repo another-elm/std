@@ -80,8 +80,6 @@ batch =
     >> Data
 
 
-
-
 -- FANCY STUFF
 
 
@@ -103,26 +101,11 @@ map fn (Data data) =
       )
     |> Data
 
--- HELPERS --
 
-type HiddenA = HiddenA Never
+-- Kernel function redefinitons --
 
-
-type HiddenB = HiddenB Never
-
-outgoingPortSubMap : (a -> b) -> (data -> a) -> (data -> b)
-outgoingPortSubMap tagger finalTagger =
-  (\val -> tagger (finalTagger val))
-
-fudgedOutgoingPortSubMap : (a -> b) -> Bag.LeafType a -> Bag.LeafType b
-fudgedOutgoingPortSubMap tagger finalTagger =
-  Elm.Kernel.Basics.fudgeType outgoingPortSubMap
 
 getSubMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
 getSubMapper home =
-  Elm.Kernel.Platform.getSubMapper fudgedOutgoingPortSubMap home
+  Elm.Kernel.Platform.getSubMapper home
 
-
-fudgeLeafType : Bag.LeafType a -> Bag.LeafType b
-fudgeLeafType =
-  Elm.Kernel.Basics.fudgeType

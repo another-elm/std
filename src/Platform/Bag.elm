@@ -3,9 +3,6 @@ module Platform.Bag exposing
   , EffectManagerName
   )
 
-import Basics exposing (Never)
-import String exposing (String)
-
 
 type LeafType msg = LeafType Kernel
 

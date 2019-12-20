@@ -103,25 +103,9 @@ map fn (Data data) =
     |> Data
 
 
--- HELPERS --
-
-
-type HiddenA = HiddenA Never
-
-
-type HiddenB = HiddenB Never
-
-
-outgoingPortCmdMap : (a -> b) -> Bag.LeafType a -> Bag.LeafType msg
-outgoingPortCmdMap _ value =
-  fudgeLeafType value
+-- Kernel function redefinitons --
 
 
 getCmdMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
-getCmdMapper home =
-  Elm.Kernel.Platform.getCmdMapper outgoingPortCmdMap home
-
-
-fudgeLeafType : Bag.LeafType a -> Bag.LeafType b
-fudgeLeafType =
-  Elm.Kernel.Basics.fudgeType
+getCmdMapper =
+  Elm.Kernel.Platform.getCmdMapper

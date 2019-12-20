@@ -220,7 +220,9 @@ setupOutgoingPort sendToApp2 outgoingPortSend =
       -> Task Never ()
     onEffects _ cmdList _ () =
       let
-          typedCmdList = Elm.Kernel.Basics.fudgeType cmdList
+        typedCmdList : List EncodeValue
+        typedCmdList =
+          Elm.Kernel.Basics.fudgeType cmdList
       in
       Task (execInOrder typedCmdList)
 
@@ -295,6 +297,8 @@ dispatchEffects cmd sub =
             Maybe.withDefault
               ([], [])
               (Dict.get (effectManagerNameToString key) effectsDict)
+
+
           _ =
             RawScheduler.rawSend
               selfProcess
@@ -460,10 +464,10 @@ type HiddenTypeB
   = HiddenTypeB Never
 
 
-type HiddenMyCmd msg = HiddenMyCmd Never
+type HiddenMyCmd msg = HiddenMyCmd (Bag.LeafType msg)
 
 
-type HiddenMySub msg = HiddenMySub Never
+type HiddenMySub msg = HiddenMySub (Bag.LeafType msg)
 
 
 type HiddenSelfMsg = HiddenSelfMsg HiddenSelfMsg
@@ -500,7 +504,7 @@ type alias InitFunctions model appMsg =
   , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg) -> ()
   }
 
--- -- kernel --
+-- kernel --
 
 initialize :
     Decoder flags ->

@@ -319,8 +319,11 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 					case 'cannotBeStepped':
 						throw new Error(`Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`);
+
+					case 'reentrantProcUpdate':
+						throw new Error(`Bug in elm runtime: Elm.Kernel.Scheduler.updateProcessState was called from within the update function!`);
 				}
-				throw new Error(`Unknown bug in elm runtime id: ${identifier}!`);
+				throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
 			}
 	}
 	throw new Error(`Unknown error id: ${identifier}!`);

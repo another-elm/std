@@ -37,7 +37,6 @@ function _Scheduler_getGuid() {
 }
 
 function _Scheduler_getProcessState(id) {
-	// console.log("get", id);
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
@@ -49,13 +48,18 @@ function _Scheduler_getProcessState(id) {
 
 var _Scheduler_updateProcessState = F2((func, id) => {
 	const procState = _Scheduler_processes.get(id);
-	// console.log("update", id, procState);
 	/**__DEBUG/
 	if (procState === undefined) {
 		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.__$id);
 	}
 	//*/
-	_Scheduler_processes.set(id, func(procState));
+	const updatedState = func(procState);
+	/**__DEBUG/
+	if (procState !==  _Scheduler_processes.get(id)) {
+		__Debug_crash(12, 'reentrantProcUpdate', id && id.a && id.a.__$id);
+	}
+	//*/
+	_Scheduler_processes.set(id, updatedState);
 	return procState;
 });
 
@@ -101,8 +105,4 @@ var _Scheduler_delay = F3(function (time, value, callback)
 	}, time);
 
 	return function(x) { clearTimeout(id); return x; };
-});
-
-const _Scheduler_cannotBeStepped = F2((procId, _1) => {
-	__Debug_crash(12, 'cannotBeStepped', procId && procId.a && procId.a.__$id)
 });

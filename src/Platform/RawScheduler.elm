@@ -159,7 +159,7 @@ rawSend processId msg =
       updateProcessState
         (\(ProcessState procState) ->
           ProcessState
-          { procState | mailbox = procState.mailbox ++ [msg]}
+            { procState | mailbox = procState.mailbox ++ [msg]}
         )
         processId
   in
@@ -189,17 +189,27 @@ send processId msg =
 -}
 spawn : Task a -> Task (ProcessId never)
 spawn task =
-  let
-    thunk : DoneCallback (ProcessId never) -> TryAbortAction
-    thunk doneCallback =
-      let
-        _ =
-          doneCallback (Value (rawSpawn task))
-      in
-      (\() -> ())
-  in
-  async
-    thunk
+  if False then
+    let
+      thunk : () -> Task (ProcessId never)
+      thunk doneCallback =
+        Value (rawSpawn task)
+    in
+    sync
+      thunk
+  else
+    let
+      thunk : DoneCallback (ProcessId never) -> TryAbortAction
+      thunk doneCallback =
+        let
+          _ =
+            doneCallback (Value (rawSpawn task))
+        in
+        (\() -> ())
+    in
+    async
+      thunk
+
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
@@ -254,10 +264,6 @@ enqueue id =
     )
     id
 
--- Helper types --
-
-
-
 
 -- Helper functions --
 
@@ -269,22 +275,18 @@ the process it is passed as  an argument
 -}
 stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
 stepper processId (ProcessState process) =
-  let
-      _ = Debug.log "id" processId
-  in
-
-  case Debug.log "process" process.root of
+  case process.root of
     Running _ ->
       (ProcessState process)
 
     Ready (Value val) ->
-      case Debug.log "receive" (process.mailbox, process.receiver) of
+      case (process.mailbox, process.receiver) of
         (first :: rest, Just receiver) ->
           stepper
             processId
             (ProcessState
               { process
-                | root = {- Debug.log "receiverRoot" -} Ready (receiver first val)
+                | root = Ready (receiver first val)
                 , mailbox = rest
               }
             )
@@ -296,21 +298,16 @@ stepper processId (ProcessState process) =
           ProcessState process
 
     Ready (AsyncAction doEffect) ->
-      let
-        newProcess =
+      ProcessState
           { process
-          | root = {- Debug.log "killableRoot" -} killableRoot
-          }
-
-        killableRoot =
-          Running
+          | root = Running
             (doEffect (\newRoot ->
               let
                 _ =
                     (updateProcessState
                       (\(ProcessState p) ->
                         ProcessState
-                          { p | root = {- Debug.log "newRoot" -} Ready newRoot }
+                          { p | root = Ready newRoot }
                       )
                       processId
                     )
@@ -318,18 +315,17 @@ stepper processId (ProcessState process) =
               let
                 -- todo: avoid enqueue here
                   _ =
-                    enqueue processId
+                    enqueue  processId
               in
               ()
             ))
-      in
-      ProcessState newProcess
+          }
 
     Ready (SyncAction doEffect) ->
       let
         newProcess =
           { process
-          | root = {- Debug.log "syncRoot" -} Ready (doEffect ())
+          | root = Ready (doEffect ())
           }
       in
       stepper
@@ -363,7 +359,3 @@ enqueueWithStepper =
 delay : Float -> Task val -> DoneCallback val -> TryAbortAction
 delay =
   Elm.Kernel.Scheduler.delay
-
-cannotBeStepped : ProcessId msg -> DoneCallback state -> TryAbortAction
-cannotBeStepped =
-  Elm.Kernel.Scheduler.cannotBeStepped

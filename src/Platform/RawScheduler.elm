@@ -66,7 +66,7 @@ type ProcessState msg state
   = ProcessState
     { root : ProcessRoot state
     , mailbox : List msg
-    , receiver : Maybe (msg -> state -> Task state)
+    , receiver : msg -> state -> Task state
     }
 
 
@@ -100,8 +100,8 @@ andThen func task =
 Will create, **enqueue** and return a new process.
 
 -}
-rawSpawn : Task a -> ProcessId never
-rawSpawn task =
+rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg
+rawSpawn receiver task =
   enqueue
     (registerNewProcess
       (ProcessId
@@ -111,7 +111,7 @@ rawSpawn task =
       (ProcessState
         { root = Ready task
         , mailbox = []
-        , receiver = Nothing
+        , receiver = receiver
         }
       )
     )
@@ -122,14 +122,14 @@ rawSpawn task =
 Will modify an existing process, **enqueue** and return it.
 
 -}
-rawSetReceiver : ProcessId msg -> (msg -> a -> Task a) -> ProcessId msg
-rawSetReceiver processId receiver =
+rawSetReceiver : (msg -> a -> Task a) -> ProcessId msg -> ProcessId msg
+rawSetReceiver receiver processId =
   let
     _ =
       updateProcessState
         (\(ProcessState state) ->
           ProcessState
-            { state | receiver = Just receiver }
+            { state | receiver = receiver }
         )
         processId
   in
@@ -142,7 +142,7 @@ Send a message to a process and **enqueue** that process so that it
 can perform actions based on the message.
 
 -}
-rawSend : ProcessId msg -> msg-> ProcessId msg
+rawSend : ProcessId msg -> msg -> ProcessId msg
 rawSend processId msg =
   let
     _ =
@@ -177,28 +177,10 @@ send processId msg =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : Task a -> Task (ProcessId never)
-spawn task =
-  if False then
-    let
-      thunk : () -> Task (ProcessId never)
-      thunk doneCallback =
-        Value (rawSpawn task)
-    in
-    SyncAction
-      thunk
-  else
-    let
-      thunk : DoneCallback (ProcessId never) -> TryAbortAction
-      thunk doneCallback =
-        let
-          _ =
-            doneCallback (Value (rawSpawn task))
-        in
-        (\() -> ())
-    in
-    AsyncAction
-      thunk
+spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
+spawn receiver task =
+  SyncAction
+    (\() -> Value (rawSpawn receiver task))
 
 
 {-| Create a task that sleeps for `time` milliseconds
@@ -270,21 +252,18 @@ stepper processId (ProcessState process) =
       (ProcessState process)
 
     Ready (Value val) ->
-      case (process.mailbox, process.receiver) of
-        (first :: rest, Just receiver) ->
+      case process.mailbox of
+        first :: rest ->
           stepper
             processId
             (ProcessState
               { process
-                | root = Ready (receiver first val)
+                | root = Ready (process.receiver first val)
                 , mailbox = rest
               }
             )
 
-        ([], _) ->
-          ProcessState process
-
-        (_, Nothing) ->
+        [] ->
           ProcessState process
 
     Ready (AsyncAction doEffect) ->

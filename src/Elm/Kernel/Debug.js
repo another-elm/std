@@ -306,10 +306,10 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 			{
 				switch (fact1) {
 					case 'subMap':
-						throw new Error('Bug in elm runtime: attempting to subMap command only effect module.');
+						throw new Error('Bug in elm runtime: attempting to subMap an effect from a command only effect module.');
 
 					case 'cmdMap':
-						throw new Error('Bug in elm runtime: attempting to cmdMap subscription only effect module.');
+						throw new Error('Bug in elm runtime: attempting to cmdMap an effect from a subscription only effect module.');
 
 					case 'procIdAlreadyRegistered':
 						throw new Error(`Bug in elm runtime: state for process ${fact2} is already registered!`);
@@ -322,6 +322,9 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 					case 'reentrantProcUpdate':
 						throw new Error(`Bug in elm runtime: Elm.Kernel.Scheduler.updateProcessState was called from within the update function!`);
+
+					case 'earlyMsg':
+						throw new Error(`Bug in elm runtime: an event manager received a message before it was ready.`);
 				}
 				throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
 			}

@@ -149,11 +149,12 @@ type ProcessId =
 {-| An effect manager has access to a “router” that routes messages between
 the main app and your individual effect manager.
 -}
-type Router appMsg selfMsg =
-  Router
-  { sendToApp: appMsg -> ()
-  , selfProcess: RawScheduler.ProcessId selfMsg
-  }
+type Router appMsg selfMsg
+  = Router
+    { sendToApp: appMsg -> ()
+    , selfProcess: RawScheduler.ProcessId selfMsg
+    }
+
 
 {-| Send the router a message for the main loop of your app. This message will
 be handled by the overall `update` function, just like events from `Html`.
@@ -163,11 +164,7 @@ sendToApp (Router router) msg =
   Task
     (RawScheduler.SyncAction
       (\() ->
-        let
-          _ =
-            router.sendToApp msg
-        in
-        RawScheduler.Value (Ok ())
+        RawScheduler.Value (Ok (router.sendToApp msg))
       )
     )
 
@@ -188,6 +185,9 @@ sendToSelf (Router router) msg =
         msg
       )
     )
+
+
+-- HELPERS --
 
 
 setupOutgoingPort : SendToApp msg -> (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
@@ -268,9 +268,6 @@ setupIncomingPort sendToApp2 updateSubs =
   , onSend
   )
 
-
-
--- -- HELPERS --
 
 dispatchEffects : Cmd appMsg
   -> Sub appMsg
@@ -373,11 +370,12 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
 
 
     selfProcess =
-      RawScheduler.rawSpawn (
-        RawScheduler.andThen
-          (\() -> init)
-          (RawScheduler.sleep 0)
-      )
+      RawScheduler.rawSpawn
+        Elm.Kernel.Platform.crashOnEarlyMessage
+        (RawScheduler.andThen
+            (\() -> init)
+            (RawScheduler.sleep 0)
+        )
 
 
     router =
@@ -386,7 +384,7 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
         , selfProcess = selfProcess
         }
   in
-  RawScheduler.rawSetReceiver selfProcess receiver
+  RawScheduler.rawSetReceiver receiver selfProcess
 
 
 type alias SendToApp msg =

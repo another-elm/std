@@ -2,7 +2,7 @@
 
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
-import Elm.Kernel.List exposing (Nil)
+import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple0)
 import Result exposing (isOk)
 
@@ -13,9 +13,6 @@ import Result exposing (isOk)
 var _Platform_outgoingPorts = {};
 var _Platform_incomingPorts = {};
 var _Platform_effectManagers = {};
-
-const _Platform_cmdMappers = {};
-const _Platform_subMappers = {};
 
 // INITIALIZE A PROGRAM
 
@@ -78,7 +75,6 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 });
 
 
-
 // TRACK PRELOADS
 //
 // This is used by code in elm/browser and elm/http
@@ -95,126 +91,69 @@ function _Platform_registerPreload(url)
 }
 
 
-
 // EFFECT MANAGERS
 
 
-function _Platform_effectManagerNameToString(name) {
-	// console.log("effect to string", name);
-	return name;
-}
-
-const _Platform_subOnlyCmdMap = F2(function(_1, _2) {
-	/**__DEBUG/
-	if (procState === undefined) {
-		__Debug_crash(12, 'cmdMap');
-	}
-	//*/
-});
-
-const _Platform_cmdOnlySubMap = F2(function(_1, _2) {
-	/**__DEBUG/
-	if (procState === undefined) {
-		__Debug_crash(12, 'subMap');
-	}
-	//*/
-});
-
-
-const _Platform_getCmdMapper = home => {
-	if (_Platform_outgoingPorts.hasOwnProperty(home)) {
-		return F2((_tagger, value) => value);
-	}
-	return _Platform_effectManagers[home].__cmdMapper;
-};
-
-
-const _Platform_getSubMapper = F2(function(portSubMapper, home) {
-	if (_Platform_incomingPorts.hasOwnProperty(home)) {
-		return F2((tagger, finalTagger) => value => tagger(finalTagger(value)));
-	}
-	return _Platform_effectManagers[home].__subMapper;
-});
-
-
-// Called by compiler generated js when creating event mangers
+/* Called by compiler generated js when creating event mangers.
+ *
+ * This function will **always** be call right after page load.
+ */
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 {
-	// TODO(harry) confirm this is valid
-	let fullOnEffects, fullCmdMap, fullSubMap;
+	const make_setup = fullOnEffects => (setup, sendToApp) => {
+		return A4(setup, sendToApp, init, fullOnEffects, onSelfMsg)
+	}
 	if (cmdMap === undefined) {
 		// Subscription only effect module
-		fullOnEffects = F4(function(router, cmds, subs, state) {
-			return A3(onEffects, router, subs, state);
-		});
-		fullCmdMap = _Platform_subOnlyCmdMap;
-		_Platform = subMap;
+		return {
+			__cmdMapper: F2((_1, _2) => __Debug_crash(12, 'cmdMap')),
+			__subMapper: subMap,
+			__setup: make_setup(F4(function(router, _cmds, subs, state) {
+				return A3(onEffects, router, subs, state);
+			})),
+		};
 	} else if (subMap === undefined) {
 		// Command only effect module
-		fullOnEffects = F4(function(router, cmds, subs, state) {
-			return A3(onEffects, router, cmds, state);
-		});
-		fullCmdMap = cmdMap;
-		fullSubMap = _Platform_cmdOnlySubMap;
+		return {
+			__cmdMapper: cmdMap,
+			__subMapper: F2((_1, _2) => __Debug_crash(12, 'subMap')),
+			__setup: make_setup(F4(function(router, cmds, _subs, state) {
+				return A3(onEffects, router, cmds, state);
+			})),
+		};
 	} else {
-		fullOnEffects = onEffects;
-		fullCmdMap = cmdMap;
-		fullSubMap = subMap;
+		// Command **and** subscription event manager
+		return {
+			__cmdMapper: cmdMap,
+			__subMapper: subMap,
+			__setup: make_setup(onEffects),
+		};
 	}
-
-	// Command **and** subscription event manager
-	return {
-		__cmdMapper: fullCmdMap,
-		__subMapper: fullSubMap,
-		__setup: function(setup, sendToApp) {
-			return A4(setup, sendToApp, init, fullOnEffects, onSelfMsg)
-		}
-	};
 }
 
 // BAGS
 
-
 /* Called by compiler generated js for event managers for the
  * `command` or `subscription` function within an event manager
  */
-function _Platform_leaf(home)
-{
-	return function(value)
-	{
-		/**__DEBUG/
-		return {
-			$: 'Data',
-			a: {
-				$: '::',
-				a: {
-					__$home: home,
-					__$value: value
-				},
-				b: {
-					$: '[]'
-				}
-			}
-		};
-		//*/
-
-		/**__PROD/
-		return {
-			$: ,
-			a: {
-				$: 1,
-				a: {
-					__$home: home,
-					__$value: value
-				},
-				b: {
-					$: 0
-				}
-			}
-		};
-		//*/
+const _Platform_leaf = home => value => {
+	const list = __List_Cons({
+		__$home: home,
+		__$value: value
+	}, __List_Nil);
+	let tag;
+	/**__DEBUG/
+	tag = 'Data'
+	/**/
+	/**__PROD/
+	tag = 0
+	 *
+	/**/
+	return {
+		$: tag,
+		a: list
 	};
-}
+};
 
 
 // PORTS
@@ -242,8 +181,8 @@ function _Platform_outgoingPort(name, converter)
 
 		function unsubscribe(callback)
 		{
-			// copy subs into a new array in case unsubscribe is called within a
-			// subscribed callback
+			// copy subs into a new array in case unsubscribe is called within
+			// a subscribed callback
 			subs = subs.slice();
 			var index = subs.indexOf(callback);
 			if (index >= 0)
@@ -253,7 +192,7 @@ function _Platform_outgoingPort(name, converter)
 		}
 
 		const outgoingPortSend = payload => {
-			var value = __Json_unwrap(converter(payload));
+			const value = __Json_unwrap(converter(payload));
 			for (const sub of subs)
 			{
 				sub(value);
@@ -313,6 +252,33 @@ function _Platform_incomingPort(name, converter)
 
 	return _Platform_leaf(name)
 }
+
+
+// Functions exported to elm
+
+
+const _Platform_effectManagerNameToString = name => name;
+
+
+const _Platform_getCmdMapper = home => {
+	if (_Platform_outgoingPorts.hasOwnProperty(home)) {
+		return F2((_tagger, value) => value);
+	}
+	return _Platform_effectManagers[home].__cmdMapper;
+};
+
+
+const _Platform_getSubMapper = home => {
+	if (_Platform_incomingPorts.hasOwnProperty(home)) {
+		return F2((tagger, finalTagger) => value => tagger(finalTagger(value)));
+	}
+	return _Platform_effectManagers[home].__subMapper;
+};
+
+
+const _Platform_crashOnEarlyMessage = F2((_1, _2) =>
+	__Debug_crash(12, 'earlyMsg')
+);
 
 
 

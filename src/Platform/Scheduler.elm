@@ -95,14 +95,16 @@ send proc msg =
     )
 
 
-{-| Create a task that spawns a processes.
+{-| Create a task that, when run, will spawn a process.
+
+There is no way to send messages to a process spawned in this way.
 -}
 spawn : Platform.Task err ok -> Platform.Task never Platform.ProcessId
 spawn (Platform.Task task) =
   Platform.Task
     (RawScheduler.andThen
       (\proc -> RawScheduler.Value (Ok (Platform.ProcessId proc)))
-      (RawScheduler.spawn task)
+      (RawScheduler.spawn (\msg state -> never msg) task)
     )
 
 

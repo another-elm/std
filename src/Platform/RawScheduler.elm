@@ -79,16 +79,6 @@ type ProcessId msg
 type UniqueId = UniqueId Never
 
 
-async : (DoneCallback val -> TryAbortAction) -> Task val
-async =
-  AsyncAction
-
-
-sync : (() -> Task val) -> Task val
-sync =
-  SyncAction
-
-
 andThen : (a -> Task b) -> Task a -> Task b
 andThen func task =
   case task of
@@ -171,7 +161,7 @@ rawSend processId msg =
 -}
 send : ProcessId msg -> msg -> Task ()
 send processId msg =
-  async
+  AsyncAction
     (\doneCallback ->
       let
         _ =
@@ -195,7 +185,7 @@ spawn task =
       thunk doneCallback =
         Value (rawSpawn task)
     in
-    sync
+    SyncAction
       thunk
   else
     let
@@ -207,7 +197,7 @@ spawn task =
         in
         (\() -> ())
     in
-    async
+    AsyncAction
       thunk
 
 
@@ -215,7 +205,7 @@ spawn task =
 -}
 sleep : Float -> Task ()
 sleep time =
-  async (delay time (Value ()))
+  AsyncAction (delay time (Value ()))
 
 
 {-| Create a task kills a process.
@@ -226,7 +216,7 @@ kill processId =
       (ProcessState { root }) =
         getProcessState processId
   in
-  async
+  AsyncAction
     (\doneCallback ->
       let
         _ = case root of
@@ -301,24 +291,28 @@ stepper processId (ProcessState process) =
       ProcessState
           { process
           | root = Running
-            (doEffect (\newRoot ->
-              let
-                _ =
-                    (updateProcessState
-                      (\(ProcessState p) ->
-                        ProcessState
-                          { p | root = Ready newRoot }
-                      )
-                      processId
-                    )
-              in
-              let
-                -- todo: avoid enqueue here
-                  _ =
-                    enqueue  processId
-              in
-              ()
-            ))
+            (doEffect (
+              runOnNextTick
+                (\newRoot ->
+                    let
+                      _ =
+
+                            (updateProcessState
+                              (\(ProcessState p) ->
+                                ProcessState
+                                  { p | root = Ready newRoot }
+                              )
+                              processId
+                            )
+                    in
+                    let
+                      -- todo: avoid enqueue here
+                        _ =
+                          enqueue  processId
+                    in
+                    ()
+                  )
+              ))
           }
 
     Ready (SyncAction doEffect) ->
@@ -359,3 +353,8 @@ enqueueWithStepper =
 delay : Float -> Task val -> DoneCallback val -> TryAbortAction
 delay =
   Elm.Kernel.Scheduler.delay
+
+
+runOnNextTick : (a -> ()) -> a -> ()
+runOnNextTick =
+  Elm.Kernel.Scheduler.runOnNextTick

@@ -39,7 +39,7 @@ fail e =
 binding : (DoneCallback err ok -> TryAbortAction) -> Platform.Task err ok
 binding callback =
   Platform.Task
-    (RawScheduler.async
+    (RawScheduler.AsyncAction
       (\doneCallback -> callback (\(Platform.Task task) -> doneCallback task))
     )
 

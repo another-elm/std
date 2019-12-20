@@ -161,7 +161,7 @@ be handled by the overall `update` function, just like events from `Html`.
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
   Task
-    (RawScheduler.sync
+    (RawScheduler.SyncAction
       (\() ->
         let
           _ =
@@ -203,7 +203,7 @@ setupOutgoingPort sendToApp2 outgoingPortSend =
     execInOrder cmdList =
       case cmdList of
         first :: rest ->
-          RawScheduler.sync (\() ->
+          RawScheduler.SyncAction (\() ->
             let
                 _ = outgoingPortSend first
             in
@@ -239,7 +239,7 @@ setupIncomingPort sendToApp2 updateSubs =
 
     onEffects _ _ subList () =
       Task
-        (RawScheduler.sync
+        (RawScheduler.SyncAction
           (\() ->
             let
                 _ = updateSubs subList

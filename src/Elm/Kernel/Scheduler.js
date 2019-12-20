@@ -2,6 +2,7 @@
 
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding)
 import Elm.Kernel.Debug exposing (crash)
+import Elm.Kernel.Utils exposing (Tuple0)
 */
 
 // COMPATIBILITY
@@ -105,4 +106,10 @@ var _Scheduler_delay = F3(function (time, value, callback)
 	}, time);
 
 	return function(x) { clearTimeout(id); return x; };
+});
+
+
+const _Scheduler_runOnNextTick = F2((callback, val) => {
+	Promise.resolve(val).then(callback);
+	return _Utils_Tuple0;
 });

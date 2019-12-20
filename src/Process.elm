@@ -46,7 +46,7 @@ longer. That’s kind of what Elm is all about.
 
 import Basics exposing (..)
 import Platform
--- import Platform.Scheduler as Scheduler
+import Platform.Scheduler as Scheduler
 import Task exposing (Task)
 import Debug
 
@@ -81,7 +81,7 @@ come in a later release!
 -}
 spawn : Task x a -> Task y Id
 spawn =
-  Debug.todo "Scheduler.spawn"
+  Scheduler.spawn
 
 
 {-| Block progress on the current process for the given number of milliseconds.
@@ -92,7 +92,7 @@ delay work until later.
 -}
 sleep : Float -> Task x ()
 sleep =
- Debug.todo " Scheduler.sleep"
+  Scheduler.sleep
 
 
 {-| Sometimes you `spawn` a process, but later decide it would be a waste to
@@ -101,5 +101,5 @@ to bail on whatever task it is running. So if there is an HTTP request in
 flight, it will also abort the request.
 -}
 kill : Id -> Task x ()
-kill =
-  Debug.todo "Scheduler.kill proc"
+kill (Platform.ProcessId processId) =
+  Scheduler.kill processId

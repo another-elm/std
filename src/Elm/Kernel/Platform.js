@@ -149,18 +149,15 @@ const _Platform_leaf = home => value => {
 		__$home: home,
 		__$value: value
 	}, __List_Nil);
-	let tag;
 	/**__DEBUG/
-	tag = 'Data'
-	/**/
-	/**__PROD/
-	tag = 0
-	 *
-	/**/
 	return {
 		$: tag,
-		a: list
+		a: list,
 	};
+	/**/
+	/**__PROD/
+	return list;
+	/**/
 };
 
 

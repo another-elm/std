@@ -151,7 +151,7 @@ const _Platform_leaf = home => value => {
 	}, __List_Nil);
 	/**__DEBUG/
 	return {
-		$: tag,
+		$: 'Data',
 		a: list,
 	};
 	/**/

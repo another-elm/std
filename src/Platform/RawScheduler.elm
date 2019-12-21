@@ -48,7 +48,6 @@ type Task val
   | AsyncAction (DoneCallback val -> TryAbortAction)
   | SyncAction (() -> Task val)
 
-
 type alias DoneCallback val =
   Task val -> ()
 
@@ -76,7 +75,7 @@ type ProcessId msg
     }
 
 
-type UniqueId = UniqueId Never
+type UniqueId = UniqueId UniqueId
 
 
 andThen : (a -> Task b) -> Task a -> Task b
@@ -94,6 +93,7 @@ andThen func task =
           doEffect
             (\newTask -> doneCallback (andThen func newTask))
         )
+
 
 {-| NON PURE!
 
@@ -191,28 +191,29 @@ sleep time =
 
 
 {-| Create a task kills a process.
--}
-kill : ProcessId msg -> Task ()
-kill processId =
-  let
-      (ProcessState { root }) =
-        getProcessState processId
-  in
-  AsyncAction
-    (\doneCallback ->
-      let
-        _ = case root of
-          Running killer ->
-              killer ()
 
-          Ready _ ->
-            ()
+  To kill a process we should try to abort any ongoing async action.
+  We only allow processes that cannot receive messages to be killed, we will
+  on the offical core library to lead the way regarding processes that can
+  receive values.
+-}
+kill : ProcessId Never -> Task ()
+kill processId =
+  SyncAction
+    (\() ->
+      let
+        (ProcessState {root}) =
+          getProcessState processId
+
+        _ =
+          case root of
+            Running killer ->
+                killer ()
+
+            Ready _ ->
+              ()
       in
-        let
-          _ =
-            doneCallback (Value ())
-        in
-        identity
+        Value ()
     )
 
 
@@ -316,7 +317,7 @@ updateProcessState =
 
 getProcessState : ProcessId msg -> ProcessState msg state
 getProcessState =
-  Elm.Kernel.Scheduler.getProcess
+  Elm.Kernel.Scheduler.getProcessState
 
 
 registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg

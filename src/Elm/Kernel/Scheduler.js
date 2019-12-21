@@ -65,7 +65,6 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 });
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
-	// console.log("registering", procId);
 	/**__DEBUG/
 	if (procState === undefined) {
 		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.__$id);
@@ -84,7 +83,7 @@ var _Scheduler_enqueueWithStepper = F2(function(stepper, procId)
 	_Scheduler_queue.push(procId);
 	if (_Scheduler_working)
 	{
-		return;
+		return procId;
 	}
 	_Scheduler_working = true;
 	while (true)

@@ -14,6 +14,9 @@ var _Platform_outgoingPorts = {};
 var _Platform_incomingPorts = {};
 var _Platform_effectManagers = {};
 
+var _Platform_effectsQueue = [];
+var _Platform_effectDispatchInProgress = false;
+
 // INITIALIZE A PROGRAM
 
 const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
@@ -31,15 +34,31 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	}
 
 	const dispatch = (model, cmds) => {
-		const dispatcher = A2(
-			functions.__$dispatchEffects,
-			cmds,
-			impl.__$subscriptions(model)
-		);
+		_Platform_effectsQueue.push({
+			__cmds: cmds,
+			__subs: impl.__$subscriptions(model),
+		});
 
-		for (const key in managers) {
-			// console.log(managers[key]);
-			A2(dispatcher, key, managers[key]);
+		if (_Platform_effectDispatchInProgress) {
+			return;
+		}
+
+		_Platform_effectDispatchInProgress = true;
+		while (true) {
+			const fx = _Platform_effectsQueue.shift();
+			if (fx === undefined) {
+				_Platform_effectDispatchInProgress = false;
+				return;
+			}
+			const dispatcher = A2(
+				functions.__$dispatchEffects,
+				fx.__cmds,
+				fx.__subs,
+			);
+			for (const key in managers) {
+				// console.log(managers[key]);
+				A2(dispatcher, key, managers[key]);
+			}
 		}
 	}
 

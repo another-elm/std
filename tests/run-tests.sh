@@ -70,7 +70,4 @@ echo;
 echo "running tests ...";
 echo;
 
-"${ELM_TEST}" tests/Main.elm $@;
-
-# elm make tests/Main2.elm --output ./tmp.js
-# node tmp
+"${ELM_TEST}" tests/Main.elm "$@";

@@ -20,58 +20,66 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 
 	// Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
 	// Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
-	const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args['flags'] : undefined));
+	const flagsResult = A2(
+		__Json_run,
+		flagDecoder,
+		__Json_wrap(args ? args['flags'] : undefined)
+	);
 
 	if (!__Result_isOk(flagsResult)) {
 		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
+	}
+
+	const dispatch = (model, cmds) => {
+		const dispatcher = A2(
+			functions.__$dispatchEffects,
+			cmds,
+			impl.__$subscriptions(model)
+		);
+
+		for (const key in managers) {
+			// console.log(managers[key]);
+			A2(dispatcher, key, managers[key]);
+		}
 	}
 
 	const sendToApp = F2((msg, viewMetadata) => {
 		const updateValue = A2(impl.__$update, msg, model);
 		model = updateValue.a
 		A2(stepper, model, viewMetadata);
-
-		const dispatcher = A2(functions.__$dispatchEffects, updateValue.b, impl.__$subscriptions(model));
-
-		for (const key in managers) {
-			// console.log(managers[key]);
-			A2(dispatcher, key, managers[key]);
-		}
+		dispatch(model, updateValue.b);
 	});
 
 	const managers = {};
 	const ports = {};
+	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
+		managers[key] = __setup(functions.__$setupEffects, sendToApp);
+	}
+	for (const [key, setup] of Object.entries(_Platform_outgoingPorts)) {
+		const {port, manager} = setup(
+			functions.__$setupOutgoingPort,
+			sendToApp
+		);
+		ports[key] = port;
+		managers[key] = manager;
+	}
+	for (const [key, setup] of Object.entries(_Platform_incomingPorts))
+	{
+		const {port, manager} = setup(
+			functions.__$setupIncomingPort,
+			sendToApp
+		);
+		ports[key] = port;
+		managers[key] = manager;
+	}
 
 	const initValue = impl.__$init(flagsResult.a);
 	let model = initValue.a;
 	const stepper = A2(functions.__$stepperBuilder, sendToApp, model);
 
-	for (var key in _Platform_effectManagers)
-	{
-		const setup = _Platform_effectManagers[key].__setup;
-		managers[key] = setup(functions.__$setupEffects, sendToApp);
-	}
-	for (var key in _Platform_outgoingPorts)
-	{
-		const setup = _Platform_outgoingPorts[key](functions.__$setupOutgoingPort, sendToApp);
-		ports[key] = setup.ports;
-		managers[key] = setup.manager;
-	}
-	for (var key in _Platform_incomingPorts)
-	{
-		const setup = _Platform_incomingPorts[key](functions.__$setupIncomingPort, sendToApp);
-		ports[key] = setup.ports;
-		managers[key] = setup.manager;
-	}
-	// console.log('managers', managers);
-	const dispatcher = A2(functions.__$dispatchEffects, initValue.b, impl.__$subscriptions(model));
+	dispatch(model, initValue.b);
 
-	for (const key in managers) {
-		// console.log(managers[key]);
-		A2(dispatcher, key, managers[key]);
-	}
-
-	return ports ? { ports: ports } : {};
+	return ports ? { ports } : {};
 });
 
 
@@ -208,7 +216,7 @@ function _Platform_outgoingPort(name, converter)
 		);
 
 		return {
-			ports: {
+			port: {
 				subscribe,
 				unsubscribe,
 			},
@@ -243,7 +251,7 @@ function _Platform_incomingPort(name, converter)
 		}
 
 		return {
-			ports: {
+			port: {
 				send,
 			},
 			manager: setupTuple.a,

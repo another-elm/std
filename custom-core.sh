@@ -38,7 +38,9 @@ CORE_VERSION=$(ls $CORE_VERSIONS_DIR)
 CORE_PACKAGE_DIR="$CORE_VERSIONS_DIR/$CORE_VERSION"
 
 rm -rf "$CORE_PACKAGE_DIR" > /dev/null
-cp -r . "$CORE_PACKAGE_DIR" > /dev/null
+mkdir "$CORE_PACKAGE_DIR"
+cp -r src "$CORE_PACKAGE_DIR"/ > /dev/null
+cp -r elm.json "$CORE_PACKAGE_DIR"/ > /dev/null
 touch "$CORE_PACKAGE_DIR/custom"
 
 printf "DONE\n"

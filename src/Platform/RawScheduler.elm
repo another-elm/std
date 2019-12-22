@@ -94,6 +94,10 @@ andThen func task =
 Will not register the new process id, just create it. To run any tasks using
 this process it needs to be registered, for that use `rawSpawn`.
 
+**WARNING**: trying to enqueue (for example by calling `rawSend` or `send`)
+this process before it has been registered will give a **runtime** error. (It
+may even fail silently in optimized compiles.)
+
 -}
 newProcessId : () -> ProcessId msg
 newProcessId () =
@@ -120,7 +124,8 @@ rawSpawn receiver initTask processId =
 Send a message to a process (adds the message to the processes mailbox) and
 **enqueue** that process.
 
-If the process is "ready" it will then act upon the next message in its mailbox.
+If the process is "ready" it will then act upon the next message in its
+mailbox.
 
 -}
 rawSend : ProcessId msg -> msg -> ProcessId msg

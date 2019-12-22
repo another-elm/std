@@ -1,14 +1,12 @@
 module Platform.Cmd exposing
-  ( Cmd
-  , none
-  , batch
-  , map
-  )
+    ( Cmd, none, batch
+    , map
+    )
 
 {-|
 
 > **Note:** Elm has **managed effects**, meaning that things like HTTP
-> requests or writing to disk are all treated as *data* in Elm. When this
+> requests or writing to disk are all treated as _data_ in Elm. When this
 > data is given to the Elm runtime system, it can do some “query optimization”
 > before actually performing the effect. Perhaps unexpectedly, this managed
 > effects idea is the heart of why Elm is so nice for testing, reuse,
@@ -16,16 +14,20 @@ module Platform.Cmd exposing
 >
 > Elm has two kinds of managed effects: commands and subscriptions.
 
+
 # Commands
+
 @docs Cmd, none, batch
 
+
 # Fancy Stuff
+
 @docs map
 
 -}
 
-import Elm.Kernel.Basics
 import Basics exposing (..)
+import Elm.Kernel.Basics
 import List
 import Platform.Bag as Bag
 
@@ -46,16 +48,17 @@ messages that will come back into your application.
 ever, commands will make more sense as you work through [the Elm Architecture
 Tutorial](https://guide.elm-lang.org/architecture/) and see how they
 fit into a real application!
+
 -}
 type Cmd msg
-  = Data (Bag.EffectBag msg)
+    = Data (Bag.EffectBag msg)
+
 
 {-| Tell the runtime that there are no commands.
-
 -}
 none : Cmd msg
 none =
-  batch []
+    batch []
 
 
 {-| When you need the runtime system to perform a couple commands, you
@@ -65,12 +68,14 @@ no ordering guarantees about the results.
 
 **Note:** `Cmd.none` and `Cmd.batch [ Cmd.none, Cmd.none ]` and `Cmd.batch []`
 all do the same thing.
+
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-  List.map (\(Data cmd) -> cmd)
-    >> List.concat
-    >> Data
+    List.map (\(Data cmd) -> cmd)
+        >> List.concat
+        >> Data
+
 
 
 -- FANCY STUFF
@@ -80,20 +85,22 @@ batch =
 Very similar to [`Html.map`](/packages/elm/html/latest/Html#map).
 
 This is very rarely useful in well-structured Elm code, so definitely read the
-section on [structure][] in the guide before reaching for this!
+section on [structure] in the guide before reaching for this!
 
 [structure]: https://guide.elm-lang.org/webapps/structure.html
+
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
 map fn (Data data) =
-  data
-    |> List.map
-      (\{home, value} ->
-        { home = home
-        , value = (getCmdMapper home) fn value
-        }
-      )
-    |> Data
+    data
+        |> List.map
+            (\{ home, value } ->
+                { home = home
+                , value = getCmdMapper home fn value
+                }
+            )
+        |> Data
+
 
 
 -- Kernel function redefinitons --
@@ -101,4 +108,4 @@ map fn (Data data) =
 
 getCmdMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
 getCmdMapper =
-  Elm.Kernel.Platform.getCmdMapper
+    Elm.Kernel.Platform.getCmdMapper

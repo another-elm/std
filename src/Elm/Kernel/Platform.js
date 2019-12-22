@@ -5,6 +5,7 @@ import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple0)
 import Result exposing (isOk)
+import Platform exposing (Task, ProcessId)
 
 */
 
@@ -283,12 +284,9 @@ const _Platform_getSubMapper = home => {
 	return _Platform_effectManagers[home].__subMapper;
 };
 
+const _Platform_wrapTask = task => __Platform_Task(task);
 
-const _Platform_crashOnEarlyMessage = F2((_1, _2) =>
-	__Debug_crash(12, 'earlyMsg')
-);
-
-
+const _Platform_wrapProcessId = processId => __Platform_ProcessId(processId);
 
 // EXPORT ELM MODULES
 //

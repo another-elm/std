@@ -1,6 +1,6 @@
 module Platform exposing
   ( Program, worker
-  , Task(..), ProcessId(..)
+  , Task, ProcessId
   , Router, sendToApp, sendToSelf
   )
 

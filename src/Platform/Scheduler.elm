@@ -109,6 +109,16 @@ spawn (Platform.Task task) =
 
 
 
+{-| This is provided to make __Schdeuler_rawSpawn work!
+
+TODO(harry) remove once code in other `elm/*` packages has been updated.
+-}
+rawSpawn : Platform.Task err ok -> Platform.ProcessId
+rawSpawn (Platform.Task task) =
+  Platform.ProcessId (RawScheduler.rawSpawn (\msg state -> never msg) task)
+
+
+
 {-| Create a task kills a process.
 -}
 kill : ProcessId Never -> Platform.Task never ()

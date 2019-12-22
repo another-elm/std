@@ -1,6 +1,7 @@
 /*
 
-import Platform.Scheduler as NiceScheduler exposing (succeed, binding)
+import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
+import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Utils exposing (Tuple0)
 */
@@ -8,13 +9,15 @@ import Elm.Kernel.Utils exposing (Tuple0)
 // COMPATIBILITY
 
 /*
- * We include these to avoid having to change code
- * in other `elm/*` packages.
+ * We include these to avoid having to change code in other `elm/*` packages.
  *
- * We have to define these as functions rather than
- * variables as the implementations of
- * elm/core:Platform.Scheduler.* functions may come
- * later in the generated javascript file.
+ * We have to define these as functions rather than variables as the
+ * implementations of elm/core:Platform.Scheduler.* functions may come later in
+ * the generated javascript file.
+ *
+ * **IMPORTANT**: these functions return `Process.Task`s and
+ * `Process.ProcessId`s rather than `RawScheduler.Task`s and
+ * `RawScheduler.ProcessId`s for compatability with `elm/*` package code.
  */
 
 function _Scheduler_succeed(value)
@@ -27,11 +30,17 @@ function _Scheduler_binding(callback)
 	return __NiceScheduler_binding(callback);
 }
 
+function _Scheduler_rawSpawn(task)
+{
+	return __NiceScheduler_rawSpawn(task);
+}
+
 // SCHEDULER
 
 
 var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
+var _Scheduler_mailboxes = new WeakMap();
 
 function _Scheduler_getGuid() {
 	return _Scheduler_guid++;
@@ -71,8 +80,35 @@ var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);
+	_Scheduler_mailboxes.set(procId, []);
 	return procId;
 });
+
+var _Scheduler_mailboxAdd = F2((message, procId) => {
+	const mailbox = _Scheduler_mailboxes.get(procId);
+	/**__DEBUG/
+	if (mailbox === undefined) {
+		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
+	}
+	//*/
+	mailbox.push(message);
+	return procId;
+});
+
+var _Scheduler_mailboxGet = procId => {
+	const mailbox = _Scheduler_mailboxes.get(procId);
+	/**__DEBUG/
+	if (mailbox === undefined) {
+		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
+	}
+	//*/
+	const msg = mailbox.shift();
+	if (msg === undefined) {
+		return __Maybe_Nothing;
+	} else {
+		return __Maybe_Just(msg);
+	}
+};
 
 
 var _Scheduler_working = false;
@@ -109,6 +145,7 @@ var _Scheduler_delay = F3(function (time, value, callback)
 
 
 const _Scheduler_runOnNextTick = F2((callback, val) => {
-	Promise.resolve(val).then(callback);
+	setTimeout(() => callback(val), 1);
+	// Promise.resolve(val).then(callback);
 	return _Utils_Tuple0;
 });

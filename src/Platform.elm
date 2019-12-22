@@ -112,7 +112,7 @@ worker impl =
           { stepperBuilder = \ _ _ -> (\ _ _ -> ())
           , setupOutgoingPort =  setupOutgoingPort
           , setupIncomingPort = setupIncomingPort
-          , setupEffects = setupEffects
+          , setupEffects = instantiateEffectManager
           , dispatchEffects = dispatchEffects
           }
       )
@@ -152,7 +152,7 @@ the main app and your individual effect manager.
 type Router appMsg selfMsg
   = Router
     { sendToApp: appMsg -> ()
-    , selfProcess: RawScheduler.ProcessId selfMsg
+    , selfProcess: RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
     }
 
 
@@ -182,7 +182,7 @@ sendToSelf (Router router) msg =
       (\() -> RawScheduler.Value (Ok ()))
       (RawScheduler.send
         router.selfProcess
-        msg
+        (Self msg)
       )
     )
 
@@ -335,11 +335,6 @@ createEffect isCmd newEffect maybeEffects =
     (cmdList, newEffect :: subList)
 
 
-setupEffects : SetupEffects state appMsg selfMsg
-setupEffects sendToAppP init onEffects onSelfMsg =
-  instantiateEffectManager sendToAppP init onEffects onSelfMsg
-
-
 instantiateEffectManager : SendToApp appMsg
   -> Task Never state
   -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
@@ -347,24 +342,32 @@ instantiateEffectManager : SendToApp appMsg
   -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
 instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
   let
-    receiver msg state =
+    receiver msg stateRes =
       let
         (Task task) =
-          case msg of
-            Self value ->
-              onSelfMsg router value state
+          case stateRes of
+            Ok state ->
+              case msg of
+                Self value ->
+                  onSelfMsg router value state
 
-            App cmds subs ->
-              onEffects router cmds subs state
+                App cmds subs ->
+                  onEffects router cmds subs state
+
+            Err e ->
+              never e
+
       in
         RawScheduler.andThen
           (\res ->
             case res of
               Ok val ->
                 RawScheduler.andThen
-                  (\() -> RawScheduler.Value val)
+                  (\() -> RawScheduler.Value (Ok val))
                   (RawScheduler.sleep 0)
-              Err e -> never e
+
+              Err e ->
+                never e
           )
           task
 

@@ -64,7 +64,6 @@ type ProcessRoot state
 type ProcessState msg state
   = ProcessState
     { root : ProcessRoot state
-    , mailbox : List msg
     , receiver : msg -> state -> Task state
     }
 
@@ -110,7 +109,6 @@ rawSpawn receiver task =
       )
       (ProcessState
         { root = Ready task
-        , mailbox = []
         , receiver = receiver
         }
       )
@@ -146,12 +144,7 @@ rawSend : ProcessId msg -> msg -> ProcessId msg
 rawSend processId msg =
   let
     _ =
-      updateProcessState
-        (\(ProcessState procState) ->
-          ProcessState
-            { procState | mailbox = procState.mailbox ++ [msg]}
-        )
-        processId
+      mailboxAdd msg processId
   in
     enqueue processId
 
@@ -161,17 +154,13 @@ rawSend processId msg =
 -}
 send : ProcessId msg -> msg -> Task ()
 send processId msg =
-  AsyncAction
-    (\doneCallback ->
+  SyncAction
+    (\() ->
       let
         _ =
           rawSend processId msg
       in
-        let
-          _ =
-            doneCallback (Value ())
-        in
-      (\() -> ())
+      Value ()
     )
 
 
@@ -253,18 +242,17 @@ stepper processId (ProcessState process) =
       (ProcessState process)
 
     Ready (Value val) ->
-      case process.mailbox of
-        first :: rest ->
+      case mailboxGet processId of
+        Just message ->
           stepper
             processId
             (ProcessState
               { process
-                | root = Ready (process.receiver first val)
-                , mailbox = rest
+                | root = Ready (process.receiver message val)
               }
             )
 
-        [] ->
+        Nothing ->
           ProcessState process
 
     Ready (AsyncAction doEffect) ->
@@ -276,7 +264,6 @@ stepper processId (ProcessState process) =
                 (\newRoot ->
                     let
                       _ =
-
                             (updateProcessState
                               (\(ProcessState p) ->
                                 ProcessState
@@ -313,6 +300,16 @@ stepper processId (ProcessState process) =
 updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
 updateProcessState =
   Elm.Kernel.Scheduler.updateProcessState
+
+
+mailboxAdd : msg -> ProcessId msg -> msg
+mailboxAdd =
+  Elm.Kernel.Scheduler.mailboxAdd
+
+
+mailboxGet : ProcessId msg -> Maybe msg
+mailboxGet =
+  Elm.Kernel.Scheduler.mailboxGet
 
 
 getProcessState : ProcessId msg -> ProcessState msg state

@@ -130,7 +130,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 	const make_setup = fullOnEffects => (setup, sendToApp) => {
 		return A4(setup, sendToApp, init, fullOnEffects, onSelfMsg)
 	}
-	if (cmdMap === undefined) {
+	if (typeof cmdMap !== 'function') {
 		// Subscription only effect module
 		return {
 			__cmdMapper: F2((_1, _2) => __Debug_crash(12, 'cmdMap')),
@@ -139,7 +139,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 				return A3(onEffects, router, subs, state);
 			})),
 		};
-	} else if (subMap === undefined) {
+	} else if (typeof subMap !==  'function') {
 		// Command only effect module
 		return {
 			__cmdMapper: cmdMap,

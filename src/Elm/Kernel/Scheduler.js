@@ -145,7 +145,6 @@ var _Scheduler_delay = F3(function (time, value, callback)
 
 
 const _Scheduler_runOnNextTick = F2((callback, val) => {
-	setTimeout(() => callback(val), 1);
-	// Promise.resolve(val).then(callback);
+	Promise.resolve(val).then(callback);
 	return _Utils_Tuple0;
 });

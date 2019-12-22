@@ -44,4 +44,4 @@ const _Basics_unwrapTypeWrapper__DEBUG = wrapped => {
 	}
 }
 
-const _Basics_unwrapTypeWrapper__PROD = wrapped => wrapped[0];
+const _Basics_unwrapTypeWrapper__PROD = wrapped => wrapped;

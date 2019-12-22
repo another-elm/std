@@ -101,5 +101,5 @@ to bail on whatever task it is running. So if there is an HTTP request in
 flight, it will also abort the request.
 -}
 kill : Id -> Task x ()
-kill (Platform.ProcessId processId) =
-  Scheduler.kill processId
+kill =
+  Scheduler.kill

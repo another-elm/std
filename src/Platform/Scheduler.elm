@@ -121,8 +121,8 @@ rawSpawn (Platform.Task task) =
 
 {-| Create a task kills a process.
 -}
-kill : ProcessId Never -> Platform.Task never ()
-kill proc =
+kill : Platform.ProcessId -> Platform.Task never ()
+kill (Platform.ProcessId proc) =
   Platform.Task
     (RawScheduler.andThen
       (\() -> RawScheduler.Value (Ok ()))

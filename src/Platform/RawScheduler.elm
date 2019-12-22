@@ -66,7 +66,7 @@ type ProcessState msg state
 
 
 type ProcessId msg
-  = ProcessId UniqueId
+  = ProcessId { id: UniqueId }
 
 
 type UniqueId = UniqueId UniqueId
@@ -101,7 +101,7 @@ may even fail silently in optimized compiles.)
 -}
 newProcessId : () -> ProcessId msg
 newProcessId () =
-  ProcessId (Elm.Kernel.Scheduler.getGuid())
+  ProcessId { id = Elm.Kernel.Scheduler.getGuid() }
 
 
 {-| NON PURE!

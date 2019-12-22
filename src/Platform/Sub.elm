@@ -1,5 +1,5 @@
 module Platform.Sub exposing
-  ( Sub(..)
+  ( Sub
   , none
   , batch
   , map
@@ -49,14 +49,7 @@ Tutorial](https://guide.elm-lang.org/architecture/) and see how they fit
 into a real application!
 -}
 type Sub msg
-  -- Constructor name **must** be same as that used in _Platform_leaf() and
-  -- the order of record fields **must** be the same too.
-  = Data
-    (List
-      { home : Bag.EffectManagerName
-      , value : (Bag.LeafType msg)
-      }
-    )
+  = Data (Bag.EffectBag msg)
 
 
 

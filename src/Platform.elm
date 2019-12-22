@@ -274,12 +274,12 @@ dispatchEffects : Cmd appMsg
   -> Bag.EffectManagerName
   -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
   -> ()
-dispatchEffects cmd sub =
+dispatchEffects cmdBag subBag =
   let
     effectsDict =
       Dict.empty
-        |> gatherCmds cmd
-        |> gatherSubs sub
+        |> gatherCmds cmdBag
+        |> gatherSubs subBag
   in
     \key selfProcess->
       let
@@ -298,19 +298,19 @@ dispatchEffects cmd sub =
 
 
 gatherCmds : Cmd msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
-gatherCmds (Cmd.Data cmds) effectsDict =
+gatherCmds cmdBag effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper True home value dict)
     effectsDict
-    cmds
+    (unwrapCmd cmdBag)
 
 
-gatherSubs : Sub msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
-gatherSubs (Sub.Data subs) effectsDict =
+gatherSubs : Sub msg  -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
+gatherSubs subBag effectsDict =
   List.foldr
     (\{home, value} dict -> gatherHelper False home value dict)
     effectsDict
-    subs
+    (unwrapSub subBag)
 
 
 gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg)) -> Dict String (List (Bag.LeafType msg), List (Bag.LeafType msg))
@@ -502,3 +502,13 @@ makeProgramCallable (Program program) =
 effectManagerNameToString : Bag.EffectManagerName -> String
 effectManagerNameToString =
   Elm.Kernel.Platform.effectManagerNameToString
+
+
+unwrapCmd : Cmd a -> Bag.EffectBag a
+unwrapCmd =
+  Elm.Kernel.Basics.unwrapTypeWrapper
+
+
+unwrapSub : Sub a -> Bag.EffectBag a
+unwrapSub =
+  Elm.Kernel.Basics.unwrapTypeWrapper

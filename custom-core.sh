@@ -4,7 +4,7 @@ set -o errexit;
 set -o nounset;
 
 if [[ ! -v ELM_HOME ]]; then
-    printf "Please set ELM_HOME!"
+    printf "Please set ELM_HOME!\n"
     exit 1
 fi
 

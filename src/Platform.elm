@@ -372,22 +372,21 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
           task
 
 
-    selfProcess =
-      RawScheduler.rawSpawn
-        Elm.Kernel.Platform.crashOnEarlyMessage
-        (RawScheduler.andThen
-            (\() -> init)
-            (RawScheduler.sleep 0)
-        )
+    selfProcessInitRoot =
+      RawScheduler.andThen
+        (\() -> init)
+        (RawScheduler.sleep 0)
 
+    selfProcessId =
+      RawScheduler.newProcessId ()
 
     router =
       Router
         { sendToApp = (\appMsg -> sendToAppFunc appMsg AsyncUpdate)
-        , selfProcess = selfProcess
+        , selfProcess = selfProcessId
         }
   in
-  RawScheduler.rawSetReceiver receiver selfProcess
+  RawScheduler.rawSpawn receiver selfProcessInitRoot selfProcessId
 
 
 type alias SendToApp msg =

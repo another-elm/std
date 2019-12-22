@@ -40,6 +40,7 @@ function _Scheduler_rawSpawn(task)
 
 var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
+var _Scheduler_receivers = new WeakMap();
 var _Scheduler_mailboxes = new WeakMap();
 
 function _Scheduler_getGuid() {
@@ -73,16 +74,18 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 	return procState;
 });
 
-var _Scheduler_registerNewProcess = F2((procId, procState) => {
+var _Scheduler_registerNewProcess = F3((procId, receiver, procState) => {
 	/**__DEBUG/
 	if (procState === undefined) {
 		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);
+	_Scheduler_receivers.set(procId, receiver);
 	_Scheduler_mailboxes.set(procId, []);
 	return procId;
 });
+
 
 var _Scheduler_mailboxAdd = F2((message, procId) => {
 	const mailbox = _Scheduler_mailboxes.get(procId);
@@ -95,10 +98,11 @@ var _Scheduler_mailboxAdd = F2((message, procId) => {
 	return procId;
 });
 
-var _Scheduler_mailboxGet = procId => {
+const _Scheduler_mailboxReceive = F2((procId, state) => {
+	const receiver = _Scheduler_receivers.get(procId);
 	const mailbox = _Scheduler_mailboxes.get(procId);
 	/**__DEBUG/
-	if (mailbox === undefined) {
+	if (receiver === undefined || mailbox === undefined) {
 		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
 	}
 	//*/
@@ -106,10 +110,9 @@ var _Scheduler_mailboxGet = procId => {
 	if (msg === undefined) {
 		return __Maybe_Nothing;
 	} else {
-		return __Maybe_Just(msg);
+		return __Maybe_Just(A2(receiver, msg, state));
 	}
-};
-
+});
 
 var _Scheduler_working = false;
 var _Scheduler_queue = [];

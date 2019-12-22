@@ -115,7 +115,7 @@ TODO(harry) remove once code in other `elm/*` packages has been updated.
 -}
 rawSpawn : Platform.Task err ok -> Platform.ProcessId
 rawSpawn (Platform.Task task) =
-  Platform.ProcessId (RawScheduler.rawSpawn (\msg state -> never msg) task)
+  Platform.ProcessId (RawScheduler.rawSpawn (\msg state -> never msg) task (RawScheduler.newProcessId ()))
 
 
 

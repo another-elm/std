@@ -62,16 +62,11 @@ type ProcessRoot state
 
 
 type ProcessState msg state
-  = ProcessState
-    { root : ProcessRoot state
-    , receiver : msg -> state -> Task state
-    }
+  = ProcessState (ProcessRoot state)
 
 
 type ProcessId msg
-  = ProcessId
-    { id : UniqueId
-    }
+  = ProcessId UniqueId
 
 
 type UniqueId = UniqueId UniqueId
@@ -94,50 +89,38 @@ andThen func task =
         )
 
 
-{-| NON PURE!
+{-| Create a new, unique, process id.
 
-Will create, **enqueue** and return a new process.
+Will not register the new process id, just create it. To run any tasks using
+this process it needs to be registered, for that use `rawSpawn`.
 
 -}
-rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg
-rawSpawn receiver task =
+newProcessId : () -> ProcessId msg
+newProcessId () =
+  ProcessId (Elm.Kernel.Scheduler.getGuid())
+
+
+{-| NON PURE!
+
+Will create, register and  **enqueue** a new process.
+
+-}
+rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg -> ProcessId msg
+rawSpawn receiver initTask processId =
   enqueue
     (registerNewProcess
-      (ProcessId
-        { id = Elm.Kernel.Scheduler.getGuid()
-        }
-      )
-      (ProcessState
-        { root = Ready task
-        , receiver = receiver
-        }
-      )
+      processId
+      receiver
+      (ProcessState (Ready initTask))
     )
 
 
 {-| NON PURE!
 
-Will modify an existing process, **enqueue** and return it.
+Send a message to a process (adds the message to the processes mailbox) and
+**enqueue** that process.
 
--}
-rawSetReceiver : (msg -> a -> Task a) -> ProcessId msg -> ProcessId msg
-rawSetReceiver receiver processId =
-  let
-    _ =
-      updateProcessState
-        (\(ProcessState state) ->
-          ProcessState
-            { state | receiver = receiver }
-        )
-        processId
-  in
-    enqueue processId
-
-
-{-| NON PURE!
-
-Send a message to a process and **enqueue** that process so that it
-can perform actions based on the message.
+If the process is "ready" it will then act upon the next message in its mailbox.
 
 -}
 rawSend : ProcessId msg -> msg -> ProcessId msg
@@ -149,7 +132,6 @@ rawSend processId msg =
     enqueue processId
 
 
-
 {-| Create a task, if run, will make the process deal with a message.
 -}
 send : ProcessId msg -> msg -> Task ()
@@ -157,7 +139,7 @@ send processId msg =
   SyncAction
     (\() ->
       let
-        _ =
+        (ProcessId _) =
           rawSend processId msg
       in
       Value ()
@@ -169,7 +151,7 @@ send processId msg =
 spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
 spawn receiver task =
   SyncAction
-    (\() -> Value (rawSpawn receiver task))
+    (\() -> Value (rawSpawn receiver task (newProcessId ())))
 
 
 {-| Create a task that sleeps for `time` milliseconds
@@ -191,10 +173,10 @@ kill processId =
   SyncAction
     (\() ->
       let
-        (ProcessState {root}) =
+        (ProcessState root) =
           getProcessState processId
 
-        _ =
+        () =
           case root of
             Running killer ->
                 killer ()
@@ -218,11 +200,29 @@ enqueue id =
   enqueueWithStepper
     (\procId ->
       let
-        _ =
-          updateProcessState (stepper procId) procId
+        onAsyncActionDone =
+          runOnNextTick
+            (\newRoot ->
+              let
+                (ProcessState (_)) =
+                  (updateProcessState
+                    (\(ProcessState p) ->
+                      ProcessState (Ready newRoot)
+                    )
+                    procId
+                  )
+              in
+              let
+                (ProcessId _) =
+                  enqueue procId
+              in
+              ()
+            )
+
+        (ProcessState _) =
+          updateProcessState (stepper procId onAsyncActionDone) procId
       in
         ()
-
     )
     id
 
@@ -235,63 +235,31 @@ This function **must** return a process with the **same ID** as
 the process it is passed as  an argument
 
 -}
-stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
-stepper processId (ProcessState process) =
-  case process.root of
+stepper : ProcessId msg -> (Task state -> ()) -> ProcessState msg state -> ProcessState msg state
+stepper processId onAsyncActionDone (ProcessState process) =
+  case process of
     Running _ ->
       (ProcessState process)
 
     Ready (Value val) ->
-      case mailboxGet processId of
-        Just message ->
+      case mailboxReceive processId val of
+        Just newRoot ->
           stepper
             processId
-            (ProcessState
-              { process
-                | root = Ready (process.receiver message val)
-              }
-            )
+            onAsyncActionDone
+            (ProcessState (Ready newRoot))
 
         Nothing ->
           ProcessState process
 
     Ready (AsyncAction doEffect) ->
-      ProcessState
-          { process
-          | root = Running
-            (doEffect (
-              runOnNextTick
-                (\newRoot ->
-                    let
-                      _ =
-                            (updateProcessState
-                              (\(ProcessState p) ->
-                                ProcessState
-                                  { p | root = Ready newRoot }
-                              )
-                              processId
-                            )
-                    in
-                    let
-                      -- todo: avoid enqueue here
-                        _ =
-                          enqueue  processId
-                    in
-                    ()
-                  )
-              ))
-          }
+      ProcessState (Running (doEffect onAsyncActionDone))
 
     Ready (SyncAction doEffect) ->
-      let
-        newProcess =
-          { process
-          | root = Ready (doEffect ())
-          }
-      in
       stepper
         processId
-        (ProcessState newProcess)
+        onAsyncActionDone
+        (ProcessState (Ready (doEffect ())))
 
 
 -- Kernel function redefinitons --
@@ -307,9 +275,9 @@ mailboxAdd =
   Elm.Kernel.Scheduler.mailboxAdd
 
 
-mailboxGet : ProcessId msg -> Maybe msg
-mailboxGet =
-  Elm.Kernel.Scheduler.mailboxGet
+mailboxReceive : ProcessId msg -> state -> Maybe (Task state)
+mailboxReceive =
+  Elm.Kernel.Scheduler.mailboxReceive
 
 
 getProcessState : ProcessId msg -> ProcessState msg state
@@ -317,7 +285,7 @@ getProcessState =
   Elm.Kernel.Scheduler.getProcessState
 
 
-registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg
+registerNewProcess : ProcessId msg -> (msg -> state -> Task state) -> ProcessState msg state -> ProcessId msg
 registerNewProcess =
   Elm.Kernel.Scheduler.registerNewProcess
 

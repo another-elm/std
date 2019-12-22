@@ -290,6 +290,8 @@ similar to `truncate (3 / 4)`.
 It may sometimes be useful to pair this with the [`remainderBy`](#remainderBy)
 function.
 
+TODO(harry) fix example
+
 -}
 idiv : Int -> Int -> Int
 idiv lhs rhs =

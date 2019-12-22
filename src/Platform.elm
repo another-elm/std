@@ -30,12 +30,6 @@ curious? Public discussions of your explorations should be framed accordingly.
 
 @docs Router, sendToApp, sendToSelf
 
-
-## Unresolve questions
-
-  - Each app has a dict of effect managers, it also has a dict of "managers".
-    I have called these `OtherManagers` but what do they do and how shouuld they be named?
-
 -}
 
 -- import Json.Decode exposing (Decoder)
@@ -230,23 +224,21 @@ setupOutgoingPort outgoingPortSend =
                     RawScheduler.Value (Ok ())
 
         onEffects :
-            Router msg selfMsg
-            -> List (HiddenMyCmd msg)
-            -> List (HiddenMySub msg)
+            Router Never Never
+            -> List (HiddenMyCmd Never)
+            -> List (HiddenMySub Never)
             -> ()
             -> Task Never ()
         onEffects _ cmdList _ () =
-            let
-                typedCmdList : List EncodeValue
-                typedCmdList =
-                    Elm.Kernel.Basics.fudgeType cmdList
-            in
-            Task (execInOrder typedCmdList)
+            Task (execInOrder (createValuesToSendOutOfPorts cmdList))
     in
     instantiateEffectManager (\msg -> never msg) init onEffects onSelfMsg
 
 
-setupIncomingPort : SendToApp msg -> (List (HiddenMySub msg) -> ()) -> ( RawScheduler.ProcessId (ReceivedData msg Never), msg -> List (HiddenMySub msg) -> () )
+setupIncomingPort :
+    SendToApp msg
+    -> (List (HiddenMySub msg) -> ())
+    -> ( RawScheduler.ProcessId (ReceivedData msg Never), EncodeValue -> List (HiddenMySub msg) -> () )
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
@@ -267,19 +259,13 @@ setupIncomingPort sendToApp2 updateSubs =
                     )
                 )
 
-        onSend : msg -> List (HiddenMySub msg) -> ()
         onSend value subs =
             List.foldr
                 (\sub () ->
-                    let
-                        typedSub : msg -> msg
-                        typedSub =
-                            Elm.Kernel.Basics.fudgeType sub
-                    in
-                    sendToApp2 (typedSub value) AsyncUpdate
+                    sendToApp2 (sub value) AsyncUpdate
                 )
                 ()
-                subs
+                (createIncomingPortConverters subs)
     in
     ( instantiateEffectManager sendToApp2 init onEffects onSelfMsg
     , onSend
@@ -309,12 +295,15 @@ dispatchEffects cmdBag subBag =
             _ =
                 RawScheduler.rawSend
                     selfProcess
-                    (App (Elm.Kernel.Basics.fudgeType cmdList) (Elm.Kernel.Basics.fudgeType subList))
+                    (App (createHiddenMyCmdList cmdList) (createHiddenMySubList subList))
         in
         ()
 
 
-gatherCmds : Cmd msg -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) ) -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+gatherCmds :
+    Cmd msg
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
 gatherCmds cmdBag effectsDict =
     List.foldr
         (\{ home, value } dict -> gatherHelper True home value dict)
@@ -322,7 +311,10 @@ gatherCmds cmdBag effectsDict =
         (unwrapCmd cmdBag)
 
 
-gatherSubs : Sub msg -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) ) -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+gatherSubs :
+    Sub msg
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
 gatherSubs subBag effectsDict =
     List.foldr
         (\{ home, value } dict -> gatherHelper False home value dict)
@@ -330,7 +322,12 @@ gatherSubs subBag effectsDict =
         (unwrapSub subBag)
 
 
-gatherHelper : Bool -> Bag.EffectManagerName -> Bag.LeafType msg -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) ) -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+gatherHelper :
+    Bool
+    -> Bag.EffectManagerName
+    -> Bag.LeafType msg
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
 gatherHelper isCmd home effectData effectsDict =
     Dict.insert
         (effectManagerNameToString home)
@@ -338,7 +335,11 @@ gatherHelper isCmd home effectData effectsDict =
         effectsDict
 
 
-createEffect : Bool -> Bag.LeafType msg -> Maybe ( List (Bag.LeafType msg), List (Bag.LeafType msg) ) -> ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+createEffect :
+    Bool
+    -> Bag.LeafType msg
+    -> Maybe ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
+    -> ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
 createEffect isCmd newEffect maybeEffects =
     let
         ( cmdList, subList ) =
@@ -489,20 +490,25 @@ type alias Impl flags model msg =
     }
 
 
-type alias SetupEffects state appMsg selfMsg =
-    SendToApp appMsg
-    -> Task Never state
-    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
-    -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
-
-
 type alias InitFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
     , setupOutgoingPort : (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
-    , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> ( RawScheduler.ProcessId (ReceivedData appMsg Never), appMsg -> List (HiddenMySub appMsg) -> () )
-    , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
-    , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg) -> ()
+    , setupIncomingPort :
+        SendToApp appMsg
+        -> (List (HiddenMySub appMsg) -> ())
+        -> ( RawScheduler.ProcessId (ReceivedData appMsg Never), EncodeValue -> List (HiddenMySub appMsg) -> () )
+    , setupEffects :
+        SendToApp appMsg
+        -> Task Never HiddenState
+        -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
+        -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
+        -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
+    , dispatchEffects :
+        Cmd appMsg
+        -> Sub appMsg
+        -> Bag.EffectManagerName
+        -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
+        -> ()
     }
 
 
@@ -545,3 +551,23 @@ unwrapCmd =
 unwrapSub : Sub a -> Bag.EffectBag a
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
+
+
+createHiddenMyCmdList : List (Bag.LeafType msg) -> List (HiddenMyCmd msg)
+createHiddenMyCmdList =
+    Elm.Kernel.Basics.fudgeType
+
+
+createHiddenMySubList : List (Bag.LeafType msg) -> List (HiddenMySub msg)
+createHiddenMySubList =
+    Elm.Kernel.Basics.fudgeType
+
+
+createValuesToSendOutOfPorts : List (HiddenMyCmd Never) -> List EncodeValue
+createValuesToSendOutOfPorts =
+    Elm.Kernel.Basics.fudgeType
+
+
+createIncomingPortConverters : List (HiddenMySub msg) -> List (EncodeValue -> msg)
+createIncomingPortConverters =
+    Elm.Kernel.Basics.fudgeType

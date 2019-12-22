@@ -263,7 +263,8 @@ stepper processId onAsyncActionDone (ProcessState process) =
 
 getGuid : () -> UniqueId
 getGuid =
-  Elm.Kernel.Scheduler.getGuid
+    Elm.Kernel.Scheduler.getGuid
+
 
 updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
 updateProcessState =

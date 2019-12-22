@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (..)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, delay, kill, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
 
 {-|
 

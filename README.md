@@ -10,6 +10,7 @@
 
 ## Rules
 
-* Each kernel function may only be referenced by an elm definition of the same name.
-    Other elm functions **must** call the elm version of this function.
-* Kernel functions may **not** call elm functions.
+* Each kernel function may only be called via a type annotated redefinition in an elm file.
+* Kernel functions may **not** call globally defined elm functions.
+    Elm functions _can_ be passed into kernel functions as arguments.
+* Kernel functions may **not** call other kernel functions.

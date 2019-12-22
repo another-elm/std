@@ -89,7 +89,7 @@ may even fail silently in optimized compiles.)
 -}
 newProcessId : () -> ProcessId msg
 newProcessId () =
-    ProcessId { id = Elm.Kernel.Scheduler.getGuid () }
+    ProcessId { id = getGuid () }
 
 
 {-| NON PURE!
@@ -260,6 +260,10 @@ stepper processId onAsyncActionDone (ProcessState process) =
 
 -- Kernel function redefinitons --
 
+
+getGuid : () -> UniqueId
+getGuid =
+  Elm.Kernel.Scheduler.getGuid
 
 updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
 updateProcessState =

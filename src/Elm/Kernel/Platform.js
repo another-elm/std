@@ -75,10 +75,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		managers[key] = __setup(functions.__$setupEffects, sendToApp);
 	}
 	for (const [key, setup] of Object.entries(_Platform_outgoingPorts)) {
-		const {port, manager} = setup(
-			functions.__$setupOutgoingPort,
-			sendToApp
-		);
+		const {port, manager} = setup(functions.__$setupOutgoingPort);
 		ports[key] = port;
 		managers[key] = manager;
 	}
@@ -195,16 +192,12 @@ function _Platform_checkPortName(name)
 function _Platform_outgoingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_outgoingPorts[name] = function(setup, sendToApp) {
+	_Platform_outgoingPorts[name] = setup => {
 		let subs = [];
-
-		function subscribe(callback)
-		{
+		const subscribe = callback => {
 			subs.push(callback);
-		}
-
-		function unsubscribe(callback)
-		{
+		};
+		const unsubscribe = callback => {
 			// copy subs into a new array in case unsubscribe is called within
 			// a subscribed callback
 			subs = subs.slice();
@@ -213,8 +206,7 @@ function _Platform_outgoingPort(name, converter)
 			{
 				subs.splice(index, 1);
 			}
-		}
-
+		};
 		const outgoingPortSend = payload => {
 			const value = __Json_unwrap(converter(payload));
 			for (const sub of subs)
@@ -223,20 +215,12 @@ function _Platform_outgoingPort(name, converter)
 			}
 			return __Utils_Tuple0;
 		};
-
-
-		const manager = A2(
-			setup,
-			sendToApp,
-			outgoingPortSend
-		);
-
 		return {
 			port: {
 				subscribe,
 				unsubscribe,
 			},
-			manager,
+			manager: setup(outgoingPortSend),
 		}
 	}
 

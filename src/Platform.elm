@@ -110,7 +110,7 @@ worker impl =
           args
           impl
           { stepperBuilder = \ _ _ -> (\ _ _ -> ())
-          , setupOutgoingPort =  setupOutgoingPort
+          , setupOutgoingPort = setupOutgoingPort
           , setupIncomingPort = setupIncomingPort
           , setupEffects = instantiateEffectManager
           , dispatchEffects = dispatchEffects
@@ -190,8 +190,8 @@ sendToSelf (Router router) msg =
 -- HELPERS --
 
 
-setupOutgoingPort : SendToApp msg -> (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData msg Never)
-setupOutgoingPort sendToApp2 outgoingPortSend =
+setupOutgoingPort : (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
+setupOutgoingPort outgoingPortSend =
   let
     init =
       Task (RawScheduler.Value (Ok ()))
@@ -227,7 +227,7 @@ setupOutgoingPort sendToApp2 outgoingPortSend =
       Task (execInOrder typedCmdList)
 
   in
-  instantiateEffectManager sendToApp2 init onEffects onSelfMsg
+  instantiateEffectManager (\msg -> never msg) init onEffects onSelfMsg
 
 
 setupIncomingPort : SendToApp msg -> (List (HiddenMySub msg) -> ()) -> (RawScheduler.ProcessId (ReceivedData msg Never), msg -> List (HiddenMySub msg) -> ())
@@ -472,7 +472,7 @@ type alias SetupEffects state appMsg selfMsg =
 
 type alias InitFunctions model appMsg =
   { stepperBuilder : SendToApp appMsg -> model -> (SendToApp appMsg)
-  , setupOutgoingPort : SendToApp appMsg ->  (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData appMsg Never)
+  , setupOutgoingPort : (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
   , setupIncomingPort : SendToApp appMsg -> (List (HiddenMySub appMsg) -> ()) -> (RawScheduler.ProcessId (ReceivedData appMsg Never), appMsg -> List (HiddenMySub appMsg) -> ())
   , setupEffects : SetupEffects HiddenState appMsg HiddenSelfMsg
   , dispatchEffects : Cmd appMsg -> Sub appMsg -> Bag.EffectManagerName -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg) -> ()

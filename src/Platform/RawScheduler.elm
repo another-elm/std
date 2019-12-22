@@ -22,10 +22,7 @@ nicer API. `Platform` cannot import `Platform.Scheduler` as
 -}
 
 import Basics exposing (..)
-import Debug
-import Elm.Kernel.Basics
 import Elm.Kernel.Scheduler
-import List exposing ((::))
 import Maybe exposing (Maybe(..))
 
 
@@ -200,7 +197,7 @@ enqueue id =
                             let
                                 (ProcessState _) =
                                     updateProcessState
-                                        (\(ProcessState p) ->
+                                        (\(ProcessState _) ->
                                             ProcessState (Ready newRoot)
                                         )
                                         procId

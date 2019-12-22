@@ -27,7 +27,7 @@ module Platform.Sub exposing
 -}
 
 import Basics exposing (..)
-import Elm.Kernel.Basics
+import Elm.Kernel.Platform
 import List
 import Platform.Bag as Bag
 

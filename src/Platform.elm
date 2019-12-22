@@ -32,32 +32,20 @@ curious? Public discussions of your explorations should be framed accordingly.
 
 -}
 
--- import Json.Decode exposing (Decoder)
--- import Json.Encode as Encode
-
 import Basics exposing (..)
-import Char exposing (Char)
-import Debug
 import Dict exposing (Dict)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
+import Json.Decode exposing (Decoder)
+import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
-import Platform.Cmd as Cmd exposing (Cmd)
+import Platform.Cmd exposing (Cmd)
 import Platform.RawScheduler as RawScheduler
-import Platform.Sub as Sub exposing (Sub)
+import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
-import Tuple
-
-
-type Decoder flags
-    = Decoder (Decoder flags)
-
-
-type EncodeValue
-    = EncodeValue EncodeValue
 
 
 
@@ -71,15 +59,8 @@ type Program flags model msg
     = Program
         (Decoder flags
          -> DebugMetadata
-         -> RawJsObject { args : Maybe (RawJsObject flags) }
-         ->
-            RawJsObject
-                { ports :
-                    RawJsObject
-                        { outgoingPortName : OutgoingPort
-                        , incomingPortName : IncomingPort
-                        }
-                }
+         -> RawJsObject
+         -> RawJsObject
         )
 
 
@@ -198,7 +179,7 @@ sendToSelf (Router router) msg =
 -- HELPERS --
 
 
-setupOutgoingPort : (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
+setupOutgoingPort : (Encode.Value -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
 setupOutgoingPort outgoingPortSend =
     let
         init =
@@ -207,7 +188,7 @@ setupOutgoingPort outgoingPortSend =
         onSelfMsg _ selfMsg () =
             never selfMsg
 
-        execInOrder : List EncodeValue -> RawScheduler.Task (Result Never ())
+        execInOrder : List Encode.Value -> RawScheduler.Task (Result Never ())
         execInOrder cmdList =
             case cmdList of
                 first :: rest ->
@@ -238,7 +219,7 @@ setupOutgoingPort outgoingPortSend =
 setupIncomingPort :
     SendToApp msg
     -> (List (HiddenMySub msg) -> ())
-    -> ( RawScheduler.ProcessId (ReceivedData msg Never), EncodeValue -> List (HiddenMySub msg) -> () )
+    -> ( RawScheduler.ProcessId (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
@@ -414,12 +395,8 @@ type alias SendToApp msg =
     msg -> UpdateMetadata -> ()
 
 
-type alias StepperBuilder model msg =
-    SendToApp msg -> model -> SendToApp msg
-
-
 type alias DebugMetadata =
-    EncodeValue
+    Encode.Value
 
 
 {-| AsyncUpdate is default I think
@@ -441,33 +418,12 @@ type ReceivedData appMsg selfMsg
     | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
 
 
-type OutgoingPort
-    = OutgoingPort
-        { subscribe : EncodeValue -> ()
-        , unsubscribe : EncodeValue -> ()
-        }
-
-
-type IncomingPort
-    = IncomingPort
-        { send : EncodeValue -> ()
-        }
-
-
-type HiddenTypeA
-    = HiddenTypeA Never
-
-
-type HiddenTypeB
-    = HiddenTypeB Never
-
-
 type HiddenMyCmd msg
-    = HiddenMyCmd (Bag.LeafType msg)
+    = HiddenMyCmd (HiddenMyCmd msg)
 
 
 type HiddenMySub msg
-    = HiddenMySub (Bag.LeafType msg)
+    = HiddenMySub (HiddenMySub msg)
 
 
 type HiddenSelfMsg
@@ -478,9 +434,8 @@ type HiddenState
     = HiddenState HiddenState
 
 
-type RawJsObject record
-    = JsRecord (RawJsObject record)
-    | JsAny
+type RawJsObject
+    = RawJsObject RawJsObject
 
 
 type alias Impl flags model msg =
@@ -492,11 +447,11 @@ type alias Impl flags model msg =
 
 type alias InitFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupOutgoingPort : (EncodeValue -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
+    , setupOutgoingPort : (Encode.Value -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
     , setupIncomingPort :
         SendToApp appMsg
         -> (List (HiddenMySub appMsg) -> ())
-        -> ( RawScheduler.ProcessId (ReceivedData appMsg Never), EncodeValue -> List (HiddenMySub appMsg) -> () )
+        -> ( RawScheduler.ProcessId (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
     , setupEffects :
         SendToApp appMsg
         -> Task Never HiddenState
@@ -518,17 +473,10 @@ type alias InitFunctions model appMsg =
 
 initialize :
     Decoder flags
-    -> RawJsObject { args : Maybe (RawJsObject flags) }
+    -> RawJsObject
     -> Impl flags model msg
     -> InitFunctions model msg
-    ->
-        RawJsObject
-            { ports :
-                RawJsObject
-                    { outgoingPortName : OutgoingPort
-                    , incomingPortName : IncomingPort
-                    }
-            }
+    -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize
 
@@ -563,11 +511,11 @@ createHiddenMySubList =
     Elm.Kernel.Basics.fudgeType
 
 
-createValuesToSendOutOfPorts : List (HiddenMyCmd Never) -> List EncodeValue
+createValuesToSendOutOfPorts : List (HiddenMyCmd Never) -> List Encode.Value
 createValuesToSendOutOfPorts =
     Elm.Kernel.Basics.fudgeType
 
 
-createIncomingPortConverters : List (HiddenMySub msg) -> List (EncodeValue -> msg)
+createIncomingPortConverters : List (HiddenMySub msg) -> List (Encode.Value -> msg)
 createIncomingPortConverters =
     Elm.Kernel.Basics.fudgeType

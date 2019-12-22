@@ -43,8 +43,7 @@ longer. That’s kind of what Elm is all about.
 
 -}
 
-import Basics exposing (..)
-import Debug
+import Basics exposing (Float)
 import Platform
 import Platform.Scheduler as Scheduler
 import Task exposing (Task)

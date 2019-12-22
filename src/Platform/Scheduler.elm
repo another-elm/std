@@ -136,7 +136,7 @@ spawn =
         (\task ->
             RawScheduler.andThen
                 (\proc -> RawScheduler.Value (Ok (wrapProcessId proc)))
-                (RawScheduler.spawn (\msg state -> never msg) task)
+                (RawScheduler.spawn (\msg _ -> never msg) task)
         )
 
 
@@ -149,7 +149,7 @@ rawSpawn : Platform.Task err ok -> Platform.ProcessId
 rawSpawn =
     taskFn
         (\task ->
-            wrapProcessId (RawScheduler.rawSpawn (\msg state -> never msg) task (RawScheduler.newProcessId ()))
+            wrapProcessId (RawScheduler.rawSpawn (\msg _ -> never msg) task (RawScheduler.newProcessId ()))
         )
 
 

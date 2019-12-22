@@ -30,7 +30,7 @@ HTTP requests or writing to a database.
 
 -}
 
-import Basics exposing ((<<), (|>), Never)
+import Basics exposing ((<<), (|>), Never, never)
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
@@ -393,15 +393,15 @@ init =
 
 
 onEffects : Platform.Router msg Never -> List (MyCmd msg) -> () -> Task Never ()
-onEffects router commands state =
+onEffects router commands () =
     map
         (\_ -> ())
         (sequence (List.map (spawnCmd router) commands))
 
 
 onSelfMsg : Platform.Router msg Never -> Never -> () -> Task Never ()
-onSelfMsg _ _ _ =
-    succeed ()
+onSelfMsg _ msg () =
+    never msg
 
 
 spawnCmd : Platform.Router msg Never -> MyCmd msg -> Task x Platform.ProcessId

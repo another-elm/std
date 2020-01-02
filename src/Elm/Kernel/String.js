@@ -1,8 +1,9 @@
 /*
 
-import Elm.Kernel.List exposing (fromArray, toArray, Nil)
+import Elm.Kernel.List exposing (fromArray, toArray)
 import Elm.Kernel.Utils exposing (chr, Tuple2)
 import Maybe exposing (Just, Nothing)
+import List exposing (Nil_elm_builtin)
 
 */
 
@@ -249,7 +250,7 @@ var _String_indexes = F2(function(sub, str)
 
 	if (subLen < 1)
 	{
-		return __List_Nil;
+		return __List_Nil_elm_builtin;
 	}
 
 	var i = 0;

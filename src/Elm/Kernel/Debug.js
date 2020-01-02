@@ -118,7 +118,7 @@ function _Debug_toAnsiString(ansi, value)
 				+ _Debug_toAnsiString(ansi, __Array_toList(value));
 		}
 
-		if (tag === '::' || tag === '[]')
+		if (tag === 'Cons_elm_builtin' || tag === 'Nil_elm_builtin')
 		{
 			var output = '[';
 

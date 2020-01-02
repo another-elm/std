@@ -7,9 +7,9 @@ module List exposing
     , isEmpty, head, tail, take, drop, partition, unzip
     )
 
-{-| You can create a `List` in Elm with the `[1,2,3]` syntax, so lists are
-used all over the place. This module has a bunch of functions to help you work
-with them!
+{-| You can create a `List` in Elm with the `[1,2,3]` syntax, so lists are used
+all over the place. This module has a bunch of functions to help you work with
+them!
 
 
 # Create
@@ -41,6 +41,13 @@ with them!
 
 @docs isEmpty, head, tail, take, drop, partition, unzip
 
+
+# Future work
+
+Benchmark the mapN functions and sortBy. Optimise to get comparible performance
+with the official elm/core implementation. (This official elm/core
+implementation uses kernel code.)
+
 -}
 
 import Basics exposing (..)
@@ -49,6 +56,11 @@ import Maybe exposing (Maybe(..))
 
 
 infix right 5 (::) = cons
+
+
+type List a
+    = Nil_elm_builtin
+    | Cons_elm_builtin a (List a)
 
 
 
@@ -122,7 +134,7 @@ of it like pushing an entry onto a stack.
 -}
 cons : a -> List a -> List a
 cons =
-    Elm.Kernel.List.cons
+    Cons_elm_builtin
 
 
 
@@ -583,8 +595,8 @@ sort xs =
 
 -}
 sortBy : (a -> comparable) -> List a -> List a
-sortBy =
-    Elm.Kernel.List.sortBy
+sortBy f =
+    sortWith (\a b -> compare (f a) (f b))
 
 
 {-| Sort values with a custom comparison function.

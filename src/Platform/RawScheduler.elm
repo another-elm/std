@@ -40,13 +40,9 @@ type alias TryAbortAction =
     () -> ()
 
 
-type ProcessRoot state
+type ProcessState msg state
     = Ready (Task state)
     | Running TryAbortAction
-
-
-type ProcessState msg state
-    = ProcessState (ProcessRoot state)
 
 
 type ProcessId msg
@@ -100,7 +96,7 @@ rawSpawn receiver initTask processId =
         (registerNewProcess
             processId
             receiver
-            (ProcessState (Ready initTask))
+            (Ready initTask)
         )
 
 
@@ -164,11 +160,8 @@ kill processId =
     SyncAction
         (\() ->
             let
-                (ProcessState root) =
-                    getProcessState processId
-
                 () =
-                    case root of
+                    case getProcessState processId of
                         Running killer ->
                             killer ()
 
@@ -195,11 +188,9 @@ enqueue id =
                     runOnNextTick
                         (\newRoot ->
                             let
-                                (ProcessState _) =
+                                _ =
                                     updateProcessState
-                                        (\(ProcessState _) ->
-                                            ProcessState (Ready newRoot)
-                                        )
+                                        (\_ -> Ready newRoot)
                                         procId
                             in
                             let
@@ -209,7 +200,7 @@ enqueue id =
                             ()
                         )
 
-                (ProcessState _) =
+                _ =
                     updateProcessState (stepper procId onAsyncActionDone) procId
             in
             ()
@@ -228,10 +219,10 @@ the process it is passed as an argument
 
 -}
 stepper : ProcessId msg -> (Task state -> ()) -> ProcessState msg state -> ProcessState msg state
-stepper processId onAsyncActionDone (ProcessState process) =
+stepper processId onAsyncActionDone process =
     case process of
         Running _ ->
-            ProcessState process
+            process
 
         Ready (Value val) ->
             case mailboxReceive processId val of
@@ -239,19 +230,19 @@ stepper processId onAsyncActionDone (ProcessState process) =
                     stepper
                         processId
                         onAsyncActionDone
-                        (ProcessState (Ready newRoot))
+                        (Ready newRoot)
 
                 Nothing ->
-                    ProcessState process
+                    process
 
         Ready (AsyncAction doEffect) ->
-            ProcessState (Running (doEffect onAsyncActionDone))
+            Running (doEffect onAsyncActionDone)
 
         Ready (SyncAction doEffect) ->
             stepper
                 processId
                 onAsyncActionDone
-                (ProcessState (Ready (doEffect ())))
+                (Ready (doEffect ()))
 
 
 

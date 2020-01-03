@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, delay, kill, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, delay, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
 
 {-| This module contains the low level logic for running tasks and processes. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -68,6 +68,19 @@ andThen func task =
                     doEffect
                         (\newTask -> doneCallback (andThen func newTask))
                 )
+
+
+{-| Create a task that executes a non pure function
+-}
+execImpure : (() -> a) -> Task a
+execImpure func =
+    SyncAction
+        (\() -> Value (func ()))
+
+
+map : (a -> b) -> Task a -> Task b
+map func =
+    andThen (\x -> Value (func x))
 
 
 {-| Create a new, unique, process id.

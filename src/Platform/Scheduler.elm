@@ -118,11 +118,7 @@ onError func =
 -}
 send : ProcessId msg -> msg -> Platform.Task never ()
 send proc msg =
-    wrapTask
-        (RawScheduler.andThen
-            (\() -> RawScheduler.Value (Ok ()))
-            (RawScheduler.send proc msg)
-        )
+    wrapTask (RawScheduler.map Ok (RawScheduler.send proc msg))
 
 
 {-| Create a task that, when run, will spawn a process.
@@ -134,13 +130,13 @@ spawn : Platform.Task err ok -> Platform.Task never Platform.ProcessId
 spawn =
     wrapTaskFn
         (\task ->
-            RawScheduler.andThen
-                (\proc -> RawScheduler.Value (Ok (wrapProcessId proc)))
+            RawScheduler.map
+                (\proc -> Ok (wrapProcessId proc))
                 (RawScheduler.spawn (\msg _ -> never msg) task)
         )
 
 
-{-| This is provided to make \_\_Schdeuler\_rawSpawn work!
+{-| This is provided to make `__Scheduler_rawSpawn` work!
 
 TODO(harry) remove once code in other `elm/*` packages has been updated.
 
@@ -149,7 +145,12 @@ rawSpawn : Platform.Task err ok -> Platform.ProcessId
 rawSpawn =
     taskFn
         (\task ->
-            wrapProcessId (RawScheduler.rawSpawn (\msg _ -> never msg) task (RawScheduler.newProcessId ()))
+            wrapProcessId
+                (RawScheduler.rawSpawn
+                    (\msg _ -> never msg)
+                    task
+                    (RawScheduler.newProcessId ())
+                )
         )
 
 
@@ -157,22 +158,14 @@ rawSpawn =
 -}
 kill : Platform.ProcessId -> Platform.Task never ()
 kill processId =
-    wrapTask
-        (RawScheduler.andThen
-            (\() -> RawScheduler.Value (Ok ()))
-            (RawScheduler.kill (unwrapProcessId processId))
-        )
+    wrapTask (RawScheduler.map Ok (RawScheduler.kill (unwrapProcessId processId)))
 
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
 sleep : Float -> Platform.Task x ()
 sleep time =
-    wrapTask
-        (RawScheduler.andThen
-            (\() -> RawScheduler.Value (Ok ()))
-            (RawScheduler.sleep time)
-        )
+    wrapTask (RawScheduler.map Ok (RawScheduler.sleep time))
 
 
 

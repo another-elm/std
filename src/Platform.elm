@@ -102,7 +102,7 @@ worker impl =
                     { stepperBuilder = \_ _ -> \_ _ -> ()
                     , setupOutgoingPort = setupOutgoingPort
                     , setupIncomingPort = setupIncomingPort
-                    , setupEffects = instantiateEffectManager
+                    , setupEffects = setupEffects
                     , dispatchEffects = dispatchEffects
                     }
             )
@@ -148,12 +148,7 @@ be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
-    Task
-        (RawScheduler.SyncAction
-            (\() ->
-                RawScheduler.Value (Ok (router.sendToApp msg))
-            )
-        )
+    Task (RawScheduler.SyncAction (\() -> RawScheduler.Value (Ok (router.sendToApp msg))))
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -165,14 +160,7 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task
-        (RawScheduler.andThen
-            (\() -> RawScheduler.Value (Ok ()))
-            (RawScheduler.send
-                router.selfProcess
-                (Self msg)
-            )
-        )
+    Task (RawScheduler.map Ok (RawScheduler.send router.selfProcess (Self msg)))
 
 
 
@@ -183,37 +171,30 @@ setupOutgoingPort : (Encode.Value -> ()) -> RawScheduler.ProcessId (ReceivedData
 setupOutgoingPort outgoingPortSend =
     let
         init =
-            Task (RawScheduler.Value (Ok ()))
+            RawScheduler.Value ()
 
         onSelfMsg _ selfMsg () =
             never selfMsg
-
-        execInOrder : List Encode.Value -> RawScheduler.Task (Result Never ())
-        execInOrder cmdList =
-            case cmdList of
-                first :: rest ->
-                    RawScheduler.SyncAction
-                        (\() ->
-                            let
-                                _ =
-                                    outgoingPortSend first
-                            in
-                            execInOrder rest
-                        )
-
-                _ ->
-                    RawScheduler.Value (Ok ())
 
         onEffects :
             Router Never Never
             -> List (HiddenMyCmd Never)
             -> List (HiddenMySub Never)
             -> ()
-            -> Task Never ()
+            -> RawScheduler.Task ()
         onEffects _ cmdList _ () =
-            Task (execInOrder (createValuesToSendOutOfPorts cmdList))
+            RawScheduler.execImpure
+                (\() ->
+                    let
+                        _ =
+                            cmdList
+                                |> createValuesToSendOutOfPorts
+                                |> List.map outgoingPortSend
+                    in
+                    ()
+                )
     in
-    instantiateEffectManager (\msg -> never msg) init onEffects onSelfMsg
+    instantiateEffectManager never init onEffects onSelfMsg
 
 
 setupIncomingPort :
@@ -223,22 +204,13 @@ setupIncomingPort :
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
-            Task (RawScheduler.Value (Ok ()))
+            RawScheduler.Value ()
 
         onSelfMsg _ selfMsg () =
             never selfMsg
 
         onEffects _ _ subList () =
-            Task
-                (RawScheduler.SyncAction
-                    (\() ->
-                        let
-                            _ =
-                                updateSubs subList
-                        in
-                        RawScheduler.Value (Ok ())
-                    )
-                )
+            RawScheduler.execImpure (\() -> updateSubs subList)
 
         onSend value subs =
             List.foldr
@@ -338,39 +310,43 @@ createEffect isCmd newEffect maybeEffects =
         ( cmdList, newEffect :: subList )
 
 
-instantiateEffectManager :
+setupEffects :
     SendToApp appMsg
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
     -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
-instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
+setupEffects sendToAppFunc init onEffects onSelfMsg =
+    instantiateEffectManager
+        sendToAppFunc
+        (unwrapTask init)
+        (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
+        (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
+
+
+instantiateEffectManager :
+    SendToApp appMsg
+    -> RawScheduler.Task state
+    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawScheduler.Task state)
+    -> (Router appMsg selfMsg -> selfMsg -> state -> RawScheduler.Task state)
+    -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     let
-        receiver msg stateRes =
+        receiver msg state =
             let
-                (Task task) =
-                    case stateRes of
-                        Ok state ->
-                            case msg of
-                                Self value ->
-                                    onSelfMsg router value state
+                task =
+                    case msg of
+                        Self value ->
+                            onSelfMsg router value state
 
-                                App cmds subs ->
-                                    onEffects router cmds subs state
-
-                        Err e ->
-                            never e
+                        App cmds subs ->
+                            onEffects router cmds subs state
             in
             RawScheduler.andThen
-                (\res ->
-                    case res of
-                        Ok val ->
-                            RawScheduler.andThen
-                                (\() -> RawScheduler.Value (Ok val))
-                                (RawScheduler.sleep 0)
-
-                        Err e ->
-                            never e
+                (\val ->
+                    RawScheduler.map
+                        (\() -> val)
+                        (RawScheduler.sleep 0)
                 )
                 task
 
@@ -389,6 +365,20 @@ instantiateEffectManager sendToAppFunc (Task init) onEffects onSelfMsg =
                 }
     in
     RawScheduler.rawSpawn receiver selfProcessInitRoot selfProcessId
+
+
+unwrapTask : Task Never a -> RawScheduler.Task a
+unwrapTask (Task task) =
+    RawScheduler.map
+        (\res ->
+            case res of
+                Ok val ->
+                    val
+
+                Err x ->
+                    never x
+        )
+        task
 
 
 type alias SendToApp msg =

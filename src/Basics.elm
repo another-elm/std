@@ -566,8 +566,17 @@ are also the only values that work as `Dict` keys or `Set` members.
 
 -}
 compare : comparable -> comparable -> Order
-compare =
-    Elm.Kernel.Utils.compare
+compare x y =
+    let
+        compared : Int
+        compared = Elm.Kernel.Utils.compare x y
+    in
+        if lt compared 0 then
+            LT
+        else if eq compared 0 then
+            EQ
+        else
+            GT
 
 
 {-| Represents the relative ordering of two things.

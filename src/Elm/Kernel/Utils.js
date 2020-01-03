@@ -6,22 +6,23 @@ import Dict exposing (toList)
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Set exposing (toList)
+import List exposing (append)
 
 */
 
 
 // EQUALITY
 
-function _Utils_eq(x, y)
-{
-	for (
-		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
-		isEqual && (pair = stack.pop());
-		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
-		)
-	{}
-
-	return isEqual;
+const _Utils_eq = (x, y) => {
+	const stack = [];
+	while(_Utils_eqHelp(x, y, 0, stack)) {
+		const pair = stack.pop();
+		if (pair === undefined) {
+			return true;
+		}
+		[x, y] = pair;
+	}
+	return false;
 }
 
 function _Utils_eqHelp(x, y, depth, stack)
@@ -33,13 +34,15 @@ function _Utils_eqHelp(x, y, depth, stack)
 
 	if (typeof x !== 'object' || x === null || y === null)
 	{
-		typeof x === 'function' && __Debug_crash(5);
+		if (typeof x === 'function') {
+			__Debug_crash(5);
+		}
 		return false;
 	}
 
 	if (depth > 100)
 	{
-		stack.push(_Utils_Tuple2(x,y));
+		stack.push([x,y]);
 		return true;
 	}
 
@@ -64,33 +67,38 @@ function _Utils_eqHelp(x, y, depth, stack)
 	}
 	//*/
 
-	for (var key in x)
+	/* The compiler ensures that the elm types of x and y are the same.
+	 * Therefore, x and y must have the same keys.
+	 */
+	for (const key of Object.keys(x))
 	{
-		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
-		{
+		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack)) {
 			return false;
 		}
 	}
 	return true;
 }
 
-var _Utils_equal = F2(_Utils_eq);
-var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
+const _Utils_equal = F2(_Utils_eq);
+const _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
 
 
 
 // COMPARISONS
 
-// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
-// the particular integer values assigned to LT, EQ, and GT.
-
+// Code in Generate/JavaScript/Expression.hs and Basics.elm depends on the
+// particular integer values assigned to LT, EQ, and GT. Comparable types are:
+// numbers, characters, strings, lists of comparable things, and tuples of
+// comparable things.
 function _Utils_cmp(x, y, ord)
 {
+	// Handle numbers, strings and characters in production mode.
 	if (typeof x !== 'object')
 	{
 		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
 	}
 
+	// Handle characters in debug mode.
 	/**__DEBUG/
 	if (x instanceof String)
 	{
@@ -100,6 +108,7 @@ function _Utils_cmp(x, y, ord)
 	}
 	//*/
 
+	// Handle tuples.
 	/**__PROD/
 	if (typeof x.$ === 'undefined')
 	//*/
@@ -107,71 +116,68 @@ function _Utils_cmp(x, y, ord)
 	if (x.$[0] === '#')
 	//*/
 	{
-		return (ord = _Utils_cmp(x.a, y.a))
-			? ord
-			: (ord = _Utils_cmp(x.b, y.b))
-				? ord
-				: _Utils_cmp(x.c, y.c);
+		const ordA = _Utils_cmp(x.a, y.a);
+		if (ordA !== 0) {
+			return ordA;
+		}
+		const ordB = _Utils_cmp(x.a, y.a);
+		if (ordB !== 0) {
+			return ordB;
+		}
+		return _Utils_cmp(x.c, y.c);
 	}
 
-	// traverse conses until end of a list or a mismatch
-	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
-	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
+	// Handle lists: traverse conses until end of a list or a mismatch. If the
+	// all the elements in one list are equal to all the elements in other list
+	// but the first list is longer than the first list is greater (and visa
+	// versa).
+	while(true) {
+		if (x.$ === _List_nilKey) {
+			if (y.$ === _List_nilKey) {
+				return 0;
+			} else {
+				return -1;
+			}
+		} else if (y.$ === _List_nilKey) {
+			return 1;
+		}
+		const ord = _Utils_cmp(x.a, y.a);
+		if (ord !== 0) {
+			return ord;
+		}
+		x = x.b;
+		y = y.b;
+	}
 }
 
-var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
-var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
-var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
-var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
-
-var _Utils_compare = F2(function(x, y)
-{
-	var n = _Utils_cmp(x, y);
-	return n < 0 ? __Basics_LT : n ? __Basics_GT : __Basics_EQ;
-});
-
+const _Utils_compare = F2((x, y) => _Utils_cmp(x, y));
 
 // COMMON VALUES
 
-var _Utils_Tuple0__PROD = 0;
-var _Utils_Tuple0__DEBUG = { $: '#0' };
+const _Utils_Tuple0__PROD = 0;
+const _Utils_Tuple0__DEBUG = { $: '#0' };
 
-function _Utils_Tuple2__PROD(a, b) { return { a: a, b: b }; }
-function _Utils_Tuple2__DEBUG(a, b) { return { $: '#2', a: a, b: b }; }
+const _Utils_Tuple2__PROD = (a, b) => ({ a, b });
+const _Utils_Tuple2__DEBUG = (a, b) => ({ $: '#2', a, b });
 
-function _Utils_Tuple3__PROD(a, b, c) { return { a: a, b: b, c: c }; }
-function _Utils_Tuple3__DEBUG(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
+const _Utils_Tuple3__PROD = (a, b, c) => ({ a, b, c });
+const _Utils_Tuple3__DEBUG = (a, b, c) => ({ $: '#3', a, b, c });
 
-function _Utils_chr__PROD(c) { return c; }
-function _Utils_chr__DEBUG(c) { return new String(c); }
+const _Utils_chr__PROD = c => c;
+const _Utils_chr__DEBUG = c => new String(c);
 
 
 // RECORDS
 
-function _Utils_update(oldRecord, updatedFields)
-{
-	var newRecord = {};
-
-	for (var key in oldRecord)
-	{
-		newRecord[key] = oldRecord[key];
-	}
-
-	for (var key in updatedFields)
-	{
-		newRecord[key] = updatedFields[key];
-	}
-
-	return newRecord;
-}
+const _Utils_update = (oldRecord, updatedFields) => Object.assign(
+	{},
+	oldRecord,
+	updatedFields);
 
 
 // APPEND
 
-var _Utils_append = F2(_Utils_ap);
-
-function _Utils_ap(xs, ys)
-{
+const _Utils_ap = (xs, ys) => {
 	// append Strings
 	if (typeof xs === 'string')
 	{
@@ -179,15 +185,5 @@ function _Utils_ap(xs, ys)
 	}
 
 	// append Lists
-	if (!xs.b)
-	{
-		return ys;
-	}
-	var root = __List_Cons(xs.a, ys);
-	xs = xs.b
-	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		curr = curr.b = __List_Cons(xs.a, ys);
-	}
-	return root;
+	return A2(__List_append, xs, ys);
 }

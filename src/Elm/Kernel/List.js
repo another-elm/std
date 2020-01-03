@@ -1,6 +1,5 @@
 /*
 
-import Elm.Kernel.Utils exposing (cmp)
 import Basics exposing (EQ, LT)
 import List exposing (Nil_elm_builtin, Cons_elm_builtin)
 

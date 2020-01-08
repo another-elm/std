@@ -40,7 +40,7 @@ echo "seeding framework for test dependencies ...";
 # useful when developing a fix for a bug that exists in the version of
 # elm/core hosted on package.elm-lang.org
 
-"${ELM_TEST}" tests/Main.elm --fuzz=1 > /dev/null || true;
+"${ELM_TEST}" --fuzz=1 > /dev/null || true;
 
 # elm make tests/Main2.elm --output ./tmp.js
 
@@ -70,4 +70,4 @@ echo;
 echo "running tests ...";
 echo;
 
-"${ELM_TEST}" tests/Main.elm "$@";
+"${ELM_TEST}" "$@";

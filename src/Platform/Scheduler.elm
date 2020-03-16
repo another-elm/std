@@ -51,7 +51,7 @@ import Result exposing (Result(..))
 
 
 type alias ProcessId msg =
-    RawScheduler.ProcessId msg
+    RawScheduler.ProcessId msg Never
 
 
 type alias DoneCallback err ok =
@@ -172,22 +172,22 @@ sleep time =
 -- wrapping helpers --
 
 
-wrapTaskFn : (RawScheduler.Task (Result e1 o1) -> RawScheduler.Task (Result e2 o2)) -> Platform.Task e1 o1 -> Platform.Task e2 o2
+wrapTaskFn : (RawScheduler.Task (Result e1 o1) Never -> RawScheduler.Task (Result e2 o2) Never) -> Platform.Task e1 o1 -> Platform.Task e2 o2
 wrapTaskFn fn task =
     wrapTask (taskFn fn task)
 
 
-taskFn : (RawScheduler.Task (Result e1 o1) -> a) -> Platform.Task e1 o1 -> a
+taskFn : (RawScheduler.Task (Result e1 o1) Never -> a) -> Platform.Task e1 o1 -> a
 taskFn fn task =
     fn (unwrapTask task)
 
 
-wrapTask : RawScheduler.Task (Result e o) -> Platform.Task e o
+wrapTask : RawScheduler.Task (Result e o) Never -> Platform.Task e o
 wrapTask =
     Elm.Kernel.Platform.wrapTask
 
 
-unwrapTask : Platform.Task e o -> RawScheduler.Task (Result e o)
+unwrapTask : Platform.Task e o -> RawScheduler.Task (Result e o) Never
 unwrapTask =
     Elm.Kernel.Basics.unwrapTypeWrapper
 

@@ -43,6 +43,8 @@ var _Scheduler_processes = new WeakMap();
 var _Scheduler_receivers = new WeakMap();
 var _Scheduler_mailboxes = new WeakMap();
 
+const _Scheduler_processInbox = new WeakMap();
+
 function _Scheduler_getGuid() {
 	return _Scheduler_guid++;
 }
@@ -111,6 +113,21 @@ const _Scheduler_mailboxReceive = F2((procId, state) => {
 		return __Maybe_Nothing;
 	} else {
 		return __Maybe_Just(A2(receiver, msg, state));
+	}
+});
+
+const _Scheduler_rawTryRecv = F2((procId, state) => {
+	const inbox = _Scheduler_processInbox.get(procId);
+	/**__DEBUG/
+	if (inbox === undefined) {
+		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
+	}
+	//*/
+	const msg = inbox.shift();
+	if (msg === undefined) {
+		return __Maybe_Nothing;
+	} else {
+		return __Maybe_Just(inbox);
 	}
 });
 

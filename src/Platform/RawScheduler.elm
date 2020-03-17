@@ -26,40 +26,34 @@ import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 
 
-type Task val receive
+type Task val
     = Value val
-    | AsyncAction (DoneCallback val receive -> TryAbortAction)
-    | SyncAction (() -> Task val receive)
-    | Receive (receive -> Task val receive)
-    | TryReceive (Maybe receive -> Task val receive)
+    | AsyncAction (DoneCallback val -> TryAbortAction)
+    | SyncAction (() -> Task val)
 
 
-type alias DoneCallback val receive =
-    Task val receive -> ()
+type alias DoneCallback val =
+    Task val -> ()
 
 
 type alias TryAbortAction =
     () -> ()
 
 
-type ProcessState receive state
-    = Ready (Task state receive)
+type ProcessState msg state
+    = Ready (Task state)
     | Running TryAbortAction
 
 
-type ProcessId msg recv
+type ProcessId msg
     = ProcessId { id : UniqueId }
-
-
-type Channel receive
-    = Channel
 
 
 type UniqueId
     = UniqueId UniqueId
 
 
-andThen : (a -> Task b receive) -> Task a receive -> Task b receive
+andThen : (a -> Task b) -> Task a -> Task b
 andThen func task =
     case task of
         Value val ->
@@ -75,43 +69,16 @@ andThen func task =
                         (\newTask -> doneCallback (andThen func newTask))
                 )
 
-        Receive receiver ->
-            Receive
-                (\message ->
-                    andThen func (receiver message)
-                )
-
-        TryReceive receiver ->
-            TryReceive
-                (\message ->
-                    andThen func (receiver message)
-                )
-
-
-channel : () -> Task (Channel receive) receive
-channel () =
-    Value Channel
-
-
-recv : (receive -> a) -> Channel receive -> Task a receive
-recv fn chl =
-    Receive (\r -> Value (fn r))
-
-
-tryRecv : (Maybe receive -> a) -> Channel receive -> Task a receive
-tryRecv fn chl =
-    TryReceive (\r -> Value (fn r))
-
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : (() -> a) -> Task a receive
+execImpure : (() -> a) -> Task a
 execImpure func =
     SyncAction
         (\() -> Value (func ()))
 
 
-map : (a -> b) -> Task a receive -> Task b receive
+map : (a -> b) -> Task a -> Task b
 map func =
     andThen (\x -> Value (func x))
 
@@ -126,7 +93,7 @@ this process before it has been registered will give a **runtime** error. (It
 may even fail silently in optimized compiles.)
 
 -}
-newProcessId : () -> ProcessId msg recv
+newProcessId : () -> ProcessId msg
 newProcessId () =
     ProcessId { id = getGuid () }
 
@@ -136,7 +103,7 @@ newProcessId () =
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : (msg -> a -> Task a Never) -> Task a Never -> ProcessId msg Never -> ProcessId msg Never
+rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg -> ProcessId msg
 rawSpawn receiver initTask processId =
     enqueue
         (registerNewProcess
@@ -155,7 +122,7 @@ If the process is "ready" it will then act upon the next message in its
 mailbox.
 
 -}
-rawSend : ProcessId msg Never -> msg -> ProcessId msg Never
+rawSend : ProcessId msg -> msg -> ProcessId msg
 rawSend processId msg =
     let
         _ =
@@ -166,7 +133,7 @@ rawSend processId msg =
 
 {-| Create a task, if run, will make the process deal with a message.
 -}
-send : ProcessId msg Never -> msg -> Task () receive
+send : ProcessId msg -> msg -> Task ()
 send processId msg =
     SyncAction
         (\() ->
@@ -180,7 +147,7 @@ send processId msg =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : (msg -> a -> Task a Never) -> Task a Never -> Task (ProcessId msg Never) Never
+spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
 spawn receiver task =
     SyncAction
         (\() -> Value (rawSpawn receiver task (newProcessId ())))
@@ -188,7 +155,7 @@ spawn receiver task =
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
-sleep : Float -> Task () receive
+sleep : Float -> Task ()
 sleep time =
     AsyncAction (delay time (Value ()))
 
@@ -197,11 +164,11 @@ sleep time =
 
 To kill a process we should try to abort any ongoing async action.
 We only allow processes that cannot receive messages to be killed, we will
-allow the offical core library to lead the way regarding processes that can
+on the offical core library to lead the way regarding processes that can
 receive values.
 
 -}
-kill : ProcessId Never Never -> Task () receive
+kill : ProcessId Never -> Task ()
 kill processId =
     SyncAction
         (\() ->
@@ -225,7 +192,7 @@ call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
 
 -}
-enqueue : ProcessId msg recv -> ProcessId msg recv
+enqueue : ProcessId msg -> ProcessId msg
 enqueue id =
     enqueueWithStepper
         (\procId ->
@@ -264,7 +231,7 @@ This function **must** return a process with the **same ID** as
 the process it is passed as an argument
 
 -}
-stepper : ProcessId msg receive -> (Task state receive -> ()) -> ProcessState receive state -> ProcessState receive state
+stepper : ProcessId msg -> (Task state -> ()) -> ProcessState msg state -> ProcessState msg state
 stepper processId onAsyncActionDone process =
     case process of
         Running _ ->
@@ -290,23 +257,6 @@ stepper processId onAsyncActionDone process =
                 onAsyncActionDone
                 (Ready (doEffect ()))
 
-        Ready (Receive receiver) ->
-            case rawTryRecv processId of
-                Just received ->
-                    stepper
-                        processId
-                        onAsyncActionDone
-                        (Ready (receiver received))
-
-                Nothing ->
-                    process
-
-        Ready (TryReceive receiver) ->
-            stepper
-                processId
-                onAsyncActionDone
-                (Ready (receiver (rawTryRecv processId)))
-
 
 
 -- Kernel function redefinitons --
@@ -317,42 +267,37 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-updateProcessState : (ProcessState recv state -> ProcessState recv state) -> ProcessId msg recv -> ProcessState recv state
+updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
 updateProcessState =
     Elm.Kernel.Scheduler.updateProcessState
 
 
-mailboxAdd : msg -> ProcessId msg Never -> msg
+mailboxAdd : msg -> ProcessId msg -> msg
 mailboxAdd =
     Elm.Kernel.Scheduler.mailboxAdd
 
 
-mailboxReceive : ProcessId msg recv -> state -> Maybe (Task state recv)
+mailboxReceive : ProcessId msg -> state -> Maybe (Task state)
 mailboxReceive =
     Elm.Kernel.Scheduler.mailboxReceive
 
 
-rawTryRecv : ProcessId msg receive -> Maybe receive
-rawTryRecv =
-    Elm.Kernel.Scheduler.rawTryRecv
-
-
-getProcessState : ProcessId msg recv -> ProcessState recv state
+getProcessState : ProcessId msg -> ProcessState msg state
 getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-registerNewProcess : ProcessId msg recv -> (msg -> state -> Task state recv) -> ProcessState receive state -> ProcessId msg recv
+registerNewProcess : ProcessId msg -> (msg -> state -> Task state) -> ProcessState msg state -> ProcessId msg
 registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 
 
-enqueueWithStepper : (ProcessId msg recv -> ()) -> ProcessId msg recv -> ProcessId msg recv
+enqueueWithStepper : (ProcessId msg -> ()) -> ProcessId msg -> ProcessId msg
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper
 
 
-delay : Float -> Task val receive -> DoneCallback val receive -> TryAbortAction
+delay : Float -> Task val -> DoneCallback val -> TryAbortAction
 delay =
     Elm.Kernel.Scheduler.delay
 

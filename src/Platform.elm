@@ -43,7 +43,6 @@ import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
 import Platform.Cmd exposing (Cmd)
 import Platform.RawScheduler as RawScheduler
-import Platform.Channel as Channel
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
@@ -141,7 +140,6 @@ type Router appMsg selfMsg
     = Router
         { sendToApp : appMsg -> ()
         , selfProcess : RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
-        , channel : Channel.Channel (ReceivedData appMsg selfMsg)
         }
 
 
@@ -334,48 +332,39 @@ instantiateEffectManager :
     -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
 instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     let
-        receiveMsg :
-            Channel.Channel (ReceivedData appMsg selfMsg)
-            -> state
-            -> (ReceivedData appMsg selfMsg)
-            -> RawScheduler.Task state
-        receiveMsg channel state msg =
+        receiver msg state =
             let
-                task : RawScheduler.Task state
                 task =
                     case msg of
                         Self value ->
-                            onSelfMsg (Router router) value state
+                            onSelfMsg router value state
 
                         App cmds subs ->
-                            onEffects (Router router) cmds subs state
+                            onEffects router cmds subs state
             in
-            task
-                |> RawScheduler.andThen
-                    (\val ->
-                        RawScheduler.map
-                            (\() -> val)
-                            (RawScheduler.sleep 0)
-                    )
-                |> RawScheduler.andThen (\newState -> Channel.recv (receiveMsg channel newState) channel)
+            RawScheduler.andThen
+                (\val ->
+                    RawScheduler.map
+                        (\() -> val)
+                        (RawScheduler.sleep 0)
+                )
+                task
 
-
-        initTask : RawScheduler.Task state
-        initTask =
-            RawScheduler.sleep 0
-                |> RawScheduler.andThen (\_ -> init)
-                |> RawScheduler.andThen (\state -> Channel.recv (receiveMsg router.channel state) router.channel)
+        selfProcessInitRoot =
+            RawScheduler.andThen
+                (\() -> init)
+                (RawScheduler.sleep 0)
 
         selfProcessId =
             RawScheduler.newProcessId ()
 
         router =
-            { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-            , selfProcess = selfProcessId
-            , channel = Channel.channel ()
-            }
+            Router
+                { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
+                , selfProcess = selfProcessId
+                }
     in
-    RawScheduler.rawSpawn initTask selfProcessId
+    RawScheduler.rawSpawn receiver selfProcessInitRoot selfProcessId
 
 
 unwrapTask : Task Never a -> RawScheduler.Task a

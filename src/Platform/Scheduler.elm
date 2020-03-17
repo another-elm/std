@@ -132,7 +132,7 @@ spawn =
         (\task ->
             RawScheduler.map
                 (\proc -> Ok (wrapProcessId proc))
-                (RawScheduler.spawn task)
+                (RawScheduler.spawn (\msg _ -> never msg) task)
         )
 
 
@@ -147,6 +147,7 @@ rawSpawn =
         (\task ->
             wrapProcessId
                 (RawScheduler.rawSpawn
+                    (\msg _ -> never msg)
                     task
                     (RawScheduler.newProcessId ())
                 )

@@ -24,6 +24,7 @@ nicer API. `Platform` cannot import `Platform.Scheduler` as
 import Basics exposing (..)
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
+import Debug
 
 
 type Task val
@@ -103,54 +104,21 @@ newProcessId () =
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg -> ProcessId msg
-rawSpawn receiver initTask processId =
+rawSpawn : Task a -> ProcessId msg -> ProcessId msg
+rawSpawn initTask processId =
     enqueue
         (registerNewProcess
             processId
-            receiver
             (Ready initTask)
-        )
-
-
-{-| NON PURE!
-
-Send a message to a process (adds the message to the processes mailbox) and
-**enqueue** that process.
-
-If the process is "ready" it will then act upon the next message in its
-mailbox.
-
--}
-rawSend : ProcessId msg -> msg -> ProcessId msg
-rawSend processId msg =
-    let
-        _ =
-            mailboxAdd msg processId
-    in
-    enqueue processId
-
-
-{-| Create a task, if run, will make the process deal with a message.
--}
-send : ProcessId msg -> msg -> Task ()
-send processId msg =
-    SyncAction
-        (\() ->
-            let
-                (ProcessId _) =
-                    rawSend processId msg
-            in
-            Value ()
         )
 
 
 {-| Create a task that spawns a processes.
 -}
-spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
-spawn receiver task =
+spawn : Task a -> Task (ProcessId msg)
+spawn task =
     SyncAction
-        (\() -> Value (rawSpawn receiver task (newProcessId ())))
+        (\() -> Value (rawSpawn task (newProcessId ())))
 
 
 {-| Create a task that sleeps for `time` milliseconds
@@ -272,14 +240,14 @@ updateProcessState =
     Elm.Kernel.Scheduler.updateProcessState
 
 
-mailboxAdd : msg -> ProcessId msg -> msg
-mailboxAdd =
-    Elm.Kernel.Scheduler.mailboxAdd
+-- mailboxAdd : msg -> ProcessId msg -> msg
+-- mailboxAdd =
+--     Elm.Kernel.Scheduler.mailboxAdd
 
 
-mailboxReceive : ProcessId msg -> state -> Maybe (Task state)
-mailboxReceive =
-    Elm.Kernel.Scheduler.mailboxReceive
+-- mailboxReceive : ProcessId msg -> state -> Maybe (Task state)
+-- mailboxReceive =
+--     Elm.Kernel.Scheduler.mailboxReceive
 
 
 getProcessState : ProcessId msg -> ProcessState msg state
@@ -287,7 +255,7 @@ getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-registerNewProcess : ProcessId msg -> (msg -> state -> Task state) -> ProcessState msg state -> ProcessId msg
+registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg
 registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 

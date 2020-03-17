@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, delay, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, Channel, channel, andThen, delay, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
 
 {-| This module contains the low level logic for running tasks and processes. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -59,7 +59,7 @@ type UniqueId
     = UniqueId UniqueId
 
 
-andThen : (a -> Task b receive) -> Task a receive -> Task b receive
+andThen : (a -> Task b recv2) -> Task a recv -> Task b recv
 andThen func task =
     case task of
         Value val ->
@@ -136,7 +136,7 @@ newProcessId () =
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : (msg -> a -> Task a Never) -> Task a Never -> ProcessId msg Never -> ProcessId msg Never
+rawSpawn : (msg -> a -> Task a recv) -> Task a recv -> ProcessId msg recv -> ProcessId msg recv
 rawSpawn receiver initTask processId =
     enqueue
         (registerNewProcess

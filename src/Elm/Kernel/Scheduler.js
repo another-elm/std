@@ -40,6 +40,7 @@ function _Scheduler_rawSpawn(task)
 
 var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
+var _Scheduler_readyFlgs = new WeakMap();
 var _Scheduler_receivers = new WeakMap();
 var _Scheduler_mailboxes = new WeakMap();
 
@@ -66,12 +67,12 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 	//*/
 	const updatedState = func(procState);
 	/**__DEBUG/
-	if (procState !==  _Scheduler_processes.get(id)) {
+	if (procState !== _Scheduler_processes.get(id)) {
 		__Debug_crash(12, 'reentrantProcUpdate', id && id.a && id.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(id, updatedState);
-	return procState;
+	return _Utils_Tuple0;
 });
 
 var _Scheduler_registerNewProcess = F3((procId, receiver, procState) => {
@@ -147,7 +148,23 @@ var _Scheduler_delay = F3(function (time, value, callback)
 });
 
 
-const _Scheduler_runOnNextTick = F2((callback, val) => {
-	Promise.resolve(val).then(callback);
+const _Scheduler_getWokenValue = procId => {
+	const flag = _Scheduler_readyFlgs.get(procId);
+	if (flag === undefined) {
+		return __Maybe_Nothing;
+	} else {
+		_Scheduler_readyFlgs.delete(procId);
+		return __Maybe_Just(flag);
+	}
+};
+
+
+const _Scheduler_setWakeTask = F2((procId, newRoot) => {
+	/**__DEBUG/
+	if (_Scheduler_readyFlgs.has(procId)) {
+		__Debug_crash(12, 'procIdAlreadyReady', procId && procId.a && procId.a.__$id);
+	}
+	//*/
+	_Scheduler_readyFlgs.set(procId, newRoot);
 	return _Utils_Tuple0;
 });

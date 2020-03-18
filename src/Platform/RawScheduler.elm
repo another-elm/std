@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, delay, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
 
 {-| This module contains the low level logic for running tasks and processes. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -195,29 +195,7 @@ Returns the enqueued `Process`.
 enqueue : ProcessId msg -> ProcessId msg
 enqueue id =
     enqueueWithStepper
-        (\procId ->
-            let
-                onAsyncActionDone =
-                    runOnNextTick
-                        (\newRoot ->
-                            let
-                                _ =
-                                    updateProcessState
-                                        (\_ -> Ready newRoot)
-                                        procId
-                            in
-                            let
-                                (ProcessId _) =
-                                    enqueue procId
-                            in
-                            ()
-                        )
-
-                _ =
-                    updateProcessState (stepper procId onAsyncActionDone) procId
-            in
-            ()
-        )
+        (\procId -> updateProcessState (stepper procId) procId)
         id
 
 
@@ -231,33 +209,50 @@ This function **must** return a process with the **same ID** as
 the process it is passed as an argument
 
 -}
-stepper : ProcessId msg -> (Task state -> ()) -> ProcessState msg state -> ProcessState msg state
-stepper processId onAsyncActionDone process =
+stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
+stepper processId process =
     case process of
         Running _ ->
-            process
-
-        Ready (Value val) ->
-            case mailboxReceive processId val of
-                Just newRoot ->
-                    stepper
-                        processId
-                        onAsyncActionDone
-                        (Ready newRoot)
+            case getWokenValue processId of
+                Just root ->
+                    createStateWithRoot processId root
 
                 Nothing ->
                     process
 
-        Ready (AsyncAction doEffect) ->
-            Running (doEffect onAsyncActionDone)
-
-        Ready (SyncAction doEffect) ->
-            stepper
-                processId
-                onAsyncActionDone
-                (Ready (doEffect ()))
+        Ready root ->
+            createStateWithRoot processId root
 
 
+createStateWithRoot : ProcessId msg -> Task state -> ProcessState msg state
+createStateWithRoot processId root =
+    case root of
+        Value val ->
+            case mailboxReceive processId val of
+                Just newRoot ->
+                    createStateWithRoot processId newRoot
+
+                Nothing ->
+                    Ready (Value val)
+
+        AsyncAction doEffect ->
+            Running
+                (doEffect
+                    (\newRoot ->
+                        let
+                            () =
+                                setWakeTask processId newRoot
+                        in
+                        let
+                            (ProcessId _) =
+                                enqueue processId
+                        in
+                        ()
+                    )
+                )
+
+        SyncAction doEffect ->
+            createStateWithRoot processId (doEffect ())
 
 -- Kernel function redefinitons --
 
@@ -267,7 +262,7 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessState msg state
+updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ()
 updateProcessState =
     Elm.Kernel.Scheduler.updateProcessState
 
@@ -302,6 +297,11 @@ delay =
     Elm.Kernel.Scheduler.delay
 
 
-runOnNextTick : (a -> ()) -> a -> ()
-runOnNextTick =
-    Elm.Kernel.Scheduler.runOnNextTick
+getWokenValue : ProcessId msg -> Maybe (Task state)
+getWokenValue =
+    Elm.Kernel.Scheduler.getWokenValue
+
+
+setWakeTask : ProcessId msg -> Task state -> ()
+setWakeTask =
+    Elm.Kernel.Scheduler.setWakeTask

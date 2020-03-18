@@ -148,7 +148,7 @@ be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
-    Task (RawScheduler.SyncAction (\() -> RawScheduler.Value (Ok (router.sendToApp msg))))
+    Task (RawScheduler.execImpure (\() -> Ok (router.sendToApp msg)))
 
 
 {-| Send the router a message for your effect manager. This message will

@@ -29,7 +29,6 @@ import Maybe exposing (Maybe(..))
 type Task val
     = Value val
     | AsyncAction (DoneCallback val -> TryAbortAction)
-    | SyncAction (() -> Task val)
 
 
 type alias DoneCallback val =
@@ -59,9 +58,6 @@ andThen func task =
         Value val ->
             func val
 
-        SyncAction thunk ->
-            SyncAction (\() -> andThen func (thunk ()))
-
         AsyncAction doEffect ->
             AsyncAction
                 (\doneCallback ->
@@ -74,8 +70,14 @@ andThen func task =
 -}
 execImpure : (() -> a) -> Task a
 execImpure func =
-    SyncAction
-        (\() -> Value (func ()))
+    AsyncAction
+        (\doneCallback ->
+            let
+                () =
+                    doneCallback (Value (func ()))
+            in
+            \() -> ()
+        )
 
 
 map : (a -> b) -> Task a -> Task b
@@ -135,13 +137,13 @@ rawSend processId msg =
 -}
 send : ProcessId msg -> msg -> Task ()
 send processId msg =
-    SyncAction
+    execImpure
         (\() ->
             let
                 (ProcessId _) =
                     rawSend processId msg
             in
-            Value ()
+            ()
         )
 
 
@@ -149,8 +151,7 @@ send processId msg =
 -}
 spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
 spawn receiver task =
-    SyncAction
-        (\() -> Value (rawSpawn receiver task (newProcessId ())))
+    execImpure (\() -> rawSpawn receiver task (newProcessId ()))
 
 
 {-| Create a task that sleeps for `time` milliseconds
@@ -170,18 +171,14 @@ receive values.
 -}
 kill : ProcessId Never -> Task ()
 kill processId =
-    SyncAction
+    execImpure
         (\() ->
-            let
-                () =
-                    case getProcessState processId of
-                        Running killer ->
-                            killer ()
+            case getProcessState processId of
+                Running killer ->
+                    killer ()
 
-                        Ready _ ->
-                            ()
-            in
-            Value ()
+                Ready _ ->
+                    ()
         )
 
 
@@ -251,8 +248,7 @@ createStateWithRoot processId root =
                     )
                 )
 
-        SyncAction doEffect ->
-            createStateWithRoot processId (doEffect ())
+
 
 -- Kernel function redefinitons --
 

@@ -34,6 +34,9 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
 	}
 
+	const managers = {};
+	const ports = {};
+
 	const dispatch = (model, cmds) => {
 		_Platform_effectsQueue.push({
 			__cmds: cmds,
@@ -70,8 +73,6 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		dispatch(model, updateValue.b);
 	});
 
-	const managers = {};
-	const ports = {};
 	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
 		managers[key] = __setup(functions.__$setupEffects, sendToApp);
 	}

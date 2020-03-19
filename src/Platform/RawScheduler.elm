@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, andThen, execImpure, kill, map, newProcessId, rawSend, rawSpawn, send, sleep, spawn)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, UniqueId, andThen, execImpure, getGuid, kill, map, newProcessId, rawSpawn, sleep, spawn)
 
 {-| This module contains the low level logic for running tasks and processes. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -22,6 +22,7 @@ nicer API. `Platform` cannot import `Platform.Scheduler` as
 -}
 
 import Basics exposing (..)
+import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 
@@ -90,9 +91,11 @@ map func =
 Will not register the new process id, just create it. To run any tasks using
 this process it needs to be registered, for that use `rawSpawn`.
 
-**WARNING**: trying to enqueue (for example by calling `rawSend` or `send`)
-this process before it has been registered will give a **runtime** error. (It
-may even fail silently in optimized compiles.)
+**WARNING**: trying to enqueue this process before it has been registered will
+give a **runtime** error. (It may fail silently in optimized compiles.)
+
+TODO(harry): It might be impossible to enqueue this process now `send` is not
+function.
 
 -}
 newProcessId : () -> ProcessId msg
@@ -105,53 +108,20 @@ newProcessId () =
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : (msg -> a -> Task a) -> Task a -> ProcessId msg -> ProcessId msg
-rawSpawn receiver initTask processId =
+rawSpawn : Task a -> ProcessId msg -> ProcessId msg
+rawSpawn initTask processId =
     enqueue
         (registerNewProcess
             processId
-            receiver
             (Ready initTask)
-        )
-
-
-{-| NON PURE!
-
-Send a message to a process (adds the message to the processes mailbox) and
-**enqueue** that process.
-
-If the process is "ready" it will then act upon the next message in its
-mailbox.
-
--}
-rawSend : ProcessId msg -> msg -> ProcessId msg
-rawSend processId msg =
-    let
-        _ =
-            mailboxAdd msg processId
-    in
-    enqueue processId
-
-
-{-| Create a task, if run, will make the process deal with a message.
--}
-send : ProcessId msg -> msg -> Task ()
-send processId msg =
-    execImpure
-        (\() ->
-            let
-                (ProcessId _) =
-                    rawSend processId msg
-            in
-            ()
         )
 
 
 {-| Create a task that spawns a processes.
 -}
-spawn : (msg -> a -> Task a) -> Task a -> Task (ProcessId msg)
-spawn receiver task =
-    execImpure (\() -> rawSpawn receiver task (newProcessId ()))
+spawn : Task a -> Task (ProcessId msg)
+spawn task =
+    execImpure (\() -> rawSpawn task (newProcessId ()))
 
 
 {-| Create a task that sleeps for `time` milliseconds
@@ -225,12 +195,7 @@ createStateWithRoot : ProcessId msg -> Task state -> ProcessState msg state
 createStateWithRoot processId root =
     case root of
         Value val ->
-            case mailboxReceive processId val of
-                Just newRoot ->
-                    createStateWithRoot processId newRoot
-
-                Nothing ->
-                    Ready (Value val)
+            Ready (Value val)
 
         AsyncAction doEffect ->
             Running
@@ -263,22 +228,12 @@ updateProcessState =
     Elm.Kernel.Scheduler.updateProcessState
 
 
-mailboxAdd : msg -> ProcessId msg -> msg
-mailboxAdd =
-    Elm.Kernel.Scheduler.mailboxAdd
-
-
-mailboxReceive : ProcessId msg -> state -> Maybe (Task state)
-mailboxReceive =
-    Elm.Kernel.Scheduler.mailboxReceive
-
-
 getProcessState : ProcessId msg -> ProcessState msg state
 getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-registerNewProcess : ProcessId msg -> (msg -> state -> Task state) -> ProcessState msg state -> ProcessId msg
+registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg
 registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 

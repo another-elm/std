@@ -41,6 +41,7 @@ import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
+import Platform.Channel as Channel
 import Platform.Cmd exposing (Cmd)
 import Platform.RawScheduler as RawScheduler
 import Platform.Sub exposing (Sub)
@@ -140,6 +141,7 @@ type Router appMsg selfMsg
     = Router
         { sendToApp : appMsg -> ()
         , selfProcess : RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+        , channel : Channel.Channel (ReceivedData appMsg selfMsg)
         }
 
 
@@ -160,14 +162,14 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task (RawScheduler.map Ok (RawScheduler.send router.selfProcess (Self msg)))
+    Task (RawScheduler.map Ok (Channel.send router.channel (Self msg)))
 
 
 
 -- HELPERS --
 
 
-setupOutgoingPort : (Encode.Value -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
+setupOutgoingPort : (Encode.Value -> ()) -> Channel.Channel (ReceivedData Never Never)
 setupOutgoingPort outgoingPortSend =
     let
         init =
@@ -200,7 +202,7 @@ setupOutgoingPort outgoingPortSend =
 setupIncomingPort :
     SendToApp msg
     -> (List (HiddenMySub msg) -> ())
-    -> ( RawScheduler.ProcessId (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
+    -> ( Channel.Channel (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
@@ -229,7 +231,7 @@ dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
     -> Bag.EffectManagerName
-    -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
+    -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
     -> ()
 dispatchEffects cmdBag subBag =
     let
@@ -238,7 +240,7 @@ dispatchEffects cmdBag subBag =
                 |> gatherCmds cmdBag
                 |> gatherSubs subBag
     in
-    \key selfProcess ->
+    \key channel ->
         let
             ( cmdList, subList ) =
                 Maybe.withDefault
@@ -246,8 +248,8 @@ dispatchEffects cmdBag subBag =
                     (Dict.get (effectManagerNameToString key) effectsDict)
 
             _ =
-                RawScheduler.rawSend
-                    selfProcess
+                Channel.rawSend
+                    channel
                     (App (createHiddenMyCmdList cmdList) (createHiddenMySubList subList))
         in
         ()
@@ -315,7 +317,7 @@ setupEffects :
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+    -> Channel.Channel (ReceivedData appMsg selfMsg)
 setupEffects sendToAppFunc init onEffects onSelfMsg =
     instantiateEffectManager
         sendToAppFunc
@@ -329,42 +331,53 @@ instantiateEffectManager :
     -> RawScheduler.Task state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawScheduler.Task state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> RawScheduler.Task state)
-    -> RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
+    -> Channel.Channel (ReceivedData appMsg selfMsg)
 instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     let
-        receiver msg state =
+        receiveMsg :
+            Channel.Channel (ReceivedData appMsg selfMsg)
+            -> state
+            -> ReceivedData appMsg selfMsg
+            -> RawScheduler.Task state
+        receiveMsg channel state msg =
             let
+                task : RawScheduler.Task state
                 task =
                     case msg of
                         Self value ->
-                            onSelfMsg router value state
+                            onSelfMsg (Router router) value state
 
                         App cmds subs ->
-                            onEffects router cmds subs state
+                            onEffects (Router router) cmds subs state
             in
-            RawScheduler.andThen
-                (\val ->
-                    RawScheduler.map
-                        (\() -> val)
-                        (RawScheduler.sleep 0)
-                )
-                task
+            task
+                |> RawScheduler.andThen
+                    (\val ->
+                        RawScheduler.map
+                            (\() -> val)
+                            (RawScheduler.sleep 0)
+                    )
+                |> RawScheduler.andThen (\newState -> Channel.recv (receiveMsg channel newState) channel)
 
-        selfProcessInitRoot =
-            RawScheduler.andThen
-                (\() -> init)
-                (RawScheduler.sleep 0)
+        initTask : RawScheduler.Task state
+        initTask =
+            RawScheduler.sleep 0
+                |> RawScheduler.andThen (\_ -> init)
+                |> RawScheduler.andThen (\state -> Channel.recv (receiveMsg router.channel state) router.channel)
 
         selfProcessId =
             RawScheduler.newProcessId ()
 
         router =
-            Router
-                { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-                , selfProcess = selfProcessId
-                }
+            { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
+            , selfProcess = selfProcessId
+            , channel = Channel.rawCreateChannel ()
+            }
+
+        _ =
+            RawScheduler.rawSpawn initTask selfProcessId
     in
-    RawScheduler.rawSpawn receiver selfProcessInitRoot selfProcessId
+    router.channel
 
 
 unwrapTask : Task Never a -> RawScheduler.Task a
@@ -437,22 +450,22 @@ type alias Impl flags model msg =
 
 type alias InitFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupOutgoingPort : (Encode.Value -> ()) -> RawScheduler.ProcessId (ReceivedData Never Never)
+    , setupOutgoingPort : (Encode.Value -> ()) -> Channel.Channel (ReceivedData Never Never)
     , setupIncomingPort :
         SendToApp appMsg
         -> (List (HiddenMySub appMsg) -> ())
-        -> ( RawScheduler.ProcessId (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
+        -> ( Channel.Channel (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
     , setupEffects :
         SendToApp appMsg
         -> Task Never HiddenState
         -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
         -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
+        -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
         -> Bag.EffectManagerName
-        -> RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)
+        -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
         -> ()
     }
 

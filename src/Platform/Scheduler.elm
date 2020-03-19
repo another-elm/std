@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (DoneCallback, ProcessId, TryAbortAction, andThen, binding, fail, kill, onError, rawSpawn, send, sleep, spawn, succeed)
+module Platform.Scheduler exposing (DoneCallback, ProcessId, TryAbortAction, andThen, binding, fail, kill, onError, rawSpawn, sleep, spawn, succeed)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -114,13 +114,6 @@ onError func =
         )
 
 
-{-| Create a task, if run, will make the process deal with a message.
--}
-send : ProcessId msg -> msg -> Platform.Task never ()
-send proc msg =
-    wrapTask (RawScheduler.map Ok (RawScheduler.send proc msg))
-
-
 {-| Create a task that, when run, will spawn a process.
 
 There is no way to send messages to a process spawned in this way.
@@ -132,7 +125,7 @@ spawn =
         (\task ->
             RawScheduler.map
                 (\proc -> Ok (wrapProcessId proc))
-                (RawScheduler.spawn (\msg _ -> never msg) task)
+                (RawScheduler.spawn task)
         )
 
 
@@ -147,7 +140,6 @@ rawSpawn =
         (\task ->
             wrapProcessId
                 (RawScheduler.rawSpawn
-                    (\msg _ -> never msg)
                     task
                     (RawScheduler.newProcessId ())
                 )

@@ -41,8 +41,6 @@ function _Scheduler_rawSpawn(task)
 var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
 var _Scheduler_readyFlgs = new WeakMap();
-var _Scheduler_receivers = new WeakMap();
-var _Scheduler_mailboxes = new WeakMap();
 
 function _Scheduler_getGuid() {
 	return _Scheduler_guid++;
@@ -75,45 +73,17 @@ var _Scheduler_updateProcessState = F2((func, id) => {
 	return _Utils_Tuple0;
 });
 
-var _Scheduler_registerNewProcess = F3((procId, receiver, procState) => {
+var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	/**__DEBUG/
-	if (procState === undefined) {
+	if (_Scheduler_processes.has(procId)) {
 		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);
-	_Scheduler_receivers.set(procId, receiver);
-	_Scheduler_mailboxes.set(procId, []);
 	return procId;
 });
 
 
-var _Scheduler_mailboxAdd = F2((message, procId) => {
-	const mailbox = _Scheduler_mailboxes.get(procId);
-	/**__DEBUG/
-	if (mailbox === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
-	}
-	//*/
-	mailbox.push(message);
-	return procId;
-});
-
-const _Scheduler_mailboxReceive = F2((procId, state) => {
-	const receiver = _Scheduler_receivers.get(procId);
-	const mailbox = _Scheduler_mailboxes.get(procId);
-	/**__DEBUG/
-	if (receiver === undefined || mailbox === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', procId && procId.a && procId.a.__$id);
-	}
-	//*/
-	const msg = mailbox.shift();
-	if (msg === undefined) {
-		return __Maybe_Nothing;
-	} else {
-		return __Maybe_Just(A2(receiver, msg, state));
-	}
-});
 
 var _Scheduler_working = false;
 var _Scheduler_queue = [];
@@ -166,5 +136,57 @@ const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 	}
 	//*/
 	_Scheduler_readyFlgs.set(procId, newRoot);
+	return _Utils_Tuple0;
+});
+
+
+// CHANNELS
+
+const _Scheduler_channels = new WeakMap();
+
+const _Scheduler_registerChannel = channelId => {
+	_Scheduler_channels.set(channelId, {
+		messages: [],
+		wakers: new Set(),
+	});
+	return channel;
+}
+
+const _Scheduler_rawRecv = F2((channelId, onMsg) => {
+	const channel = _Scheduler_channels.get(channelId);
+	/**__DEBUG/
+	if (channel === undefined) {
+		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+	}
+	//*/
+	const msg = channel.messages.shift();
+	if (msg === undefined) {
+		const onWake = msg => onMsg(msg);
+		channel.wakers.add(onWake);
+		return x => {
+			channel.wakers.delete(onWake);
+			return x;
+		};
+	} else {
+		onMsg(msg);
+		return x => x;
+	}
+});
+
+const _Scheduler_rawSend = F2((channelId, msg) => {
+	const channel = _Scheduler_channels.get(channelId);
+	/**__DEBUG/
+	if (channel === undefined) {
+		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+	}
+	//*/
+
+	const wakerIter = channel.wakers[Symbol.iterator]();
+	const { value: nextWaker, done } = wakerIter.next();
+	if (done) {
+		channel.messages.push(msg);
+	} else {
+		nextWaker(msg);
+	}
 	return _Utils_Tuple0;
 });

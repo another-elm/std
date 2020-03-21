@@ -11,8 +11,8 @@ import Platform exposing (Task, ProcessId)
 
 // State
 
-var _Platform_outgoingPorts = {};
-var _Platform_incomingPorts = {};
+var _Platform_outgoingPorts = new Map();
+var _Platform_incomingPorts = new Map();
 var _Platform_effectManagers = {};
 
 var _Platform_effectsQueue = [];
@@ -34,7 +34,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
 	}
 
-	const selfSenders = {};
+	const selfSenders = new Map();
 	const ports = {};
 
 	const dispatch = (model, cmds) => {
@@ -59,8 +59,8 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 				fx.__cmds,
 				fx.__subs,
 			);
-			for (const key in selfSenders) {
-				A2(dispatcher, key, selfSenders[key]);
+			for (const [key, selfSender] of selfSenders.entries()) {
+				A2(dispatcher, key, selfSender);
 			}
 		}
 	}
@@ -73,21 +73,20 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	});
 
 	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
-		selfSenders[key] = __setup(functions.__$setupEffects, sendToApp);
+		selfSenders.set(key, __setup(functions.__$setupEffects, sendToApp));
 	}
-	for (const [key, setup] of Object.entries(_Platform_outgoingPorts)) {
+	for (const [key, setup] of _Platform_outgoingPorts.entries()) {
 		const {port, manager} = setup(functions.__$setupOutgoingPort);
 		ports[key] = port;
-		selfSenders[key] = manager;
+		selfSenders.set(key, manager);
 	}
-	for (const [key, setup] of Object.entries(_Platform_incomingPorts))
-	{
+	for (const [key, setup] of _Platform_incomingPorts.entries())	{
 		const {port, manager} = setup(
 			functions.__$setupIncomingPort,
 			sendToApp
 		);
 		ports[key] = port;
-		selfSenders[key] = manager;
+		selfSenders.set(key, manager);
 	}
 
 	const initValue = impl.__$init(flagsResult.a);
@@ -206,7 +205,7 @@ function _Platform_checkPortName(name)
 function _Platform_outgoingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_outgoingPorts[name] = setup => {
+	_Platform_outgoingPorts.set(name, setup => {
 		let subs = [];
 		const subscribe = callback => {
 			subs.push(callback);
@@ -236,7 +235,7 @@ function _Platform_outgoingPort(name, converter)
 			},
 			manager: setup(outgoingPortSend),
 		}
-	}
+	});
 
 	return _Platform_leaf(name)
 }
@@ -245,7 +244,7 @@ function _Platform_outgoingPort(name, converter)
 function _Platform_incomingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_incomingPorts[name] = function(setup, sendToApp) {
+	_Platform_incomingPorts.set(name, function(setup, sendToApp) {
 		let subs = __List_Nil;
 
 		function updateSubs(subsList) {
@@ -270,7 +269,7 @@ function _Platform_incomingPort(name, converter)
 			},
 			manager: setupTuple.a,
 		}
-	}
+	});
 
 	return _Platform_leaf(name)
 }
@@ -283,7 +282,7 @@ const _Platform_effectManagerNameToString = name => name;
 
 
 const _Platform_getCmdMapper = home => {
-	if (_Platform_outgoingPorts.hasOwnProperty(home)) {
+	if (_Platform_outgoingPorts.has(home)) {
 		return F2((_tagger, value) => value);
 	}
 	return _Platform_effectManagers[home].__cmdMapper;
@@ -291,7 +290,7 @@ const _Platform_getCmdMapper = home => {
 
 
 const _Platform_getSubMapper = home => {
-	if (_Platform_incomingPorts.hasOwnProperty(home)) {
+	if (_Platform_incomingPorts.has(home)) {
 		return F2((tagger, finalTagger) => value => tagger(finalTagger(value)));
 	}
 	return _Platform_effectManagers[home].__subMapper;

@@ -186,6 +186,7 @@ const _Scheduler_rawSend = F2((channelId, msg) => {
 	if (done) {
 		channel.messages.push(msg);
 	} else {
+		channel.wakers.delete(nextWaker);
 		nextWaker(msg);
 	}
 	return _Utils_Tuple0;

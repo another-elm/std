@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Sender, Receiver, unbounded, rawUnbounded, rawSend, recv, send)
+module Platform.Raw.Channel exposing (Sender, Receiver, unbounded, rawUnbounded, rawSend, recv, send, mapSender)
 
 import Basics exposing (..)
 import Debug
@@ -6,10 +6,11 @@ import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
+import Tuple
 
 
 type Sender msg
-    = Sender
+    = Sender (msg -> ())
 
 
 type Receiver msg
@@ -33,8 +34,8 @@ message will be added to the channel's queue.
 
 -}
 rawSend : Sender msg -> msg -> ()
-rawSend =
-    Elm.Kernel.Scheduler.rawSend
+rawSend (Sender sender) =
+    sender
 
 
 {-| Create a task, if run, will send a message to a channel.
@@ -45,8 +46,9 @@ send channelId msg =
 
 
 rawUnbounded : () -> (Sender msg, Receiver msg)
-rawUnbounded =
-    Elm.Kernel.Scheduler.rawUnbounded
+rawUnbounded () =
+    Elm.Kernel.Scheduler.rawUnbounded ()
+        |> Tuple.mapFirst Sender
 
 
 unbounded : () -> RawTask.Task (Sender msg, Receiver msg)
@@ -58,3 +60,12 @@ rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
 rawRecv =
     Elm.Kernel.Scheduler.rawRecv
 
+
+mapSender : (b -> a) -> Sender a -> Sender b
+mapSender fn (Sender sender) =
+    Sender (\b -> sender (fn b))
+
+
+rawUnboundedKernel : () -> (msg -> (), Receiver msg)
+rawUnboundedKernel =
+    Elm.Kernel.Scheduler.rawUnbounded

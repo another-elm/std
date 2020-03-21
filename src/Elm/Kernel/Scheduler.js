@@ -164,7 +164,7 @@ const _Scheduler_rawUnbounded = _ => {
 		messages: [],
 		wakers: new Set(),
 	});
-	return _Utils_Tuple2(id, id);
+	return _Utils_Tuple2(_Scheduler_rawSend(id), id);
 }
 
 const _Scheduler_rawRecv = F2((channelId, onMsg) => {

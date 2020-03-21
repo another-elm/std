@@ -50,28 +50,12 @@ function _Scheduler_getProcessState(id) {
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.id);
+		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.__$id);
 	}
 	//*/
 	return procState;
 }
 
-var _Scheduler_updateProcessState = F2((func, id) => {
-	const procState = _Scheduler_processes.get(id);
-	/**__DEBUG/
-	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.__$id);
-	}
-	//*/
-	const updatedState = func(procState);
-	/**__DEBUG/
-	if (procState !== _Scheduler_processes.get(id)) {
-		__Debug_crash(12, 'reentrantProcUpdate', id && id.a && id.a.__$id);
-	}
-	//*/
-	_Scheduler_processes.set(id, updatedState);
-	return _Utils_Tuple0;
-});
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	/**__DEBUG/
@@ -85,27 +69,49 @@ var _Scheduler_registerNewProcess = F2((procId, procState) => {
 
 
 
-var _Scheduler_working = false;
-var _Scheduler_queue = [];
+const _Scheduler_enqueueWithStepper = stepper => {
+	let working = false;
+	const queue = [];
 
-var _Scheduler_enqueueWithStepper = F2(function(stepper, procId)
-{
-	_Scheduler_queue.push(procId);
-	if (_Scheduler_working)
-	{
-		return procId;
-	}
-	_Scheduler_working = true;
-	while (true)
-	{
-		const newProcId = _Scheduler_queue.shift();
-		if (newProcId === undefined) {
-			_Scheduler_working = false;
+	const stepProccessWithId = newProcId => {
+		const procState = _Scheduler_processes.get(newProcId);
+		/**__DEBUG/
+		if (procState === undefined) {
+			__Debug_crash(12, 'procIdNotRegistered', newProcId && newProcId.a && newProcId.a.__$id);
+		}
+		//*/
+		const updatedState = A2(stepper, newProcId, procState);
+		/**__DEBUG/
+		if (procState !== _Scheduler_processes.get(newProcId)) {
+			__Debug_crash(12, 'reentrantProcUpdate', newProcId && newProcId.a && newProcId.a.__$id);
+		}
+		//*/
+		_Scheduler_processes.set(newProcId, updatedState);
+	};
+
+	return procId => {
+		/**__DEBUG/
+		if (queue.some(p => p.a.__$id === procId.a.__$id)) {
+			__Debug_crash(12, 'procIdAlreadyInQueue', procId && procId.a && procId.a.__$id);
+		}
+		//*/
+		queue.push(procId);
+		if (working)
+		{
 			return procId;
 		}
-		stepper(newProcId);
-	}
-});
+		working = true;
+		while (true)
+		{
+			const newProcId = queue.shift();
+			if (newProcId === undefined) {
+				working = false;
+				return procId;
+			}
+			stepProccessWithId(newProcId);
+		}
+	};
+};
 
 
 var _Scheduler_delay = F3(function (time, value, callback)
@@ -132,7 +138,12 @@ const _Scheduler_getWokenValue = procId => {
 const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 	/**__DEBUG/
 	if (_Scheduler_readyFlgs.has(procId)) {
-		__Debug_crash(12, 'procIdAlreadyReady', procId && procId.a && procId.a.__$id);
+		__Debug_crash(
+			12,
+			'procIdAlreadyReady',
+			procId && procId.a && procId.a.__$id,
+			_Scheduler_readyFlgs.get(procId)
+		);
 	}
 	//*/
 	_Scheduler_readyFlgs.set(procId, newRoot);
@@ -149,7 +160,7 @@ const _Scheduler_registerChannel = channelId => {
 		messages: [],
 		wakers: new Set(),
 	});
-	return channel;
+	return channelId;
 }
 
 const _Scheduler_rawRecv = F2((channelId, onMsg) => {
@@ -161,7 +172,9 @@ const _Scheduler_rawRecv = F2((channelId, onMsg) => {
 	//*/
 	const msg = channel.messages.shift();
 	if (msg === undefined) {
-		const onWake = msg => onMsg(msg);
+		const onWake = msg => {
+			return onMsg(msg);
+		}
 		channel.wakers.add(onWake);
 		return x => {
 			channel.wakers.delete(onWake);

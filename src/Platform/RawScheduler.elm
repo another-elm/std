@@ -160,10 +160,8 @@ Returns the enqueued `Process`.
 
 -}
 enqueue : ProcessId msg -> ProcessId msg
-enqueue id =
-    enqueueWithStepper
-        (\procId -> updateProcessState (stepper procId) procId)
-        id
+enqueue =
+    enqueueWithStepper stepper
 
 
 
@@ -223,11 +221,6 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-updateProcessState : (ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ()
-updateProcessState =
-    Elm.Kernel.Scheduler.updateProcessState
-
-
 getProcessState : ProcessId msg -> ProcessState msg state
 getProcessState =
     Elm.Kernel.Scheduler.getProcessState
@@ -238,7 +231,7 @@ registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 
 
-enqueueWithStepper : (ProcessId msg -> ()) -> ProcessId msg -> ProcessId msg
+enqueueWithStepper : (ProcessId msg -> ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessId msg
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper
 

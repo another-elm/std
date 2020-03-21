@@ -325,11 +325,13 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 					case 'earlyMsg':
 						throw new Error(`Bug in elm runtime: an event manager received a message before it was ready.`);
+
+					case 'procIdAlreadyReady':
+						throw new Error(`Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`);
 				}
 				throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
 			}
 	}
-	throw new Error(`Unknown error id: ${identifier}!`);
 }
 
 function _Debug_regionToString(region)

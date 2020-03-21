@@ -34,7 +34,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		__Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
 	}
 
-	const managers = {};
+	const selfSenders = {};
 	const ports = {};
 
 	const dispatch = (model, cmds) => {
@@ -59,9 +59,8 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 				fx.__cmds,
 				fx.__subs,
 			);
-			for (const key in managers) {
-				// console.log(managers[key]);
-				A2(dispatcher, key, managers[key]);
+			for (const key in selfSenders) {
+				A2(dispatcher, key, selfSenders[key]);
 			}
 		}
 	}
@@ -74,12 +73,12 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	});
 
 	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
-		managers[key] = __setup(functions.__$setupEffects, sendToApp);
+		selfSenders[key] = __setup(functions.__$setupEffects, sendToApp);
 	}
 	for (const [key, setup] of Object.entries(_Platform_outgoingPorts)) {
 		const {port, manager} = setup(functions.__$setupOutgoingPort);
 		ports[key] = port;
-		managers[key] = manager;
+		selfSenders[key] = manager;
 	}
 	for (const [key, setup] of Object.entries(_Platform_incomingPorts))
 	{
@@ -88,7 +87,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 			sendToApp
 		);
 		ports[key] = port;
-		managers[key] = manager;
+		selfSenders[key] = manager;
 	}
 
 	const initValue = impl.__$init(flagsResult.a);
@@ -122,7 +121,20 @@ function _Platform_registerPreload(url)
 
 /* Called by compiler generated js when creating event mangers.
  *
- * This function will **always** be call right after page load.
+ * This function will **always** be call right after page load like this:
+ *
+ * 		_Platform_effectManagers['XXX'] =
+ * 			_Platform_createManager($init, $onEffects, $onSelfMsg, $cmdMap);
+ *
+ * or
+ *
+ * 		_Platform_effectManagers['XXX'] =
+ * 			_Platform_createManager($init, $onEffects, $onSelfMsg, 0, $subMap);
+ *
+ * or
+ *
+ * 		_Platform_effectManagers['XXX'] =
+ * 			_Platform_createManager($init, $onEffects, $onSelfMsg, $cmdMap, $subMap);
  */
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 {

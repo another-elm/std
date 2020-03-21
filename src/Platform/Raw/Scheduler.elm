@@ -1,23 +1,7 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, UniqueId, andThen, execImpure, getGuid, kill, map, rawSpawn, sleep, spawn)
+module Platform.Raw.Scheduler exposing (UniqueId, ProcessId, getGuid, kill, rawSpawn, spawn)
 
-{-| This module contains the low level logic for running tasks and processes. A
-`Task` is a sequence of actions (either syncronous or asyncronous) that will be
-run in order by the runtime. A process (outside this module a process is
-accessed and manipulated using its unique id) is a task paired with a
-"receiver". If a process is sent a message (using the `send` function) it is
-added to the processes mailbox. When the process completes execution of its
-current `Task` (or immediately if it has already finished execution of its
-`Task`) it will envoke its receiver function with the oldest message in the
-mailbox and the final state of its `Task`. The receiver function should produce
-a new `Task` for the process to execute.
-
-Processes spawned by user elm code (using `Process.spawn`) cannot receive
-messages so will execute their initial `Task` and then die.
-
-Only two modules should import this module directly `Platform.Scheduler` and
-`Platform`. All other modules should import `Platform.Scheduler` which has a
-nicer API. `Platform` cannot import `Platform.Scheduler` as
-`Platfrom.Scheduler` imports `Platform` and elm does not allow import cycles.
+{-| This module contains the low level logic for processes. A process is a
+unique id used to execute tasks.
 
 -}
 
@@ -26,23 +10,12 @@ import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 
-
-type Task val
-    = Value val
-    | AsyncAction (DoneCallback val -> TryAbortAction)
-
-
-type alias DoneCallback val =
-    Task val -> ()
-
-
-type alias TryAbortAction =
-    () -> ()
+import Platform.Raw.Task as RawTask
 
 
 type ProcessState msg state
-    = Ready (Task state)
-    | Running TryAbortAction
+    = Ready (RawTask.Task state)
+    | Running RawTask.TryAbortAction
 
 
 type ProcessId msg
@@ -53,45 +26,12 @@ type UniqueId
     = UniqueId UniqueId
 
 
-andThen : (a -> Task b) -> Task a -> Task b
-andThen func task =
-    case task of
-        Value val ->
-            func val
-
-        AsyncAction doEffect ->
-            AsyncAction
-                (\doneCallback ->
-                    doEffect
-                        (\newTask -> doneCallback (andThen func newTask))
-                )
-
-
-{-| Create a task that executes a non pure function
--}
-execImpure : (() -> a) -> Task a
-execImpure func =
-    AsyncAction
-        (\doneCallback ->
-            let
-                () =
-                    doneCallback (Value (func ()))
-            in
-            \() -> ()
-        )
-
-
-map : (a -> b) -> Task a -> Task b
-map func =
-    andThen (\x -> Value (func x))
-
-
 {-| NON PURE!
 
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : Task a -> ProcessId msg
+rawSpawn : RawTask.Task a -> ProcessId msg
 rawSpawn initTask =
     enqueue
         (registerNewProcess
@@ -102,16 +42,10 @@ rawSpawn initTask =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : Task a -> Task (ProcessId msg)
+spawn : RawTask.Task a -> RawTask.Task (ProcessId msg)
 spawn task =
-    execImpure (\() -> rawSpawn task)
+    RawTask.execImpure (\() -> rawSpawn task)
 
-
-{-| Create a task that sleeps for `time` milliseconds
--}
-sleep : Float -> Task ()
-sleep time =
-    AsyncAction (delay time (Value ()))
 
 
 {-| Create a task kills a process.
@@ -122,9 +56,9 @@ on the offical core library to lead the way regarding processes that can
 receive values.
 
 -}
-kill : ProcessId Never -> Task ()
+kill : ProcessId Never -> RawTask.Task ()
 kill processId =
-    execImpure
+    RawTask.execImpure
         (\() ->
             case getProcessState processId of
                 Running killer ->
@@ -172,13 +106,13 @@ stepper processId process =
             createStateWithRoot processId root
 
 
-createStateWithRoot : ProcessId msg -> Task state -> ProcessState msg state
+createStateWithRoot : ProcessId msg -> RawTask.Task state -> ProcessState msg state
 createStateWithRoot processId root =
     case root of
-        Value val ->
-            Ready (Value val)
+        RawTask.Value val ->
+            Ready (RawTask.Value val)
 
-        AsyncAction doEffect ->
+        RawTask.AsyncAction doEffect ->
             Running
                 (doEffect
                     (\newRoot ->
@@ -219,16 +153,11 @@ enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper
 
 
-delay : Float -> Task val -> DoneCallback val -> TryAbortAction
-delay =
-    Elm.Kernel.Scheduler.delay
-
-
-getWokenValue : ProcessId msg -> Maybe (Task state)
+getWokenValue : ProcessId msg -> Maybe (RawTask.Task state)
 getWokenValue =
     Elm.Kernel.Scheduler.getWokenValue
 
 
-setWakeTask : ProcessId msg -> Task state -> ()
+setWakeTask : ProcessId msg -> RawTask.Task state -> ()
 setWakeTask =
     Elm.Kernel.Scheduler.setWakeTask

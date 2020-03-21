@@ -41,9 +41,10 @@ import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
-import Platform.Channel as Channel
+import Platform.Raw.Channel as Channel
 import Platform.Cmd exposing (Cmd)
-import Platform.RawScheduler as RawScheduler
+import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
@@ -119,7 +120,7 @@ information on this. It is only defined here because it is a platform
 primitive.
 -}
 type Task err ok
-    = Task (RawScheduler.Task (Result err ok))
+    = Task (RawTask.Task (Result err ok))
 
 
 {-| Head over to the documentation for the [`Process`](Process) module for
@@ -149,7 +150,7 @@ be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
-    Task (RawScheduler.execImpure (\() -> Ok (router.sendToApp msg)))
+    Task (RawTask.execImpure (\() -> Ok (router.sendToApp msg)))
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -161,7 +162,7 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task (RawScheduler.map Ok (Channel.send router.selfChannel (Self msg)))
+    Task (RawTask.map Ok (Channel.send router.selfChannel (Self msg)))
 
 
 
@@ -172,7 +173,7 @@ setupOutgoingPort : (Encode.Value -> ()) -> Channel.Channel (ReceivedData Never 
 setupOutgoingPort outgoingPortSend =
     let
         init =
-            RawScheduler.Value ()
+            RawTask.Value ()
 
         onSelfMsg _ selfMsg () =
             never selfMsg
@@ -182,9 +183,9 @@ setupOutgoingPort outgoingPortSend =
             -> List (HiddenMyCmd Never)
             -> List (HiddenMySub Never)
             -> ()
-            -> RawScheduler.Task ()
+            -> RawTask.Task ()
         onEffects _ cmdList _ () =
-            RawScheduler.execImpure
+            RawTask.execImpure
                 (\() ->
                     let
                         _ =
@@ -205,13 +206,13 @@ setupIncomingPort :
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
-            RawScheduler.Value ()
+            RawTask.Value ()
 
         onSelfMsg _ selfMsg () =
             never selfMsg
 
         onEffects _ _ subList () =
-            RawScheduler.execImpure (\() -> updateSubs subList)
+            RawTask.execImpure (\() -> updateSubs subList)
 
         onSend value subs =
             List.foldr
@@ -327,9 +328,9 @@ setupEffects sendToAppFunc init onEffects onSelfMsg =
 
 instantiateEffectManager :
     SendToApp appMsg
-    -> RawScheduler.Task state
-    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawScheduler.Task state)
-    -> (Router appMsg selfMsg -> selfMsg -> state -> RawScheduler.Task state)
+    -> RawTask.Task state
+    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
+    -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
     -> Channel.Channel (ReceivedData appMsg selfMsg)
 instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     let
@@ -337,10 +338,10 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
             Channel.Channel (ReceivedData appMsg selfMsg)
             -> state
             -> ReceivedData appMsg selfMsg
-            -> RawScheduler.Task state
+            -> RawTask.Task state
         receiveMsg channel state msg =
             let
-                task : RawScheduler.Task state
+                task : RawTask.Task state
                 task =
                     case msg of
                         Self value ->
@@ -350,19 +351,19 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
                             onEffects (Router router) cmds subs state
             in
             task
-                |> RawScheduler.andThen
+                |> RawTask.andThen
                     (\val ->
-                        RawScheduler.map
+                        RawTask.map
                             (\() -> val)
-                            (RawScheduler.sleep 0)
+                            (RawTask.sleep 0)
                     )
-                |> RawScheduler.andThen (\newState -> Channel.recv (receiveMsg channel newState) channel)
+                |> RawTask.andThen (\newState -> Channel.recv (receiveMsg channel newState) channel)
 
-        initTask : RawScheduler.Task state
+        initTask : RawTask.Task state
         initTask =
-            RawScheduler.sleep 0
-                |> RawScheduler.andThen (\_ -> init)
-                |> RawScheduler.andThen (\state -> Channel.recv (receiveMsg router.selfChannel state) router.selfChannel)
+            RawTask.sleep 0
+                |> RawTask.andThen (\_ -> init)
+                |> RawTask.andThen (\state -> Channel.recv (receiveMsg router.selfChannel state) router.selfChannel)
 
         router =
             { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
@@ -375,9 +376,9 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     router.selfChannel
 
 
-unwrapTask : Task Never a -> RawScheduler.Task a
+unwrapTask : Task Never a -> RawTask.Task a
 unwrapTask (Task task) =
-    RawScheduler.map
+    RawTask.map
         (\res ->
             case res of
                 Ok val ->

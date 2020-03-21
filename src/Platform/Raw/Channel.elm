@@ -1,10 +1,11 @@
-module Platform.Channel exposing (Channel, createChannel, rawCreateChannel, rawSend, recv, send)
+module Platform.Raw.Channel exposing (Channel, createChannel, rawCreateChannel, rawSend, recv, send)
 
 import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
-import Platform.RawScheduler as RawScheduler
+import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Task as RawTask
 
 
 type Channel msg
@@ -12,9 +13,9 @@ type Channel msg
 
 
 {-| -}
-recv : (msg -> RawScheduler.Task a) -> Channel msg -> RawScheduler.Task a
+recv : (msg -> RawTask.Task a) -> Channel msg -> RawTask.Task a
 recv tagger chl =
-    RawScheduler.AsyncAction
+    RawTask.AsyncAction
         (\doneCallback ->
             rawRecv chl (\msg -> doneCallback (tagger msg))
         )
@@ -34,9 +35,9 @@ rawSend =
 
 {-| Create a task, if run, will send a message to a channel.
 -}
-send : Channel msg -> msg -> RawScheduler.Task ()
+send : Channel msg -> msg -> RawTask.Task ()
 send channelId msg =
-    RawScheduler.execImpure (\() -> rawSend channelId msg)
+    RawTask.execImpure (\() -> rawSend channelId msg)
 
 
 rawCreateChannel : () -> Channel msg
@@ -44,12 +45,12 @@ rawCreateChannel () =
     registerChannel (Channel { id = RawScheduler.getGuid () })
 
 
-createChannel : () -> RawScheduler.Task (Channel msg)
+createChannel : () -> RawTask.Task (Channel msg)
 createChannel () =
-    RawScheduler.execImpure rawCreateChannel
+    RawTask.execImpure rawCreateChannel
 
 
-rawRecv : Channel msg -> (msg -> ()) -> RawScheduler.TryAbortAction
+rawRecv : Channel msg -> (msg -> ()) -> RawTask.TryAbortAction
 rawRecv =
     Elm.Kernel.Scheduler.rawRecv
 

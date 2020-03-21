@@ -1,4 +1,4 @@
-module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, UniqueId, andThen, execImpure, getGuid, kill, map, newProcessId, rawSpawn, sleep, spawn)
+module Platform.RawScheduler exposing (DoneCallback, ProcessId(..), Task(..), TryAbortAction, UniqueId, andThen, execImpure, getGuid, kill, map, rawSpawn, sleep, spawn)
 
 {-| This module contains the low level logic for running tasks and processes. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -86,33 +86,16 @@ map func =
     andThen (\x -> Value (func x))
 
 
-{-| Create a new, unique, process id.
-
-Will not register the new process id, just create it. To run any tasks using
-this process it needs to be registered, for that use `rawSpawn`.
-
-**WARNING**: trying to enqueue this process before it has been registered will
-give a **runtime** error. (It may fail silently in optimized compiles.)
-
-TODO(harry): It might be impossible to enqueue this process now `send` is not
-function.
-
--}
-newProcessId : () -> ProcessId msg
-newProcessId () =
-    ProcessId { id = getGuid () }
-
-
 {-| NON PURE!
 
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : Task a -> ProcessId msg -> ProcessId msg
-rawSpawn initTask processId =
+rawSpawn : Task a -> ProcessId msg
+rawSpawn initTask =
     enqueue
         (registerNewProcess
-            processId
+            (ProcessId { id = getGuid () })
             (Ready initTask)
         )
 
@@ -121,7 +104,7 @@ rawSpawn initTask processId =
 -}
 spawn : Task a -> Task (ProcessId msg)
 spawn task =
-    execImpure (\() -> rawSpawn task (newProcessId ()))
+    execImpure (\() -> rawSpawn task)
 
 
 {-| Create a task that sleeps for `time` milliseconds

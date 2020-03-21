@@ -140,8 +140,7 @@ the main app and your individual effect manager.
 type Router appMsg selfMsg
     = Router
         { sendToApp : appMsg -> ()
-        , selfProcess : RawScheduler.ProcessId (ReceivedData appMsg selfMsg)
-        , channel : Channel.Channel (ReceivedData appMsg selfMsg)
+        , selfChannel : Channel.Channel (ReceivedData appMsg selfMsg)
         }
 
 
@@ -162,7 +161,7 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task (RawScheduler.map Ok (Channel.send router.channel (Self msg)))
+    Task (RawScheduler.map Ok (Channel.send router.selfChannel (Self msg)))
 
 
 
@@ -363,21 +362,17 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
         initTask =
             RawScheduler.sleep 0
                 |> RawScheduler.andThen (\_ -> init)
-                |> RawScheduler.andThen (\state -> Channel.recv (receiveMsg router.channel state) router.channel)
-
-        selfProcessId =
-            RawScheduler.newProcessId ()
+                |> RawScheduler.andThen (\state -> Channel.recv (receiveMsg router.selfChannel state) router.selfChannel)
 
         router =
             { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-            , selfProcess = selfProcessId
-            , channel = Channel.rawCreateChannel ()
+            , selfChannel = Channel.rawCreateChannel ()
             }
 
-        _ =
-            RawScheduler.rawSpawn initTask selfProcessId
+        selfProcessId =
+            RawScheduler.rawSpawn initTask
     in
-    router.channel
+    router.selfChannel
 
 
 unwrapTask : Task Never a -> RawScheduler.Task a

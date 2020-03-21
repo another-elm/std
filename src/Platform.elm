@@ -39,6 +39,7 @@ import Elm.Kernel.Platform
 import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
+import Tuple
 import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
 import Platform.Raw.Channel as Channel
@@ -141,7 +142,7 @@ the main app and your individual effect manager.
 type Router appMsg selfMsg
     = Router
         { sendToApp : appMsg -> ()
-        , selfChannel : Channel.Channel (ReceivedData appMsg selfMsg)
+        , selfSender : Channel.Sender (ReceivedData appMsg selfMsg)
         }
 
 
@@ -162,14 +163,14 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task (RawTask.map Ok (Channel.send router.selfChannel (Self msg)))
+    Task (RawTask.map Ok (Channel.send router.selfSender (Self msg)))
 
 
 
 -- HELPERS --
 
 
-setupOutgoingPort : (Encode.Value -> ()) -> Channel.Channel (ReceivedData Never Never)
+setupOutgoingPort : (Encode.Value -> ()) -> Channel.Sender (ReceivedData Never Never)
 setupOutgoingPort outgoingPortSend =
     let
         init =
@@ -202,7 +203,7 @@ setupOutgoingPort outgoingPortSend =
 setupIncomingPort :
     SendToApp msg
     -> (List (HiddenMySub msg) -> ())
-    -> ( Channel.Channel (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
+    -> ( Channel.Sender (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
 setupIncomingPort sendToApp2 updateSubs =
     let
         init =
@@ -231,7 +232,7 @@ dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
     -> Bag.EffectManagerName
-    -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
+    -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
     -> ()
 dispatchEffects cmdBag subBag =
     let
@@ -317,7 +318,7 @@ setupEffects :
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> Channel.Channel (ReceivedData appMsg selfMsg)
+    -> Channel.Sender (ReceivedData appMsg selfMsg)
 setupEffects sendToAppFunc init onEffects onSelfMsg =
     instantiateEffectManager
         sendToAppFunc
@@ -331,11 +332,11 @@ instantiateEffectManager :
     -> RawTask.Task state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
-    -> Channel.Channel (ReceivedData appMsg selfMsg)
+    -> Channel.Sender (ReceivedData appMsg selfMsg)
 instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
     let
         receiveMsg :
-            Channel.Channel (ReceivedData appMsg selfMsg)
+            Channel.Receiver (ReceivedData appMsg selfMsg)
             -> state
             -> ReceivedData appMsg selfMsg
             -> RawTask.Task state
@@ -363,17 +364,22 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
         initTask =
             RawTask.sleep 0
                 |> RawTask.andThen (\_ -> init)
-                |> RawTask.andThen (\state -> Channel.recv (receiveMsg router.selfChannel state) router.selfChannel)
+                |> RawTask.andThen (\state -> Channel.recv (receiveMsg selfReceiver state) selfReceiver)
+
+
+        (selfSender, selfReceiver) =
+            Channel.rawUnbounded ()
+
 
         router =
             { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-            , selfChannel = Channel.rawCreateChannel ()
+            , selfSender = selfSender
             }
 
         selfProcessId =
             RawScheduler.rawSpawn initTask
     in
-    router.selfChannel
+    selfSender
 
 
 unwrapTask : Task Never a -> RawTask.Task a
@@ -446,22 +452,22 @@ type alias Impl flags model msg =
 
 type alias InitFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupOutgoingPort : (Encode.Value -> ()) -> Channel.Channel (ReceivedData Never Never)
+    , setupOutgoingPort : (Encode.Value -> ()) -> Channel.Sender (ReceivedData Never Never)
     , setupIncomingPort :
         SendToApp appMsg
         -> (List (HiddenMySub appMsg) -> ())
-        -> ( Channel.Channel (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
+        -> ( Channel.Sender (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
     , setupEffects :
         SendToApp appMsg
         -> Task Never HiddenState
         -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
         -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
+        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
         -> Bag.EffectManagerName
-        -> Channel.Channel (ReceivedData appMsg HiddenSelfMsg)
+        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
         -> ()
     }
 

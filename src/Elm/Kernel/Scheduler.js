@@ -3,7 +3,7 @@
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.Utils exposing (Tuple0)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 */
 
 // COMPATIBILITY
@@ -154,13 +154,17 @@ const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 // CHANNELS
 
 const _Scheduler_channels = new WeakMap();
+let _Scheduler_channelId = 0;
 
-const _Scheduler_registerChannel = channelId => {
-	_Scheduler_channels.set(channelId, {
+const _Scheduler_rawUnbounded = _ => {
+	const id = {
+		id: _Scheduler_channelId++
+	};
+	_Scheduler_channels.set(id, {
 		messages: [],
 		wakers: new Set(),
 	});
-	return channelId;
+	return _Utils_Tuple2(id, id);
 }
 
 const _Scheduler_rawRecv = F2((channelId, onMsg) => {

@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Channel, createChannel, rawCreateChannel, rawSend, recv, send)
+module Platform.Raw.Channel exposing (Sender, Receiver, unbounded, rawUnbounded, rawSend, recv, send)
 
 import Basics exposing (..)
 import Debug
@@ -8,12 +8,16 @@ import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 
 
-type Channel msg
-    = Channel { id : RawScheduler.UniqueId }
+type Sender msg
+    = Sender
+
+
+type Receiver msg
+    = Receiver
 
 
 {-| -}
-recv : (msg -> RawTask.Task a) -> Channel msg -> RawTask.Task a
+recv : (msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 recv tagger chl =
     RawTask.AsyncAction
         (\doneCallback ->
@@ -28,33 +32,29 @@ will complete during this function call. If there are no tasks waiting the
 message will be added to the channel's queue.
 
 -}
-rawSend : Channel msg -> msg -> ()
+rawSend : Sender msg -> msg -> ()
 rawSend =
     Elm.Kernel.Scheduler.rawSend
 
 
 {-| Create a task, if run, will send a message to a channel.
 -}
-send : Channel msg -> msg -> RawTask.Task ()
+send : Sender msg -> msg -> RawTask.Task ()
 send channelId msg =
     RawTask.execImpure (\() -> rawSend channelId msg)
 
 
-rawCreateChannel : () -> Channel msg
-rawCreateChannel () =
-    registerChannel (Channel { id = RawScheduler.getGuid () })
+rawUnbounded : () -> (Sender msg, Receiver msg)
+rawUnbounded =
+    Elm.Kernel.Scheduler.rawUnbounded
 
 
-createChannel : () -> RawTask.Task (Channel msg)
-createChannel () =
-    RawTask.execImpure rawCreateChannel
+unbounded : () -> RawTask.Task (Sender msg, Receiver msg)
+unbounded () =
+    RawTask.execImpure rawUnbounded
 
 
-rawRecv : Channel msg -> (msg -> ()) -> RawTask.TryAbortAction
+rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
 rawRecv =
     Elm.Kernel.Scheduler.rawRecv
 
-
-registerChannel : Channel msg -> Channel msg
-registerChannel =
-    Elm.Kernel.Scheduler.registerChannel

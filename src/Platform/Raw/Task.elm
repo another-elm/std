@@ -3,7 +3,6 @@ module Platform.Raw.Task exposing (DoneCallback, Task(..), TryAbortAction, andTh
 {-| This module contains the low level logic for tasks. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
 run in order by the runtime.
-
 -}
 
 import Basics exposing (..)
@@ -56,7 +55,6 @@ execImpure func =
 map : (a -> b) -> Task a -> Task b
 map func =
     andThen (\x -> Value (func x))
-
 
 
 {-| Create a task that sleeps for `time` milliseconds

@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Sender, Receiver, unbounded, rawUnbounded, rawSend, recv, send, mapSender)
+module Platform.Raw.Channel exposing (Receiver, Sender, mapSender, rawSend, rawUnbounded, recv, send, unbounded)
 
 import Basics exposing (..)
 import Debug
@@ -45,13 +45,13 @@ send channelId msg =
     RawTask.execImpure (\() -> rawSend channelId msg)
 
 
-rawUnbounded : () -> (Sender msg, Receiver msg)
+rawUnbounded : () -> ( Sender msg, Receiver msg )
 rawUnbounded () =
     Elm.Kernel.Scheduler.rawUnbounded ()
         |> Tuple.mapFirst Sender
 
 
-unbounded : () -> RawTask.Task (Sender msg, Receiver msg)
+unbounded : () -> RawTask.Task ( Sender msg, Receiver msg )
 unbounded () =
     RawTask.execImpure rawUnbounded
 
@@ -66,6 +66,6 @@ mapSender fn (Sender sender) =
     Sender (\b -> sender (fn b))
 
 
-rawUnboundedKernel : () -> (msg -> (), Receiver msg)
+rawUnboundedKernel : () -> ( msg -> (), Receiver msg )
 rawUnboundedKernel =
     Elm.Kernel.Scheduler.rawUnbounded

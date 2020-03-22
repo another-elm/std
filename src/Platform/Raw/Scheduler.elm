@@ -1,15 +1,13 @@
-module Platform.Raw.Scheduler exposing (UniqueId, ProcessId, getGuid, kill, rawSpawn, spawn)
+module Platform.Raw.Scheduler exposing (ProcessId, UniqueId, getGuid, kill, rawSpawn, spawn)
 
 {-| This module contains the low level logic for processes. A process is a
 unique id used to execute tasks.
-
 -}
 
 import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
-
 import Platform.Raw.Task as RawTask
 
 
@@ -45,7 +43,6 @@ rawSpawn initTask =
 spawn : RawTask.Task a -> RawTask.Task (ProcessId msg)
 spawn task =
     RawTask.execImpure (\() -> rawSpawn task)
-
 
 
 {-| Create a task kills a process.

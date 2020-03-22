@@ -84,10 +84,9 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		);
 		selfSenders.set(key, manager);
 	}
-	for (const [key, setup] of _Platform_outgoingPorts.entries()) {
-		const {port, manager} = setup(functions.__$setupOutgoingPort);
+	for (const [key, {port, outgoingPortSend}] of _Platform_outgoingPorts.entries()) {
 		ports[key] = port;
-		selfSenders.set(key, manager);
+		selfSenders.set(key, functions.__$setupOutgoingPort(outgoingPortSend));
 	}
 	for (const [key, setup] of _Platform_incomingPorts.entries())	{
 		const {port, manager} = setup(
@@ -217,36 +216,34 @@ function _Platform_checkPortName(name)
 function _Platform_outgoingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_outgoingPorts.set(name, setup => {
-		let subs = [];
-		const subscribe = callback => {
-			subs.push(callback);
-		};
-		const unsubscribe = callback => {
-			// copy subs into a new array in case unsubscribe is called within
-			// a subscribed callback
-			subs = subs.slice();
-			var index = subs.indexOf(callback);
-			if (index >= 0)
-			{
-				subs.splice(index, 1);
-			}
-		};
-		const outgoingPortSend = payload => {
-			const value = __Json_unwrap(converter(payload));
-			for (const sub of subs)
-			{
-				sub(value);
-			}
-			return __Utils_Tuple0;
-		};
-		return {
-			port: {
-				subscribe,
-				unsubscribe,
-			},
-			manager: setup(outgoingPortSend),
+	let subs = [];
+	const subscribe = callback => {
+		subs.push(callback);
+	};
+	const unsubscribe = callback => {
+		// copy subs into a new array in case unsubscribe is called within
+		// a subscribed callback
+		subs = subs.slice();
+		var index = subs.indexOf(callback);
+		if (index >= 0)
+		{
+			subs.splice(index, 1);
 		}
+	};
+	const outgoingPortSend = payload => {
+		const value = __Json_unwrap(converter(payload));
+		for (const sub of subs)
+		{
+			sub(value);
+		}
+		return __Utils_Tuple0;
+	};
+	_Platform_outgoingPorts.set(name, {
+		port: {
+			subscribe,
+			unsubscribe,
+		},
+		outgoingPortSend,
 	});
 
 	return _Platform_leaf(name)

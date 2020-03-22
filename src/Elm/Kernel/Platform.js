@@ -74,8 +74,15 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	});
 
 	selfSenders.set('000PlatformEffect', functions.__$setupEffectsChannel(sendToApp));
-	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
-		selfSenders.set(key, __setup(functions.__$setupEffects, sendToApp));
+	for (const [key, effectManagerFunctions] of Object.entries(_Platform_effectManagers)) {
+		const manager = A4(
+			functions.__$setupEffects,
+			sendToApp,
+			effectManagerFunctions.__init,
+			effectManagerFunctions.__fullOnEffects,
+			effectManagerFunctions.__onSelfMsg
+		);
+		selfSenders.set(key, manager);
 	}
 	for (const [key, setup] of _Platform_outgoingPorts.entries()) {
 		const {port, manager} = setup(functions.__$setupOutgoingPort);
@@ -139,33 +146,36 @@ function _Platform_registerPreload(url)
  */
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 {
-	const make_setup = fullOnEffects => (setup, sendToApp) => {
-		return A4(setup, sendToApp, init, fullOnEffects, onSelfMsg)
-	}
 	if (typeof cmdMap !== 'function') {
 		// Subscription only effect module
 		return {
 			__cmdMapper: F2((_1, _2) => __Debug_crash(12, 'cmdMap')),
 			__subMapper: subMap,
-			__setup: make_setup(F4(function(router, _cmds, subs, state) {
+			__init: init,
+			__fullOnEffects: F4(function(router, _cmds, subs, state) {
 				return A3(onEffects, router, subs, state);
-			})),
+			}),
+			__onSelfMsg: onSelfMsg,
 		};
 	} else if (typeof subMap !==  'function') {
 		// Command only effect module
 		return {
 			__cmdMapper: cmdMap,
 			__subMapper: F2((_1, _2) => __Debug_crash(12, 'subMap')),
-			__setup: make_setup(F4(function(router, cmds, _subs, state) {
+			__init: init,
+			__fullOnEffects: F4(function(router, cmds, _subs, state) {
 				return A3(onEffects, router, cmds, state);
-			})),
+			}),
+			__onSelfMsg: onSelfMsg
 		};
 	} else {
 		// Command **and** subscription event manager
 		return {
 			__cmdMapper: cmdMap,
 			__subMapper: subMap,
-			__setup: make_setup(onEffects),
+			__init: init,
+			__fullOnEffects: onEffects,
+			__onSelfMsg: onSelfMsg
 		};
 	}
 }

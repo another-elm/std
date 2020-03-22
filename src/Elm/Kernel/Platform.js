@@ -6,6 +6,7 @@ import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple0)
 import Result exposing (isOk)
 import Platform exposing (Task, ProcessId)
+import Platform.Effects as Effects exposing (mapCommand)
 
 */
 
@@ -72,6 +73,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		dispatch(model, updateValue.b);
 	});
 
+	selfSenders.set('000PlatformEffect', functions.__$setupEffectsChannel(sendToApp));
 	for (const [key, {__setup}] of Object.entries(_Platform_effectManagers)) {
 		selfSenders.set(key, __setup(functions.__$setupEffects, sendToApp));
 	}
@@ -284,6 +286,9 @@ const _Platform_effectManagerNameToString = name => name;
 const _Platform_getCmdMapper = home => {
 	if (_Platform_outgoingPorts.has(home)) {
 		return F2((_tagger, value) => value);
+	}
+	if (home === '000PlatformEffect') {
+		return __Effects_mapCommand;
 	}
 	return _Platform_effectManagers[home].__cmdMapper;
 };

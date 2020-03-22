@@ -1,4 +1,4 @@
-effect module Task where { command = MyCmd } exposing
+module Task exposing
     ( Task, perform, attempt
     , andThen, succeed, fail, sequence
     , map, map2, map3, map4, map5
@@ -34,7 +34,9 @@ import Basics exposing ((<<), (|>), Never, never)
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
+import Platform.Channel
 import Platform.Cmd exposing (Cmd)
+import Platform.Effects
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 
@@ -336,7 +338,7 @@ delicious lasagna and give it to my `update` function as a `Msg` value."
 -}
 perform : (a -> msg) -> Task Never a -> Cmd msg
 perform toMessage task =
-    command (Perform (map toMessage task))
+    performHelp (map toMessage task)
 
 
 {-| This is very similar to [`perform`](#perform) except it can handle failures!
@@ -369,44 +371,19 @@ feeling for how commands fit into The Elm Architecture.
 -}
 attempt : (Result x a -> msg) -> Task x a -> Cmd msg
 attempt resultToMessage task =
-    command
-        (Perform
-            (task
-                |> andThen (succeed << resultToMessage << Ok)
-                |> onError (succeed << resultToMessage << Err)
-            )
+    performHelp
+        (task
+            |> andThen (succeed << resultToMessage << Ok)
+            |> onError (succeed << resultToMessage << Err)
         )
 
 
-cmdMap : (a -> b) -> MyCmd a -> MyCmd b
-cmdMap tagger (Perform task) =
-    Perform (map tagger task)
-
-
-
--- MANAGER
-
-
-init : Task Never ()
-init =
-    succeed ()
-
-
-onEffects : Platform.Router msg Never -> List (MyCmd msg) -> () -> Task Never ()
-onEffects router commands () =
-    map
-        (\_ -> ())
-        (sequence (List.map (spawnCmd router) commands))
-
-
-onSelfMsg : Platform.Router msg Never -> Never -> () -> Task Never ()
-onSelfMsg _ msg () =
-    never msg
-
-
-spawnCmd : Platform.Router msg Never -> MyCmd msg -> Task x Platform.ProcessId
-spawnCmd router (Perform task) =
-    Scheduler.spawn
-        (task
-            |> andThen (Platform.sendToApp router)
+performHelp : Task Never msg -> Cmd msg
+performHelp task =
+    Platform.Effects.command
+        (\toAppSender ->
+            task
+                |> andThen (\msg -> Platform.Channel.send toAppSender msg)
+                |> Scheduler.spawn
+                |> map (\_ -> ())
         )

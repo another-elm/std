@@ -39,16 +39,16 @@ import Elm.Kernel.Platform
 import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
-import Tuple
 import Maybe exposing (Maybe(..))
 import Platform.Bag as Bag
-import Platform.Raw.Channel as Channel
 import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Channel as Channel
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
+import Tuple
 
 
 
@@ -107,6 +107,7 @@ worker impl =
                     , setupIncomingPort = setupIncomingPort
                     , setupEffects = setupEffects
                     , dispatchEffects = dispatchEffects
+                    , setupEffectsChannel = setupEffectsChannel
                     }
             )
         )
@@ -168,6 +169,82 @@ sendToSelf (Router router) msg =
 
 
 -- HELPERS --
+
+
+{-| Multiple channels at play here and type fudging means the compiler cannot
+always help us if we get confused so be careful!
+
+The channel who's sender we return is a runtime specific channel, the thunk
+returned by dispatchEffects will use the sender to notify this function that we
+have command and/or subscriptions to process.
+
+Each command or subscription is a function `Channel.Sender msg -> Platform.Task
+Never ()`. We must call it with a channel that forwards all messages to the
+app's main update cycle (i.e. the receiver will call sendToApp2).
+
+-}
+setupEffectsChannel : SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
+setupEffectsChannel sendToApp2 =
+    let
+        dispatchChannel : ( Channel.Sender (ReceivedData appMsg Never), Channel.Receiver (ReceivedData appMsg Never) )
+        dispatchChannel =
+            Channel.rawUnbounded ()
+
+        appChannel : ( Channel.Sender appMsg, Channel.Receiver appMsg )
+        appChannel =
+            Channel.rawUnbounded ()
+
+        receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
+        receiveMsg msg =
+            case msg of
+                Self value ->
+                    never value
+
+                App cmds subs ->
+                    cmds
+                        |> createPlatformEffectFuncs
+                        |> List.map
+                            (\payload channel ->
+                                let
+                                    (Task t) =
+                                        payload channel
+                                in
+                                RawTask.map
+                                    (\r ->
+                                        case r of
+                                            Ok val ->
+                                                val
+
+                                            Err err ->
+                                                never err
+                                    )
+                                    t
+                            )
+                        |> List.foldr
+                            (\curr prev ->
+                                RawTask.andThen
+                                    (\() -> curr (Tuple.first appChannel))
+                                    prev
+                            )
+                            (RawTask.Value ())
+
+        dispatchTask () =
+            RawTask.andThen
+                dispatchTask
+                (Channel.recv receiveMsg (Tuple.second dispatchChannel))
+
+        appTask () =
+            RawTask.andThen
+                appTask
+                (Channel.recv (\msg -> RawTask.Value (sendToApp2 msg AsyncUpdate)) (Tuple.second appChannel))
+
+        _ =
+            RawScheduler.rawSpawn (dispatchTask ())
+
+        _ =
+            RawScheduler.rawSpawn (appTask ())
+    in
+    Tuple.first dispatchChannel
 
 
 setupOutgoingPort : (Encode.Value -> ()) -> Channel.Sender (ReceivedData Never Never)
@@ -366,10 +443,8 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
                 |> RawTask.andThen (\_ -> init)
                 |> RawTask.andThen (\state -> Channel.recv (receiveMsg selfReceiver state) selfReceiver)
 
-
-        (selfSender, selfReceiver) =
+        ( selfSender, selfReceiver ) =
             Channel.rawUnbounded ()
-
 
         router =
             { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
@@ -457,6 +532,8 @@ type alias InitFunctions model appMsg =
         SendToApp appMsg
         -> (List (HiddenMySub appMsg) -> ())
         -> ( Channel.Sender (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
+    , setupEffectsChannel :
+        SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
     , setupEffects :
         SendToApp appMsg
         -> Task Never HiddenState
@@ -523,4 +600,9 @@ createValuesToSendOutOfPorts =
 
 createIncomingPortConverters : List (HiddenMySub msg) -> List (Encode.Value -> msg)
 createIncomingPortConverters =
+    Elm.Kernel.Basics.fudgeType
+
+
+createPlatformEffectFuncs : List (HiddenMyCmd msg) -> List (Channel.Sender msg -> Task Never ())
+createPlatformEffectFuncs =
     Elm.Kernel.Basics.fudgeType

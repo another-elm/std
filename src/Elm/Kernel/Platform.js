@@ -298,9 +298,6 @@ const _Platform_effectManagerNameToString = name => name;
 
 
 const _Platform_getCmdMapper = home => {
-	if (_Platform_outgoingPorts.has(home)) {
-		return F2((_tagger, value) => value);
-	}
 	if (home === '000PlatformEffect') {
 		return __Effects_mapCommand;
 	}

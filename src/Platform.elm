@@ -103,7 +103,6 @@ worker impl =
                     args
                     impl
                     { stepperBuilder = \_ _ -> \_ _ -> ()
-                    , setupOutgoingPort = setupOutgoingPort
                     , setupIncomingPort = setupIncomingPort
                     , setupEffects = setupEffects
                     , dispatchEffects = dispatchEffects
@@ -239,42 +238,12 @@ setupEffectsChannel sendToApp2 =
                 (Channel.recv (\msg -> RawTask.Value (sendToApp2 msg AsyncUpdate)) (Tuple.second appChannel))
 
         _ =
-            RawScheduler.rawSpawn (dispatchTask ())
+            RawScheduler.rawSpawn (RawTask.andThen dispatchTask (RawTask.sleep 0))
 
         _ =
-            RawScheduler.rawSpawn (appTask ())
+            RawScheduler.rawSpawn (RawTask.andThen appTask (RawTask.sleep 0))
     in
     Tuple.first dispatchChannel
-
-
-setupOutgoingPort : (Encode.Value -> ()) -> Channel.Sender (ReceivedData Never Never)
-setupOutgoingPort outgoingPortSend =
-    let
-        init =
-            RawTask.Value ()
-
-        onSelfMsg _ selfMsg () =
-            never selfMsg
-
-        onEffects :
-            Router Never Never
-            -> List (HiddenMyCmd Never)
-            -> List (HiddenMySub Never)
-            -> ()
-            -> RawTask.Task ()
-        onEffects _ cmdList _ () =
-            RawTask.execImpure
-                (\() ->
-                    let
-                        _ =
-                            cmdList
-                                |> createValuesToSendOutOfPorts
-                                |> List.map outgoingPortSend
-                    in
-                    ()
-                )
-    in
-    instantiateEffectManager never init onEffects onSelfMsg
 
 
 setupIncomingPort :
@@ -527,7 +496,6 @@ type alias Impl flags model msg =
 
 type alias InitFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupOutgoingPort : (Encode.Value -> ()) -> Channel.Sender (ReceivedData Never Never)
     , setupIncomingPort :
         SendToApp appMsg
         -> (List (HiddenMySub appMsg) -> ())

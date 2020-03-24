@@ -7,6 +7,7 @@ import Elm.Kernel.Utils exposing (Tuple0)
 import Result exposing (isOk)
 import Platform exposing (Task, ProcessId)
 import Platform.Effects as Effects exposing (mapCommand)
+import Platform.Scheduler as Scheduler exposing (binding, succeed)
 
 */
 
@@ -86,7 +87,6 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	}
 	for (const [key, {port, outgoingPortSend}] of _Platform_outgoingPorts.entries()) {
 		ports[key] = port;
-		selfSenders.set(key, functions.__$setupOutgoingPort(outgoingPortSend));
 	}
 	for (const [key, setup] of _Platform_incomingPorts.entries())	{
 		const {port, manager} = setup(
@@ -230,23 +230,30 @@ function _Platform_outgoingPort(name, converter)
 			subs.splice(index, 1);
 		}
 	};
-	const outgoingPortSend = payload => {
+	const execSubscribers = payload => {
 		const value = __Json_unwrap(converter(payload));
 		for (const sub of subs)
 		{
 			sub(value);
 		}
 		return __Utils_Tuple0;
-	};
+	}
 	_Platform_outgoingPorts.set(name, {
 		port: {
 			subscribe,
 			unsubscribe,
 		},
-		outgoingPortSend,
 	});
 
-	return _Platform_leaf(name)
+	return payload => A2(
+		_Platform_leaf,
+		'000PlatformEffect',
+		_ => __Scheduler_binding(doneCallback => {
+			execSubscribers(payload);
+			doneCallback(__Scheduler_succeed(__Utils_Tuple0));
+			return x => x;
+		})
+	);
 }
 
 

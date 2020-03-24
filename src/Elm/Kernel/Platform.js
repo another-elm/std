@@ -85,7 +85,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		);
 		selfSenders.set(key, manager);
 	}
-	for (const [key, {port, outgoingPortSend}] of _Platform_outgoingPorts.entries()) {
+	for (const [key, {port}] of _Platform_outgoingPorts.entries()) {
 		ports[key] = port;
 	}
 	for (const [key, setup] of _Platform_incomingPorts.entries())	{

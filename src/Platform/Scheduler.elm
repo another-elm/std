@@ -51,8 +51,8 @@ import Platform.Raw.Task as RawTask
 import Result exposing (Result(..))
 
 
-type alias ProcessId msg =
-    RawScheduler.ProcessId msg
+type alias ProcessId =
+    RawScheduler.ProcessId
 
 
 type alias DoneCallback err ok =
@@ -181,11 +181,11 @@ unwrapTask =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-wrapProcessId : ProcessId Never -> Platform.ProcessId
+wrapProcessId : ProcessId -> Platform.ProcessId
 wrapProcessId =
     Elm.Kernel.Platform.wrapProcessId
 
 
-unwrapProcessId : Platform.ProcessId -> ProcessId Never
+unwrapProcessId : Platform.ProcessId -> ProcessId
 unwrapProcessId =
     Elm.Kernel.Basics.unwrapTypeWrapper

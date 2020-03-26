@@ -11,12 +11,12 @@ import Maybe exposing (Maybe(..))
 import Platform.Raw.Task as RawTask
 
 
-type ProcessState msg state
+type ProcessState state
     = Ready (RawTask.Task state)
     | Running RawTask.TryAbortAction
 
 
-type ProcessId msg
+type ProcessId
     = ProcessId { id : UniqueId }
 
 
@@ -29,7 +29,7 @@ type UniqueId
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : RawTask.Task a -> ProcessId msg
+rawSpawn : RawTask.Task a -> ProcessId
 rawSpawn initTask =
     enqueue
         (registerNewProcess
@@ -40,7 +40,7 @@ rawSpawn initTask =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : RawTask.Task a -> RawTask.Task (ProcessId msg)
+spawn : RawTask.Task a -> RawTask.Task (ProcessId)
 spawn task =
     RawTask.execImpure (\() -> rawSpawn task)
 
@@ -53,7 +53,7 @@ on the offical core library to lead the way regarding processes that can
 receive values.
 
 -}
-kill : ProcessId Never -> RawTask.Task ()
+kill : ProcessId -> RawTask.Task ()
 kill processId =
     RawTask.execImpure
         (\() ->
@@ -73,7 +73,7 @@ call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
 
 -}
-enqueue : ProcessId msg -> ProcessId msg
+enqueue : ProcessId -> ProcessId
 enqueue =
     enqueueWithStepper stepper
 
@@ -88,7 +88,7 @@ This function **must** return a process with the **same ID** as
 the process it is passed as an argument
 
 -}
-stepper : ProcessId msg -> ProcessState msg state -> ProcessState msg state
+stepper : ProcessId -> ProcessState state -> ProcessState state
 stepper processId process =
     case process of
         Running _ ->
@@ -103,7 +103,7 @@ stepper processId process =
             createStateWithRoot processId root
 
 
-createStateWithRoot : ProcessId msg -> RawTask.Task state -> ProcessState msg state
+createStateWithRoot : ProcessId -> RawTask.Task state -> ProcessState  state
 createStateWithRoot processId root =
     case root of
         RawTask.Value val ->
@@ -135,26 +135,26 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-getProcessState : ProcessId msg -> ProcessState msg state
+getProcessState : ProcessId -> ProcessState state
 getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-registerNewProcess : ProcessId msg -> ProcessState msg state -> ProcessId msg
+registerNewProcess : ProcessId -> ProcessState state -> ProcessId
 registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 
 
-enqueueWithStepper : (ProcessId msg -> ProcessState msg state -> ProcessState msg state) -> ProcessId msg -> ProcessId msg
+enqueueWithStepper : (ProcessId -> ProcessState state -> ProcessState state) -> ProcessId -> ProcessId
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper
 
 
-getWokenValue : ProcessId msg -> Maybe (RawTask.Task state)
+getWokenValue : ProcessId -> Maybe (RawTask.Task state)
 getWokenValue =
     Elm.Kernel.Scheduler.getWokenValue
 
 
-setWakeTask : ProcessId msg -> RawTask.Task state -> ()
+setWakeTask : ProcessId -> RawTask.Task state -> ()
 setWakeTask =
     Elm.Kernel.Scheduler.setWakeTask

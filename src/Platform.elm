@@ -129,7 +129,7 @@ information on this. It is only defined here because it is a platform
 primitive.
 -}
 type ProcessId
-    = ProcessId (RawScheduler.ProcessId Never)
+    = ProcessId (RawScheduler.ProcessId)
 
 
 
@@ -457,9 +457,6 @@ type UpdateMetadata
     = SyncUpdate
     | AsyncUpdate
 
-
-type OtherManagers appMsg
-    = OtherManagers (Dict String (RawScheduler.ProcessId (ReceivedData appMsg HiddenSelfMsg)))
 
 
 type ReceivedData appMsg selfMsg

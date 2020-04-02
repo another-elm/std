@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Receiver, Sender, mapSender, rawSend, rawUnbounded, recv, send, unbounded)
+module Platform.Raw.Channel exposing (Receiver, Sender, Channel, mapSender, rawSend, rawUnbounded, tryRecv, recv, send, unbounded)
 
 import Basics exposing (..)
 import Debug
@@ -17,6 +17,9 @@ type Receiver msg
     = Receiver
 
 
+type alias Channel msg =
+    ( Sender msg, Receiver msg )
+
 {-| -}
 recv : (msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 recv tagger chl =
@@ -24,6 +27,13 @@ recv tagger chl =
         (\doneCallback ->
             rawRecv chl (\msg -> doneCallback (tagger msg))
         )
+
+
+tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
+tryRecv tagger chl =
+    RawTask.andThen
+        (\() -> tagger (rawTryRecv chl))
+        (RawTask.execImpure (\() -> ()))
 
 
 {-| NON PURE!
@@ -57,8 +67,27 @@ unbounded () =
 
 
 rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
-rawRecv =
-    Elm.Kernel.Scheduler.rawRecv
+rawRecv receiver onMsg =
+    case rawTryRecv receiver of
+        Just msg ->
+            let
+                () =
+                    onMsg msg
+            in
+            \() -> ()
+
+        Nothing ->
+            setWaker receiver onMsg
+
+
+setWaker : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
+setWaker =
+    Elm.Kernel.Scheduler.setWaker
+
+
+rawTryRecv : Receiver msg -> Maybe msg
+rawTryRecv =
+    Elm.Kernel.Scheduler.rawTryRecv
 
 
 mapSender : (b -> a) -> Sender a -> Sender b

@@ -1,4 +1,4 @@
-module Platform.Raw.Scheduler exposing (ProcessId, UniqueId, getGuid, kill, rawSpawn, spawn)
+module Platform.Raw.Scheduler exposing (ProcessId, UniqueId, batch, getGuid, kill, rawSpawn, spawn)
 
 {-| This module contains the low level logic for processes. A process is a
 unique id used to execute tasks.
@@ -7,6 +7,7 @@ unique id used to execute tasks.
 import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
+import List
 import Maybe exposing (Maybe(..))
 import Platform.Raw.Task as RawTask
 
@@ -40,7 +41,7 @@ rawSpawn initTask =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : RawTask.Task a -> RawTask.Task (ProcessId)
+spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
     RawTask.execImpure (\() -> rawSpawn task)
 
@@ -55,14 +56,24 @@ receive values.
 -}
 kill : ProcessId -> RawTask.Task ()
 kill processId =
-    RawTask.execImpure
-        (\() ->
-            case getProcessState processId of
-                Running killer ->
-                    killer ()
+    RawTask.execImpure (\() -> rawKill processId)
 
-                Ready _ ->
-                    ()
+
+batch : List ProcessId -> RawTask.Task ProcessId
+batch ids =
+    spawn
+        (RawTask.AsyncAction
+            (\doneCallback ->
+                let
+                    () =
+                        doneCallback (spawn (RawTask.Value ()))
+                in
+                \() ->
+                    List.foldr
+                        (\id () -> rawKill id)
+                        ()
+                        ids
+            )
         )
 
 
@@ -103,7 +114,7 @@ stepper processId process =
             createStateWithRoot processId root
 
 
-createStateWithRoot : ProcessId -> RawTask.Task state -> ProcessState  state
+createStateWithRoot : ProcessId -> RawTask.Task state -> ProcessState state
 createStateWithRoot processId root =
     case root of
         RawTask.Value val ->
@@ -125,7 +136,16 @@ createStateWithRoot processId root =
                     )
                 )
 
+{-| NON PURE!
+-}
+rawKill: ProcessId -> ()
+rawKill id =
+    case getProcessState id of
+        Running killer ->
+            killer ()
 
+        Ready _ ->
+            ()
 
 -- Kernel function redefinitons --
 

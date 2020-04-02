@@ -167,7 +167,25 @@ const _Scheduler_rawUnbounded = _ => {
 	return _Utils_Tuple2(_Scheduler_rawSend(id), id);
 }
 
-const _Scheduler_rawRecv = F2((channelId, onMsg) => {
+const _Scheduler_setWaker = F2((channelId, onMsg) => {
+	const channel = _Scheduler_channels.get(channelId);
+	/**__DEBUG/
+	if (channel === undefined) {
+		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+	}
+	//*/
+	const onWake = msg => {
+		return onMsg(msg);
+	}
+	channel.wakers.add(onWake);
+	return x => {
+		channel.wakers.delete(onWake);
+		return x;
+	};
+});
+
+
+const _Scheduler_rawTryRecv = (channelId) => {
 	const channel = _Scheduler_channels.get(channelId);
 	/**__DEBUG/
 	if (channel === undefined) {
@@ -176,19 +194,12 @@ const _Scheduler_rawRecv = F2((channelId, onMsg) => {
 	//*/
 	const msg = channel.messages.shift();
 	if (msg === undefined) {
-		const onWake = msg => {
-			return onMsg(msg);
-		}
-		channel.wakers.add(onWake);
-		return x => {
-			channel.wakers.delete(onWake);
-			return x;
-		};
+		return __Maybe_Nothing;
 	} else {
-		onMsg(msg);
-		return x => x;
+		return __Maybe_Just(msg);
 	}
-});
+};
+
 
 const _Scheduler_rawSend = F2((channelId, msg) => {
 	const channel = _Scheduler_channels.get(channelId);

@@ -380,10 +380,4 @@ attempt resultToMessage task =
 
 performHelp : Task Never msg -> Cmd msg
 performHelp task =
-    Platform.Effects.command
-        (\toAppSender ->
-            task
-                |> andThen (\msg -> Platform.Channel.send toAppSender msg)
-                |> Scheduler.spawn
-                |> map (\_ -> ())
-        )
+    Platform.Effects.command (map Just task)

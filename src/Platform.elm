@@ -49,7 +49,6 @@ import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
-import Debug
 
 
 
@@ -194,37 +193,38 @@ setupEffectsChannel sendToApp2 =
         appChannel =
             Channel.rawUnbounded ()
 
-        spawnEffects : List (Channel.Sender appMsg -> Task Never ()) -> RawTask.Task (List RawScheduler.ProcessId)
-        spawnEffects =
+        runCmds : List (Task Never (Maybe appMsg)) -> RawTask.Task RawScheduler.ProcessId
+        runCmds =
             List.map
-                            (\payload channel ->
-                                let
-                                    (Task t) =
-                                        payload channel
-                                in
+                (\(Task t) ->
                     t
                         |> RawTask.map
-                                    (\r ->
-                                        case r of
-                                            Ok val ->
-                                                val
+                            (\r ->
+                                case r of
+                                    Ok (Just msg) ->
+                                        sendToApp2 msg AsyncUpdate
 
-                                            Err err ->
-                                                never err
-                                    )
-                        |> RawScheduler.spawn
+                                    Ok Nothing ->
+                                        ()
+
+                                    Err err ->
+                                        never err
                             )
+                        |> RawScheduler.spawn
+                )
                 >> List.foldr
                     (\curr accTask ->
                         RawTask.andThen
                             (\acc ->
                                 RawTask.map
                                     (\id -> id :: acc)
-                                    (curr (Tuple.first appChannel))
+                                    curr
                             )
                             accTask
                     )
                     (RawTask.Value [])
+                >> RawTask.andThen (RawScheduler.batch)
+
 
         receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
         receiveMsg msg =
@@ -239,7 +239,7 @@ setupEffectsChannel sendToApp2 =
                         cmdTask =
                             cmds
                                 |> List.map createPlatformEffectFuncsFromCmd
-                                |> spawnEffects
+                                |> runCmds
 
                         -- Reset and re-register all subscriptions.
                         () =
@@ -252,7 +252,7 @@ setupEffectsChannel sendToApp2 =
                                                 func id (\v -> sendToApp2 (tagger v) AsyncUpdate)
                                             )
                                             ()
-                            )
+                                )
                     in
                     cmdTask
                         |> RawTask.map (\_ -> ())
@@ -263,16 +263,9 @@ setupEffectsChannel sendToApp2 =
                 |> Channel.recv receiveMsg
                 |> RawTask.andThen dispatchTask
 
-        appTask () =
-            RawTask.andThen
-                appTask
-                (Channel.recv (\msg -> RawTask.Value (sendToApp2 msg AsyncUpdate)) (Tuple.second appChannel))
 
         _ =
             RawScheduler.rawSpawn (RawTask.andThen dispatchTask (RawTask.sleep 0))
-
-        _ =
-            RawScheduler.rawSpawn (RawTask.andThen appTask (RawTask.sleep 0))
     in
     Tuple.first dispatchChannel
 
@@ -606,7 +599,7 @@ createIncomingPortConverters =
     Elm.Kernel.Basics.fudgeType
 
 
-createPlatformEffectFuncsFromCmd : HiddenMyCmd msg -> (Channel.Sender msg -> Task Never ())
+createPlatformEffectFuncsFromCmd : HiddenMyCmd msg -> Task Never (Maybe msg)
 createPlatformEffectFuncsFromCmd =
     Elm.Kernel.Basics.fudgeType
 

@@ -121,13 +121,19 @@ async function processJsFile(file, kernelDefinitions) {
       continue;
     }
 
-    const kernelCallMatch = line.match(/__\w+_\w+/u);
-    if (kernelCallMatch !== null) {
-      const kernelCall = kernelCallMatch[0];
-      if (imports.has(kernelCall)) {
-        imports.set(kernelCall, true);
+    let index = 0;
+    while (true) {
+      const kernelCallMatch = line.substr(index).match(/__\w+_\w+/u);
+      if (kernelCallMatch === null) {
+        break;
       } else {
-        errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+        const kernelCall = kernelCallMatch[0];
+        if (imports.has(kernelCall)) {
+          imports.set(kernelCall, true);
+        } else {
+          errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+        }
+        index += kernelCallMatch.index + kernelCallMatch[0].length;
       }
     }
 

@@ -6,6 +6,7 @@ import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend, mapSender)
 import Result exposing (isOk)
+import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId)
 import Platform.Effects as Effects exposing (mapCommand)
 import Platform.Scheduler as Scheduler exposing (binding, succeed, rawSpawn, andThen)
@@ -245,9 +246,9 @@ function _Platform_outgoingPort(name, converter)
 	return payload => A2(
 		_Platform_leaf,
 		'000PlatformEffect',
-		_ => __Scheduler_binding(doneCallback => {
+		__Scheduler_binding(doneCallback => {
 			execSubscribers(payload);
-			doneCallback(__Scheduler_succeed(__Utils_Tuple0));
+			doneCallback(__Scheduler_succeed(__Maybe_Nothing));
 			return x => x;
 		})
 	);

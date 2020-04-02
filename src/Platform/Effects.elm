@@ -5,15 +5,15 @@ import Debug
 import Elm.Kernel.Platform
 import Maybe exposing (Maybe(..))
 import Platform
-import Platform.Channel as Channel
+import Platform.Scheduler as Scheduler
 import Platform.Cmd as Cmd exposing (Cmd)
 
 
-command : (Channel.Sender msg -> Platform.Task Never ()) -> Cmd msg
+command : Platform.Task Never (Maybe msg) -> Cmd msg
 command function =
     Elm.Kernel.Platform.leaf "000PlatformEffect" function
 
 
-mapCommand : (a -> b) -> (Channel.Sender a -> Platform.Task Never ()) -> (Channel.Sender b -> Platform.Task Never ())
-mapCommand tagger function =
-    \channel -> function (Channel.mapSender tagger channel)
+mapCommand : (a -> b) -> Platform.Task Never (Maybe a) -> Platform.Task Never (Maybe b)
+mapCommand tagger task =
+    Scheduler.andThen ((Maybe.map tagger) >> Scheduler.succeed) task

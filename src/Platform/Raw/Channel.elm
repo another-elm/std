@@ -2,7 +2,7 @@ module Platform.Raw.Channel exposing (Receiver, Sender, Channel, mapSender, rawS
 
 import Basics exposing (..)
 import Debug
-import Elm.Kernel.Scheduler
+import Elm.Kernel.Channel
 import Maybe exposing (Maybe(..))
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
@@ -10,7 +10,7 @@ import Tuple
 
 
 type Sender msg
-    = Sender (msg -> ())
+    = Sender
 
 
 type Receiver msg
@@ -32,8 +32,8 @@ recv tagger chl =
 tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 tryRecv tagger chl =
     RawTask.andThen
-        (\() -> tagger (rawTryRecv chl))
-        (RawTask.execImpure (\() -> ()))
+        tagger
+        (RawTask.execImpure (\() -> rawTryRecv chl))
 
 
 {-| NON PURE!
@@ -44,8 +44,8 @@ message will be added to the channel's queue.
 
 -}
 rawSend : Sender msg -> msg -> ()
-rawSend (Sender sender) =
-    sender
+rawSend =
+    Elm.Kernel.Channel.rawSend
 
 
 {-| Create a task, if run, will send a message to a channel.
@@ -56,9 +56,8 @@ send channelId msg =
 
 
 rawUnbounded : () -> ( Sender msg, Receiver msg )
-rawUnbounded () =
-    Elm.Kernel.Scheduler.rawUnbounded ()
-        |> Tuple.mapFirst Sender
+rawUnbounded =
+    Elm.Kernel.Channel.rawUnbounded
 
 
 unbounded : () -> RawTask.Task ( Sender msg, Receiver msg )
@@ -67,34 +66,15 @@ unbounded () =
 
 
 rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
-rawRecv receiver onMsg =
-    case rawTryRecv receiver of
-        Just msg ->
-            let
-                () =
-                    onMsg msg
-            in
-            \() -> ()
-
-        Nothing ->
-            setWaker receiver onMsg
-
-
-setWaker : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
-setWaker =
-    Elm.Kernel.Scheduler.setWaker
+rawRecv =
+    Elm.Kernel.Channel.rawRecv
 
 
 rawTryRecv : Receiver msg -> Maybe msg
 rawTryRecv =
-    Elm.Kernel.Scheduler.rawTryRecv
+    Elm.Kernel.Channel.rawTryRecv
 
 
 mapSender : (b -> a) -> Sender a -> Sender b
-mapSender fn (Sender sender) =
-    Sender (\b -> sender (fn b))
-
-
-rawUnboundedKernel : () -> ( msg -> (), Receiver msg )
-rawUnboundedKernel =
-    Elm.Kernel.Scheduler.rawUnbounded
+mapSender =
+    Elm.Kernel.Channel.mapSender

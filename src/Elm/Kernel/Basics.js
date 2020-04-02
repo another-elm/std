@@ -30,7 +30,7 @@ const _Basics_fudgeType = x => x;
 const _Basics_unwrapTypeWrapper__DEBUG = wrapped => {
 	const entries = Object.entries(wrapped);
 	if (entries.length !== 2) {
-		__Debug_crash(12, 'failedUnwrap');
+		__Debug_crash(12, 'failedUnwrap', wrapped);
 	}
 	if (entries[0][0] === '$') {
 		return entries[1][1];

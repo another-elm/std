@@ -49,6 +49,7 @@ import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
+import Debug
 
 
 
@@ -129,7 +130,7 @@ information on this. It is only defined here because it is a platform
 primitive.
 -}
 type ProcessId
-    = ProcessId (RawScheduler.ProcessId)
+    = ProcessId RawScheduler.ProcessId
 
 
 
@@ -185,7 +186,7 @@ app's main update cycle (i.e. the receiver will call sendToApp2).
 setupEffectsChannel : SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
 setupEffectsChannel sendToApp2 =
     let
-        dispatchChannel : ( Channel.Sender (ReceivedData appMsg Never), Channel.Receiver (ReceivedData appMsg Never) )
+        dispatchChannel : Channel.Channel (ReceivedData appMsg Never)
         dispatchChannel =
             Channel.rawUnbounded ()
 
@@ -193,22 +194,16 @@ setupEffectsChannel sendToApp2 =
         appChannel =
             Channel.rawUnbounded ()
 
-        receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
-        receiveMsg msg =
-            case msg of
-                Self value ->
-                    never value
-
-                App cmds subs ->
-                    cmds
-                        |> createPlatformEffectFuncs
-                        |> List.map
+        spawnEffects : List (Channel.Sender appMsg -> Task Never ()) -> RawTask.Task (List RawScheduler.ProcessId)
+        spawnEffects =
+            List.map
                             (\payload channel ->
                                 let
                                     (Task t) =
                                         payload channel
                                 in
-                                RawTask.map
+                    t
+                        |> RawTask.map
                                     (\r ->
                                         case r of
                                             Ok val ->
@@ -217,20 +212,56 @@ setupEffectsChannel sendToApp2 =
                                             Err err ->
                                                 never err
                                     )
-                                    t
+                        |> RawScheduler.spawn
                             )
-                        |> List.foldr
-                            (\curr prev ->
-                                RawTask.andThen
-                                    (\() -> curr (Tuple.first appChannel))
-                                    prev
+                >> List.foldr
+                    (\curr accTask ->
+                        RawTask.andThen
+                            (\acc ->
+                                RawTask.map
+                                    (\id -> id :: acc)
+                                    (curr (Tuple.first appChannel))
                             )
-                            (RawTask.Value ())
+                            accTask
+                    )
+                    (RawTask.Value [])
 
+        receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
+        receiveMsg msg =
+            case msg of
+                Self value ->
+                    never value
+
+                App cmds subs ->
+                    let
+                        -- Create a task that spawns processes that
+                        -- will never be killed.
+                        cmdTask =
+                            cmds
+                                |> List.map createPlatformEffectFuncsFromCmd
+                                |> spawnEffects
+
+                        -- Reset and re-register all subscriptions.
+                        () =
+                            resetSubscriptions
+                                (\func ->
+                                    subs
+                                        |> List.map createPlatformEffectFuncsFromSub
+                                        |> List.foldr
+                                            (\( id, tagger ) () ->
+                                                func id (\v -> sendToApp2 (tagger v) AsyncUpdate)
+                                            )
+                                            ()
+                            )
+                    in
+                    cmdTask
+                        |> RawTask.map (\_ -> ())
+
+        dispatchTask : () -> RawTask.Task ()
         dispatchTask () =
-            RawTask.andThen
-                dispatchTask
-                (Channel.recv receiveMsg (Tuple.second dispatchChannel))
+            Tuple.second dispatchChannel
+                |> Channel.recv receiveMsg
+                |> RawTask.andThen dispatchTask
 
         appTask () =
             RawTask.andThen
@@ -458,6 +489,13 @@ type UpdateMetadata
     | AsyncUpdate
 
 
+type IncomingPortId
+    = IncomingPortId IncomingPortId
+
+
+type HiddenConvertedSubType
+    = HiddenConvertedSubType HiddenConvertedSubType
+
 
 type ReceivedData appMsg selfMsg
     = Self selfMsg
@@ -568,6 +606,16 @@ createIncomingPortConverters =
     Elm.Kernel.Basics.fudgeType
 
 
-createPlatformEffectFuncs : List (HiddenMyCmd msg) -> List (Channel.Sender msg -> Task Never ())
-createPlatformEffectFuncs =
+createPlatformEffectFuncsFromCmd : HiddenMyCmd msg -> (Channel.Sender msg -> Task Never ())
+createPlatformEffectFuncsFromCmd =
     Elm.Kernel.Basics.fudgeType
+
+
+createPlatformEffectFuncsFromSub : HiddenMySub msg -> ( IncomingPortId, HiddenConvertedSubType -> msg )
+createPlatformEffectFuncsFromSub =
+    Elm.Kernel.Basics.fudgeType
+
+
+resetSubscriptions : ((IncomingPortId -> (HiddenConvertedSubType -> ()) -> ()) -> ()) -> ()
+resetSubscriptions =
+    Elm.Kernel.Platform.resetSubscriptions

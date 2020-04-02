@@ -328,6 +328,13 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 					case 'procIdAlreadyReady':
 						throw new Error(`Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`);
+
+					case 'subscriptionProcessMissing':
+						throw new Error(`Bug in elm runtime: expected there to be a subscriptionProcess with id ${fact2}.`);
+
+					case 'failedUnwrap':
+						throw new Error(`Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(fact2).join(', ')}`)
+
 				}
 				throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
 			}

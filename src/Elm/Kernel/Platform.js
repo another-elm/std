@@ -3,11 +3,13 @@
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
 import Elm.Kernel.List exposing (Cons, Nil)
-import Elm.Kernel.Utils exposing (Tuple0)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Channel exposing (rawUnbounded, rawSend, mapSender)
 import Result exposing (isOk)
 import Platform exposing (Task, ProcessId)
 import Platform.Effects as Effects exposing (mapCommand)
-import Platform.Scheduler as Scheduler exposing (binding, succeed)
+import Platform.Scheduler as Scheduler exposing (binding, succeed, rawSpawn, andThen)
+import Platform.Channel as NiceChannel exposing (recv, send)
 
 */
 
@@ -88,13 +90,8 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 	for (const [key, {port}] of _Platform_outgoingPorts.entries()) {
 		ports[key] = port;
 	}
-	for (const [key, setup] of _Platform_incomingPorts.entries())	{
-		const {port, manager} = setup(
-			functions.__$setupIncomingPort,
-			sendToApp
-		);
+	for (const [key, {port}] of _Platform_incomingPorts.entries()) {
 		ports[key] = port;
-		selfSenders.set(key, manager);
 	}
 
 	const initValue = impl.__$init(flagsResult.a);
@@ -260,39 +257,111 @@ function _Platform_outgoingPort(name, converter)
 function _Platform_incomingPort(name, converter)
 {
 	_Platform_checkPortName(name);
-	_Platform_incomingPorts.set(name, function(setup, sendToApp) {
-		let subs = __List_Nil;
+	const channel = __Channel_rawUnbounded();
 
-		function updateSubs(subsList) {
-			subs = subsList;
-		}
+	function send(incomingValue)
+	{
+		var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
-		const setupTuple = A2(setup, sendToApp, updateSubs);
+		__Result_isOk(result) || __Debug_crash(4, name, result.a);
 
-		function send(incomingValue)
+		var value = result.a;
+		A2(__Channel_rawSend, channel.a, value);
+	}
+
+	_Platform_incomingPorts.set(
+		name,
 		{
-			var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
-
-			__Result_isOk(result) || __Debug_crash(4, name, result.a);
-
-			var value = result.a;
-			A2(setupTuple.b, value, subs);
-		}
-
-		return {
 			port: {
 				send,
 			},
-			manager: setupTuple.a,
 		}
+	);
+
+	const key = _Platform_createSubProcess(sender => {
+		const onMsgReceive = receiver =>
+			A2(
+				__Scheduler_andThen,
+				_ => onMsgReceive(receiver),
+				A2(
+					__NiceChannel_recv,
+					__NiceChannel_send(sender),
+					receiver
+				)
+			);
+		return onMsgReceive(channel.b);
 	});
 
-	return _Platform_leaf(name)
+	return tagger => A2(
+		_Platform_leaf,
+		'000PlatformEffect',
+		__Utils_Tuple2(key, tagger)
+	);
 }
 
 
 // Functions exported to elm
 
+const _Platform_subscriptionMap = new Map();
+let _Platform_subscriptionProcessIds = 0;
+
+const _Platform_createSubProcess = createTask => {
+	const channel = __Channel_rawUnbounded();
+	const key = { id: _Platform_subscriptionProcessIds++ };
+	const onSubEffects = receiver =>
+		A2(
+			__Scheduler_andThen,
+			_ => onSubEffects(receiver),
+			A2(
+				__NiceChannel_recv,
+				t => t,
+				receiver,
+			)
+		);
+
+	_Platform_subscriptionMap.set(key, []);
+	const mappedSender = A2(
+		__Channel_mapSender,
+		val => {
+			return __Scheduler_binding(doneCallback => {
+				const sendToApps = _Platform_subscriptionMap.get(key);
+				/**__DEBUG/
+				if (sendToApps === undefined) {
+					__Debug_crash(12, 'subscriptionProcessMissing', key && key.id);
+				}
+				//*/
+				for (const sendToApp of sendToApps) {
+					sendToApp(val);
+				}
+				doneCallback(__Scheduler_succeed(__Utils_Tuple0));
+				return x => x;
+			});
+		},
+		channel.a,
+	);
+
+	Promise.resolve().then(() => {
+		__Scheduler_rawSpawn(createTask(mappedSender));
+		__Scheduler_rawSpawn(onSubEffects(channel.b));
+	});
+
+	return key;
+};
+
+const _Platform_resetSubscriptions = func => {
+	for (const sendToApps of _Platform_subscriptionMap.values()) {
+		sendToApps.length = 0;
+	}
+	func(F2((key, sendToApp) => {
+		const sendToApps = _Platform_subscriptionMap.get(key);
+		/**__DEBUG/
+		if (sendToApps === undefined) {
+			__Debug_crash(12, 'subscriptionProcessMissing', key && key.id);
+		}
+		//*/
+		sendToApps.push(sendToApp);
+	}));
+};
 
 const _Platform_effectManagerNameToString = name => name;
 

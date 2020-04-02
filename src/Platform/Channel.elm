@@ -2,7 +2,6 @@ module Platform.Channel exposing (Receiver, Sender, mapSender, recv, send, unbou
 
 import Basics exposing (..)
 import Debug
-import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Raw.Channel as RawChannel

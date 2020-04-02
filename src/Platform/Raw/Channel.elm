@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Receiver, Sender, Channel, mapSender, rawSend, rawUnbounded, tryRecv, recv, send, unbounded)
+module Platform.Raw.Channel exposing (Channel, Receiver, Sender, mapSender, rawSend, rawUnbounded, recv, send, tryRecv, unbounded)
 
 import Basics exposing (..)
 import Debug
@@ -19,6 +19,7 @@ type Receiver msg
 
 type alias Channel msg =
     ( Sender msg, Receiver msg )
+
 
 {-| -}
 recv : (msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a

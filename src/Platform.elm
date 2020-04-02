@@ -223,8 +223,7 @@ setupEffectsChannel sendToApp2 =
                             accTask
                     )
                     (RawTask.Value [])
-                >> RawTask.andThen (RawScheduler.batch)
-
+                >> RawTask.andThen RawScheduler.batch
 
         receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
         receiveMsg msg =
@@ -262,7 +261,6 @@ setupEffectsChannel sendToApp2 =
             Tuple.second dispatchChannel
                 |> Channel.recv receiveMsg
                 |> RawTask.andThen dispatchTask
-
 
         _ =
             RawScheduler.rawSpawn (RawTask.andThen dispatchTask (RawTask.sleep 0))

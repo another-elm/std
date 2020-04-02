@@ -569,14 +569,17 @@ compare : comparable -> comparable -> Order
 compare x y =
     let
         compared : Int
-        compared = Elm.Kernel.Utils.compare x y
+        compared =
+            Elm.Kernel.Utils.compare x y
     in
-        if lt compared 0 then
-            LT
-        else if eq compared 0 then
-            EQ
-        else
-            GT
+    if lt compared 0 then
+        LT
+
+    else if eq compared 0 then
+        EQ
+
+    else
+        GT
 
 
 {-| Represents the relative ordering of two things.

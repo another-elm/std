@@ -136,9 +136,10 @@ createStateWithRoot processId root =
                     )
                 )
 
+
 {-| NON PURE!
 -}
-rawKill: ProcessId -> ()
+rawKill : ProcessId -> ()
 rawKill id =
     case getProcessState id of
         Running killer ->
@@ -146,6 +147,8 @@ rawKill id =
 
         Ready _ ->
             ()
+
+
 
 -- Kernel function redefinitons --
 

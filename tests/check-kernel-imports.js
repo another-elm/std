@@ -148,7 +148,33 @@ async function processJsFile(file, kernelDefinitions) {
   return  {errors, warnings};
 }
 
-(async () => {
+async function main() {
+  if (process.argv.length !== 3) {
+    console.error('check-kernel-imports: error! path to source directories required');
+    process.exit(1);
+  }
+
+  if (process.argv.includes('-h') || process.argv.includes('--help')) {
+    console.log(`
+
+Usage: check-kernel-imports SOURCE_DIRECTORY
+
+check-kernel-imports checks that
+  1. Use of kernel definitions match imports in elm files.
+  2. Use of kernel definition in elm files match a definition in a javascipt file.
+  3. Use of an external definition matches an import in a javascript file.
+Additionally, warnings will be issued for unused imports in javascript files.
+
+Options:
+      -h, --help     display this help and exit
+
+    `.trim())
+    process.exit(0);
+  }
+
+  const sourceDir = process.argv[2];
+
+
   // keys: kernel definition full elm path
   const kernelDefinitions = new Set();
   // keys: kernel call, values: array of CallLocations
@@ -157,7 +183,7 @@ async function processJsFile(file, kernelDefinitions) {
   const allErrors = [];
   const allWarnings = [];
 
-  for await (const f of getFiles(process.argv[2])) {
+  for await (const f of getFiles(sourceDir)) {
     const extname = path.extname(f);
     if (extname === '.elm') {
       const { errors, warnings } = await processElmFile(f, kernelCalls);
@@ -182,4 +208,6 @@ async function processJsFile(file, kernelDefinitions) {
   console.error(`${allErrors.length} errors`)
   console.error(allErrors.join('\n'));
   process.exitCode = allErrors.length === 0 ? 0 : 1;
-})()
+}
+
+main();

@@ -139,7 +139,7 @@ const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 	if (_Scheduler_readyFlgs.has(procId)) {
 		__Debug_crash(
 			12,
-			'procIdAlreadyReady',
+			__Debug_runtimeCrashReason('procIdAlreadyReady'),
 			procId && procId.a && procId.a.__$id,
 			_Scheduler_readyFlgs.get(procId)
 		);

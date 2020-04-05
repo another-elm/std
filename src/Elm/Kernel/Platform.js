@@ -1,6 +1,6 @@
 /*
 
-import Elm.Kernel.Debug exposing (crash)
+import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
@@ -146,7 +146,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 	if (typeof cmdMap !== 'function') {
 		// Subscription only effect module
 		return {
-			__cmdMapper: F2((_1, _2) => __Debug_crash(12, 'cmdMap')),
+			__cmdMapper: F2((_1, _2) => __Debug_crash(12, __Debug_runtimeCrashReason('cmdMap'))),
 			__subMapper: subMap,
 			__init: init,
 			__fullOnEffects: F4(function(router, _cmds, subs, state) {
@@ -158,7 +158,7 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap)
 		// Command only effect module
 		return {
 			__cmdMapper: cmdMap,
-			__subMapper: F2((_1, _2) => __Debug_crash(12, 'subMap')),
+			__subMapper: F2((_1, _2) => __Debug_crash(12, __Debug_runtimeCrashReason('subMap'))),
 			__init: init,
 			__fullOnEffects: F4(function(router, cmds, _subs, state) {
 				return A3(onEffects, router, cmds, state);
@@ -328,7 +328,7 @@ const _Platform_createSubProcess = createTask => {
 				const sendToApps = _Platform_subscriptionMap.get(key);
 				/**__DEBUG/
 				if (sendToApps === undefined) {
-					__Debug_crash(12, 'subscriptionProcessMissing', key && key.id);
+					__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
 				}
 				//*/
 				for (const sendToApp of sendToApps) {
@@ -357,7 +357,7 @@ const _Platform_resetSubscriptions = func => {
 		const sendToApps = _Platform_subscriptionMap.get(key);
 		/**__DEBUG/
 		if (sendToApps === undefined) {
-			__Debug_crash(12, 'subscriptionProcessMissing', key && key.id);
+			__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
 		}
 		//*/
 		sendToApps.push(sendToApp);

@@ -1,7 +1,7 @@
 /*
 
 import Maybe exposing (Just, Nothing)
-import Elm.Kernel.Debug exposing (crash)
+import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Utils exposing (Tuple2)
 */
 
@@ -24,7 +24,7 @@ const _Channel_rawTryRecv = (channelId) => {
 	const channel = _Channel_channels.get(channelId);
 	/**__DEBUG/
 	if (channel === undefined) {
-		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
 	}
 	//*/
 	const msg = channel.messages.shift();
@@ -40,7 +40,7 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
   const channel = _Channel_channels.get(channelId);
 	/**__DEBUG/
 	if (channel === undefined) {
-		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
 	}
 	//*/
 	const msg = channel.messages.shift();
@@ -63,7 +63,7 @@ const _Channel_rawSendImpl = F2((channelId, msg) => {
 	const channel = _Channel_channels.get(channelId);
 	/**__DEBUG/
 	if (channel === undefined) {
-		__Debug_crash(12, 'channelIdNotRegistered', channelId && channelId.a && channelId.a.__$id);
+		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
 	}
 	//*/
 

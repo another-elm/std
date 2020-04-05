@@ -2,7 +2,7 @@
 
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Maybe exposing (Just, Nothing)
-import Elm.Kernel.Debug exposing (crash)
+import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 */
 
 // COMPATIBILITY
@@ -49,7 +49,7 @@ function _Scheduler_getProcessState(id) {
 	const procState = _Scheduler_processes.get(id);
 	/**__DEBUG/
 	if (procState === undefined) {
-		__Debug_crash(12, 'procIdNotRegistered', id && id.a && id.a.__$id);
+		__Debug_crash(12, __Debug_runtimeCrashReason('procIdNotRegistered'), id && id.a && id.a.__$id);
 	}
 	//*/
 	return procState;
@@ -59,7 +59,7 @@ function _Scheduler_getProcessState(id) {
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
 	/**__DEBUG/
 	if (_Scheduler_processes.has(procId)) {
-		__Debug_crash(12, 'procIdAlreadyRegistered', procId && procId.a && procId.a.__$id);
+		__Debug_crash(12, __Debug_runtimeCrashReason('procIdAlreadyRegistered'), procId && procId.a && procId.a.__$id);
 	}
 	//*/
 	_Scheduler_processes.set(procId, procState);
@@ -76,13 +76,13 @@ const _Scheduler_enqueueWithStepper = stepper => {
 		const procState = _Scheduler_processes.get(newProcId);
 		/**__DEBUG/
 		if (procState === undefined) {
-			__Debug_crash(12, 'procIdNotRegistered', newProcId && newProcId.a && newProcId.a.__$id);
+			__Debug_crash(12, __Debug_runtimeCrashReason('procIdNotRegistered'), newProcId && newProcId.a && newProcId.a.__$id);
 		}
 		//*/
 		const updatedState = A2(stepper, newProcId, procState);
 		/**__DEBUG/
 		if (procState !== _Scheduler_processes.get(newProcId)) {
-			__Debug_crash(12, 'reentrantProcUpdate', newProcId && newProcId.a && newProcId.a.__$id);
+			__Debug_crash(12, __Debug_runtimeCrashReason('reentrantProcUpdate'), newProcId && newProcId.a && newProcId.a.__$id);
 		}
 		//*/
 		_Scheduler_processes.set(newProcId, updatedState);
@@ -91,7 +91,7 @@ const _Scheduler_enqueueWithStepper = stepper => {
 	return procId => {
 		/**__DEBUG/
 		if (queue.some(p => p.a.__$id === procId.a.__$id)) {
-			__Debug_crash(12, 'procIdAlreadyInQueue', procId && procId.a && procId.a.__$id);
+			__Debug_crash(12, __Debug_runtimeCrashReason('procIdAlreadyInQueue'), procId && procId.a && procId.a.__$id);
 		}
 		//*/
 		queue.push(procId);

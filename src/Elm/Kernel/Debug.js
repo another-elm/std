@@ -230,6 +230,65 @@ function _Debug_toHexDigit(n)
 // CRASH
 
 
+function _Debug_runtimeCrashReason__PROD(reason) {}
+
+
+function _Debug_runtimeCrashReason__DEBUG(reason) {
+	switch (reason) {
+		case 'subMap':
+			return function(fact2, fact3, fact4) {
+				throw new Error('Bug in elm runtime: attempting to subMap an effect from a command only effect module.');
+			};
+
+		case 'cmdMap':
+			return function(fact2, fact3, fact4) {
+				throw new Error('Bug in elm runtime: attempting to cmdMap an effect from a subscription only effect module.');
+			};
+
+		case 'procIdAlreadyRegistered':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: state for process ${fact2} is already registered!`);
+			};
+
+		case 'procIdNotRegistered':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: state for process ${fact2} been has not registered!`);
+			};
+
+		case 'cannotBeStepped':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`);
+			};
+
+		case 'reentrantProcUpdate':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: Elm.Kernel.Scheduler.updateProcessState was called from within the update function!`);
+			};
+
+		case 'earlyMsg':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: an event manager received a message before it was ready.`);
+			};
+
+		case 'procIdAlreadyReady':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`);
+			};
+
+		case 'subscriptionProcessMissing':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: expected there to be a subscriptionProcess with id ${fact2}.`);
+			};
+
+		case 'failedUnwrap':
+			return function(fact2, fact3, fact4) {
+				throw new Error(`Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(fact2).join(', ')}`);
+			};
+	}
+	throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
+}
+
+
 function _Debug_crash__PROD(identifier)
 {
 	throw new Error('https://github.com/elm/core/blob/1.0.0/hints/' + identifier + '.md');
@@ -304,38 +363,7 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4)
 
 		case 12:
 			{
-				switch (fact1) {
-					case 'subMap':
-						throw new Error('Bug in elm runtime: attempting to subMap an effect from a command only effect module.');
-
-					case 'cmdMap':
-						throw new Error('Bug in elm runtime: attempting to cmdMap an effect from a subscription only effect module.');
-
-					case 'procIdAlreadyRegistered':
-						throw new Error(`Bug in elm runtime: state for process ${fact2} is already registered!`);
-
-					case 'procIdNotRegistered':
-						throw new Error(`Bug in elm runtime: state for process ${fact2} been has not registered!`);
-
-					case 'cannotBeStepped':
-						throw new Error(`Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`);
-
-					case 'reentrantProcUpdate':
-						throw new Error(`Bug in elm runtime: Elm.Kernel.Scheduler.updateProcessState was called from within the update function!`);
-
-					case 'earlyMsg':
-						throw new Error(`Bug in elm runtime: an event manager received a message before it was ready.`);
-
-					case 'procIdAlreadyReady':
-						throw new Error(`Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`);
-
-					case 'subscriptionProcessMissing':
-						throw new Error(`Bug in elm runtime: expected there to be a subscriptionProcess with id ${fact2}.`);
-
-					case 'failedUnwrap':
-						throw new Error(`Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(fact2).join(', ')}`)
-
-				}
+				fact1(fact2, fact3, fact4);
 				throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
 			}
 	}

@@ -1,6 +1,6 @@
 /*
 
-import Elm.Kernel.Debug exposing (crash)
+import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 
 */
 
@@ -30,7 +30,7 @@ const _Basics_fudgeType = x => x;
 const _Basics_unwrapTypeWrapper__DEBUG = wrapped => {
 	const entries = Object.entries(wrapped);
 	if (entries.length !== 2) {
-		__Debug_crash(12, 'failedUnwrap', wrapped);
+		__Debug_crash(12, __Debug_runtimeCrashReason('failedUnwrap'), wrapped);
 	}
 	if (entries[0][0] === '$') {
 		return entries[1][1];

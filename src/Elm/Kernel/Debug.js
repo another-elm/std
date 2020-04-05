@@ -260,16 +260,6 @@ function _Debug_runtimeCrashReason__DEBUG(reason) {
 				throw new Error(`Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`);
 			};
 
-		case 'reentrantProcUpdate':
-			return function(fact2, fact3, fact4) {
-				throw new Error(`Bug in elm runtime: Elm.Kernel.Scheduler.updateProcessState was called from within the update function!`);
-			};
-
-		case 'earlyMsg':
-			return function(fact2, fact3, fact4) {
-				throw new Error(`Bug in elm runtime: an event manager received a message before it was ready.`);
-			};
-
 		case 'procIdAlreadyReady':
 			return function(fact2, fact3, fact4) {
 				throw new Error(`Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`);

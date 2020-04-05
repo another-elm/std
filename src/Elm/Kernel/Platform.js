@@ -7,7 +7,7 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend, mapSender)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
-import Platform exposing (Task, ProcessId)
+import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Effects as Effects exposing (mapCommand)
 import Platform.Scheduler as Scheduler exposing (binding, succeed, rawSpawn, andThen)
 import Platform.Channel as NiceChannel exposing (recv, send)
@@ -25,7 +25,7 @@ var _Platform_effectDispatchInProgress = false;
 
 // INITIALIZE A PROGRAM
 
-const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
+const _Platform_initialize = F3((flagDecoder, args, impl) => {
 
 	// Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
 	// Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
@@ -60,7 +60,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 				return;
 			}
 			const dispatcher = A2(
-				functions.__$dispatchEffects,
+				__Platform_initializeHelperFunctions.__$dispatchEffects,
 				fx.__cmds,
 				fx.__subs,
 			);
@@ -77,10 +77,10 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 		dispatch(model, updateValue.b);
 	});
 
-	selfSenders.set('000PlatformEffect', functions.__$setupEffectsChannel(sendToApp));
+	selfSenders.set('000PlatformEffect', __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp));
 	for (const [key, effectManagerFunctions] of Object.entries(_Platform_effectManagers)) {
 		const manager = A4(
-			functions.__$setupEffects,
+			__Platform_initializeHelperFunctions.__$setupEffects,
 			sendToApp,
 			effectManagerFunctions.__init,
 			effectManagerFunctions.__fullOnEffects,
@@ -97,7 +97,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, functions) => {
 
 	const initValue = impl.__$init(flagsResult.a);
 	let model = initValue.a;
-	const stepper = A2(functions.__$stepperBuilder, sendToApp, model);
+	const stepper = A2(__Platform_initializeHelperFunctions.__$stepperBuilder, sendToApp, model);
 
 	dispatch(model, initValue.b);
 

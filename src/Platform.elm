@@ -52,6 +52,47 @@ import Tuple
 
 
 
+-- DEFINTIONS TO BE USED BY KERNEL CODE
+
+
+{-| Kernel code relies on this this type alias. Must be kept consistant with
+code in Elm/Kernel/Platform.js.
+-}
+type alias InitializeHelperFunctions model appMsg =
+    { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
+    , setupIncomingPort :
+        SendToApp appMsg
+        -> (List (HiddenMySub appMsg) -> ())
+        -> ( Channel.Sender (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
+    , setupEffectsChannel :
+        SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
+    , setupEffects :
+        SendToApp appMsg
+        -> Task Never HiddenState
+        -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
+        -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
+        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
+    , dispatchEffects :
+        Cmd appMsg
+        -> Sub appMsg
+        -> Bag.EffectManagerName
+        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
+        -> ()
+    }
+
+
+{-| Kernel code relies on this definition existing and on the behaviour of these functions.
+-}
+initializeHelperFunctions =
+    { stepperBuilder = \_ _ -> \_ _ -> ()
+    , setupIncomingPort = setupIncomingPort
+    , setupEffects = setupEffects
+    , dispatchEffects = dispatchEffects
+    , setupEffectsChannel = setupEffectsChannel
+    }
+
+
+
 -- PROGRAMS
 
 
@@ -60,11 +101,16 @@ show anything on screen? Etc.
 -}
 type Program flags model msg
     = Program
-        (Decoder flags
-         -> DebugMetadata
-         -> RawJsObject
-         -> RawJsObject
-        )
+
+
+{-| This is the actual type of a Program. This is the value that will be called
+by javascript so it **must** be this type.
+-}
+type alias ActualProgram flags =
+    Decoder flags
+    -> DebugMetadata
+    -> RawJsObject
+    -> RawJsObject
 
 
 {-| Create a [headless] program with no user interface.
@@ -95,20 +141,12 @@ worker :
     }
     -> Program flags model msg
 worker impl =
-    makeProgramCallable
-        (Program
-            (\flagsDecoder _ args ->
-                initialize
-                    flagsDecoder
-                    args
-                    impl
-                    { stepperBuilder = \_ _ -> \_ _ -> ()
-                    , setupIncomingPort = setupIncomingPort
-                    , setupEffects = setupEffects
-                    , dispatchEffects = dispatchEffects
-                    , setupEffectsChannel = setupEffectsChannel
-                    }
-            )
+    makeProgram
+        (\flagsDecoder _ args ->
+            initialize
+                flagsDecoder
+                args
+                impl
         )
 
 
@@ -520,29 +558,6 @@ type alias Impl flags model msg =
     }
 
 
-type alias InitFunctions model appMsg =
-    { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupIncomingPort :
-        SendToApp appMsg
-        -> (List (HiddenMySub appMsg) -> ())
-        -> ( Channel.Sender (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
-    , setupEffectsChannel :
-        SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
-    , setupEffects :
-        SendToApp appMsg
-        -> Task Never HiddenState
-        -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
-        -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
-    , dispatchEffects :
-        Cmd appMsg
-        -> Sub appMsg
-        -> Bag.EffectManagerName
-        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
-        -> ()
-    }
-
-
 
 -- kernel --
 
@@ -551,15 +566,14 @@ initialize :
     Decoder flags
     -> RawJsObject
     -> Impl flags model msg
-    -> InitFunctions model msg
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize
 
 
-makeProgramCallable : Program flags model msg -> Program flags model msg
-makeProgramCallable (Program program) =
-    Elm.Kernel.Basics.fudgeType program
+makeProgram : ActualProgram flags -> Program flags model msg
+makeProgram =
+    Elm.Kernel.Basics.fudgeType
 
 
 effectManagerNameToString : Bag.EffectManagerName -> String
@@ -584,11 +598,6 @@ createHiddenMyCmdList =
 
 createHiddenMySubList : List (Bag.LeafType msg) -> List (HiddenMySub msg)
 createHiddenMySubList =
-    Elm.Kernel.Basics.fudgeType
-
-
-createValuesToSendOutOfPorts : List (HiddenMyCmd Never) -> List Encode.Value
-createValuesToSendOutOfPorts =
     Elm.Kernel.Basics.fudgeType
 
 

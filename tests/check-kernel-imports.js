@@ -118,7 +118,6 @@ async function processJsFile(file, kernelDefinitions) {
       // todo(Harry): check __DEBUG and __PROD match.
 
       kernelDefinitions.add(`Elm.Kernel.${moduleName}.${defName}`);
-      continue;
     }
 
     let index = 0;

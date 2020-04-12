@@ -65,7 +65,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 				fx.__subs,
 			);
 			for (const [key, selfSender] of selfSenders.entries()) {
-				A2(dispatcher, key, selfSender);
+				__Scheduler_rawSpawn(A2(dispatcher, key, selfSender));
 			}
 		}
 	}

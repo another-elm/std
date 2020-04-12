@@ -77,12 +77,13 @@ type alias InitializeHelperFunctions model appMsg =
         -> Sub appMsg
         -> Bag.EffectManagerName
         -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
-        -> ()
+        -> Task Never ()
     }
 
 
 {-| Kernel code relies on this definition existing and on the behaviour of these functions.
 -}
+initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
     { stepperBuilder = \_ _ -> \_ _ -> ()
     , setupIncomingPort = setupIncomingPort
@@ -330,7 +331,7 @@ dispatchEffects :
     -> Sub appMsg
     -> Bag.EffectManagerName
     -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
-    -> ()
+    -> Task never ()
 dispatchEffects cmdBag subBag =
     let
         effectsDict =
@@ -344,13 +345,12 @@ dispatchEffects cmdBag subBag =
                 Maybe.withDefault
                     ( [], [] )
                     (Dict.get (effectManagerNameToString key) effectsDict)
-
-            _ =
-                Channel.rawSend
-                    channel
-                    (App (createHiddenMyCmdList cmdList) (createHiddenMySubList subList))
         in
-        ()
+        wrapTask
+            (Channel.send
+                channel
+                (App (createHiddenMyCmdList cmdList) (createHiddenMySubList subList))
+            )
 
 
 gatherCmds :
@@ -489,6 +489,10 @@ unwrapTask (Task task) =
                     never x
         )
         task
+
+wrapTask : RawTask.Task a -> Task never a
+wrapTask task =
+    Task (RawTask.map Ok task)
 
 
 type alias SendToApp msg =

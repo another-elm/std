@@ -60,10 +60,6 @@ code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
-    , setupIncomingPort :
-        SendToApp appMsg
-        -> (List (HiddenMySub appMsg) -> ())
-        -> ( Channel.Sender (ReceivedData appMsg Never), Encode.Value -> List (HiddenMySub appMsg) -> () )
     , setupEffectsChannel :
         SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
     , setupEffects :
@@ -86,7 +82,6 @@ type alias InitializeHelperFunctions model appMsg =
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
     { stepperBuilder = \_ _ -> \_ _ -> ()
-    , setupIncomingPort = setupIncomingPort
     , setupEffects = setupEffects
     , dispatchEffects = dispatchEffects
     , setupEffectsChannel = setupEffectsChannel
@@ -278,7 +273,7 @@ setupEffectsChannel sendToApp2 =
                                 |> List.map createPlatformEffectFuncsFromSub
                                 |> List.map
                                     (\( id, tagger ) ->
-                                        (id, (\v -> sendToApp2 (tagger v) AsyncUpdate))
+                                        ( id, \v -> sendToApp2 (tagger v) AsyncUpdate )
                                     )
                                 |> resetSubscriptions
                                 |> unwrapTask
@@ -296,34 +291,6 @@ setupEffectsChannel sendToApp2 =
             RawScheduler.rawSpawn (RawTask.andThen dispatchTask (RawTask.sleep 0))
     in
     Tuple.first dispatchChannel
-
-
-setupIncomingPort :
-    SendToApp msg
-    -> (List (HiddenMySub msg) -> ())
-    -> ( Channel.Sender (ReceivedData msg Never), Encode.Value -> List (HiddenMySub msg) -> () )
-setupIncomingPort sendToApp2 updateSubs =
-    let
-        init =
-            RawTask.Value ()
-
-        onSelfMsg _ selfMsg () =
-            never selfMsg
-
-        onEffects _ _ subList () =
-            RawTask.execImpure (\() -> updateSubs subList)
-
-        onSend value subs =
-            List.foldr
-                (\sub () ->
-                    sendToApp2 (sub value) AsyncUpdate
-                )
-                ()
-                (createIncomingPortConverters subs)
-    in
-    ( instantiateEffectManager sendToApp2 init onEffects onSelfMsg
-    , onSend
-    )
 
 
 dispatchEffects :
@@ -490,6 +457,7 @@ unwrapTask (Task task) =
         )
         task
 
+
 wrapTask : RawTask.Task a -> Task never a
 wrapTask task =
     Task (RawTask.map Ok task)
@@ -611,6 +579,6 @@ createPlatformEffectFuncsFromSub =
     Elm.Kernel.Basics.fudgeType
 
 
-resetSubscriptions : List (IncomingPortId, HiddenConvertedSubType -> ()) -> Task Never ()
+resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> Task Never ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

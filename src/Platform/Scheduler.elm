@@ -81,6 +81,20 @@ binding callback =
         )
 
 
+{-| Create a task that executes a non pure function
+-}
+execImpure : (() -> a) -> Platform.Task Never a
+execImpure func =
+    binding
+        (\doneCallback ->
+            let
+                () =
+                    doneCallback (succeed (func ()))
+            in
+            \() -> ()
+        )
+
+
 andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
 andThen func =
     wrapTaskFn

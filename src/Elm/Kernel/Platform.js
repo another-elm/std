@@ -9,7 +9,7 @@ import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Effects as Effects exposing (mapCommand)
-import Platform.Scheduler as Scheduler exposing (binding, succeed, rawSpawn, andThen)
+import Platform.Scheduler as Scheduler exposing (execImpure, rawSpawn, andThen)
 import Platform.Channel as NiceChannel exposing (recv, send)
 
 */
@@ -246,10 +246,9 @@ function _Platform_outgoingPort(name, converter)
 	return payload => A2(
 		_Platform_leaf,
 		'000PlatformEffect',
-		__Scheduler_binding(doneCallback => {
+		__Scheduler_execImpure(_ => {
 			execSubscribers(payload);
-			doneCallback(__Scheduler_succeed(__Maybe_Nothing));
-			return x => x;
+			return __Maybe_Nothing;
 		})
 	);
 }
@@ -324,7 +323,7 @@ const _Platform_createSubProcess = createTask => {
 	const mappedSender = A2(
 		__Channel_mapSender,
 		val => {
-			return __Scheduler_binding(doneCallback => {
+			return __Scheduler_execImpure(_ => {
 				const sendToApps = _Platform_subscriptionMap.get(key);
 				/**__DEBUG/
 				if (sendToApps === undefined) {
@@ -334,8 +333,7 @@ const _Platform_createSubProcess = createTask => {
 				for (const sendToApp of sendToApps) {
 					sendToApp(val);
 				}
-				doneCallback(__Scheduler_succeed(__Utils_Tuple0));
-				return x => x;
+				return __Utils_Tuple0;
 			});
 		},
 		channel.a,
@@ -349,7 +347,7 @@ const _Platform_createSubProcess = createTask => {
 	return key;
 };
 
-const _Platform_resetSubscriptions = newSubs => __Scheduler_binding(doneCallback => {
+const _Platform_resetSubscriptions = newSubs => __Scheduler_execImpure(_ => {
 	for (const sendToApps of _Platform_subscriptionMap.values()) {
 		sendToApps.length = 0;
 	}
@@ -364,7 +362,7 @@ const _Platform_resetSubscriptions = newSubs => __Scheduler_binding(doneCallback
 		//*/
 		sendToApps.push(sendToApp);
 	}
-	doneCallback(__Scheduler_succeed(__Utils_Tuple0));
+	return __Utils_Tuple0;
 });
 
 const _Platform_effectManagerNameToString = name => name;

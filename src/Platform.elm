@@ -227,29 +227,24 @@ setupEffectsChannel sendToApp2 =
         dispatchChannel =
             Channel.rawUnbounded ()
 
-        appChannel : ( Channel.Sender appMsg, Channel.Receiver appMsg )
-        appChannel =
-            Channel.rawUnbounded ()
-
         runCmds : List (Task Never (Maybe appMsg)) -> RawTask.Task RawScheduler.ProcessId
         runCmds =
-            List.map
-                (\(Task t) ->
-                    t
-                        |> RawTask.map
-                            (\r ->
-                                case r of
-                                    Ok (Just msg) ->
-                                        sendToApp2 msg AsyncUpdate
+            List.map (\(Task t) -> t)
+                >> List.map
+                    (RawTask.map
+                        (\r ->
+                            case r of
+                                Ok (Just msg) ->
+                                    sendToApp2 msg AsyncUpdate
 
-                                    Ok Nothing ->
-                                        ()
+                                Ok Nothing ->
+                                    ()
 
-                                    Err err ->
-                                        never err
-                            )
-                        |> RawScheduler.spawn
-                )
+                                Err err ->
+                                    never err
+                        )
+                    )
+                >> List.map RawScheduler.spawn
                 >> List.foldr
                     (\curr accTask ->
                         RawTask.andThen
@@ -271,8 +266,6 @@ setupEffectsChannel sendToApp2 =
 
                 App cmds subs ->
                     let
-                        -- Create a task that spawns processes that
-                        -- will never be killed.
                         cmdTask =
                             cmds
                                 |> List.map createPlatformEffectFuncsFromCmd
@@ -281,12 +274,14 @@ setupEffectsChannel sendToApp2 =
                         -- Reset and re-register all subscriptions.
                         () =
                             resetSubscriptions
-                                (\func ->
+                                (\addSubscription ->
                                     subs
                                         |> List.map createPlatformEffectFuncsFromSub
                                         |> List.foldr
                                             (\( id, tagger ) () ->
-                                                func id (\v -> sendToApp2 (tagger v) AsyncUpdate)
+                                                addSubscription
+                                                    id
+                                                    (\v -> sendToApp2 (tagger v) AsyncUpdate)
                                             )
                                             ()
                                 )

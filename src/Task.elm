@@ -34,7 +34,6 @@ import Basics exposing ((<<), (|>), Never, never)
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
-import Platform.Channel
 import Platform.Cmd exposing (Cmd)
 import Platform.Effects
 import Platform.Scheduler as Scheduler

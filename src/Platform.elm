@@ -274,16 +274,12 @@ setupEffectsChannel sendToApp2 =
                         -- Reset and re-register all subscriptions.
                         () =
                             resetSubscriptions
-                                (\addSubscription ->
-                                    subs
-                                        |> List.map createPlatformEffectFuncsFromSub
-                                        |> List.foldr
-                                            (\( id, tagger ) () ->
-                                                addSubscription
-                                                    id
-                                                    (\v -> sendToApp2 (tagger v) AsyncUpdate)
-                                            )
-                                            ()
+                                (subs
+                                    |> List.map createPlatformEffectFuncsFromSub
+                                    |> List.map
+                                        (\( id, tagger ) ->
+                                            (id, (\v -> sendToApp2 (tagger v) AsyncUpdate))
+                                        )
                                 )
                     in
                     cmdTask
@@ -611,6 +607,6 @@ createPlatformEffectFuncsFromSub =
     Elm.Kernel.Basics.fudgeType
 
 
-resetSubscriptions : ((IncomingPortId -> (HiddenConvertedSubType -> ()) -> ()) -> ()) -> ()
+resetSubscriptions : List (IncomingPortId, HiddenConvertedSubType -> ()) -> ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

@@ -2,7 +2,7 @@
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
-import Elm.Kernel.List exposing (Cons, Nil)
+import Elm.Kernel.List exposing (Cons, Nil, toArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend, mapSender)
 import Result exposing (isOk)
@@ -349,11 +349,13 @@ const _Platform_createSubProcess = createTask => {
 	return key;
 };
 
-const _Platform_resetSubscriptions = func => {
+const _Platform_resetSubscriptions = newSubs => {
 	for (const sendToApps of _Platform_subscriptionMap.values()) {
 		sendToApps.length = 0;
 	}
-	func(F2((key, sendToApp) => {
+	for (const tuple of __List_toArray(newSubs)) {
+		const key = tuple.a;
+		const sendToApp = tuple.b;
 		const sendToApps = _Platform_subscriptionMap.get(key);
 		/**__DEBUG/
 		if (sendToApps === undefined) {
@@ -361,7 +363,8 @@ const _Platform_resetSubscriptions = func => {
 		}
 		//*/
 		sendToApps.push(sendToApp);
-	}));
+	}
+	return __Utils_Tuple0;
 };
 
 const _Platform_effectManagerNameToString = name => name;

@@ -61,18 +61,19 @@ code in Elm/Kernel/Platform.js.
 type alias InitializeHelperFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
     , setupEffectsChannel :
-        SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
+        SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
     , setupEffects :
         SendToApp appMsg
+        -> Channel.Receiver (AppMsgPayload appMsg)
         -> Task Never HiddenState
         -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
         -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
+        -> Task Never Never
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
         -> Bag.EffectManagerName
-        -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
+        -> Channel.Sender (AppMsgPayload appMsg)
         -> Task Never ()
     }
 
@@ -176,7 +177,7 @@ the main app and your individual effect manager.
 type Router appMsg selfMsg
     = Router
         { sendToApp : appMsg -> ()
-        , selfSender : Channel.Sender (ReceivedData appMsg selfMsg)
+        , selfSender : selfMsg -> RawTask.Task ()
         }
 
 
@@ -197,7 +198,7 @@ As an example, the effect manager for web sockets
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
 sendToSelf (Router router) msg =
-    Task (RawTask.map Ok (Channel.send router.selfSender (Self msg)))
+    wrapTask (router.selfSender msg)
 
 
 
@@ -216,10 +217,10 @@ Never ()`. We must call it with a channel that forwards all messages to the
 app's main update cycle (i.e. the receiver will call sendToApp2).
 
 -}
-setupEffectsChannel : SendToApp appMsg -> Channel.Sender (ReceivedData appMsg Never)
+setupEffectsChannel : SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
 setupEffectsChannel sendToApp2 =
     let
-        dispatchChannel : Channel.Channel (ReceivedData appMsg Never)
+        dispatchChannel : Channel.Channel (AppMsgPayload appMsg)
         dispatchChannel =
             Channel.rawUnbounded ()
 
@@ -254,32 +255,27 @@ setupEffectsChannel sendToApp2 =
                     (RawTask.Value [])
                 >> RawTask.andThen RawScheduler.batch
 
-        receiveMsg : ReceivedData appMsg Never -> RawTask.Task ()
-        receiveMsg msg =
-            case msg of
-                Self value ->
-                    never value
+        receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
+        receiveMsg ( cmds, subs ) =
+            let
+                cmdTask =
+                    cmds
+                        |> List.map createPlatformEffectFuncsFromCmd
+                        |> runCmds
 
-                App cmds subs ->
-                    let
-                        cmdTask =
-                            cmds
-                                |> List.map createPlatformEffectFuncsFromCmd
-                                |> runCmds
-
-                        -- Reset and re-register all subscriptions.
-                        subTask =
-                            subs
-                                |> List.map createPlatformEffectFuncsFromSub
-                                |> List.map
-                                    (\( id, tagger ) ->
-                                        ( id, \v -> sendToApp2 (tagger v) AsyncUpdate )
-                                    )
-                                |> resetSubscriptions
-                                |> unwrapTask
-                    in
-                    cmdTask
-                        |> RawTask.andThen (\_ -> subTask)
+                -- Reset and re-register all subscriptions.
+                subTask =
+                    subs
+                        |> List.map createPlatformEffectFuncsFromSub
+                        |> List.map
+                            (\( id, tagger ) ->
+                                ( id, \v -> sendToApp2 (tagger v) AsyncUpdate )
+                            )
+                        |> resetSubscriptions
+                        |> unwrapTask
+            in
+            cmdTask
+                |> RawTask.andThen (\_ -> subTask)
 
         dispatchTask : () -> RawTask.Task ()
         dispatchTask () =
@@ -297,7 +293,7 @@ dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
     -> Bag.EffectManagerName
-    -> Channel.Sender (ReceivedData appMsg HiddenSelfMsg)
+    -> Channel.Sender (AppMsgPayload appMsg)
     -> Task never ()
 dispatchEffects cmdBag subBag =
     let
@@ -316,7 +312,7 @@ dispatchEffects cmdBag subBag =
         wrapTask
             (Channel.send
                 channel
-                (App (createHiddenMyCmdList cmdList) (createHiddenMySubList subList))
+                ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
             )
 
 
@@ -379,32 +375,36 @@ createEffect isCmd newEffect maybeEffects =
 
 setupEffects :
     SendToApp appMsg
+    -> Channel.Receiver (AppMsgPayload appMsg)
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> Channel.Sender (ReceivedData appMsg selfMsg)
-setupEffects sendToAppFunc init onEffects onSelfMsg =
-    instantiateEffectManager
-        sendToAppFunc
-        (unwrapTask init)
-        (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
-        (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
+    -> Task never Never
+setupEffects sendToAppFunc receiver init onEffects onSelfMsg =
+    wrapTask
+        (instantiateEffectManager
+            sendToAppFunc
+            receiver
+            (unwrapTask init)
+            (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
+            (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
+        )
 
 
 instantiateEffectManager :
     SendToApp appMsg
+    -> Channel.Receiver (AppMsgPayload appMsg)
     -> RawTask.Task state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
-    -> Channel.Sender (ReceivedData appMsg selfMsg)
-instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
+    -> RawTask.Task Never
+instantiateEffectManager sendToAppFunc appReceiver init onEffects onSelfMsg =
     let
         receiveMsg :
-            Channel.Receiver (ReceivedData appMsg selfMsg)
-            -> state
+            state
             -> ReceivedData appMsg selfMsg
-            -> RawTask.Task state
-        receiveMsg channel state msg =
+            -> RawTask.Task never
+        receiveMsg state msg =
             let
                 task : RawTask.Task state
                 task =
@@ -412,7 +412,7 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
                         Self value ->
                             onSelfMsg (Router router) value state
 
-                        App cmds subs ->
+                        App ( cmds, subs ) ->
                             onEffects (Router router) cmds subs state
             in
             task
@@ -422,26 +422,34 @@ instantiateEffectManager sendToAppFunc init onEffects onSelfMsg =
                             (\() -> val)
                             (RawTask.sleep 0)
                     )
-                |> RawTask.andThen (\newState -> Channel.recv (receiveMsg channel newState) channel)
+                |> RawTask.andThen (\newState -> Channel.recv (receiveMsg newState) selfReceiver)
 
-        initTask : RawTask.Task state
+        initTask : RawTask.Task never
         initTask =
             RawTask.sleep 0
                 |> RawTask.andThen (\_ -> init)
-                |> RawTask.andThen (\state -> Channel.recv (receiveMsg selfReceiver state) selfReceiver)
+                |> RawTask.andThen (\state -> Channel.recv (receiveMsg state) selfReceiver)
+
+        selfChannel : Channel.Channel (ReceivedData appMsg selfMsg)
+        selfChannel =
+            Channel.rawUnbounded ()
 
         ( selfSender, selfReceiver ) =
-            Channel.rawUnbounded ()
+            selfChannel
+
+        forwardAppMessagesTask () =
+            Channel.recv
+                (\payload -> Channel.send selfSender (App payload))
+                appReceiver
+                |> RawTask.andThen forwardAppMessagesTask
 
         router =
             { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-            , selfSender = selfSender
+            , selfSender = \msg -> Channel.send selfSender (Self msg)
             }
-
-        selfProcessId =
-            RawScheduler.rawSpawn initTask
     in
-    selfSender
+    RawScheduler.spawn (forwardAppMessagesTask ())
+        |> RawTask.andThen (\_ -> initTask)
 
 
 unwrapTask : Task Never a -> RawTask.Task a
@@ -491,7 +499,11 @@ type HiddenConvertedSubType
 
 type ReceivedData appMsg selfMsg
     = Self selfMsg
-    | App (List (HiddenMyCmd appMsg)) (List (HiddenMySub appMsg))
+    | App (AppMsgPayload appMsg)
+
+
+type alias AppMsgPayload appMsg =
+    ( List (HiddenMyCmd appMsg), List (HiddenMySub appMsg) )
 
 
 type HiddenMyCmd msg

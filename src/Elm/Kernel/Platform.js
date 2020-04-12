@@ -79,14 +79,18 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 
 	selfSenders.set('000PlatformEffect', __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp));
 	for (const [key, effectManagerFunctions] of Object.entries(_Platform_effectManagers)) {
-		const manager = A4(
-			__Platform_initializeHelperFunctions.__$setupEffects,
-			sendToApp,
-			effectManagerFunctions.__init,
-			effectManagerFunctions.__fullOnEffects,
-			effectManagerFunctions.__onSelfMsg
+		const managerChannel = __Channel_rawUnbounded(__Utils_Tuple0);
+		__Scheduler_rawSpawn(
+			A5(
+				__Platform_initializeHelperFunctions.__$setupEffects,
+				sendToApp,
+				managerChannel.b,
+				effectManagerFunctions.__init,
+				effectManagerFunctions.__fullOnEffects,
+				effectManagerFunctions.__onSelfMsg
+			)
 		);
-		selfSenders.set(key, manager);
+		selfSenders.set(key, managerChannel.a);
 	}
 	for (const [key, {port}] of _Platform_outgoingPorts.entries()) {
 		ports[key] = port;

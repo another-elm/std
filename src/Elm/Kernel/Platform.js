@@ -349,7 +349,7 @@ const _Platform_createSubProcess = createTask => {
 	return key;
 };
 
-const _Platform_resetSubscriptions = newSubs => {
+const _Platform_resetSubscriptions = newSubs => __Scheduler_binding(doneCallback => {
 	for (const sendToApps of _Platform_subscriptionMap.values()) {
 		sendToApps.length = 0;
 	}
@@ -364,8 +364,8 @@ const _Platform_resetSubscriptions = newSubs => {
 		//*/
 		sendToApps.push(sendToApp);
 	}
-	return __Utils_Tuple0;
-};
+	doneCallback(__Scheduler_succeed(__Utils_Tuple0));
+});
 
 const _Platform_effectManagerNameToString = name => name;
 

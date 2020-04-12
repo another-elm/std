@@ -31,9 +31,9 @@ send channelId msg =
     Scheduler.wrapTask (RawTask.map Ok (RawChannel.send channelId msg))
 
 
-unbounded : () -> Platform.Task never ( Sender msg, Receiver msg )
-unbounded () =
-    Scheduler.wrapTask (RawTask.map Ok (RawChannel.unbounded ()))
+unbounded : Platform.Task never ( Sender msg, Receiver msg )
+unbounded =
+    Scheduler.wrapTask (RawTask.map Ok RawChannel.unbounded)
 
 
 mapSender : (b -> a) -> Sender a -> Sender b

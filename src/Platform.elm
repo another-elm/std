@@ -399,6 +399,19 @@ instantiateEffectManager :
     -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
     -> RawTask.Task Never
 instantiateEffectManager sendToAppFunc appReceiver init onEffects onSelfMsg =
+    Channel.unbounded
+        |> RawTask.andThen (instantiateEffectManagerWithSelfChannel sendToAppFunc appReceiver init onEffects onSelfMsg)
+
+
+instantiateEffectManagerWithSelfChannel :
+    SendToApp appMsg
+    -> Channel.Receiver (AppMsgPayload appMsg)
+    -> RawTask.Task state
+    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
+    -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
+    -> Channel.Channel (ReceivedData appMsg selfMsg)
+    -> RawTask.Task Never
+instantiateEffectManagerWithSelfChannel sendToAppFunc appReceiver init onEffects onSelfMsg ( selfSender, selfReceiver ) =
     let
         receiveMsg :
             state
@@ -429,13 +442,6 @@ instantiateEffectManager sendToAppFunc appReceiver init onEffects onSelfMsg =
             RawTask.sleep 0
                 |> RawTask.andThen (\_ -> init)
                 |> RawTask.andThen (\state -> Channel.recv (receiveMsg state) selfReceiver)
-
-        selfChannel : Channel.Channel (ReceivedData appMsg selfMsg)
-        selfChannel =
-            Channel.rawUnbounded ()
-
-        ( selfSender, selfReceiver ) =
-            selfChannel
 
         forwardAppMessagesTask () =
             Channel.recv

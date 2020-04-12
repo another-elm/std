@@ -61,8 +61,8 @@ rawUnbounded =
     Elm.Kernel.Channel.rawUnbounded
 
 
-unbounded : () -> RawTask.Task ( Sender msg, Receiver msg )
-unbounded () =
+unbounded : RawTask.Task ( Sender msg, Receiver msg )
+unbounded =
     RawTask.execImpure rawUnbounded
 
 

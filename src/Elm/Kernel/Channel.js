@@ -82,8 +82,3 @@ const _Channel_rawSendImpl = F2((channelId, msg) => {
 const _Channel_rawSend = F2((sender, msg) => {
   sender(msg);
 });
-
-
-const _Channel_mapSender = F2((func, sender) => {
-  return val => sender(func(val));
-});

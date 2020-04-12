@@ -1,4 +1,4 @@
-module Platform.Channel exposing (Receiver, Sender, mapSender, recv, send, unbounded)
+module Platform.Channel exposing (Receiver, Sender, recv, send, unbounded)
 
 import Basics exposing (..)
 import Debug
@@ -34,8 +34,3 @@ send channelId msg =
 unbounded : Platform.Task never ( Sender msg, Receiver msg )
 unbounded =
     Scheduler.wrapTask (RawTask.map Ok RawChannel.unbounded)
-
-
-mapSender : (b -> a) -> Sender a -> Sender b
-mapSender =
-    RawChannel.mapSender

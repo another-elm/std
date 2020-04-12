@@ -1,4 +1,4 @@
-module Platform.Raw.Channel exposing (Channel, Receiver, Sender, mapSender, rawSend, rawUnbounded, recv, send, tryRecv, unbounded)
+module Platform.Raw.Channel exposing (Channel, Receiver, Sender, rawSend, rawUnbounded, recv, send, tryRecv, unbounded)
 
 import Basics exposing (..)
 import Debug
@@ -74,8 +74,3 @@ rawRecv =
 rawTryRecv : Receiver msg -> Maybe msg
 rawTryRecv =
     Elm.Kernel.Channel.rawTryRecv
-
-
-mapSender : (b -> a) -> Sender a -> Sender b
-mapSender =
-    Elm.Kernel.Channel.mapSender

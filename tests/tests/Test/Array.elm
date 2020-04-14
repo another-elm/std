@@ -20,6 +20,7 @@ tests =
         , transformTests
         , sliceTests
         , runtimeCrashTests
+        , equalityTests
         ]
 
 
@@ -304,4 +305,21 @@ runtimeCrashTests =
                             (initialize (32 ^ 2 - 1 * 32 + 1) (\i -> i))
                 in
                     Expect.equal res res
+        ]
+
+equalityTests : Test
+equalityTests =
+    describe "Equality of arrays"
+        [ fuzz (Fuzz.list Fuzz.int) "int" <|
+            \l ->
+                Array.fromList l
+                    |> Expect.equal (Array.fromList l)
+        , fuzz (Fuzz.list Fuzz.string) "string" <|
+            \l ->
+                Array.fromList l
+                    |> Expect.equal (Array.fromList l)
+        , fuzz (Fuzz.list Fuzz.float) "float" <|
+            \l ->
+                Array.fromList l
+                    |> Expect.equal (Array.fromList l)
         ]

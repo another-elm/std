@@ -336,7 +336,7 @@ const _Platform_createSubProcess = _ => {
 	return __Utils_Tuple2(key, channel.a);
 };
 
-const _Platform_resetSubscriptions = newSubs => __Scheduler_execImpure(_ => {
+const _Platform_resetSubscriptions = newSubs => __RawTask_execImpure(_ => {
 	for (const sendToApps of _Platform_subscriptionMap.values()) {
 		sendToApps.length = 0;
 	}

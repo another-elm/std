@@ -272,7 +272,6 @@ setupEffectsChannel sendToApp2 =
                                 ( id, \v -> sendToApp2 (tagger v) AsyncUpdate )
                             )
                         |> resetSubscriptions
-                        |> unwrapTask
             in
             cmdTask
                 |> RawTask.andThen (\_ -> subTask)
@@ -597,6 +596,6 @@ createPlatformEffectFuncsFromSub =
     Elm.Kernel.Basics.fudgeType
 
 
-resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> Task Never ()
+resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> RawTask.Task ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

@@ -309,7 +309,6 @@ dispatchEffects cmdBag subBag =
             ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
 
 
-
 gatherCmds :
     Cmd msg
     -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
@@ -381,7 +380,6 @@ setupEffects sendToAppFunc receiver init onEffects onSelfMsg =
         (unwrapTask init)
         (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
         (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
-
 
 
 instantiateEffectManager :

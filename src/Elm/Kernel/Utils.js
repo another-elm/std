@@ -52,7 +52,7 @@ function _Utils_eqHelp(x, y, depth, stack) {
   }
   //*/
 
-  /**__DEBUG/
+  /**__PROD/
   if (x.$ < 0) {
     x = __Dict_toList(x);
     y = __Dict_toList(y);

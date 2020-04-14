@@ -8,11 +8,11 @@ import Set exposing (toList)
 
 // LOG
 
-var _Debug_log__PROD = F2(function (tag, value) {
+const _Debug_log__PROD = F2(function (tag, value) {
   return value;
 });
 
-var _Debug_log__DEBUG = F2(function (tag, value) {
+const _Debug_log__DEBUG = F2(function (tag, value) {
   console.log(tag + ": " + _Debug_toString(value));
   return value;
 });
@@ -63,17 +63,17 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof value === "object" && "$" in value) {
-    var tag = value.$;
+    const tag = value.$;
 
     if (typeof tag === "number") {
       return _Debug_internalColor(ansi, "<internals>");
     }
 
     if (tag[0] === "#") {
-      var output = [];
-      for (var k in value) {
+      const output = [];
+      for (const [k, v] of Object.entries(value)) {
         if (k === "$") continue;
-        output.push(_Debug_toAnsiString(ansi, value[k]));
+        output.push(_Debug_toAnsiString(ansi, v));
       }
       return "(" + output.join(",") + ")";
     }
@@ -106,30 +106,26 @@ function _Debug_toAnsiString(ansi, value) {
     }
 
     if (tag === "Cons_elm_builtin" || tag === "Nil_elm_builtin") {
-      var output = "[";
+      return (
+        "[" +
+        __List_toArray(value)
+          .map((v) => _Debug_toAnsiString(ansi, v))
+          .join(",") +
+        "]"
+      );
+    }
 
-      value.b && ((output += _Debug_toAnsiString(ansi, value.a)), (value = value.b));
-
-      for (
-        ;
-        value.b;
-        value = value.b // WHILE_CONS
-      ) {
-        output += "," + _Debug_toAnsiString(ansi, value.a);
+    const parts = Object.keys(value).map(([k, v]) => {
+      if (k === "$") {
+        return _Debug_ctorColor(ansi, v);
       }
-      return output + "]";
-    }
-
-    var output = "";
-    for (var i in value) {
-      if (i === "$") continue;
-      var str = _Debug_toAnsiString(ansi, value[i]);
-      var c0 = str[0];
-      var parenless =
+      const str = _Debug_toAnsiString(ansi, v);
+      const c0 = str[0];
+      const parenless =
         c0 === "{" || c0 === "(" || c0 === "[" || c0 === "<" || c0 === '"' || str.indexOf(" ") < 0;
-      output += " " + (parenless ? str : "(" + str + ")");
-    }
-    return _Debug_ctorColor(ansi, tag) + output;
+      return parenless ? str : "(" + str + ")";
+    });
+    return parts.join(" ");
   }
 
   if (typeof DataView === "function" && value instanceof DataView) {
@@ -141,22 +137,18 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof value === "object") {
-    var output = [];
-    for (var key in value) {
-      var field = key[0] === "_" ? key.slice(1) : key;
-      output.push(_Debug_fadeColor(ansi, field) + " = " + _Debug_toAnsiString(ansi, value[key]));
-    }
-    if (output.length === 0) {
-      return "{}";
-    }
-    return "{ " + output.join(", ") + " }";
+    const keyValuePairs = Object.keys(value).map(([k, v]) => {
+      const field = k[0] === "_" ? key.slice(1) : k;
+      return _Debug_fadeColor(ansi, field) + " = " + _Debug_toAnsiString(ansi, k);
+    });
+    return "{ " + keyValuePairs.join(", ") + " }";
   }
 
   return _Debug_internalColor(ansi, "<internals>");
 }
 
 function _Debug_addSlashes(str, isChar) {
-  var s = str
+  const s = str
     .replace(/\\/g, "\\\\")
     .replace(/\n/g, "\\n")
     .replace(/\t/g, "\\t")
@@ -281,22 +273,22 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
       );
 
     case 2: {
-      var jsonErrorString = fact1;
+      const jsonErrorString = fact1;
       throw new Error(
         "Problem with the flags given to your Elm program on initialization.\n\n" + jsonErrorString
       );
     }
 
     case 3: {
-      var portName = fact1;
+      const portName = fact1;
       throw new Error(
         "There can only be one port named `" + portName + "`, but your program has multiple."
       );
     }
 
     case 4: {
-      var portName = fact1;
-      var problem = fact2;
+      const portName = fact1;
+      const problem = fact2;
       throw new Error(
         "Trying to send an unexpected type of value through port `" + portName + "`:\n" + problem
       );
@@ -308,7 +300,7 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
       );
 
     case 6: {
-      var moduleName = fact1;
+      const moduleName = fact1;
       throw new Error(
         "Your page is loading multiple Elm scripts with a module named " +
           moduleName +
@@ -317,19 +309,19 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
     }
 
     case 8: {
-      var moduleName = fact1;
-      var region = fact2;
-      var message = fact3;
+      const moduleName = fact1;
+      const region = fact2;
+      const message = fact3;
       throw new Error(
         "TODO in module `" + moduleName + "` " + _Debug_regionToString(region) + "\n\n" + message
       );
     }
 
     case 9: {
-      var moduleName = fact1;
-      var region = fact2;
-      var value = fact3;
-      var message = fact4;
+      const moduleName = fact1;
+      const region = fact2;
+      const value = fact3;
+      const message = fact4;
       throw new Error(
         "TODO in module `" +
           moduleName +

@@ -121,7 +121,7 @@ all the complex logic in Elm.
 Initializing a headless program from JavaScript looks like this:
 
 ```javascript
-var app = Elm.MyThing.init();
+const app = Elm.MyThing.init();
 ```
 
 If you _do_ want to control the user interface in Elm, the [`Browser`][browser]

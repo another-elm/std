@@ -5,7 +5,7 @@ import Elm.Kernel.Utils exposing (chr)
 */
 
 function _Char_toCode(char) {
-  var code = char.charCodeAt(0);
+  const code = char.charCodeAt(0);
   if (0xd800 <= code && code <= 0xdbff) {
     return (code - 0xd800) * 0x400 + char.charCodeAt(1) - 0xdc00 + 0x10000;
   }

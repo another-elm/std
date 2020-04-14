@@ -45,9 +45,9 @@ function _Scheduler_getGuid() {
 
 function _Scheduler_getProcessState(id) {
   const procState = _Scheduler_processes.get(id);
-	if (__Basics_isDebug && procState === undefined) {
-		__Debug_crash(12, __Debug_runtimeCrashReason('procIdNotRegistered'), id && id.a && id.a.__$id);
-	}
+  if (__Basics_isDebug && procState === undefined) {
+    __Debug_crash(12, __Debug_runtimeCrashReason("procIdNotRegistered"), id && id.a && id.a.__$id);
+  }
   return procState;
 }
 
@@ -133,14 +133,14 @@ const _Scheduler_getWokenValue = (procId) => {
 };
 
 const _Scheduler_setWakeTask = F2((procId, newRoot) => {
-	if (__Basics_isDebug && _Scheduler_readyFlgs.has(procId)) {
-		__Debug_crash(
-			12,
-			__Debug_runtimeCrashReason('procIdAlreadyReady'),
-			procId && procId.a && procId.a.__$id,
-			_Scheduler_readyFlgs.get(procId)
-		);
-	}
+  if (__Basics_isDebug && _Scheduler_readyFlgs.has(procId)) {
+    __Debug_crash(
+      12,
+      __Debug_runtimeCrashReason("procIdAlreadyReady"),
+      procId && procId.a && procId.a.__$id,
+      _Scheduler_readyFlgs.get(procId)
+    );
+  }
   _Scheduler_readyFlgs.set(procId, newRoot);
   return __Utils_Tuple0;
 });

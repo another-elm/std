@@ -33,11 +33,11 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args["flags"] : undefined));
 
   if (!__Result_isOk(flagsResult)) {
-		if (__Basics_isDebug) {
-			__Debug_crash(2, __Json_errorToString(result.a));
-		} else {
-			__Debug_crash(2);
-		}
+    if (__Basics_isDebug) {
+      __Debug_crash(2, __Json_errorToString(result.a));
+    } else {
+      __Debug_crash(2);
+    }
   }
 
   const selfSenders = new Map();
@@ -196,12 +196,12 @@ const _Platform_leaf = (home) => (value) => {
     __List_Nil
   );
   if (__Basics_isDebug) {
-		return {
-			$: 'Data',
-			a: list,
-		};
-	}
-	return list;
+    return {
+      $: "Data",
+      a: list,
+    };
+  }
+  return list;
 };
 
 // PORTS
@@ -289,9 +289,9 @@ const _Platform_createSubProcess = (_) => {
   const msgHandler = (msg) => {
     return __RawTask_execImpure((_) => {
       const sendToApps = _Platform_subscriptionMap.get(key);
-			if (__Basics_isDebug && sendToApps === undefined) {
-				__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
-			}
+      if (__Basics_isDebug && sendToApps === undefined) {
+        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
+      }
       for (const sendToApp of sendToApps) {
         sendToApp(msg);
       }
@@ -317,9 +317,9 @@ const _Platform_resetSubscriptions = (newSubs) =>
       const key = tuple.a;
       const sendToApp = tuple.b;
       const sendToApps = _Platform_subscriptionMap.get(key);
-			if (__Basics_isDebug && sendToApps === undefined) {
-				__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
-			}
+      if (__Basics_isDebug && sendToApps === undefined) {
+        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
+      }
       sendToApps.push(sendToApp);
     }
     return __Utils_Tuple0;
@@ -346,7 +346,7 @@ const _Platform_wrapTask = (task) => __Platform_Task(task);
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
 
 // command : Platform.Task Never (Maybe msg) -> Cmd msg
-const _Platform_command = _Platform_leaf("000PlatformEffect")
+const _Platform_command = _Platform_leaf("000PlatformEffect");
 
 // EXPORT ELM MODULES
 //

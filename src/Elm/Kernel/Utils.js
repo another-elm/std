@@ -91,7 +91,7 @@ function _Utils_cmp(x, y, ord) {
   }
 
   // Handle tuples.
-  const isTuple = __Basics_isDebug ? x.$[0] === '#' : typeof x.$ === 'undefined';
+  const isTuple = __Basics_isDebug ? x.$[0] === "#" : typeof x.$ === "undefined";
   if (isTuple) {
     const ordA = _Utils_cmp(x.a, y.a);
     if (ordA !== 0) {

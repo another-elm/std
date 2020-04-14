@@ -74,7 +74,7 @@ type alias InitializeHelperFunctions model appMsg =
         -> Sub appMsg
         -> Bag.EffectManagerName
         -> Channel.Sender (AppMsgPayload appMsg)
-        -> Task Never ()
+        -> RawTask.Task ()
     }
 
 
@@ -293,7 +293,7 @@ dispatchEffects :
     -> Sub appMsg
     -> Bag.EffectManagerName
     -> Channel.Sender (AppMsgPayload appMsg)
-    -> Task never ()
+    -> RawTask.Task ()
 dispatchEffects cmdBag subBag =
     let
         effectsDict =
@@ -308,11 +308,10 @@ dispatchEffects cmdBag subBag =
                     ( [], [] )
                     (Dict.get (effectManagerNameToString key) effectsDict)
         in
-        wrapTask
-            (Channel.send
-                channel
-                ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
-            )
+        Channel.send
+            channel
+            ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
+
 
 
 gatherCmds :

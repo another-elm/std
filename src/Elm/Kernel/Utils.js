@@ -1,10 +1,8 @@
 /*
 
-import Array exposing (toList)
-import Basics exposing (LT, EQ, GT)
 import Dict exposing (toList)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.List exposing (Cons, Nil, nilKey)
+import Elm.Kernel.List exposing (nilKey)
 import Elm.Kernel.Basics exposing (isDebug)
 import Set exposing (toList)
 import List exposing (append)

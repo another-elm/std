@@ -68,7 +68,7 @@ type alias InitializeHelperFunctions model appMsg =
         -> Task Never HiddenState
         -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
         -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> Task Never Never
+        -> RawTask.Task Never
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
@@ -377,16 +377,15 @@ setupEffects :
     -> Task Never state
     -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
     -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> Task never Never
+    -> RawTask.Task Never
 setupEffects sendToAppFunc receiver init onEffects onSelfMsg =
-    wrapTask
-        (instantiateEffectManager
-            sendToAppFunc
-            receiver
-            (unwrapTask init)
-            (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
-            (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
-        )
+    instantiateEffectManager
+        sendToAppFunc
+        receiver
+        (unwrapTask init)
+        (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
+        (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
+
 
 
 instantiateEffectManager :

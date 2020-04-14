@@ -9,7 +9,7 @@ import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Effects as Effects exposing (mapCommand)
-import Platform.Scheduler as Scheduler exposing (execImpure, rawSpawn, andThen)
+import Platform.Scheduler as Scheduler exposing (execImpure)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
@@ -86,7 +86,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 	selfSenders.set('000PlatformEffect', __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp));
 	for (const [key, effectManagerFunctions] of Object.entries(_Platform_effectManagers)) {
 		const managerChannel = __Channel_rawUnbounded(__Utils_Tuple0);
-		__Scheduler_rawSpawn(
+		__RawScheduler_rawSpawn(
 			A5(
 				__Platform_initializeHelperFunctions.__$setupEffects,
 				sendToApp,

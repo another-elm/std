@@ -10,7 +10,9 @@ import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Effects as Effects exposing (mapCommand)
 import Platform.Scheduler as Scheduler exposing (execImpure, rawSpawn, andThen)
-import Platform.Channel as NiceChannel exposing (recv, send)
+import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
+import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
+import Platform.Raw.Channel as RawChannel exposing (recv)
 
 */
 
@@ -78,7 +80,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 	});
 
 	for (const init of _Platform_subscriptionInit) {
-		__Scheduler_rawSpawn(init(__Utils_Tuple0));
+		__RawScheduler_rawSpawn(init(__Utils_Tuple0));
 	}
 
 	selfSenders.set('000PlatformEffect', __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp));
@@ -307,7 +309,7 @@ const _Platform_createSubProcess = _ => {
 	const channel = __Channel_rawUnbounded();
 	const key = { id: _Platform_subscriptionProcessIds++ };
 	const msgHandler = msg => {
-		return __Scheduler_execImpure(_ => {
+		return __RawTask_execImpure(_ => {
 			const sendToApps = _Platform_subscriptionMap.get(key);
 			/**__DEBUG/
 			if (sendToApps === undefined) {
@@ -323,9 +325,9 @@ const _Platform_createSubProcess = _ => {
 
 	const onSubEffects = _ =>
 		A2(
-			__Scheduler_andThen,
+			__RawTask_andThen,
 			onSubEffects,
-			A2(__NiceChannel_recv, msgHandler, channel.b),
+			A2(__RawChannel_recv, msgHandler, channel.b),
 		);
 
 	_Platform_subscriptionMap.set(key, []);

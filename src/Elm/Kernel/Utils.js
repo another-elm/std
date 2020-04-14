@@ -4,7 +4,7 @@ import Array exposing (toList)
 import Basics exposing (LT, EQ, GT)
 import Dict exposing (toList)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.List exposing (Cons, Nil)
+import Elm.Kernel.List exposing (Cons, Nil, nilKey)
 import Elm.Kernel.Basics exposing (isDebug)
 import Set exposing (toList)
 import List exposing (append)
@@ -111,13 +111,13 @@ function _Utils_cmp(x, y, ord) {
   // but the first list is longer than the first list is greater (and visa
   // versa).
   while (true) {
-    if (x.$ === _List_nilKey) {
-      if (y.$ === _List_nilKey) {
+    if (x.$ === __List_nilKey) {
+      if (y.$ === __List_nilKey) {
         return 0;
       } else {
         return -1;
       }
-    } else if (y.$ === _List_nilKey) {
+    } else if (y.$ === __List_nilKey) {
       return 1;
     }
     const ord = _Utils_cmp(x.a, y.a);

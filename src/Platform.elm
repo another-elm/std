@@ -212,9 +212,11 @@ The channel who's sender we return is a runtime specific channel, the thunk
 returned by dispatchEffects will use the sender to notify this function that we
 have command and/or subscriptions to process.
 
-Each command or subscription is a function `Channel.Sender msg -> Platform.Task
-Never ()`. We must call it with a channel that forwards all messages to the
-app's main update cycle (i.e. the receiver will call sendToApp2).
+Each command is a  `Platform.Task Never (Maybe msg)`. If the Task resolves with
+`Just something` we must send that `something` to the app.
+
+Each sub is a tuple `( IncomingPortId, HiddenConvertedSubType -> msg )` we can
+collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
 setupEffectsChannel : SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)

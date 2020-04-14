@@ -3,7 +3,7 @@
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
-import Elm.Kernel.Utils exposing (Tuple2)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 */
 
 const _Channel_channels = new WeakMap();
@@ -80,7 +80,7 @@ const _Channel_rawSendImpl = F2((channelId, msg) => {
     channel.wakers.delete(nextWaker);
     nextWaker(msg);
   }
-  return _Utils_Tuple0;
+  return __Utils_Tuple0;
 });
 
 const _Channel_rawSend = F2((sender, msg) => {

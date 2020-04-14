@@ -129,15 +129,25 @@ async function processJsFile(file, kernelDefinitions) {
 
     let index = 0;
     while (true) {
-      const kernelCallMatch = line.substr(index).match(/__\w+_\w+/u);
+      const kernelCallMatch = line.substr(index).match(/_?_\w+_\w+/u);
       if (kernelCallMatch === null) {
         break;
       } else {
         const kernelCall = kernelCallMatch[0];
-        if (imports.has(kernelCall)) {
-          imports.set(kernelCall, true);
-        } else {
-          errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+        if (kernelCall.startsWith("__")) {
+          // External kernel call
+          if (imports.has(kernelCall)) {
+            imports.set(kernelCall, true);
+          } else {
+            errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+          }
+        } else if (
+          kernelCall[1] === kernelCall[1].toUpperCase() &&
+          !kernelCall.startsWith(`_${moduleName}`)
+        ) {
+          errors.push(
+            `Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
+          );
         }
         index += kernelCallMatch.index + kernelCallMatch[0].length;
       }

@@ -4,6 +4,7 @@ import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Basics exposing (isDebug)
+import Elm.Kernel.Utils exposing (Tuple0)
 */
 
 // COMPATIBILITY
@@ -141,5 +142,5 @@ const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 		);
 	}
   _Scheduler_readyFlgs.set(procId, newRoot);
-  return _Utils_Tuple0;
+  return __Utils_Tuple0;
 });

@@ -1,6 +1,7 @@
 /*
 
 import Maybe exposing (Just, Nothing)
+import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Utils exposing (Tuple2)
 */
@@ -21,11 +22,14 @@ const _Channel_rawUnbounded = (_) => {
 
 const _Channel_rawTryRecv = (channelId) => {
   const channel = _Channel_channels.get(channelId);
-  /**__DEBUG/
-	if (channel === undefined) {
-		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
-	}
-	//*/
+  if (__Basics_isDebug && channel === undefined) {
+    __Debug_crash(
+      12,
+      __Debug_runtimeCrashReason("channelIdNotRegistered"),
+      channelId && channelId.a && channelId.a.__$id
+    );
+  }
+
   const msg = channel.messages.shift();
   if (msg === undefined) {
     return __Maybe_Nothing;
@@ -36,11 +40,13 @@ const _Channel_rawTryRecv = (channelId) => {
 
 const _Channel_rawRecv = F2((channelId, onMsg) => {
   const channel = _Channel_channels.get(channelId);
-  /**__DEBUG/
-	if (channel === undefined) {
-		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
-	}
-	//*/
+  if (__Basics_isDebug && channel === undefined) {
+    __Debug_crash(
+      12,
+      __Debug_runtimeCrashReason("channelIdNotRegistered"),
+      channelId && channelId.a && channelId.a.__$id
+    );
+  }
   const msg = channel.messages.shift();
   if (msg !== undefined) {
     onMsg(msg);
@@ -58,11 +64,13 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
 
 const _Channel_rawSendImpl = F2((channelId, msg) => {
   const channel = _Channel_channels.get(channelId);
-  /**__DEBUG/
-	if (channel === undefined) {
-		__Debug_crash(12, __Debug_runtimeCrashReason('channelIdNotRegistered'), channelId && channelId.a && channelId.a.__$id);
-	}
-	//*/
+  if (__Basics_isDebug && channel === undefined) {
+    __Debug_crash(
+      12,
+      __Debug_runtimeCrashReason("channelIdNotRegistered"),
+      channelId && channelId.a && channelId.a.__$id
+    );
+  }
 
   const wakerIter = channel.wakers[Symbol.iterator]();
   const { value: nextWaker, done } = wakerIter.next();

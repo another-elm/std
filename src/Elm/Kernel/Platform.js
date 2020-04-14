@@ -5,6 +5,7 @@ import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
 import Elm.Kernel.List exposing (Cons, Nil, toArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
+import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
@@ -33,7 +34,11 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args["flags"] : undefined));
 
   if (!__Result_isOk(flagsResult)) {
-    __Debug_crash(2 /**__DEBUG/, __Json_errorToString(result.a) /**/);
+		if (__Basics_isDebug) {
+			__Debug_crash(2, __Json_errorToString(result.a));
+		} else {
+			__Debug_crash(2);
+		}
   }
 
   const selfSenders = new Map();
@@ -191,15 +196,13 @@ const _Platform_leaf = (home) => (value) => {
     },
     __List_Nil
   );
-  /**__DEBUG/
-	return {
-		$: 'Data',
-		a: list,
-	};
-	/**/
-  /**__PROD/
+  if (__Basics_isDebug) {
+		return {
+			$: 'Data',
+			a: list,
+		};
+	}
 	return list;
-	/**/
 };
 
 // PORTS
@@ -287,11 +290,9 @@ const _Platform_createSubProcess = (_) => {
   const msgHandler = (msg) => {
     return __RawTask_execImpure((_) => {
       const sendToApps = _Platform_subscriptionMap.get(key);
-      /**__DEBUG/
-			if (sendToApps === undefined) {
+			if (__Basics_isDebug && sendToApps === undefined) {
 				__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
 			}
-			//*/
       for (const sendToApp of sendToApps) {
         sendToApp(msg);
       }
@@ -317,11 +318,9 @@ const _Platform_resetSubscriptions = (newSubs) =>
       const key = tuple.a;
       const sendToApp = tuple.b;
       const sendToApps = _Platform_subscriptionMap.get(key);
-      /**__DEBUG/
-		if (sendToApps === undefined) {
-			__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
-		}
-		//*/
+			if (__Basics_isDebug && sendToApps === undefined) {
+				__Debug_crash(12, __Debug_runtimeCrashReason('subscriptionProcessMissing'), key && key.id);
+			}
       sendToApps.push(sendToApp);
     }
     return __Utils_Tuple0;

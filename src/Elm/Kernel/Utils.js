@@ -5,6 +5,7 @@ import Basics exposing (LT, EQ, GT)
 import Dict exposing (toList)
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.List exposing (Cons, Nil)
+import Elm.Kernel.Basics exposing (isDebug)
 import Set exposing (toList)
 import List exposing (append)
 
@@ -41,23 +42,20 @@ function _Utils_eqHelp(x, y, depth, stack) {
     return true;
   }
 
-  /**__DEBUG/
-  if (x.$ === "Set_elm_builtin") {
-    x = __Set_toList(x);
-    y = __Set_toList(y);
+  if (__Basics_isDebug) {
+    if (x.$ === "Set_elm_builtin") {
+      x = __Set_toList(x);
+      y = __Set_toList(y);
+    } else if (x.$ === "RBNode_elm_builtin" || x.$ === "RBEmpty_elm_builtin") {
+      x = __Dict_toList(x);
+      y = __Dict_toList(y);
+    }
+  } else {
+    if (x.$ < 0) {
+      x = __Dict_toList(x);
+      y = __Dict_toList(y);
+    }
   }
-  if (x.$ === "RBNode_elm_builtin" || x.$ === "RBEmpty_elm_builtin") {
-    x = __Dict_toList(x);
-    y = __Dict_toList(y);
-  }
-  //*/
-
-  /**__PROD/
-  if (x.$ < 0) {
-    x = __Dict_toList(x);
-    y = __Dict_toList(y);
-  }
-  //*/
 
   /* The compiler ensures that the elm types of x and y are the same.
    * Therefore, x and y must have the same keys.
@@ -88,22 +86,15 @@ function _Utils_cmp(x, y, ord) {
   }
 
   // Handle characters in debug mode.
-  /**__DEBUG/
-  if (x instanceof String) {
-    var a = x.valueOf();
-    var b = y.valueOf();
+  if (__Basics_isDebug && x instanceof String) {
+    const a = x.valueOf();
+    const b = y.valueOf();
     return a === b ? 0 : a < b ? -1 : 1;
   }
-  //*/
 
   // Handle tuples.
-  /**__PROD/
-	if (typeof x.$ === 'undefined')
-	//*/
-  /**__DEBUG/
-	if (x.$[0] === '#')
-	//*/
-  {
+  const isTuple = __Basics_isDebug ? x.$[0] === '#' : typeof x.$ === 'undefined';
+  if (isTuple) {
     const ordA = _Utils_cmp(x.a, y.a);
     if (ordA !== 0) {
       return ordA;

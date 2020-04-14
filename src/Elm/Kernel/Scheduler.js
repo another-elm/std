@@ -3,6 +3,7 @@
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
+import Elm.Kernel.Basics exposing (isDebug)
 */
 
 // COMPATIBILITY
@@ -43,24 +44,20 @@ function _Scheduler_getGuid() {
 
 function _Scheduler_getProcessState(id) {
   const procState = _Scheduler_processes.get(id);
-  /**__DEBUG/
-	if (procState === undefined) {
+	if (__Basics_isDebug && procState === undefined) {
 		__Debug_crash(12, __Debug_runtimeCrashReason('procIdNotRegistered'), id && id.a && id.a.__$id);
 	}
-	//*/
   return procState;
 }
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
-  /**__DEBUG/
-  if (_Scheduler_processes.has(procId)) {
+  if (__Basics_isDebug && _Scheduler_processes.has(procId)) {
     __Debug_crash(
       12,
       __Debug_runtimeCrashReason("procIdAlreadyRegistered"),
       procId && procId.a && procId.a.__$id
     );
   }
-  //*/
   _Scheduler_processes.set(procId, procState);
   return procId;
 });
@@ -71,38 +68,32 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
 
   const stepProccessWithId = (newProcId) => {
     const procState = _Scheduler_processes.get(newProcId);
-    /**__DEBUG/
-    if (procState === undefined) {
+    if (__Basics_isDebug && procState === undefined) {
       __Debug_crash(
         12,
         __Debug_runtimeCrashReason("procIdNotRegistered"),
         newProcId && newProcId.a && newProcId.a.__$id
       );
     }
-    /**__DEBUG/
     const updatedState = A2(stepper, newProcId, procState);
-    /**/
-    if (procState !== _Scheduler_processes.get(newProcId)) {
+    if (__Basics_isDebug && procState !== _Scheduler_processes.get(newProcId)) {
       __Debug_crash(
         12,
         __Debug_runtimeCrashReason("reentrantProcUpdate"),
         newProcId && newProcId.a && newProcId.a.__$id
       );
     }
-    //*/
     _Scheduler_processes.set(newProcId, updatedState);
   };
 
   return (procId) => {
-    /**__DEBUG/
-    if (queue.some((p) => p.a.__$id === procId.a.__$id)) {
+    if (__Basics_isDebug && queue.some((p) => p.a.__$id === procId.a.__$id)) {
       __Debug_crash(
         12,
         __Debug_runtimeCrashReason("procIdAlreadyInQueue"),
         procId && procId.a && procId.a.__$id
       );
     }
-    //*/
     queue.push(procId);
     if (working) {
       return procId;
@@ -141,8 +132,7 @@ const _Scheduler_getWokenValue = (procId) => {
 };
 
 const _Scheduler_setWakeTask = F2((procId, newRoot) => {
-  /**__DEBUG/
-	if (_Scheduler_readyFlgs.has(procId)) {
+	if (__Basics_isDebug && _Scheduler_readyFlgs.has(procId)) {
 		__Debug_crash(
 			12,
 			__Debug_runtimeCrashReason('procIdAlreadyReady'),
@@ -150,7 +140,6 @@ const _Scheduler_setWakeTask = F2((procId, newRoot) => {
 			_Scheduler_readyFlgs.get(procId)
 		);
 	}
-	//*/
   _Scheduler_readyFlgs.set(procId, newRoot);
   return _Utils_Tuple0;
 });

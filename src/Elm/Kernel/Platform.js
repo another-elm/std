@@ -7,13 +7,12 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Nothing)
+import Maybe exposing (Nothing, map)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
-import Platform.Effects as Effects exposing (mapCommand)
-import Platform.Scheduler as Scheduler exposing (execImpure)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
+import Platform.Scheduler as Scheduler exposing (execImpure, map)
 
 */
 
@@ -330,7 +329,7 @@ const _Platform_effectManagerNameToString = (name) => name;
 
 const _Platform_getCmdMapper = (home) => {
   if (home === "000PlatformEffect") {
-    return __Effects_mapCommand;
+    return (tagger) => __Scheduler_map(__Maybe_map(tagger));
   }
   return _Platform_effectManagers[home].__cmdMapper;
 };
@@ -345,6 +344,9 @@ const _Platform_getSubMapper = (home) => {
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
+
+// command : Platform.Task Never (Maybe msg) -> Cmd msg
+const _Platform_command = _Platform_leaf("000PlatformEffect")
 
 // EXPORT ELM MODULES
 //

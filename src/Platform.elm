@@ -212,7 +212,7 @@ The channel who's sender we return is a runtime specific channel, the thunk
 returned by dispatchEffects will use the sender to notify this function that we
 have command and/or subscriptions to process.
 
-Each command is a  `Platform.Task Never (Maybe msg)`. If the Task resolves with
+Each command is a `Platform.Task Never (Maybe msg)`. If the Task resolves with
 `Just something` we must send that `something` to the app.
 
 Each sub is a tuple `( IncomingPortId, HiddenConvertedSubType -> msg )` we can

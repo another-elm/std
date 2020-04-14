@@ -31,11 +31,11 @@ HTTP requests or writing to a database.
 -}
 
 import Basics exposing ((<<), (|>), Never, never)
+import Elm.Kernel.Platform
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
-import Platform.Effects
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 
@@ -379,4 +379,13 @@ attempt resultToMessage task =
 
 performHelp : Task Never msg -> Cmd msg
 performHelp task =
-    Platform.Effects.command (map Just task)
+    command (map Just task)
+
+
+
+-- kernel --
+
+
+command : Platform.Task Never (Maybe msg) -> Cmd msg
+command function =
+    Elm.Kernel.Platform.command

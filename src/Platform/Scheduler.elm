@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (DoneCallback, ProcessId, TryAbortAction, andThen, binding, fail, kill, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (DoneCallback, ProcessId, TryAbortAction, andThen, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -110,6 +110,11 @@ andThen func =
                 )
                 task
         )
+
+
+map : (ok1 -> ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
+map func =
+    andThen (func >> succeed)
 
 
 onError : (err1 -> Platform.Task err2 ok) -> Platform.Task err1 ok -> Platform.Task err2 ok

@@ -78,7 +78,7 @@ type alias InitializeHelperFunctions model appMsg =
     }
 
 
-{-| Kernel code relies on this definition existing and on the behaviour of these functions.
+{-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =

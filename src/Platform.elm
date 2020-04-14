@@ -224,44 +224,40 @@ setupEffectsChannel sendToApp2 =
         dispatchChannel =
             Channel.rawUnbounded ()
 
-        runCmds : List (Task Never (Maybe appMsg)) -> RawTask.Task RawScheduler.ProcessId
-        runCmds =
-            List.map (\(Task t) -> t)
-                >> List.map
-                    (RawTask.map
-                        (\r ->
-                            case r of
-                                Ok (Just msg) ->
-                                    sendToApp2 msg AsyncUpdate
-
-                                Ok Nothing ->
-                                    ()
-
-                                Err err ->
-                                    never err
-                        )
-                    )
-                >> List.map RawScheduler.spawn
-                >> List.foldr
-                    (\curr accTask ->
-                        RawTask.andThen
-                            (\acc ->
-                                RawTask.map
-                                    (\id -> id :: acc)
-                                    curr
-                            )
-                            accTask
-                    )
-                    (RawTask.Value [])
-                >> RawTask.andThen RawScheduler.batch
-
         receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
         receiveMsg ( cmds, subs ) =
             let
                 cmdTask =
                     cmds
                         |> List.map createPlatformEffectFuncsFromCmd
-                        |> runCmds
+                        |> List.map (\(Task t) -> t)
+                        |> List.map
+                            (RawTask.map
+                                (\r ->
+                                    case r of
+                                        Ok (Just msg) ->
+                                            sendToApp2 msg AsyncUpdate
+
+                                        Ok Nothing ->
+                                            ()
+
+                                        Err err ->
+                                            never err
+                                )
+                            )
+                        |> List.map RawScheduler.spawn
+                        |> List.foldr
+                            (\curr accTask ->
+                                RawTask.andThen
+                                    (\acc ->
+                                        RawTask.map
+                                            (\id -> id :: acc)
+                                            curr
+                                    )
+                                    accTask
+                            )
+                            (RawTask.Value [])
+                        |> RawTask.andThen RawScheduler.batch
 
                 -- Reset and re-register all subscriptions.
                 subTask =

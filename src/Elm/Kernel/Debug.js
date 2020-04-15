@@ -116,7 +116,7 @@ function _Debug_toAnsiString(ansi, value) {
       );
     }
 
-    const parts = Object.keys(value).map(([k, v]) => {
+    const parts = Object.entries(value).map(([k, v]) => {
       if (k === "$") {
         return _Debug_ctorColor(ansi, v);
       }
@@ -138,9 +138,9 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof value === "object") {
-    const keyValuePairs = Object.keys(value).map(([k, v]) => {
-      const field = k[0] === "_" ? key.slice(1) : k;
-      return _Debug_fadeColor(ansi, field) + " = " + _Debug_toAnsiString(ansi, k);
+    const keyValuePairs = Object.entries(value).map(([k, v]) => {
+      const field = k[0] === "_" ? k.slice(1) : k;
+      return _Debug_fadeColor(ansi, field) + " = " + _Debug_toAnsiString(ansi, v);
     });
     return "{ " + keyValuePairs.join(", ") + " }";
   }

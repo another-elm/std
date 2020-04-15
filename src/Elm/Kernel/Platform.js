@@ -8,7 +8,7 @@ import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing, map)
-import Platform exposing (Task, ProcessId, initializeHelperFunctions)
+import Platform exposing (Task, ProcessId, initializeHelperFunctions, ImpureFunction)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
@@ -66,7 +66,9 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
         fx.__subs
       );
       for (const [key, selfSender] of selfSenders.entries()) {
-        __RawScheduler_rawSpawn(A2(dispatcher, key, selfSender));
+        const tuple = A2(dispatcher, key, selfSender);
+        tuple.a(sendToApp);
+        __RawScheduler_rawSpawn(tuple.b);
       }
     }
   };
@@ -286,8 +288,8 @@ let _Platform_subscriptionProcessIds = 0;
 const _Platform_createSubProcess = (_) => {
   const channel = __Channel_rawUnbounded();
   const key = { id: _Platform_subscriptionProcessIds++ };
-  const msgHandler = (msg) => {
-    return __RawTask_execImpure((_) => {
+  const msgHandler = (msg) =>
+    __RawTask_execImpure((_) => {
       const sendToApps = _Platform_subscriptionMap.get(key);
       if (__Basics_isDebug && sendToApps === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
@@ -297,7 +299,6 @@ const _Platform_createSubProcess = (_) => {
       }
       return __Utils_Tuple0;
     });
-  };
 
   const onSubEffects = (_) =>
     A2(__RawTask_andThen, onSubEffects, A2(__RawChannel_recv, msgHandler, channel.b));
@@ -309,7 +310,8 @@ const _Platform_createSubProcess = (_) => {
 };
 
 const _Platform_resetSubscriptions = (newSubs) =>
-  __RawTask_execImpure((_) => {
+  __Platform_ImpureFunction((_) => {
+    console.log(`new subs using ${__List_toArray(newSubs).join(",")}`);
     for (const sendToApps of _Platform_subscriptionMap.values()) {
       sendToApps.length = 0;
     }

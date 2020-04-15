@@ -4,7 +4,6 @@ import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Basics exposing (isDebug)
-import Elm.Kernel.Utils exposing (Tuple0)
 */
 
 // COMPATIBILITY

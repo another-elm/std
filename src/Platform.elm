@@ -74,7 +74,7 @@ type alias InitializeHelperFunctions model appMsg =
         -> Sub appMsg
         -> Bag.EffectManagerName
         -> Channel.Sender (AppMsgPayload appMsg)
-        -> RawTask.Task ()
+        -> (SendToApp appMsg -> (), RawTask.Task ())
     }
 
 
@@ -227,7 +227,7 @@ setupEffectsChannel sendToApp2 =
             Channel.rawUnbounded ()
 
         receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
-        receiveMsg ( cmds, subs ) =
+        receiveMsg ( cmds, _ ) =
             let
                 cmdTask =
                     cmds
@@ -260,19 +260,9 @@ setupEffectsChannel sendToApp2 =
                             )
                             (RawTask.Value [])
                         |> RawTask.andThen RawScheduler.batch
-
-                -- Reset and re-register all subscriptions.
-                subTask =
-                    subs
-                        |> List.map createPlatformEffectFuncsFromSub
-                        |> List.map
-                            (\( id, tagger ) ->
-                                ( id, \v -> sendToApp2 (tagger v) AsyncUpdate )
-                            )
-                        |> resetSubscriptions
             in
             cmdTask
-                |> RawTask.andThen (\_ -> subTask)
+                |> RawTask.map (\_ -> ())
 
         dispatchTask : () -> RawTask.Task ()
         dispatchTask () =
@@ -291,7 +281,7 @@ dispatchEffects :
     -> Sub appMsg
     -> Bag.EffectManagerName
     -> Channel.Sender (AppMsgPayload appMsg)
-    -> RawTask.Task ()
+    -> ( SendToApp appMsg -> (), RawTask.Task () )
 dispatchEffects cmdBag subBag =
     let
         effectsDict =
@@ -305,10 +295,31 @@ dispatchEffects cmdBag subBag =
                 Maybe.withDefault
                     ( [], [] )
                     (Dict.get (effectManagerNameToString key) effectsDict)
+
+            updateSubs sendToAppFunc =
+                if effectManagerNameToString key == "000PlatformEffect" then
+                    let
+                        -- Reset and re-register all subscriptions.
+                        (ImpureFunction ip) =
+                            subList
+                                |> createHiddenMySubList
+                                |> List.map createPlatformEffectFuncsFromSub
+                                |> List.map
+                                    (\( id, tagger ) ->
+                                        ( id, \v -> sendToAppFunc (tagger v) AsyncUpdate )
+                                    )
+                                |> resetSubscriptions
+                    in
+                    ip ()
+
+                else
+                    ()
         in
-        Channel.send
+        ( updateSubs
+        , Channel.send
             channel
             ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
+        )
 
 
 gatherCmds :
@@ -470,6 +481,18 @@ wrapTask task =
     Task (RawTask.map Ok task)
 
 
+impureAndThen : ImpureFunction -> ImpureFunction -> ImpureFunction
+impureAndThen (ImpureFunction ip1) (ImpureFunction ip2) =
+    ImpureFunction
+        (\() ->
+            let
+                () =
+                    ip1 ()
+            in
+            ip2 ()
+        )
+
+
 type alias SendToApp msg =
     msg -> UpdateMetadata -> ()
 
@@ -503,6 +526,10 @@ type ReceivedData appMsg selfMsg
 
 type alias AppMsgPayload appMsg =
     ( List (HiddenMyCmd appMsg), List (HiddenMySub appMsg) )
+
+
+type ImpureFunction
+    = ImpureFunction (() -> ())
 
 
 type HiddenMyCmd msg
@@ -590,6 +617,6 @@ createPlatformEffectFuncsFromSub =
     Elm.Kernel.Basics.fudgeType
 
 
-resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> RawTask.Task ()
+resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> ImpureFunction
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

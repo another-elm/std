@@ -387,5 +387,5 @@ performHelp task =
 
 
 command : Platform.Task Never (Maybe msg) -> Cmd msg
-command function =
+command =
     Elm.Kernel.Platform.command

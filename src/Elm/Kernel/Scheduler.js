@@ -67,7 +67,7 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
   let working = false;
   const queue = [];
 
-  const stepProccessWithId = (newProcId) => {
+  const stepProccessWithId = (newProcId, newRootTask) => {
     const procState = _Scheduler_processes.get(newProcId);
     if (__Basics_isDebug && procState === undefined) {
       __Debug_crash(
@@ -76,7 +76,7 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
         newProcId && newProcId.a && newProcId.a.__$id
       );
     }
-    const updatedState = A2(stepper, newProcId, procState);
+    const updatedState = A2(stepper, newProcId, newRootTask);
     if (__Basics_isDebug && procState !== _Scheduler_processes.get(newProcId)) {
       __Debug_crash(
         12,
@@ -87,26 +87,27 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
     _Scheduler_processes.set(newProcId, updatedState);
   };
 
-  return (procId) => {
-    if (__Basics_isDebug && queue.some((p) => p.a.__$id === procId.a.__$id)) {
+  return (procId) => (rootTask) => {
+    if (__Basics_isDebug && queue.some((p) => p[0].a.__$id === procId.a.__$id)) {
       __Debug_crash(
         12,
         __Debug_runtimeCrashReason("procIdAlreadyInQueue"),
         procId && procId.a && procId.a.__$id
       );
     }
-    queue.push(procId);
+    queue.push([procId, rootTask]);
     if (working) {
       return procId;
     }
     working = true;
     while (true) {
-      const newProcId = queue.shift();
-      if (newProcId === undefined) {
+      const next = queue.shift();
+      if (next === undefined) {
         working = false;
         return procId;
       }
-      stepProccessWithId(newProcId);
+      const [newProcId, newRootTask] = next;
+      stepProccessWithId(newProcId, newRootTask);
     }
   };
 };

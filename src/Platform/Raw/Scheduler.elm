@@ -37,6 +37,7 @@ rawSpawn initTask =
             (ProcessId { id = getGuid () })
             (Ready initTask)
         )
+        initTask
 
 
 {-| Create a task that spawns a processes.
@@ -84,7 +85,7 @@ call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
 
 -}
-enqueue : ProcessId -> ProcessId
+enqueue : ProcessId -> RawTask.Task state -> ProcessId
 enqueue =
     enqueueWithStepper stepper
 
@@ -99,23 +100,8 @@ This function **must** return a process with the **same ID** as
 the process it is passed as an argument
 
 -}
-stepper : ProcessId -> ProcessState state -> ProcessState state
-stepper processId process =
-    case process of
-        Running _ ->
-            case getWokenValue processId of
-                Just root ->
-                    createStateWithRoot processId root
-
-                Nothing ->
-                    process
-
-        Ready root ->
-            createStateWithRoot processId root
-
-
-createStateWithRoot : ProcessId -> RawTask.Task state -> ProcessState state
-createStateWithRoot processId root =
+stepper : ProcessId -> RawTask.Task state -> ProcessState state
+stepper processId root =
     case root of
         RawTask.Value val ->
             Ready (RawTask.Value val)
@@ -125,12 +111,8 @@ createStateWithRoot processId root =
                 (doEffect
                     (\newRoot ->
                         let
-                            () =
-                                setWakeTask processId newRoot
-                        in
-                        let
                             (ProcessId _) =
-                                enqueue processId
+                                enqueue processId newRoot
                         in
                         ()
                     )
@@ -168,16 +150,6 @@ registerNewProcess =
     Elm.Kernel.Scheduler.registerNewProcess
 
 
-enqueueWithStepper : (ProcessId -> ProcessState state -> ProcessState state) -> ProcessId -> ProcessId
+enqueueWithStepper : (ProcessId -> RawTask.Task state -> ProcessState state) -> ProcessId -> RawTask.Task state -> ProcessId
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper
-
-
-getWokenValue : ProcessId -> Maybe (RawTask.Task state)
-getWokenValue =
-    Elm.Kernel.Scheduler.getWokenValue
-
-
-setWakeTask : ProcessId -> RawTask.Task state -> ()
-setWakeTask =
-    Elm.Kernel.Scheduler.setWakeTask

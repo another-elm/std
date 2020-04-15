@@ -37,7 +37,6 @@ function _Scheduler_rawSpawn(task) {
 
 var _Scheduler_guid = 0;
 var _Scheduler_processes = new WeakMap();
-var _Scheduler_readyFlgs = new WeakMap();
 
 function _Scheduler_getGuid() {
   return _Scheduler_guid++;
@@ -45,10 +44,10 @@ function _Scheduler_getGuid() {
 
 function _Scheduler_getProcessState(id) {
   const procState = _Scheduler_processes.get(id);
-  if (__Basics_isDebug && procState === undefined) {
-    __Debug_crash(12, __Debug_runtimeCrashReason("procIdNotRegistered"), id && id.a && id.a.__$id);
+  if (procState === undefined) {
+    return __Maybe_Nothing;
   }
-  return procState;
+  return __Maybe_Just(procState);
 }
 
 var _Scheduler_registerNewProcess = F2((procId, procState) => {
@@ -66,26 +65,6 @@ var _Scheduler_registerNewProcess = F2((procId, procState) => {
 const _Scheduler_enqueueWithStepper = (stepper) => {
   let working = false;
   const queue = [];
-
-  const stepProccessWithId = (newProcId, newRootTask) => {
-    const procState = _Scheduler_processes.get(newProcId);
-    if (__Basics_isDebug && procState === undefined) {
-      __Debug_crash(
-        12,
-        __Debug_runtimeCrashReason("procIdNotRegistered"),
-        newProcId && newProcId.a && newProcId.a.__$id
-      );
-    }
-    const updatedState = A2(stepper, newProcId, newRootTask);
-    if (__Basics_isDebug && procState !== _Scheduler_processes.get(newProcId)) {
-      __Debug_crash(
-        12,
-        __Debug_runtimeCrashReason("reentrantProcUpdate"),
-        newProcId && newProcId.a && newProcId.a.__$id
-      );
-    }
-    _Scheduler_processes.set(newProcId, updatedState);
-  };
 
   return (procId) => (rootTask) => {
     if (__Basics_isDebug && queue.some((p) => p[0].a.__$id === procId.a.__$id)) {
@@ -107,7 +86,7 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
         return procId;
       }
       const [newProcId, newRootTask] = next;
-      stepProccessWithId(newProcId, newRootTask);
+      _Scheduler_processes.set(newProcId, A2(stepper, newProcId, newRootTask));
     }
   };
 };
@@ -121,27 +100,4 @@ var _Scheduler_delay = F3(function (time, value, callback) {
     clearTimeout(id);
     return x;
   };
-});
-
-const _Scheduler_getWokenValue = (procId) => {
-  const flag = _Scheduler_readyFlgs.get(procId);
-  if (flag === undefined) {
-    return __Maybe_Nothing;
-  } else {
-    _Scheduler_readyFlgs.delete(procId);
-    return __Maybe_Just(flag);
-  }
-};
-
-const _Scheduler_setWakeTask = F2((procId, newRoot) => {
-  if (__Basics_isDebug && _Scheduler_readyFlgs.has(procId)) {
-    __Debug_crash(
-      12,
-      __Debug_runtimeCrashReason("procIdAlreadyReady"),
-      procId && procId.a && procId.a.__$id,
-      _Scheduler_readyFlgs.get(procId)
-    );
-  }
-  _Scheduler_readyFlgs.set(procId, newRoot);
-  return __Utils_Tuple0;
 });

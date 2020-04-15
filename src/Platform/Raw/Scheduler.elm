@@ -33,10 +33,7 @@ Will create, register and **enqueue** a new process.
 rawSpawn : RawTask.Task a -> ProcessId
 rawSpawn initTask =
     enqueue
-        (registerNewProcess
-            (ProcessId { id = getGuid () })
-            (Ready initTask)
-        )
+        (ProcessId { id = getGuid () })
         initTask
 
 
@@ -124,10 +121,13 @@ stepper processId root =
 rawKill : ProcessId -> ()
 rawKill id =
     case getProcessState id of
-        Running killer ->
+        Just (Running killer) ->
             killer ()
 
-        Ready _ ->
+        Just (Ready _) ->
+            ()
+
+        Nothing ->
             ()
 
 
@@ -140,14 +140,9 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-getProcessState : ProcessId -> ProcessState state
+getProcessState : ProcessId -> Maybe (ProcessState state)
 getProcessState =
     Elm.Kernel.Scheduler.getProcessState
-
-
-registerNewProcess : ProcessId -> ProcessState state -> ProcessId
-registerNewProcess =
-    Elm.Kernel.Scheduler.registerNewProcess
 
 
 enqueueWithStepper : (ProcessId -> RawTask.Task state -> ProcessState state) -> ProcessId -> RawTask.Task state -> ProcessId

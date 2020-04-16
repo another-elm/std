@@ -62,17 +62,9 @@ type alias InitializeHelperFunctions model appMsg =
     { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
     , setupEffectsChannel :
         SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
-    , setupEffects :
-        SendToApp appMsg
-        -> Channel.Receiver (AppMsgPayload appMsg)
-        -> Task Never HiddenState
-        -> (Router appMsg HiddenSelfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> HiddenState -> Task Never HiddenState)
-        -> (Router appMsg HiddenSelfMsg -> HiddenSelfMsg -> HiddenState -> Task Never HiddenState)
-        -> RawTask.Task Never
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
-        -> Bag.EffectManagerName
         -> Channel.Sender (AppMsgPayload appMsg)
         -> (SendToApp appMsg -> (), RawTask.Task ())
     }
@@ -83,7 +75,6 @@ type alias InitializeHelperFunctions model appMsg =
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
     { stepperBuilder = \_ _ -> \_ _ -> ()
-    , setupEffects = setupEffects
     , dispatchEffects = dispatchEffects
     , setupEffectsChannel = setupEffectsChannel
     }
@@ -227,11 +218,10 @@ setupEffectsChannel sendToApp2 =
             Channel.rawUnbounded ()
 
         receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
-        receiveMsg ( cmds, _ ) =
+        receiveMsg cmds =
             let
                 cmdTask =
                     cmds
-                        |> List.map createPlatformEffectFuncsFromCmd
                         |> List.map (\(Task t) -> t)
                         |> List.map
                             (RawTask.map
@@ -279,187 +269,36 @@ setupEffectsChannel sendToApp2 =
 dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
-    -> Bag.EffectManagerName
     -> Channel.Sender (AppMsgPayload appMsg)
     -> ( SendToApp appMsg -> (), RawTask.Task () )
 dispatchEffects cmdBag subBag =
     let
-        effectsDict =
-            Dict.empty
-                |> gatherCmds cmdBag
-                |> gatherSubs subBag
+        cmds =
+            unwrapCmd cmdBag
+
+        subs =
+            unwrapSub subBag
     in
-    \key channel ->
+    \channel ->
         let
-            ( cmdList, subList ) =
-                Maybe.withDefault
-                    ( [], [] )
-                    (Dict.get (effectManagerNameToString key) effectsDict)
-
             updateSubs sendToAppFunc =
-                if effectManagerNameToString key == "000PlatformEffect" then
-                    let
-                        -- Reset and re-register all subscriptions.
-                        (ImpureFunction ip) =
-                            subList
-                                |> createHiddenMySubList
-                                |> List.map createPlatformEffectFuncsFromSub
-                                |> List.map
-                                    (\( id, tagger ) ->
-                                        ( id, \v -> sendToAppFunc (tagger v) AsyncUpdate )
-                                    )
-                                |> resetSubscriptions
-                    in
-                    ip ()
-
-                else
-                    ()
+                let
+                    -- Reset and re-register all subscriptions.
+                    (ImpureFunction ip) =
+                        subs
+                            |> List.map
+                                (\( id, tagger ) ->
+                                    ( id, \v -> sendToAppFunc (tagger v) AsyncUpdate )
+                                )
+                            |> resetSubscriptions
+                in
+                ip ()
         in
         ( updateSubs
         , Channel.send
             channel
-            ( createHiddenMyCmdList cmdList, createHiddenMySubList subList )
+            cmds
         )
-
-
-gatherCmds :
-    Cmd msg
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-gatherCmds cmdBag effectsDict =
-    List.foldr
-        (\{ home, value } dict -> gatherHelper True home value dict)
-        effectsDict
-        (unwrapCmd cmdBag)
-
-
-gatherSubs :
-    Sub msg
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-gatherSubs subBag effectsDict =
-    List.foldr
-        (\{ home, value } dict -> gatherHelper False home value dict)
-        effectsDict
-        (unwrapSub subBag)
-
-
-gatherHelper :
-    Bool
-    -> Bag.EffectManagerName
-    -> Bag.LeafType msg
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-    -> Dict String ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-gatherHelper isCmd home effectData effectsDict =
-    Dict.insert
-        (effectManagerNameToString home)
-        (createEffect isCmd effectData (Dict.get (effectManagerNameToString home) effectsDict))
-        effectsDict
-
-
-createEffect :
-    Bool
-    -> Bag.LeafType msg
-    -> Maybe ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-    -> ( List (Bag.LeafType msg), List (Bag.LeafType msg) )
-createEffect isCmd newEffect maybeEffects =
-    let
-        ( cmdList, subList ) =
-            case maybeEffects of
-                Just effects ->
-                    effects
-
-                Nothing ->
-                    ( [], [] )
-    in
-    if isCmd then
-        ( newEffect :: cmdList, subList )
-
-    else
-        ( cmdList, newEffect :: subList )
-
-
-setupEffects :
-    SendToApp appMsg
-    -> Channel.Receiver (AppMsgPayload appMsg)
-    -> Task Never state
-    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> Task Never state)
-    -> (Router appMsg selfMsg -> selfMsg -> state -> Task Never state)
-    -> RawTask.Task Never
-setupEffects sendToAppFunc receiver init onEffects onSelfMsg =
-    instantiateEffectManager
-        sendToAppFunc
-        receiver
-        (unwrapTask init)
-        (\router cmds subs state -> unwrapTask (onEffects router cmds subs state))
-        (\router selfMsg state -> unwrapTask (onSelfMsg router selfMsg state))
-
-
-instantiateEffectManager :
-    SendToApp appMsg
-    -> Channel.Receiver (AppMsgPayload appMsg)
-    -> RawTask.Task state
-    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
-    -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
-    -> RawTask.Task Never
-instantiateEffectManager sendToAppFunc appReceiver init onEffects onSelfMsg =
-    Channel.unbounded
-        |> RawTask.andThen (instantiateEffectManagerWithSelfChannel sendToAppFunc appReceiver init onEffects onSelfMsg)
-
-
-instantiateEffectManagerWithSelfChannel :
-    SendToApp appMsg
-    -> Channel.Receiver (AppMsgPayload appMsg)
-    -> RawTask.Task state
-    -> (Router appMsg selfMsg -> List (HiddenMyCmd appMsg) -> List (HiddenMySub appMsg) -> state -> RawTask.Task state)
-    -> (Router appMsg selfMsg -> selfMsg -> state -> RawTask.Task state)
-    -> Channel.Channel (ReceivedData appMsg selfMsg)
-    -> RawTask.Task Never
-instantiateEffectManagerWithSelfChannel sendToAppFunc appReceiver init onEffects onSelfMsg ( selfSender, selfReceiver ) =
-    let
-        receiveMsg :
-            state
-            -> ReceivedData appMsg selfMsg
-            -> RawTask.Task never
-        receiveMsg state msg =
-            let
-                task : RawTask.Task state
-                task =
-                    case msg of
-                        Self value ->
-                            onSelfMsg (Router router) value state
-
-                        App ( cmds, subs ) ->
-                            onEffects (Router router) cmds subs state
-            in
-            task
-                |> RawTask.andThen
-                    (\val ->
-                        RawTask.map
-                            (\() -> val)
-                            (RawTask.sleep 0)
-                    )
-                |> RawTask.andThen (\newState -> Channel.recv (receiveMsg newState) selfReceiver)
-
-        initTask : RawTask.Task never
-        initTask =
-            RawTask.sleep 0
-                |> RawTask.andThen (\_ -> init)
-                |> RawTask.andThen (\state -> Channel.recv (receiveMsg state) selfReceiver)
-
-        forwardAppMessagesTask () =
-            Channel.recv
-                (\payload -> Channel.send selfSender (App payload))
-                appReceiver
-                |> RawTask.andThen forwardAppMessagesTask
-
-        router =
-            { sendToApp = \appMsg -> sendToAppFunc appMsg AsyncUpdate
-            , selfSender = \msg -> Channel.send selfSender (Self msg)
-            }
-    in
-    RawScheduler.spawn (forwardAppMessagesTask ())
-        |> RawTask.andThen (\_ -> initTask)
 
 
 unwrapTask : Task Never a -> RawTask.Task a
@@ -525,7 +364,7 @@ type ReceivedData appMsg selfMsg
 
 
 type alias AppMsgPayload appMsg =
-    ( List (HiddenMyCmd appMsg), List (HiddenMySub appMsg) )
+    List (Task Never (Maybe appMsg))
 
 
 type ImpureFunction
@@ -582,12 +421,12 @@ effectManagerNameToString =
     Elm.Kernel.Platform.effectManagerNameToString
 
 
-unwrapCmd : Cmd a -> Bag.EffectBag a
+unwrapCmd : Cmd a -> List (Task Never (Maybe msg))
 unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-unwrapSub : Sub a -> Bag.EffectBag a
+unwrapSub : Sub a -> List ( IncomingPortId, HiddenConvertedSubType -> msg )
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 

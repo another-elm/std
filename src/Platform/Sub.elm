@@ -54,7 +54,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Data (Bag.EffectBag msg)
+    = Sub (List ( IncomingPortId, HiddenConvertedSubType -> msg ))
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -73,9 +73,9 @@ subscriptions.
 -}
 batch : List (Sub msg) -> Sub msg
 batch =
-    List.map (\(Data sub) -> sub)
+    List.map (\(Sub sub) -> sub)
         >> List.concat
-        >> Data
+        >> Sub
 
 
 
@@ -92,21 +92,20 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Sub a -> Sub msg
-map fn (Data data) =
+map fn (Sub data) =
     data
-        |> List.map
-            (\{ home, value } ->
-                { home = home
-                , value = getSubMapper home fn value
-                }
-            )
-        |> Data
+        |> List.map (getSubMapper fn)
+        |> Sub
 
 
+type IncomingPortId
+    = IncomingPortId IncomingPortId
 
--- Kernel function redefinitons --
+
+type HiddenConvertedSubType
+    = HiddenConvertedSubType HiddenConvertedSubType
 
 
-getSubMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
-getSubMapper home =
-    Elm.Kernel.Platform.getSubMapper home
+getSubMapper : (a -> msg) -> ( IncomingPortId, HiddenConvertedSubType -> a ) -> ( IncomingPortId, HiddenConvertedSubType -> msg )
+getSubMapper fn (id, tagger) =
+    (id, \hcst -> fn (tagger hcst))

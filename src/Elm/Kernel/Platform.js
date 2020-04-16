@@ -20,7 +20,6 @@ import Platform.Scheduler as Scheduler exposing (execImpure, map)
 
 var _Platform_outgoingPorts = new Map();
 var _Platform_incomingPorts = new Map();
-var _Platform_effectManagers = {};
 
 var _Platform_effectsQueue = [];
 var _Platform_effectDispatchInProgress = false;
@@ -40,7 +39,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     }
   }
 
-  const selfSenders = new Map();
+  let cmdSender;
   const ports = {};
 
   const dispatch = (model, cmds) => {
@@ -60,16 +59,14 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
         _Platform_effectDispatchInProgress = false;
         return;
       }
-      const dispatcher = A2(
+      const tuple = A3(
         __Platform_initializeHelperFunctions.__$dispatchEffects,
         fx.__cmds,
-        fx.__subs
+        fx.__subs,
+        cmdSender
       );
-      for (const [key, selfSender] of selfSenders.entries()) {
-        const tuple = A2(dispatcher, key, selfSender);
-        tuple.a(sendToApp);
-        __RawScheduler_rawSpawn(tuple.b);
-      }
+      tuple.a(sendToApp);
+      __RawScheduler_rawSpawn(tuple.b);
     }
   };
 
@@ -84,24 +81,9 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     __RawScheduler_rawSpawn(init(__Utils_Tuple0));
   }
 
-  selfSenders.set(
-    "000PlatformEffect",
-    __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp)
-  );
-  for (const [key, effectManagerFunctions] of Object.entries(_Platform_effectManagers)) {
-    const managerChannel = __Channel_rawUnbounded(__Utils_Tuple0);
-    __RawScheduler_rawSpawn(
-      A5(
-        __Platform_initializeHelperFunctions.__$setupEffects,
-        sendToApp,
-        managerChannel.b,
-        effectManagerFunctions.__init,
-        effectManagerFunctions.__fullOnEffects,
-        effectManagerFunctions.__onSelfMsg
-      )
-    );
-    selfSenders.set(key, managerChannel.a);
-  }
+  cmdSender = __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp);
+
+
   for (const [key, { port }] of _Platform_outgoingPorts.entries()) {
     ports[key] = port;
   }
@@ -132,56 +114,8 @@ function _Platform_registerPreload(url) {
 
 // EFFECT MANAGERS
 
-/* Called by compiler generated js when creating event mangers.
- *
- * This function will **always** be call right after page load like this:
- *
- * 		_Platform_effectManagers['XXX'] =
- * 			_Platform_createManager($init, $onEffects, $onSelfMsg, $cmdMap);
- *
- * or
- *
- * 		_Platform_effectManagers['XXX'] =
- * 			_Platform_createManager($init, $onEffects, $onSelfMsg, 0, $subMap);
- *
- * or
- *
- * 		_Platform_effectManagers['XXX'] =
- * 			_Platform_createManager($init, $onEffects, $onSelfMsg, $cmdMap, $subMap);
- */
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap) {
-  if (typeof cmdMap !== "function") {
-    // Subscription only effect module
-    return {
-      __cmdMapper: F2((_1, _2) => __Debug_crash(12, __Debug_runtimeCrashReason("cmdMap"))),
-      __subMapper: subMap,
-      __init: init,
-      __fullOnEffects: F4(function (router, _cmds, subs, state) {
-        return A3(onEffects, router, subs, state);
-      }),
-      __onSelfMsg: onSelfMsg,
-    };
-  } else if (typeof subMap !== "function") {
-    // Command only effect module
-    return {
-      __cmdMapper: cmdMap,
-      __subMapper: F2((_1, _2) => __Debug_crash(12, __Debug_runtimeCrashReason("subMap"))),
-      __init: init,
-      __fullOnEffects: F4(function (router, cmds, _subs, state) {
-        return A3(onEffects, router, cmds, state);
-      }),
-      __onSelfMsg: onSelfMsg,
-    };
-  } else {
-    // Command **and** subscription event manager
-    return {
-      __cmdMapper: cmdMap,
-      __subMapper: subMap,
-      __init: init,
-      __fullOnEffects: onEffects,
-      __onSelfMsg: onSelfMsg,
-    };
-  }
+  __Debug_crash(12, __Debug_runtimeCrashReason("EffectModule"));
 }
 
 // BAGS
@@ -190,26 +124,13 @@ function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap) {
  * `command` or `subscription` function within an event manager
  */
 const _Platform_leaf = (home) => (value) => {
-  const list = __List_Cons(
-    {
-      __$home: home,
-      __$value: value,
-    },
-    __List_Nil
-  );
-  if (__Basics_isDebug) {
-    return {
-      $: "Data",
-      a: list,
-    };
-  }
-  return list;
+  __Debug_crash(12, __Debug_runtimeCrashReason("PlatformLeaf", home));
 };
 
 // PORTS
 
 function _Platform_checkPortName(name) {
-  if (_Platform_effectManagers[name]) {
+  if (_Platform_outgoingPorts.has(name) || _Platform_incomingPorts.has(name)) {
     __Debug_crash(3, name);
   }
 }
@@ -243,15 +164,12 @@ function _Platform_outgoingPort(name, converter) {
     },
   });
 
-  return (payload) =>
-    A2(
-      _Platform_leaf,
-      "000PlatformEffect",
-      __Scheduler_execImpure((_) => {
-        execSubscribers(payload);
-        return __Maybe_Nothing;
-      })
-    );
+  return (payload) => _Platform_command(
+    __Scheduler_execImpure((_) => {
+      execSubscribers(payload);
+      return __Maybe_Nothing;
+    })
+  );
 }
 
 function _Platform_incomingPort(name, converter) {
@@ -276,7 +194,19 @@ function _Platform_incomingPort(name, converter) {
     },
   });
 
-  return (tagger) => A2(_Platform_leaf, "000PlatformEffect", __Utils_Tuple2(key, tagger));
+  return (tagger) => {
+    const subData = __List_Cons(
+      __Utils_Tuple2(key, tagger),
+      __List_Nil
+    );
+  if (__Basics_isDebug) {
+    return {
+      $: "Sub",
+      a: subData,
+    };
+  }
+  return subData;
+  };
 }
 
 // Functions exported to elm
@@ -311,7 +241,6 @@ const _Platform_createSubProcess = (_) => {
 
 const _Platform_resetSubscriptions = (newSubs) =>
   __Platform_ImpureFunction((_) => {
-    console.log(`new subs using ${__List_toArray(newSubs).join(",")}`);
     for (const sendToApps of _Platform_subscriptionMap.values()) {
       sendToApps.length = 0;
     }
@@ -329,26 +258,24 @@ const _Platform_resetSubscriptions = (newSubs) =>
 
 const _Platform_effectManagerNameToString = (name) => name;
 
-const _Platform_getCmdMapper = (home) => {
-  if (home === "000PlatformEffect") {
-    return (tagger) => __Scheduler_map(__Maybe_map(tagger));
-  }
-  return _Platform_effectManagers[home].__cmdMapper;
-};
-
-const _Platform_getSubMapper = (home) => {
-  if (_Platform_incomingPorts.has(home)) {
-    return F2((tagger, finalTagger) => (value) => tagger(finalTagger(value)));
-  }
-  return _Platform_effectManagers[home].__subMapper;
-};
-
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
 
 // command : Platform.Task Never (Maybe msg) -> Cmd msg
-const _Platform_command = _Platform_leaf("000PlatformEffect");
+const _Platform_command = task => {
+  const cmdData = __List_Cons(
+    task,
+    __List_Nil
+  );
+  if (__Basics_isDebug) {
+    return {
+      $: "Cmd",
+      a: cmdData,
+    };
+  }
+  return cmdData;
+};
 
 // EXPORT ELM MODULES
 //

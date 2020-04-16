@@ -28,8 +28,12 @@ module Platform.Cmd exposing
 
 import Basics exposing (..)
 import Elm.Kernel.Platform
+import Elm.Kernel.Basics
 import List
 import Platform.Bag as Bag
+import Platform.Raw.Task as RawTask
+import Maybe exposing (Maybe)
+import Result exposing (Result)
 
 
 
@@ -51,7 +55,7 @@ fit into a real application!
 
 -}
 type Cmd msg
-    = Data (Bag.EffectBag msg)
+    = Cmd (List (Task Never (Maybe msg)))
 
 
 {-| Tell the runtime that there are no commands.
@@ -72,9 +76,9 @@ all do the same thing.
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-    List.map (\(Data cmd) -> cmd)
+    List.map (\(Cmd cmd) -> cmd)
         >> List.concat
-        >> Data
+        >> Cmd
 
 
 
@@ -91,21 +95,28 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
-map fn (Data data) =
+map fn (Cmd data) =
     data
-        |> List.map
-            (\{ home, value } ->
-                { home = home
-                , value = getCmdMapper home fn value
-                }
-            )
-        |> Data
+        |> List.map (getCmdMapper fn)
+        |> Cmd
 
 
+getCmdMapper : (a -> msg) -> Task Never (Maybe a) -> Task Never (Maybe msg)
+getCmdMapper tagger task =
+    wrapTask (RawTask.map (Result.map (Maybe.map tagger)) (unwrapTask task))
 
--- Kernel function redefinitons --
+
+wrapTask : RawTask.Task (Result e o) -> Task e o
+wrapTask =
+    Elm.Kernel.Platform.wrapTask
 
 
-getCmdMapper : Bag.EffectManagerName -> (a -> msg) -> Bag.LeafType a -> Bag.LeafType msg
-getCmdMapper =
-    Elm.Kernel.Platform.getCmdMapper
+unwrapTask : Task e o -> RawTask.Task (Result e o)
+unwrapTask =
+    Elm.Kernel.Basics.unwrapTypeWrapper
+
+
+{-| MUST mirror the definition in Platform
+-}
+type Task e o =
+    Task (RawTask.Task (Result e o))

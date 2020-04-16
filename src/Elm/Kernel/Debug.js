@@ -251,6 +251,21 @@ function _Debug_runtimeCrashReason__DEBUG(reason) {
           ).join(", ")}`
         );
       };
+
+    case "EffectModule":
+      return function (fact2, fact3, fact4) {
+        throw new Error(
+          `Effect modules are not supported, if you are using elm/* libraries you will need to switch to a custom version.`
+        );
+      };
+
+    case "PlatformLeaf":
+      return function (home, fact3, fact4) {
+        throw new Error(
+          `Trying to create a command or a subscription for event manager ${home}.
+Effect modules are not supported, if you are using elm/* libraries you will need to switch to a custom version.`
+        );
+      };
   }
   throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
 }

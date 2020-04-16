@@ -66,7 +66,7 @@ type alias InitializeHelperFunctions model appMsg =
         Cmd appMsg
         -> Sub appMsg
         -> Channel.Sender (AppMsgPayload appMsg)
-        -> (SendToApp appMsg -> (), RawTask.Task ())
+        -> ( SendToApp appMsg -> (), RawTask.Task () )
     }
 
 

@@ -27,12 +27,12 @@ module Platform.Cmd exposing
 -}
 
 import Basics exposing (..)
-import Elm.Kernel.Platform
 import Elm.Kernel.Basics
+import Elm.Kernel.Platform
 import List
+import Maybe exposing (Maybe)
 import Platform.Bag as Bag
 import Platform.Raw.Task as RawTask
-import Maybe exposing (Maybe)
 import Result exposing (Result)
 
 
@@ -118,5 +118,5 @@ unwrapTask =
 
 {-| MUST mirror the definition in Platform
 -}
-type Task e o =
-    Task (RawTask.Task (Result e o))
+type Task e o
+    = Task (RawTask.Task (Result e o))

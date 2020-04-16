@@ -83,7 +83,6 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 
   cmdSender = __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp);
 
-
   for (const [key, { port }] of _Platform_outgoingPorts.entries()) {
     ports[key] = port;
   }
@@ -164,12 +163,13 @@ function _Platform_outgoingPort(name, converter) {
     },
   });
 
-  return (payload) => _Platform_command(
-    __Scheduler_execImpure((_) => {
-      execSubscribers(payload);
-      return __Maybe_Nothing;
-    })
-  );
+  return (payload) =>
+    _Platform_command(
+      __Scheduler_execImpure((_) => {
+        execSubscribers(payload);
+        return __Maybe_Nothing;
+      })
+    );
 }
 
 function _Platform_incomingPort(name, converter) {
@@ -195,17 +195,14 @@ function _Platform_incomingPort(name, converter) {
   });
 
   return (tagger) => {
-    const subData = __List_Cons(
-      __Utils_Tuple2(key, tagger),
-      __List_Nil
-    );
-  if (__Basics_isDebug) {
-    return {
-      $: "Sub",
-      a: subData,
-    };
-  }
-  return subData;
+    const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
+    if (__Basics_isDebug) {
+      return {
+        $: "Sub",
+        a: subData,
+      };
+    }
+    return subData;
   };
 }
 
@@ -263,11 +260,8 @@ const _Platform_wrapTask = (task) => __Platform_Task(task);
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
 
 // command : Platform.Task Never (Maybe msg) -> Cmd msg
-const _Platform_command = task => {
-  const cmdData = __List_Cons(
-    task,
-    __List_Nil
-  );
+const _Platform_command = (task) => {
+  const cmdData = __List_Cons(task, __List_Nil);
   if (__Basics_isDebug) {
     return {
       $: "Cmd",

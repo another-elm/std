@@ -107,5 +107,5 @@ type HiddenConvertedSubType
 
 
 getSubMapper : (a -> msg) -> ( IncomingPortId, HiddenConvertedSubType -> a ) -> ( IncomingPortId, HiddenConvertedSubType -> msg )
-getSubMapper fn (id, tagger) =
-    (id, \hcst -> fn (tagger hcst))
+getSubMapper fn ( id, tagger ) =
+    ( id, \hcst -> fn (tagger hcst) )

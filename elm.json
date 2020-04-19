@@ -10,7 +10,8 @@
             "String",
             "Char",
             "Bitwise",
-            "Tuple"
+            "Tuple",
+            "Time"
         ],
         "Collections": [
             "List",

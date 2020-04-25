@@ -31,7 +31,6 @@ import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import List
 import Maybe exposing (Maybe)
-import Platform.Bag as Bag
 import Platform.Raw.Task as RawTask
 import Result exposing (Result)
 

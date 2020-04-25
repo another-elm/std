@@ -43,6 +43,7 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Raw.Channel as Channel
+import Platform.Raw.Sub as RawSub
 import Platform.Sub exposing (Sub)
 import Process
 import String exposing (String)
@@ -567,16 +568,12 @@ every interval tagger =
     subscription (setInterval interval) (\f -> tagger (millisToPosix (round f)))
 
 
-type SubId
-    = SubId SubId
-
-
-setInterval : Float -> SubId
+setInterval : Float -> RawSub.Id
 setInterval =
     Elm.Kernel.Time.setInterval
 
 
-subscription : SubId -> (Float -> msg) -> Sub msg
+subscription : RawSub.Id -> (Float -> msg) -> Sub msg
 subscription =
     Elm.Kernel.Platform.subscription
 

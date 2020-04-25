@@ -28,7 +28,7 @@ module Platform.Sub exposing
 
 import Basics exposing (..)
 import List
-import Platform.Bag as Bag
+import Platform.Raw.Sub as RawSub
 
 
 
@@ -53,7 +53,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Sub (List ( SubId, HiddenConvertedSubType -> msg ))
+    = Sub (RawSub.RawSub msg)
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -97,14 +97,6 @@ map fn (Sub data) =
         |> Sub
 
 
-type SubId
-    = SubId SubId
-
-
-type HiddenConvertedSubType
-    = HiddenConvertedSubType HiddenConvertedSubType
-
-
-getSubMapper : (a -> msg) -> ( SubId, HiddenConvertedSubType -> a ) -> ( SubId, HiddenConvertedSubType -> msg )
+getSubMapper : (a -> msg) -> ( RawSub.Id, RawSub.HiddenConvertedSubType -> a ) -> ( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )
 getSubMapper fn ( id, tagger ) =
     ( id, \hcst -> fn (tagger hcst) )

@@ -40,7 +40,7 @@ import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Bag as Bag
+import Platform.Raw.Sub as RawSub
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
 import Platform.Raw.Scheduler as RawScheduler
@@ -206,8 +206,8 @@ have command and/or subscriptions to process.
 Each command is a `Platform.Task Never (Maybe msg)`. If the Task resolves with
 `Just something` we must send that `something` to the app.
 
-Each sub is a tuple `( IncomingPortId, HiddenConvertedSubType -> msg )` we can
-collect these id's and functions and pass them to `resetSubscriptions`.
+Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
+can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
 setupEffectsChannel : SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
@@ -350,14 +350,6 @@ type UpdateMetadata
     | AsyncUpdate
 
 
-type IncomingPortId
-    = IncomingPortId IncomingPortId
-
-
-type HiddenConvertedSubType
-    = HiddenConvertedSubType HiddenConvertedSubType
-
-
 type ReceivedData appMsg selfMsg
     = Self selfMsg
     | App (AppMsgPayload appMsg)
@@ -416,46 +408,16 @@ makeProgram =
     Elm.Kernel.Basics.fudgeType
 
 
-effectManagerNameToString : Bag.EffectManagerName -> String
-effectManagerNameToString =
-    Elm.Kernel.Platform.effectManagerNameToString
-
-
 unwrapCmd : Cmd a -> List (Task Never (Maybe msg))
 unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-unwrapSub : Sub a -> List ( IncomingPortId, HiddenConvertedSubType -> msg )
+unwrapSub : Sub a -> List ( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-createHiddenMyCmdList : List (Bag.LeafType msg) -> List (HiddenMyCmd msg)
-createHiddenMyCmdList =
-    Elm.Kernel.Basics.fudgeType
-
-
-createHiddenMySubList : List (Bag.LeafType msg) -> List (HiddenMySub msg)
-createHiddenMySubList =
-    Elm.Kernel.Basics.fudgeType
-
-
-createIncomingPortConverters : List (HiddenMySub msg) -> List (Encode.Value -> msg)
-createIncomingPortConverters =
-    Elm.Kernel.Basics.fudgeType
-
-
-createPlatformEffectFuncsFromCmd : HiddenMyCmd msg -> Task Never (Maybe msg)
-createPlatformEffectFuncsFromCmd =
-    Elm.Kernel.Basics.fudgeType
-
-
-createPlatformEffectFuncsFromSub : HiddenMySub msg -> ( IncomingPortId, HiddenConvertedSubType -> msg )
-createPlatformEffectFuncsFromSub =
-    Elm.Kernel.Basics.fudgeType
-
-
-resetSubscriptions : List ( IncomingPortId, HiddenConvertedSubType -> () ) -> ImpureFunction
+resetSubscriptions : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> () ) -> ImpureFunction
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

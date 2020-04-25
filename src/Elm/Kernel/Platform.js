@@ -277,7 +277,7 @@ const _Platform_command = (task) => {
   return cmdData;
 };
 
-// subscription : SubId -> (HiddenConvertedSubType -> msg) -> Sub msg
+// subscription : RawSub.Id -> (RawSub.HiddenConvertedSubType -> msg) -> Sub msg
 const _Platform_subscription = (id) => (tagger) => {
   const subData = __List_Cons(__Utils_Tuple2(id, tagger), __List_Nil);
   if (__Basics_isDebug) {

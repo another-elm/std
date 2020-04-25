@@ -23,7 +23,7 @@ if [[ -d "$CORE_VERSIONS_DIR" ]]; then
     CORE_VERSION=$(ls "$CORE_VERSIONS_DIR")
     CORE_PACKAGE_DIR="$CORE_VERSIONS_DIR/$CORE_VERSION"
 
-    if [ CORE_VERSION_COUNT == 1 ] || [[ -f $CORE_PACKAGE_DIR/custom ]]; then
+    if [ $CORE_VERSION_COUNT == 1 ] && [[ -f $CORE_PACKAGE_DIR/custom ]] && [[ -d "$ELM_HOME/$ELM_VERSION/packages/elm/time" ]]; then
         printf "REFRESH "
     else
         printf "INIT "
@@ -36,6 +36,8 @@ fi
 
 CORE_VERSION=$(ls $CORE_VERSIONS_DIR)
 CORE_PACKAGE_DIR="$CORE_VERSIONS_DIR/$CORE_VERSION"
+
+./stub.py "$ELM_HOME/$ELM_VERSION/packages/elm/time"
 
 rm -rf "$CORE_PACKAGE_DIR" > /dev/null
 mkdir "$CORE_PACKAGE_DIR"

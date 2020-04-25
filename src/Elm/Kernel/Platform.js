@@ -24,12 +24,12 @@ var _Platform_incomingPorts = new Map();
 var _Platform_effectsQueue = [];
 var _Platform_effectDispatchInProgress = false;
 
-let _Platform_spawnAfterLoadQueue = [];
-const _Platform_spawnAfterLoad = (rawTask) => {
-  if (_Platform_spawnAfterLoadQueue == null) {
-    __RawScheduler_rawSpawn(rawTask);
+let _Platform_runAfterLoadQueue = [];
+const _Platform_runAfterLoad = (f) => {
+  if (_Platform_runAfterLoadQueue == null) {
+    f();
   } else {
-    _Platform_spawnAfterLoadQueue.push(rawTask);
+    _Platform_runAfterLoadQueue.push(f);
   }
 };
 
@@ -86,10 +86,10 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     dispatch(model, updateValue.b);
   });
 
-  for (const f of _Platform_spawnAfterLoadQueue) {
-    __RawScheduler_rawSpawn(rawTask);
+  for (const f of _Platform_runAfterLoadQueue) {
+    f();
   }
-  _Platform_spawnAfterLoadQueue = null;
+  _Platform_runAfterLoadQueue = null;
 
   cmdSender = __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp);
 
@@ -234,7 +234,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
     __$listeners: [],
     __$onSubUpdate: onSubUpdate,
   });
-  _Platform_spawnAfterLoad(onSubEffects(__Utils_Tuple0));
+  _Platform_runAfterLoad(() => __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0)));
 
   return __Utils_Tuple2(key, channel.a);
 };

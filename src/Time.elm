@@ -1,4 +1,4 @@
-effect module Time where { subscription = MySub } exposing
+module Time exposing
     ( Posix, now, every, posixToMillis, millisToPosix
     , Zone, utc, here
     , toYear, toMonth, toDay, toWeekday, toHour, toMinute, toSecond, toMillis
@@ -37,14 +37,17 @@ effect module Time where { subscription = MySub } exposing
 
 import Basics exposing (..)
 import Dict
+import Elm.Kernel.Platform
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
+import Platform.Raw.Channel as Channel
 import Platform.Sub exposing (Sub)
 import Process
 import String exposing (String)
 import Task exposing (Task)
+import Tuple
 
 
 
@@ -561,117 +564,21 @@ being much smoother for any moving visuals.
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
-    subscription (Every interval tagger)
+    subscription (setInterval interval) (\f -> tagger (millisToPosix (round f)))
 
 
-type MySub msg
-    = Every Float (Posix -> msg)
+type SubId
+    = SubId SubId
 
 
-subMap : (a -> b) -> MySub a -> MySub b
-subMap f (Every interval tagger) =
-    Every interval (f << tagger)
-
-
-
--- EFFECT MANAGER
-
-
-type alias State msg =
-    { taggers : Taggers msg
-    , processes : Processes
-    }
-
-
-type alias Processes =
-    Dict.Dict Float Platform.ProcessId
-
-
-type alias Taggers msg =
-    Dict.Dict Float (List (Posix -> msg))
-
-
-init : Task Never (State msg)
-init =
-    Task.succeed (State Dict.empty Dict.empty)
-
-
-onEffects : Platform.Router msg Float -> List (MySub msg) -> State msg -> Task Never (State msg)
-onEffects router subs { processes } =
-    let
-        newTaggers =
-            List.foldl addMySub Dict.empty subs
-
-        leftStep interval taggers ( spawns, existing, kills ) =
-            ( interval :: spawns, existing, kills )
-
-        bothStep interval taggers id ( spawns, existing, kills ) =
-            ( spawns, Dict.insert interval id existing, kills )
-
-        rightStep _ id ( spawns, existing, kills ) =
-            ( spawns, existing, Task.andThen (\_ -> kills) (Process.kill id) )
-
-        ( spawnList, existingDict, killTask ) =
-            Dict.merge
-                leftStep
-                bothStep
-                rightStep
-                newTaggers
-                processes
-                ( [], Dict.empty, Task.succeed () )
-    in
-    killTask
-        |> Task.andThen (\_ -> spawnHelp router spawnList existingDict)
-        |> Task.andThen (\newProcesses -> Task.succeed (State newTaggers newProcesses))
-
-
-addMySub : MySub msg -> Taggers msg -> Taggers msg
-addMySub (Every interval tagger) state =
-    case Dict.get interval state of
-        Nothing ->
-            Dict.insert interval [ tagger ] state
-
-        Just taggers ->
-            Dict.insert interval (tagger :: taggers) state
-
-
-spawnHelp : Platform.Router msg Float -> List Float -> Processes -> Task.Task x Processes
-spawnHelp router intervals processes =
-    case intervals of
-        [] ->
-            Task.succeed processes
-
-        interval :: rest ->
-            let
-                spawnTimer =
-                    Process.spawn (setInterval interval (Platform.sendToSelf router interval))
-
-                spawnRest id =
-                    spawnHelp router rest (Dict.insert interval id processes)
-            in
-            spawnTimer
-                |> Task.andThen spawnRest
-
-
-onSelfMsg : Platform.Router msg Float -> Float -> State msg -> Task Never (State msg)
-onSelfMsg router interval state =
-    case Dict.get interval state.taggers of
-        Nothing ->
-            Task.succeed state
-
-        Just taggers ->
-            let
-                tellTaggers time =
-                    Task.sequence (List.map (\tagger -> Platform.sendToApp router (tagger time)) taggers)
-            in
-            now
-                |> Task.andThen tellTaggers
-                |> Task.andThen (\_ -> Task.succeed state)
-
-
-setInterval : Float -> Task Never () -> Task x Never
+setInterval : Float -> SubId
 setInterval =
     Elm.Kernel.Time.setInterval
+
+
+subscription : SubId -> (Float -> msg) -> Sub msg
+subscription =
+    Elm.Kernel.Platform.subscription
 
 
 

@@ -7,12 +7,12 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Nothing, map)
+import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, ImpureFunction)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
-import Platform.Scheduler as Scheduler exposing (execImpure, map)
+import Platform.Scheduler as Scheduler exposing (execImpure)
 
 */
 
@@ -23,6 +23,15 @@ var _Platform_incomingPorts = new Map();
 
 var _Platform_effectsQueue = [];
 var _Platform_effectDispatchInProgress = false;
+
+let _Platform_spawnAfterLoadQueue = [];
+const _Platform_spawnAfterLoad = (rawTask) => {
+  if (_Platform_spawnAfterLoadQueue == null) {
+    __RawScheduler_rawSpawn(rawTask);
+  } else {
+    _Platform_spawnAfterLoadQueue.push(rawTask);
+  }
+};
 
 // INITIALIZE A PROGRAM
 
@@ -77,9 +86,10 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     dispatch(model, updateValue.b);
   });
 
-  for (const init of _Platform_subscriptionInit) {
-    __RawScheduler_rawSpawn(init(__Utils_Tuple0));
+  for (const f of _Platform_spawnAfterLoadQueue) {
+    __RawScheduler_rawSpawn(rawTask);
   }
+  _Platform_spawnAfterLoadQueue = null;
 
   cmdSender = __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp);
 
@@ -175,7 +185,7 @@ function _Platform_outgoingPort(name, converter) {
 function _Platform_incomingPort(name, converter) {
   _Platform_checkPortName(name);
 
-  const tuple = _Platform_createSubProcess();
+  const tuple = _Platform_createSubProcess((_) => __Utils_Tuple0);
   const key = tuple.a;
   const sender = tuple.b;
 
@@ -194,34 +204,24 @@ function _Platform_incomingPort(name, converter) {
     },
   });
 
-  return (tagger) => {
-    const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
-    if (__Basics_isDebug) {
-      return {
-        $: "Sub",
-        a: subData,
-      };
-    }
-    return subData;
-  };
+  return _Platform_subscription(key);
 }
 
 // Functions exported to elm
 
-const _Platform_subscriptionMap = new Map();
-const _Platform_subscriptionInit = [];
+const _Platform_subscriptionStates = new Map();
 let _Platform_subscriptionProcessIds = 0;
 
-const _Platform_createSubProcess = (_) => {
+const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
   const key = { id: _Platform_subscriptionProcessIds++ };
   const msgHandler = (msg) =>
     __RawTask_execImpure((_) => {
-      const sendToApps = _Platform_subscriptionMap.get(key);
-      if (__Basics_isDebug && sendToApps === undefined) {
+      const subscriptionState = _Platform_subscriptionStates.get(key);
+      if (__Basics_isDebug && subscriptionState === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
-      for (const sendToApp of sendToApps) {
+      for (const sendToApp of subscriptionState.__$listeners) {
         sendToApp(msg);
       }
       return __Utils_Tuple0;
@@ -230,25 +230,31 @@ const _Platform_createSubProcess = (_) => {
   const onSubEffects = (_) =>
     A2(__RawTask_andThen, onSubEffects, A2(__RawChannel_recv, msgHandler, channel.b));
 
-  _Platform_subscriptionMap.set(key, []);
-  _Platform_subscriptionInit.push(onSubEffects);
+  _Platform_subscriptionStates.set(key, {
+    __$listeners: [],
+    __$onSubUpdate: onSubUpdate,
+  });
+  _Platform_spawnAfterLoad(onSubEffects(__Utils_Tuple0));
 
   return __Utils_Tuple2(key, channel.a);
 };
 
 const _Platform_resetSubscriptions = (newSubs) =>
   __Platform_ImpureFunction((_) => {
-    for (const sendToApps of _Platform_subscriptionMap.values()) {
-      sendToApps.length = 0;
+    for (const subState of _Platform_subscriptionStates.values()) {
+      subState.__$listeners.length = 0;
     }
     for (const tuple of __List_toArray(newSubs)) {
       const key = tuple.a;
       const sendToApp = tuple.b;
-      const sendToApps = _Platform_subscriptionMap.get(key);
-      if (__Basics_isDebug && sendToApps === undefined) {
+      const subState = _Platform_subscriptionStates.get(key);
+      if (__Basics_isDebug && subState.__$listeners === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
-      sendToApps.push(sendToApp);
+      subState.__$listeners.push(sendToApp);
+    }
+    for (const subState of _Platform_subscriptionStates.values()) {
+      subState.__$onSubUpdate(subState.__$listeners.length);
     }
     return __Utils_Tuple0;
   });
@@ -269,6 +275,18 @@ const _Platform_command = (task) => {
     };
   }
   return cmdData;
+};
+
+// subscription : SubId -> (HiddenConvertedSubType -> msg) -> Sub msg
+const _Platform_subscription = (id) => (tagger) => {
+  const subData = __List_Cons(__Utils_Tuple2(id, tagger), __List_Nil);
+  if (__Basics_isDebug) {
+    return {
+      $: "Sub",
+      a: subData,
+    };
+  }
+  return subData;
 };
 
 // EXPORT ELM MODULES

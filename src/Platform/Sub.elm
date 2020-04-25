@@ -27,7 +27,6 @@ module Platform.Sub exposing
 -}
 
 import Basics exposing (..)
-import Elm.Kernel.Platform
 import List
 import Platform.Bag as Bag
 
@@ -54,7 +53,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Sub (List ( IncomingPortId, HiddenConvertedSubType -> msg ))
+    = Sub (List ( SubId, HiddenConvertedSubType -> msg ))
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -98,14 +97,14 @@ map fn (Sub data) =
         |> Sub
 
 
-type IncomingPortId
-    = IncomingPortId IncomingPortId
+type SubId
+    = SubId SubId
 
 
 type HiddenConvertedSubType
     = HiddenConvertedSubType HiddenConvertedSubType
 
 
-getSubMapper : (a -> msg) -> ( IncomingPortId, HiddenConvertedSubType -> a ) -> ( IncomingPortId, HiddenConvertedSubType -> msg )
+getSubMapper : (a -> msg) -> ( SubId, HiddenConvertedSubType -> a ) -> ( SubId, HiddenConvertedSubType -> msg )
 getSubMapper fn ( id, tagger ) =
     ( id, \hcst -> fn (tagger hcst) )

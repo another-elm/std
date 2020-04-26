@@ -227,7 +227,6 @@ setupEffectsChannel sendToApp2 =
                                         Ok (Just msg) ->
                                             Impure.unwrapFunction (sendToApp2 msg) AsyncUpdate
 
-
                                         Ok Nothing ->
                                             ()
 

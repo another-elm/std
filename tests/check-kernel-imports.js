@@ -95,7 +95,6 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
         addDef(elmCustomTypeMatch[1]);
       }
 
-
       const kernelCallMatch = line.match(/(Elm\.Kernel\.\w+).\w+/u);
       if (kernelCallMatch !== null) {
         const kernelCall = kernelCallMatch[0];
@@ -251,10 +250,10 @@ Options:
   const elmCallsFromKernel = new Map();
 
   // Add some definitions from elm/json
-  elmDefinitions.add('Elm.Kernel.Json.run')
-  elmDefinitions.add('Elm.Kernel.Json.wrap')
-  elmDefinitions.add('Elm.Kernel.Json.unwrap')
-  elmDefinitions.add('Elm.Kernel.Json.errorToString')
+  elmDefinitions.add("Elm.Kernel.Json.run");
+  elmDefinitions.add("Elm.Kernel.Json.wrap");
+  elmDefinitions.add("Elm.Kernel.Json.unwrap");
+  elmDefinitions.add("Elm.Kernel.Json.errorToString");
 
   const allErrors = [];
   const allWarnings = [];
@@ -283,9 +282,7 @@ Options:
   for (const [call, locations] of elmCallsFromKernel.entries()) {
     if (!elmDefinitions.has(call) && !kernelDefinitions.has(call)) {
       for (const location of locations) {
-        allErrors.push(
-          `Import of ${call} at ${location.path}:${location.line} missing definition`
-        );
+        allErrors.push(`Import of ${call} at ${location.path}:${location.line} missing definition`);
       }
     }
   }

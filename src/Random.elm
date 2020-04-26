@@ -1,4 +1,4 @@
-effect module Random where { command = MyCmd } exposing
+module Random exposing
     ( Generator, generate
     , int, float, uniform, weighted, constant
     , pair, list
@@ -56,10 +56,17 @@ by M. E. O'Neil. It is not cryptographically secure.
 import Basics exposing (..)
 import Bitwise
 import List exposing ((::))
+import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Channel as Channel
+import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Task as RawTask
+import Platform.Scheduler as Scheduler
+import Result exposing (Result(..))
 import Task exposing (Task)
 import Time
+import Tuple
 
 
 
@@ -964,39 +971,48 @@ dread going back to `Math.random()` in JavaScript.
 -}
 generate : (a -> msg) -> Generator a -> Cmd msg
 generate tagger generator =
-    command (Generate (map tagger generator))
+    let
+        msgGen =
+            map tagger generator
+    in
+    command
+        (Channel.recv RawTask.Value (Tuple.second updateSeed)
+            |> RawTask.andThen
+                (\oldSeed ->
+                    let
+                        ( randomVal, newSeed ) =
+                            step msgGen oldSeed
+                    in
+                    Channel.send (Tuple.first updateSeed) newSeed
+                        |> RawTask.map (\() -> Ok (Just randomVal))
+                )
+            |> Scheduler.wrapTask
+        )
 
 
-type MyCmd msg
-    = Generate (Generator msg)
+updateSeed : Channel.Channel Seed
+updateSeed =
+    let
+        ( sender, receiver ) =
+            Channel.rawUnbounded ()
+
+        _ =
+            Time.now
+                |> Scheduler.unwrapTask
+                |> RawTask.andThen
+                    (\time ->
+                        case time of
+                            Ok time_ ->
+                                Channel.send sender (initialSeed (Time.posixToMillis time_))
+
+                            Err err ->
+                                never err
+                    )
+                |> RawScheduler.rawSpawn
+    in
+    ( sender, receiver )
 
 
-cmdMap : (a -> b) -> MyCmd a -> MyCmd b
-cmdMap func (Generate generator) =
-    Generate (map func generator)
-
-
-init : Task Never Seed
-init =
-    Task.andThen (\time -> Task.succeed (initialSeed (Time.posixToMillis time))) Time.now
-
-
-onEffects : Platform.Router msg Never -> List (MyCmd msg) -> Seed -> Task Never Seed
-onEffects router commands seed =
-    case commands of
-        [] ->
-            Task.succeed seed
-
-        (Generate generator) :: rest ->
-            let
-                ( value, newSeed ) =
-                    step generator seed
-            in
-            Task.andThen
-                (\_ -> onEffects router rest newSeed)
-                (Platform.sendToApp router value)
-
-
-onSelfMsg : Platform.Router msg Never -> Never -> Seed -> Task Never Seed
-onSelfMsg _ _ seed =
-    Task.succeed seed
+command : Platform.Task Never (Maybe msg) -> Cmd msg
+command =
+    Elm.Kernel.Platform.command

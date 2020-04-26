@@ -2,6 +2,17 @@
 
 A little inline blog documenting the development of this library.
 
+# 2020/4/26 -- Merge elm/random back into core
+
+In my book, things that can manage effects belong in elm/core. This merge
+required replacing effect manager code with an alternative (in this case
+channel based) implementation.
+
+The new implementation is not that nice. Maybe it will look better when I
+manage to unifiy the two Task types. I think this is a case where the effect
+manager abstraction really worked well. I might just have my rose tinted
+specticles on.
+
 # 2020/4/26 -- A new internal module `Platform.Raw.Impure`
 
 This module contains an abstaction for functions that **do things** when

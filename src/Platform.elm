@@ -306,29 +306,6 @@ dispatchEffects cmdBag subBag =
         )
 
 
-unwrapTask : Task Never a -> RawTask.Task a
-unwrapTask (Task task) =
-    RawTask.map
-        (\res ->
-            case res of
-                Ok val ->
-                    val
-
-                Err x ->
-                    never x
-        )
-        task
-
-
-wrapTask : RawTask.Task a -> Task never a
-wrapTask task =
-    Task (RawTask.map Ok task)
-
-
-type alias SendToApp msg =
-    msg -> UpdateMetadata -> ()
-
-
 type alias ImpureSendToApp msg =
     msg -> Impure.Function UpdateMetadata ()
 
@@ -347,29 +324,8 @@ type UpdateMetadata
     | AsyncUpdate
 
 
-type ReceivedData appMsg selfMsg
-    = Self selfMsg
-    | App (AppMsgPayload appMsg)
-
-
 type alias AppMsgPayload appMsg =
     List (Task Never (Maybe appMsg))
-
-
-type HiddenMyCmd msg
-    = HiddenMyCmd (HiddenMyCmd msg)
-
-
-type HiddenMySub msg
-    = HiddenMySub (HiddenMySub msg)
-
-
-type HiddenSelfMsg
-    = HiddenSelfMsg HiddenSelfMsg
-
-
-type HiddenState
-    = HiddenState HiddenState
 
 
 type RawJsObject

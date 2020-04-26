@@ -8,7 +8,7 @@ import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
-import Platform exposing (Task, ProcessId, initializeHelperFunctions, ImpureFunction)
+import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
@@ -215,14 +215,14 @@ let _Platform_subscriptionProcessIds = 0;
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
   const key = { id: _Platform_subscriptionProcessIds++ };
-  const msgHandler = (msg) =>
+  const msgHandler = (hcst) =>
     __RawTask_execImpure((_) => {
       const subscriptionState = _Platform_subscriptionStates.get(key);
       if (__Basics_isDebug && subscriptionState === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
       for (const sendToApp of subscriptionState.__$listeners) {
-        sendToApp(msg);
+        sendToApp(hcst);
       }
       return __Utils_Tuple0;
     });
@@ -239,25 +239,24 @@ const _Platform_createSubProcess = (onSubUpdate) => {
   return __Utils_Tuple2(key, channel.a);
 };
 
-const _Platform_resetSubscriptions = (newSubs) =>
-  __Platform_ImpureFunction((_) => {
-    for (const subState of _Platform_subscriptionStates.values()) {
-      subState.__$listeners.length = 0;
+const _Platform_resetSubscriptions = (newSubs) => (_) => {
+  for (const subState of _Platform_subscriptionStates.values()) {
+    subState.__$listeners.length = 0;
+  }
+  for (const tuple of __List_toArray(newSubs)) {
+    const key = tuple.a;
+    const sendToApp = tuple.b;
+    const subState = _Platform_subscriptionStates.get(key);
+    if (__Basics_isDebug && subState.__$listeners === undefined) {
+      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
     }
-    for (const tuple of __List_toArray(newSubs)) {
-      const key = tuple.a;
-      const sendToApp = tuple.b;
-      const subState = _Platform_subscriptionStates.get(key);
-      if (__Basics_isDebug && subState.__$listeners === undefined) {
-        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
-      }
-      subState.__$listeners.push(sendToApp);
-    }
-    for (const subState of _Platform_subscriptionStates.values()) {
-      subState.__$onSubUpdate(subState.__$listeners.length);
-    }
-    return __Utils_Tuple0;
-  });
+    subState.__$listeners.push(sendToApp);
+  }
+  for (const subState of _Platform_subscriptionStates.values()) {
+    subState.__$onSubUpdate(subState.__$listeners.length);
+  }
+  return __Utils_Tuple0;
+};
 
 const _Platform_effectManagerNameToString = (name) => name;
 

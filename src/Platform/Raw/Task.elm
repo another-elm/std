@@ -9,6 +9,7 @@ import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 
 
 type Task val
@@ -40,14 +41,14 @@ andThen func task =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : (() -> a) -> Task a
+execImpure : Impure.Function () a -> Task a
 execImpure func =
     AsyncAction
         { then_ =
             \callback ->
                 let
                     () =
-                        callback (Value (func ()))
+                        callback (Value (Impure.unwrapFunction func ()))
                 in
                 \() -> ()
         }

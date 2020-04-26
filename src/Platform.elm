@@ -168,7 +168,7 @@ the main app and your individual effect manager.
 -}
 type Router appMsg selfMsg
     = Router
-        { sendToApp : appMsg -> ()
+        { sendToApp : Impure.Function appMsg ()
         , selfSender : selfMsg -> RawTask.Task ()
         }
 
@@ -178,7 +178,7 @@ be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
 sendToApp (Router router) msg =
-    Task (RawTask.execImpure (\() -> Ok (router.sendToApp msg)))
+    Task (RawTask.execImpure (Impure.propagate (\() -> Impure.map Ok router.sendToApp) msg))
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -236,8 +236,8 @@ setupEffectsChannel sendToApp2 =
 
                                         Err err ->
                                             never err
+                                    )
                                 )
-                            )
                         |> List.map RawScheduler.spawn
                         |> List.foldr
                             (\curr accTask ->

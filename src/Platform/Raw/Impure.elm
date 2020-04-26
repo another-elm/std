@@ -1,4 +1,4 @@
-module Platform.Raw.Impure exposing (Function, andThen, function, map, run, toThunk, unwrapFunction, propagate)
+module Platform.Raw.Impure exposing (Function, andThen, function, map, propagate, run, toThunk, unwrapFunction)
 
 {-| This module contains an abstaction for functions that **do things** when
 they are run. The functions in this module are constrained to take one argument.

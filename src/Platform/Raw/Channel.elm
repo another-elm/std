@@ -4,6 +4,7 @@ import Basics exposing (..)
 import Debug
 import Elm.Kernel.Channel
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Tuple
@@ -35,7 +36,7 @@ tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 tryRecv tagger chl =
     RawTask.andThen
         tagger
-        (RawTask.execImpure (\() -> rawTryRecv chl))
+        (RawTask.execImpure (Impure.function (\() -> rawTryRecv chl)))
 
 
 {-| NON PURE!
@@ -54,7 +55,7 @@ rawSend =
 -}
 send : Sender msg -> msg -> RawTask.Task ()
 send channelId msg =
-    RawTask.execImpure (\() -> rawSend channelId msg)
+    RawTask.execImpure (Impure.function (\() -> rawSend channelId msg))
 
 
 rawUnbounded : () -> ( Sender msg, Receiver msg )
@@ -64,7 +65,7 @@ rawUnbounded =
 
 unbounded : RawTask.Task ( Sender msg, Receiver msg )
 unbounded =
-    RawTask.execImpure rawUnbounded
+    RawTask.execImpure (Impure.function rawUnbounded)
 
 
 rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction

@@ -9,6 +9,7 @@ import Debug
 import Elm.Kernel.Scheduler
 import List
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Task as RawTask
 
 
@@ -41,7 +42,7 @@ rawSpawn initTask =
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (\() -> rawSpawn task)
+    RawTask.execImpure (Impure.function (\() -> rawSpawn task))
 
 
 {-| Create a task kills a process.
@@ -54,7 +55,7 @@ receive values.
 -}
 kill : ProcessId -> RawTask.Task ()
 kill processId =
-    RawTask.execImpure (\() -> rawKill processId)
+    RawTask.execImpure (Impure.function (\() -> rawKill processId))
 
 
 batch : List ProcessId -> RawTask.Task ProcessId

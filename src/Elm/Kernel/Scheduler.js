@@ -24,8 +24,8 @@ function _Scheduler_succeed(value) {
   return __NiceScheduler_succeed(value);
 }
 
-function _Scheduler_binding(callback) {
-  return __NiceScheduler_binding(callback);
+function _Scheduler_binding(future) {
+  return __NiceScheduler_binding(future);
 }
 
 function _Scheduler_rawSpawn(task) {
@@ -90,13 +90,17 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
   };
 };
 
-var _Scheduler_delay = F3(function (time, value, callback) {
-  var id = setTimeout(function () {
-    callback(value);
-  }, time);
-
-  return function (x) {
-    clearTimeout(id);
-    return x;
-  };
-});
+const _Scheduler_delay = F2((time, value) => ({
+  __$then_: (callback) => {
+    let id = setTimeout(() => {
+      callback(value);
+    }, time);
+    return (x) => {
+      if (id !== null) {
+        clearTimeout(id);
+        id = null;
+      }
+      return x;
+    };
+  },
+}));

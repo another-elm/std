@@ -25,9 +25,10 @@ type alias Channel msg =
 recv : (msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 recv tagger chl =
     RawTask.AsyncAction
-        (\doneCallback ->
-            rawRecv chl (\msg -> doneCallback (tagger msg))
-        )
+        { then_ =
+            \doneCallback ->
+                rawRecv chl (\msg -> doneCallback (tagger msg))
+        }
 
 
 tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a

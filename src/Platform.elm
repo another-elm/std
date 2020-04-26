@@ -40,10 +40,10 @@ import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Sub as RawSub
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
 import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Sub as RawSub
 import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))

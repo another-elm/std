@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (DoneCallback, ProcessId, TryAbortAction, andThen, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -55,8 +55,8 @@ type alias ProcessId =
     RawScheduler.ProcessId
 
 
-type alias DoneCallback err ok =
-    Platform.Task err ok -> ()
+type alias Future err ok =
+    { then_ : (Platform.Task err ok -> ()) -> TryAbortAction }
 
 
 type alias TryAbortAction =
@@ -73,11 +73,11 @@ fail e =
     wrapTask (RawTask.Value (Err e))
 
 
-binding : (DoneCallback err ok -> TryAbortAction) -> Platform.Task err ok
-binding callback =
+binding : Future err ok -> Platform.Task err ok
+binding fut =
     wrapTask
         (RawTask.AsyncAction
-            (\doneCallback -> callback (taskFn (\task -> doneCallback task)))
+            { then_ = \doneCallback -> fut.then_ (taskFn (\task -> doneCallback task)) }
         )
 
 
@@ -86,13 +86,14 @@ binding callback =
 execImpure : (() -> a) -> Platform.Task Never a
 execImpure func =
     binding
-        (\doneCallback ->
-            let
-                () =
-                    doneCallback (succeed (func ()))
-            in
-            \() -> ()
-        )
+        { then_ =
+            \doneCallback ->
+                let
+                    () =
+                        doneCallback (succeed (func ()))
+                in
+                \() -> ()
+        }
 
 
 andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2

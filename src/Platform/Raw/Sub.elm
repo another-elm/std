@@ -1,12 +1,13 @@
 module Platform.Raw.Sub exposing
-    ( RawSub
+    ( HiddenConvertedSubType
     , Id
-    , HiddenConvertedSubType
+    , RawSub
     )
 
 
 type alias RawSub msg =
     List ( Id, HiddenConvertedSubType -> msg )
+
 
 type Id
     = Id Id

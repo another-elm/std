@@ -61,17 +61,18 @@ batch : List ProcessId -> RawTask.Task ProcessId
 batch ids =
     spawn
         (RawTask.AsyncAction
-            (\doneCallback ->
-                let
-                    () =
-                        doneCallback (spawn (RawTask.Value ()))
-                in
-                \() ->
-                    List.foldr
-                        (\id () -> rawKill id)
-                        ()
-                        ids
-            )
+            { then_ =
+                \doneCallback ->
+                    let
+                        () =
+                            doneCallback (spawn (RawTask.Value ()))
+                    in
+                    \() ->
+                        List.foldr
+                            (\id () -> rawKill id)
+                            ()
+                            ids
+            }
         )
 
 
@@ -105,7 +106,7 @@ stepper processId root =
 
         RawTask.AsyncAction doEffect ->
             Running
-                (doEffect
+                (doEffect.then_
                     (\newRoot ->
                         let
                             (ProcessId _) =

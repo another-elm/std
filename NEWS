@@ -1,0 +1,13 @@
+# NEWS
+
+A sort of inline blog for updates about this core libary
+
+## 2020/04/26 - the future?
+
+I wan't to move to away from callbacks and towards async/await and promises (or
+futures). Firstly, I find that async/await is much easier to reason about than
+callbacks and leads to much prettier code. Also, in the back of my mind is the
+desire to eventually port the core libraries to rust for native compiled elm
+code.
+
+Todays change is just cosmetic, but hopefully is step 1.

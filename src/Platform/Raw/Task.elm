@@ -1,4 +1,4 @@
-module Platform.Raw.Task exposing (DoneCallback, Task(..), TryAbortAction, andThen, execImpure, map, sleep)
+module Platform.Raw.Task exposing (Future, Task(..), TryAbortAction, andThen, execImpure, map, sleep)
 
 {-| This module contains the low level logic for tasks. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -13,11 +13,11 @@ import Maybe exposing (Maybe(..))
 
 type Task val
     = Value val
-    | AsyncAction (DoneCallback val -> TryAbortAction)
+    | AsyncAction (Future val)
 
 
-type alias DoneCallback val =
-    Task val -> ()
+type alias Future a =
+    { then_ : (Task a -> ()) -> TryAbortAction }
 
 
 type alias TryAbortAction =
@@ -30,12 +30,12 @@ andThen func task =
         Value val ->
             func val
 
-        AsyncAction doEffect ->
+        AsyncAction fut ->
             AsyncAction
-                (\doneCallback ->
-                    doEffect
-                        (\newTask -> doneCallback (andThen func newTask))
-                )
+                { then_ =
+                    \callback ->
+                        fut.then_ (\newTask -> callback (andThen func newTask))
+                }
 
 
 {-| Create a task that executes a non pure function
@@ -43,13 +43,14 @@ andThen func task =
 execImpure : (() -> a) -> Task a
 execImpure func =
     AsyncAction
-        (\doneCallback ->
-            let
-                () =
-                    doneCallback (Value (func ()))
-            in
-            \() -> ()
-        )
+        { then_ =
+            \callback ->
+                let
+                    () =
+                        callback (Value (func ()))
+                in
+                \() -> ()
+        }
 
 
 map : (a -> b) -> Task a -> Task b
@@ -64,6 +65,6 @@ sleep time =
     AsyncAction (delay time (Value ()))
 
 
-delay : Float -> Task val -> DoneCallback val -> TryAbortAction
+delay : Float -> Task val -> Future val
 delay =
     Elm.Kernel.Scheduler.delay

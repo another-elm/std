@@ -60,9 +60,9 @@ import Tuple
 code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions model appMsg =
-    { stepperBuilder : SendToApp appMsg -> model -> SendToApp appMsg
+    { stepperBuilder : ImpureSendToApp appMsg -> model -> ImpureSendToApp appMsg
     , setupEffectsChannel :
-        SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
+        ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
     , dispatchEffects :
         Cmd appMsg
         -> Sub appMsg
@@ -75,7 +75,7 @@ type alias InitializeHelperFunctions model appMsg =
 -}
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
-    { stepperBuilder = \_ _ -> \_ _ -> ()
+    { stepperBuilder = \sta -> \_ -> sta
     , dispatchEffects = dispatchEffects
     , setupEffectsChannel = setupEffectsChannel
     }
@@ -211,7 +211,7 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : SendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
+setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
 setupEffectsChannel sendToApp2 =
     let
         dispatchChannel : Channel.Channel (AppMsgPayload appMsg)
@@ -229,15 +229,16 @@ setupEffectsChannel sendToApp2 =
                                 (\r ->
                                     case r of
                                         Ok (Just msg) ->
-                                            sendToApp2 msg AsyncUpdate
+                                            Impure.unwrapFunction (sendToApp2 msg) AsyncUpdate
+
 
                                         Ok Nothing ->
                                             ()
 
                                         Err err ->
                                             never err
-                                    )
                                 )
+                            )
                         |> List.map RawScheduler.spawn
                         |> List.foldr
                             (\curr accTask ->

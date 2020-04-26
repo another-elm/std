@@ -22,11 +22,10 @@ module Platform exposing
 
 ## Effect Manager Helpers
 
-An extremely tiny portion of library authors should ever write effect managers.
-Fundamentally, Elm needs maybe 10 of them total. I get that people are smart,
-curious, etc. but that is not a substitute for a legitimate reason to make an
-effect manager. Do you have an _organic need_ this fills? Or are you just
-curious? Public discussions of your explorations should be framed accordingly.
+Effect managers are dead (long live the effect managers). Conseqently you can
+**never** get access to a Router, and thus never call `sendToApp` or
+`sendToSelf`. If you do not believe that you can _really_ never do this, have a
+look at the definitions. We keep them around for now to keep `elm diff` happy.
 
 @docs Router, sendToApp, sendToSelf
 
@@ -167,18 +166,15 @@ type ProcessId
 the main app and your individual effect manager.
 -}
 type Router appMsg selfMsg
-    = Router
-        { sendToApp : Impure.Function appMsg ()
-        , selfSender : selfMsg -> RawTask.Task ()
-        }
+    = Router Never
 
 
 {-| Send the router a message for the main loop of your app. This message will
 be handled by the overall `update` function, just like events from `Html`.
 -}
 sendToApp : Router msg a -> msg -> Task x ()
-sendToApp (Router router) msg =
-    Task (RawTask.execImpure (Impure.propagate (\() -> Impure.map Ok router.sendToApp) msg))
+sendToApp (Router router) =
+    never router
 
 
 {-| Send the router a message for your effect manager. This message will
@@ -189,8 +185,8 @@ As an example, the effect manager for web sockets
 
 -}
 sendToSelf : Router a msg -> msg -> Task x ()
-sendToSelf (Router router) msg =
-    wrapTask (router.selfSender msg)
+sendToSelf (Router router) =
+    never router
 
 
 

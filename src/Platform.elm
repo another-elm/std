@@ -59,7 +59,7 @@ import Tuple
 code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions model appMsg =
-    { stepperBuilder : ImpureSendToApp appMsg -> model -> ImpureSendToApp appMsg
+    { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
     , setupEffectsChannel :
         ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
     , dispatchEffects :
@@ -74,7 +74,7 @@ type alias InitializeHelperFunctions model appMsg =
 -}
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
-    { stepperBuilder = \sta -> \_ -> sta
+    { stepperBuilder = \_ _ -> \_ _ -> ()
     , dispatchEffects = dispatchEffects
     , setupEffectsChannel = setupEffectsChannel
     }

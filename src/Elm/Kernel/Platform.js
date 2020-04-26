@@ -215,14 +215,14 @@ let _Platform_subscriptionProcessIds = 0;
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
   const key = { id: _Platform_subscriptionProcessIds++ };
-  const msgHandler = (msg) =>
+  const msgHandler = (hcst) =>
     __RawTask_execImpure((_) => {
       const subscriptionState = _Platform_subscriptionStates.get(key);
       if (__Basics_isDebug && subscriptionState === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
       for (const sendToApp of subscriptionState.__$listeners) {
-        sendToApp(msg);
+        __RawScheduler_rawSpawn(sendToApp(hcst));
       }
       return __Utils_Tuple0;
     });

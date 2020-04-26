@@ -9,6 +9,7 @@ import Debug
 import Elm.Kernel.Scheduler
 import List
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Task as RawTask
 
 
@@ -30,18 +31,17 @@ type UniqueId
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : RawTask.Task a -> ProcessId
-rawSpawn initTask =
-    enqueue
-        (ProcessId { id = getGuid () })
-        initTask
+rawSpawn : Impure.Function (RawTask.Task a) ProcessId
+rawSpawn =
+    enqueue (ProcessId { id = getGuid () })
 
 
 {-| Create a task that spawns a processes.
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (\() -> rawSpawn task)
+    RawTask.execImpure
+        (Impure.toThunk task rawSpawn)
 
 
 {-| Create a task kills a process.
@@ -54,7 +54,8 @@ receive values.
 -}
 kill : ProcessId -> RawTask.Task ()
 kill processId =
-    RawTask.execImpure (\() -> rawKill processId)
+    RawTask.execImpure
+        (Impure.toThunk processId rawKill)
 
 
 batch : List ProcessId -> RawTask.Task ProcessId
@@ -62,15 +63,17 @@ batch ids =
     spawn
         (RawTask.AsyncAction
             (\doneCallback ->
-                let
-                    () =
-                        doneCallback (spawn (RawTask.Value ()))
-                in
-                \() ->
-                    List.foldr
-                        (\id () -> rawKill id)
-                        ()
-                        ids
+                -- let
+                --     () =
+                --         doneCallback (spawn (RawTask.Value ()))
+                -- in
+                List.foldr
+                    (\id ip ->
+                        ip
+                            |> Impure.andThen (Impure.toThunk id rawKill)
+                    )
+                    (Impure.function (\() -> ()))
+                    ids
             )
         )
 
@@ -82,7 +85,7 @@ call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
 
 -}
-enqueue : ProcessId -> RawTask.Task state -> ProcessId
+enqueue : ProcessId -> Impure.Function (RawTask.Task state) ProcessId
 enqueue =
     enqueueWithStepper stepper
 
@@ -118,17 +121,21 @@ stepper processId root =
 
 {-| NON PURE!
 -}
-rawKill : ProcessId -> ()
-rawKill id =
-    case getProcessState id of
-        Just (Running killer) ->
-            killer ()
+rawKill : Impure.Function ProcessId ()
+rawKill =
+    Impure.xx42
+        (\id ->
+                (case getProcessState id of
+                    Just (Running killer) ->
+                        killer
 
-        Just (Ready _) ->
-            ()
+                    Just (Ready _) ->
+                        Impure.function (\() -> ())
 
-        Nothing ->
-            ()
+                    Nothing ->
+                        Impure.function (\() -> ())
+                )
+        )
 
 
 
@@ -145,6 +152,9 @@ getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-enqueueWithStepper : (ProcessId -> RawTask.Task state -> ProcessState state) -> ProcessId -> RawTask.Task state -> ProcessId
+enqueueWithStepper :
+    (ProcessId -> RawTask.Task state -> ProcessState state)
+    -> ProcessId
+    -> Impure.Function (RawTask.Task state) ProcessId
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper

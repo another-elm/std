@@ -9,19 +9,20 @@ import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 
 
 type Task val
     = Value val
-    | AsyncAction (DoneCallback val -> TryAbortAction)
+    | AsyncAction (Impure.Function (DoneCallback val) TryAbortAction)
 
 
 type alias DoneCallback val =
-    Task val -> ()
+    Impure.Function (Task val) ()
 
 
 type alias TryAbortAction =
-    () -> ()
+    Impure.Function () ()
 
 
 andThen : (a -> Task b) -> Task a -> Task b
@@ -32,23 +33,30 @@ andThen func task =
 
         AsyncAction doEffect ->
             AsyncAction
-                (\doneCallback ->
+                (Impure.xx2
                     doEffect
-                        (\newTask -> doneCallback (andThen func newTask))
+                    (\doneCallback -> Impure.xx2 doneCallback (andThen func))
                 )
 
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : (() -> a) -> Task a
+execImpure : Impure.Function () a -> Task a
 execImpure func =
     AsyncAction
-        (\doneCallback ->
-            let
-                () =
-                    doneCallback (Value (func ()))
-            in
-            \() -> ()
+        (Impure.xx42
+            (\doneCallback ->
+                Impure.function
+                    (\() ->
+                        let
+                            () =
+                                func
+                                    |> Impure.map Value
+                                    |> Impure.andThen doneCallback
+                        in
+                        Impure.function (\() -> ())
+                    )
+            )
         )
 
 
@@ -64,6 +72,6 @@ sleep time =
     AsyncAction (delay time (Value ()))
 
 
-delay : Float -> Task val -> DoneCallback val -> TryAbortAction
+delay : Float -> Task val -> Impure.Function (DoneCallback val) TryAbortAction
 delay =
     Elm.Kernel.Scheduler.delay

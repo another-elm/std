@@ -40,10 +40,11 @@ import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Sub as RawSub
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Sub as RawSub
 import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
@@ -270,7 +271,7 @@ dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
     -> Channel.Sender (AppMsgPayload appMsg)
-    -> ( SendToApp appMsg -> (), RawTask.Task () )
+    -> ( Impure.Function (SendToApp appMsg), RawTask.Task () )
 dispatchEffects cmdBag subBag =
     let
         cmds =
@@ -281,14 +282,14 @@ dispatchEffects cmdBag subBag =
     in
     \channel ->
         let
-            updateSubs sendToAppFunc =
+            updateSubs =
                 let
                     -- Reset and re-register all subscriptions.
-                    (ImpureFunction ip) =
+                    (Impure.Function ip) =
                         subs
                             |> List.map
                                 (\( id, tagger ) ->
-                                    ( id, \v -> sendToAppFunc (tagger v) AsyncUpdate )
+                                    ( id, \v -> RawTask.Value (sendToAppFunc (tagger v) AsyncUpdate) )
                                 )
                             |> resetSubscriptions
                 in
@@ -320,18 +321,6 @@ wrapTask task =
     Task (RawTask.map Ok task)
 
 
-impureAndThen : ImpureFunction -> ImpureFunction -> ImpureFunction
-impureAndThen (ImpureFunction ip1) (ImpureFunction ip2) =
-    ImpureFunction
-        (\() ->
-            let
-                () =
-                    ip1 ()
-            in
-            ip2 ()
-        )
-
-
 type alias SendToApp msg =
     msg -> UpdateMetadata -> ()
 
@@ -357,10 +346,6 @@ type ReceivedData appMsg selfMsg
 
 type alias AppMsgPayload appMsg =
     List (Task Never (Maybe appMsg))
-
-
-type ImpureFunction
-    = ImpureFunction (() -> ())
 
 
 type HiddenMyCmd msg
@@ -418,6 +403,6 @@ unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> () ) -> ImpureFunction
+resetSubscriptions : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> RawTask.Task () ) -> Impure.Function ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

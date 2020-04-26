@@ -1,4 +1,4 @@
-module Platform.Raw.Impure exposing (Function, andThen, function, map, run, toThunk, unwrapFunction, xx2, xx42)
+module Platform.Raw.Impure exposing (Function, andThen, function, map, run, toThunk, unwrapFunction, propagate)
 
 {-| This module contains an abstaction for functions that **do things** when
 they are run. The functions in this module are constrained to take one argument.
@@ -75,27 +75,21 @@ run x f =
     unwrapFunction f x
 
 
-xx2 : Function a b -> (c -> a) -> Function c b
-xx2 f g =
+{-| Given an (pure) function that creates an impure function from some input
+and the input that the created impure function needs create a new impure
+function.
+-}
+propagate : (a -> Function b c) -> b -> Function a c
+propagate f b =
     function
-        (\x ->
+        (\a ->
             unwrapFunction
-                f
-                (g x)
+                (f a)
+                b
         )
 
 
-xx42 : (a -> Function () b) -> Function a b
-xx42 f =
-    function
-        (\x ->
-            unwrapFunction
-                (f x)
-                ()
-        )
-
-
-toThunk : a -> Function a b -> Function () b
-toThunk x f =
+toThunk : Function a b -> a -> Function () b
+toThunk f x =
     function (\() -> x)
         |> andThen f

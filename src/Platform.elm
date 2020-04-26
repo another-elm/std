@@ -67,7 +67,7 @@ type alias InitializeHelperFunctions model appMsg =
         Cmd appMsg
         -> Sub appMsg
         -> Channel.Sender (AppMsgPayload appMsg)
-        -> ( Impure.Function (SendToApp appMsg) (), RawTask.Task () )
+        -> ( Impure.Function (ImpureSendToApp appMsg) (), RawTask.Task () )
     }
 
 
@@ -271,7 +271,7 @@ dispatchEffects :
     Cmd appMsg
     -> Sub appMsg
     -> Channel.Sender (AppMsgPayload appMsg)
-    -> ( Impure.Function (SendToApp appMsg) (), RawTask.Task () )
+    -> ( Impure.Function (ImpureSendToApp appMsg) (), RawTask.Task () )
 dispatchEffects cmdBag subBag =
     let
         cmds =
@@ -282,17 +282,25 @@ dispatchEffects cmdBag subBag =
     in
     \channel ->
         let
+            -- Impure functin that resets and re-registers all subscriptions.
             updateSubs =
-                -- Reset and re-register all subscriptions.
-                Impure.xx42
+                Impure.propagate
                     (\sendToAppFunc ->
-                        subs
-                            |> List.map
-                                (\( id, tagger ) ->
-                                    ( id, \v -> sendToAppFunc (tagger v) AsyncUpdate )
-                                )
-                            |> resetSubscriptions
+                        let
+                            thunks =
+                                List.map
+                                    (\( id, tagger ) ->
+                                        ( id
+                                        , Impure.propagate
+                                            (\v -> sendToAppFunc (tagger v))
+                                            AsyncUpdate
+                                        )
+                                    )
+                                    subs
+                        in
+                        Impure.toThunk resetSubscriptions thunks
                     )
+                    ()
         in
         ( updateSubs
         , Channel.send
@@ -322,6 +330,10 @@ wrapTask task =
 
 type alias SendToApp msg =
     msg -> UpdateMetadata -> ()
+
+
+type alias ImpureSendToApp msg =
+    msg -> Impure.Function UpdateMetadata ()
 
 
 type alias DebugMetadata =
@@ -402,6 +414,6 @@ unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> () ) -> Impure.Function () ()
+resetSubscriptions : Impure.Function (List ( RawSub.Id, Impure.Function RawSub.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions

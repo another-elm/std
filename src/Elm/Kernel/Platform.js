@@ -239,7 +239,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
   return __Utils_Tuple2(key, channel.a);
 };
 
-const _Platform_resetSubscriptions = (newSubs) => (_) => {
+const _Platform_resetSubscriptions = (newSubs) => {
   for (const subState of _Platform_subscriptionStates.values()) {
     subState.__$listeners.length = 0;
   }

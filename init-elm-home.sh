@@ -13,5 +13,7 @@ cd $(mktemp -d)
 
 git clone -q https://github.com/harrysarson/elm-minimal
 cd elm-minimal
-$ELM make src/Main.elm --output /dev/null || true;
+yes | $ELM install elm/time
+yes | $ELM install elm/random
+$ELM make src/Main.elm --output /dev/null || true
 

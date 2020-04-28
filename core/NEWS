@@ -1,0 +1,51 @@
+# NEWS
+
+A little inline blog documenting the development of this library.
+
+# 2020/4/26 -- Merge elm/random back into core
+
+In my book, things that can manage effects belong in elm/core. This merge
+required replacing effect manager code with an alternative (in this case
+channel based) implementation.
+
+The new implementation is not that nice. Maybe it will look better when I
+manage to unifiy the two Task types. I think this is a case where the effect
+manager abstraction really worked well. I might just have my rose tinted
+specticles on.
+
+# 2020/4/26 -- A new internal module `Platform.Raw.Impure`
+
+This module contains an abstaction for functions that **do things** when
+they are run. The functions in this module are constrained to take one argument
+and return the unit tuple.
+
+Why can we not use Task's for this, given that this is _exactly_ what they are
+intended for. Well, two reasons
+
+1. Sometimes we need a guarantee that the function will be run exactly when we
+   need to run. Task are always enqueued; they are only run after stepping
+   through all the previous Tasks in the queue. Sometimes, this is not
+   acceptable, for instance when updating the listeners for a subscription
+   effect.
+
+2. We need to use impure functions to run Tasks. The
+   `Platform.Raw.Scheduler.enqueue` function takes a Task, adds it to the
+   scheduler queue and, if the scheduler is not currently stepping tasks (i.e.
+   this is not a reentrant call to `Platform.Raw.Scheduler.enqueue`), starts
+   stepping. This function is impure. However, if we represented it as a Task
+   we would have an infinite loop!
+
+Hopefully, use of this module can be reduced to a couple of key places and
+maybe even inlined into the scheduler is that is the only place that uses it.
+Hopefully, it will help us move all effectful functions out of elm.
+
+
+## 2020/04/26 - the future?
+
+I wan't to move to away from callbacks and towards async/await and promises (or
+futures). Firstly, I find that async/await is much easier to reason about than
+callbacks and leads to much prettier code. Also, in the back of my mind is the
+desire to eventually port the core libraries to rust for native compiled elm
+code.
+
+Todays change is just cosmetic, but hopefully is step 1.

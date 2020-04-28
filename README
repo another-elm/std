@@ -1,0 +1,20 @@
+     another-elm/core
+
+Another implementation of the elm core library.
+
+To read about the development of this library see ./NEWS which hopefully
+chronicles the most important developments.
+
+We will leave you with Tom Odell's `Another elm':
+
+    And I'd sing a song, that'd be just ours
+    But I sang 'em all to another heart
+    And I wanna cry I wanna learn to love
+    But all my pull-requests got batched
+
+    On another elm, another elm
+    All my tears have been used up
+    On another elm, another elm
+    All my tears have been used up
+    On another elm, another elm
+    All my tears have been used up

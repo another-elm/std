@@ -12,8 +12,8 @@ DIR="$(dirname $0)";
 
 cd "$DIR";
 
-export ELM_HOME="$(pwd)/.elm";
+export ELM_HOME="$(pwd)/elm-home";
 
-../custom-core.sh ..
+../../tools/custom-elm-std.sh ..
 
 "${ELM_TEST}" "$@";

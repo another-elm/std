@@ -30,7 +30,7 @@ if [[ -d "$CORE_VERSIONS_DIR" ]]; then
         printf "REFRESH "
     else
         printf "INIT "
-        ./init-elm-home.sh > /dev/null
+        ../tools/init-elm-home.sh > /dev/null
     fi
 else
     printf "INIT "

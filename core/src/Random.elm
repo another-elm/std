@@ -63,6 +63,7 @@ import Platform.Raw.Channel as Channel
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
+import Elm.Kernel.Platform
 import Result exposing (Result(..))
 import Task exposing (Task)
 import Time

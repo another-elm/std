@@ -1,0 +1,156 @@
+#! /usr/bin/env python3
+
+import datetime
+import os
+import random
+import shutil
+import string
+import subprocess
+import sys
+
+
+def replace_with_stub(packages_root, author, package):
+    versions_dir = os.path.join(packages_root, author, package)
+    try:
+        dirs = os.listdir(versions_dir)
+    except FileNotFoundError:
+        return
+
+    for v in dirs:
+        package_root = os.path.join(versions_dir, v)
+        src_dir = os.path.join(package_root, "src")
+        stub_file = os.path.join(package_root, "stub")
+        elm_json_path = os.path.join(package_root, "elm.json")
+
+        dummy_module = "P{}".format(''.join(
+            [random.choice(string.ascii_letters) for n in range(32)]))
+        dummy_path = os.path.join(src_dir, "{}.elm".format(dummy_module))
+
+        shutil.rmtree(package_root)
+        os.makedirs(src_dir)
+
+        with open(stub_file, 'w'):
+            pass
+
+        with open(dummy_path, 'w') as f:
+            f.write("""module {} exposing (..)
+
+a = 2
+""".format(dummy_module))
+
+        with open(elm_json_path, 'w') as f:
+            f.write("""
+{{
+    "type": "package",
+    "name": "{}/{}",
+    "summary": "Encode and decode JSON values",
+    "license": "BSD-3-Clause",
+    "version": "{}",
+    "exposed-modules": [
+        "{}"
+    ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
+    "dependencies": {{
+        "elm/core": "1.0.0 <= v < 2.0.0"
+    }},
+    "test-dependencies": {{}}
+}}
+            """.format(author, package, v, dummy_module).strip())
+
+
+def is_update_needed(package_root, relevant_custom_paths):
+    last_updated_time = None
+
+    try:
+        with open(os.path.join(package_root, 'custom'), 'r') as f:
+            file_contents = f.read()
+            last_updated_time = datetime.datetime.fromisoformat(
+                file_contents).timestamp()
+    except (FileNotFoundError, ValueError):
+        return True
+
+    for relevant_custom_path in relevant_custom_paths:
+        for dirpath, _, files in os.walk(relevant_custom_path):
+            if os.path.getmtime(dirpath) > last_updated_time:
+                return True
+            for file in files:
+                if os.path.getmtime(os.path.join(dirpath,
+                                                 file)) > last_updated_time:
+                    return True
+
+
+def customize_core(packages_root):
+    versions_dir = os.path.join(packages_root, "elm", "core")
+    custom_core_dir = os.path.join(os.path.dirname(__file__), '..', 'core')
+
+    custom_src_dir = os.path.join(custom_core_dir, "src")
+    custom_json_file = os.path.join(custom_core_dir, "elm.json")
+
+    any_modified = False
+    for v in os.listdir(versions_dir):
+        package_root = os.path.join(versions_dir, v)
+
+        if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
+            any_modified = True
+
+            shutil.rmtree(package_root)
+            os.makedirs(package_root)
+
+            shutil.copytree(custom_src_dir, os.path.join(package_root, "src"))
+            shutil.copy(custom_json_file, os.path.join(package_root,
+                                                       "elm.json"))
+
+            with open(os.path.join(package_root, 'custom'), 'w') as f:
+                f.write(datetime.datetime.utcnow().isoformat())
+
+    return any_modified
+
+
+def wrapped_run(elm, args):
+    elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
+    another_elm_home_dir = os.path.join(elm_home_dir, 'another')
+
+    custom_env = os.environ.copy()
+    custom_env["ELM_HOME"] = another_elm_home_dir
+
+    elm_version = subprocess.run([elm, "--version"],
+                                 capture_output=True,
+                                 check=True).stdout.decode("utf-8").strip()
+
+    packages_root = os.path.join(another_elm_home_dir, elm_version, 'packages')
+
+    def run_compiler(**kwargs):
+        return subprocess.run([elm] + args, env=custom_env,
+                              **kwargs).returncode
+
+    if not os.path.exists(another_elm_home_dir):
+        try:
+            shutil.rmtree('elm-stuff')
+        except FileNotFoundError:
+            pass
+
+    run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+    if not os.path.exists(another_elm_home_dir):
+        return 0
+
+    replace_with_stub(packages_root, 'elm', 'time')
+    replace_with_stub(packages_root, 'elm', 'random')
+
+    if customize_core(packages_root):
+        shutil.rmtree('elm-stuff')
+        for directory, _, file in os.walk(packages_root):
+            if file == 'artifacts.dat':
+                os.remove(os.path.join(directory, file))
+
+    return run_compiler()
+
+
+args = []
+if len(sys.argv) > 2:
+    args = sys.argv[2:]
+
+if len(sys.argv) < 2:
+    print("Please provide an elm executable to wrap", file=sys.stderr)
+
+exit(wrapped_run(sys.argv[1], args))

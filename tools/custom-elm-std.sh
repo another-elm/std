@@ -34,14 +34,14 @@ if [[ -d "$CORE_VERSIONS_DIR" ]]; then
     fi
 else
     printf "INIT "
-    ./init-elm-home.sh > /dev/null
+    ../tools/init-elm-home.sh > /dev/null
 fi
 
 CORE_VERSION=$(ls $CORE_VERSIONS_DIR)
 CORE_PACKAGE_DIR="$CORE_VERSIONS_DIR/$CORE_VERSION"
 
-./stub.py "$ELM_HOME/$ELM_VERSION/packages/elm/time"
-./stub.py "$ELM_HOME/$ELM_VERSION/packages/elm/random"
+../tools/stub.py "$ELM_HOME/$ELM_VERSION/packages/elm/time"
+../tools/stub.py "$ELM_HOME/$ELM_VERSION/packages/elm/random"
 
 rm -rf "$CORE_PACKAGE_DIR" > /dev/null
 mkdir "$CORE_PACKAGE_DIR"

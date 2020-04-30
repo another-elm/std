@@ -1,11 +1,4 @@
 language: elm
 
-elm:
-  - latest
-
-elm_test: latest
-
-elm_format: latest
-
 script:
-  - bash tests/run-tests.sh
+  - cd core/tests && bash ./run-tests.sh

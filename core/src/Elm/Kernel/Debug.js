@@ -271,7 +271,7 @@ Effect modules are not supported, if you are using elm/* libraries you will need
 }
 
 function _Debug_crash__PROD(identifier) {
-  throw new Error("https://github.com/elm/core/blob/1.0.0/hints/" + identifier + ".md");
+  throw new Error("Error in whilst running elm app id:" + identifier);
 }
 
 function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {

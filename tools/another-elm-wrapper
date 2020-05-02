@@ -142,11 +142,13 @@ def wrapped_run(elm, args):
     replace_with_stub(packages_root, 'elm', 'time')
     replace_with_stub(packages_root, 'elm', 'random')
 
-    if customize("core", packages_root):
-        shutil.rmtree("elm-stuff")
-        for author in os.scandir(packages_root):
-            if author.name != "elm" and author.is_dir():
-                shutil.rmtree(author.path)
+    for pkg in ['core', 'json']:
+        if customize(pkg, packages_root):
+            shutil.rmtree("elm-stuff")
+            run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            for author in os.scandir(packages_root):
+                if author.name != "elm" and author.is_dir():
+                    shutil.rmtree(author.path)
 
     return run_compiler()
 

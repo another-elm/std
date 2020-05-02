@@ -1,4 +1,4 @@
 language: elm
 
 script:
-  - cd tests && elm-test --compiler ../tools/another-elm
+  - cd tests && elm-test --compiler ../another-elm

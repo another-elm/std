@@ -86,8 +86,13 @@ def customize_core(packages_root):
     custom_src_dir = os.path.join(custom_core_dir, "src")
     custom_json_file = os.path.join(custom_core_dir, "elm.json")
 
+    try:
+        dirs = os.listdir(versions_dir)
+    except FileNotFoundError:
+        dirs = []
+
     any_modified = False
-    for v in os.listdir(versions_dir):
+    for v in dirs:
         package_root = os.path.join(versions_dir, v)
 
         if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
@@ -138,10 +143,7 @@ def wrapped_run(elm, args):
     replace_with_stub(packages_root, 'elm', 'random')
 
     if customize_core(packages_root):
-        shutil.rmtree('elm-stuff')
-        for directory, _, file in os.walk(packages_root):
-            if file == 'artifacts.dat':
-                os.remove(os.path.join(directory, file))
+        shutil.rmtree
 
     return run_compiler()
 

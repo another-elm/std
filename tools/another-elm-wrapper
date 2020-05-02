@@ -119,7 +119,8 @@ def wrapped_run(elm, args):
     custom_env["ELM_HOME"] = another_elm_home_dir
 
     elm_version = subprocess.run([elm, "--version"],
-                                 capture_output=True,
+                                 stderr=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
                                  check=True).stdout.decode("utf-8").strip()
 
     packages_root = os.path.join(another_elm_home_dir, elm_version, 'packages')

@@ -1,0 +1,40 @@
+Quick Installation Guide for musl libc
+======================================
+
+
+another-elm comes with a wrapper script of the same name. The wrapper should be
+a drop in replacement for the offical elm compiler.
+
+
+Prerequisites
+-------------
+
+The wrapper script is written in python, a non-eol needs to be installed to run
+the wrapper. The official elm compiler must also be installed.
+
+
+Supported Elm Versions
+----------------------
+
+We support the latest version of elm, older versions may be supported but that
+support may be removed at any time.
+
+
+Build and Installation Procedure
+--------------------------------
+
+To build and install another-elm:
+
+   sudo mkdir -p /opt/elm/
+   sudo chown $USER /opt/elm
+   git clone https://github.com/another-elm/std /opt/elm/std
+   sudo ln -s /opt/elm/std/tools/another-elm /usr/local/bin/another-elm
+
+
+Checking for Successful Installation
+------------------------------------
+
+Currently it is hard to work out if the installation worked correctly. In the
+future we will automate this. For now, here is a usefull test: if the compiler
+generates javascript contains "$elm$core$Platform$Raw$Scheduler" then
+another-elm has been correctly installed.

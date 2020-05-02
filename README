@@ -1,9 +1,17 @@
-     another-elm/core
 
-Another implementation of the elm core library.
+     another-elm/std
 
-To read about the development of this library see ./NEWS which hopefully
-chronicles the most important developments.
+Another implementation of the elm standard libraries. Contributions are very
+welcome, currently we are aiming for maximum compatibility with the offical
+elm/* packages.
+
+See
+
+     ./NEWS:             To read about the development of this library
+     ./LICENSE:          For the BSD-3-Clause licence.
+     ./INSTALL:          For installation details.
+     ./CONTRIBUTING:     To get involved and for our acknowledgements.
+
 
 We will leave you with Tom Odell's `Another elm':
 

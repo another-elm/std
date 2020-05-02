@@ -1,0 +1,17 @@
+Quick Installation Guide for musl libc
+======================================
+
+
+Contributions are very welcome, currently we do not have any explicit
+guidelines.
+
+
+Acknowledgements
+----------------
+
+The vast majority of the code in another-elm is derived from the relavant elm/*
+packages.
+
+The documentation of another-elm is inspired by that of [musl].
+
+[musl]: https://musl.libc.org/

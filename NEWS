@@ -2,6 +2,25 @@
 
 A little inline blog documenting the development of this library.
 
+# 2020/4/26 -- Another elm
+
+Here goes, a proper home for my take on the elm/* libraries. The idea is one
+repository (https://github.com/another-elm/std) containing everything you need
+(except the compiler) to use my custom implementation of the core libaries.
+
+The big new useful thing is a script './tools/another-elm' that can be used as
+a drop in replacement for the elm compiler. It is (currently) pretty janky, be
+prepared to regularly run `rm $ELM_HOME/another -r` when the compiler gets its
+thread blocked indefinitely in MVar operators. That the elm compiler is
+insanely fast means that running the elm compiler two or three times extra each
+time is very doable. Try it out:
+
+   sudo mkdir -p /opt/elm/
+   sudo chown $USER /opt/elm
+   git clone https://github.com/another-elm/std /opt/elm/std
+   sudo ln -s /opt/elm/std/tools/another-elm /usr/local/bin/another-elm
+
+
 # 2020/4/26 -- Merge elm/random back into core
 
 In my book, things that can manage effects belong in elm/core. This merge

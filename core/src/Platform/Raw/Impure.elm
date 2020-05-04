@@ -1,4 +1,4 @@
-module Platform.Raw.Impure exposing (Function, andThen, function, propagate, unwrapFunction)
+module Platform.Raw.Impure exposing (Function, andThen, fromPure, map, propagate, unwrapFunction)
 
 {-| This module contains an abstaction for functions that **do things** when
 they are run. The functions in this module are constrained to take one argument.
@@ -37,8 +37,8 @@ type Function a b
     = Function
 
 
-function : (a -> b) -> Function a b
-function =
+fromPure : (a -> b) -> Function a b
+fromPure =
     Elm.Kernel.Basics.fudgeType
 
 
@@ -51,12 +51,12 @@ andThen ip2 ip1 =
         f2 =
             unwrapFunction ip2
     in
-    function (\a -> f2 (f1 a))
+    fromPure (\a -> f2 (f1 a))
 
 
 map : (b -> c) -> Function a b -> Function a c
 map mapper =
-    andThen (function mapper)
+    andThen (fromPure mapper)
 
 
 unwrapFunction : Function a b -> (a -> b)
@@ -70,4 +70,4 @@ function.
 -}
 propagate : (a -> Function b c) -> b -> Function a c
 propagate f b =
-    function (\a -> unwrapFunction (f a) b)
+    fromPure (\a -> unwrapFunction (f a) b)

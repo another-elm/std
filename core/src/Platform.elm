@@ -294,7 +294,7 @@ dispatchEffects cmdBag subBag =
                                     )
                                     subs
                         in
-                        Impure.function (\() -> thunks)
+                        Impure.fromPure (\() -> thunks)
                             |> Impure.andThen resetSubscriptions
                     )
                     ()

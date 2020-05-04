@@ -42,7 +42,7 @@ rawSpawn initTask =
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (Impure.function (\() -> rawSpawn task))
+    RawTask.execImpure (Impure.fromPure (\() -> rawSpawn task))
 
 
 {-| Create a task kills a process.
@@ -55,7 +55,7 @@ receive values.
 -}
 kill : ProcessId -> RawTask.Task ()
 kill processId =
-    RawTask.execImpure (Impure.function (\() -> rawKill processId))
+    RawTask.execImpure (Impure.fromPure (\() -> rawKill processId))
 
 
 batch : List ProcessId -> RawTask.Task ProcessId

@@ -22,7 +22,7 @@ type alias Future a =
 
 
 type alias TryAbortAction =
-    () -> ()
+    Impure.Function () ()
 
 
 andThen : (a -> Task b) -> Task a -> Task b
@@ -50,7 +50,7 @@ execImpure func =
                     () =
                         callback (Value (Impure.unwrapFunction func ()))
                 in
-                \() -> ()
+                Impure.fromPure (\() -> ())
         }
 
 

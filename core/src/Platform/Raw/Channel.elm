@@ -36,7 +36,7 @@ tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 tryRecv tagger chl =
     RawTask.andThen
         tagger
-        (RawTask.execImpure (Impure.fromPure (\() -> rawTryRecv chl)))
+        (RawTask.execImpure (Impure.fromPure (\() -> chl) |> Impure.andThen rawTryRecv))
 
 
 {-| NON PURE!
@@ -46,7 +46,7 @@ will complete during this function call. If there are no tasks waiting the
 message will be added to the channel's queue.
 
 -}
-rawSend : Sender msg -> msg -> ()
+rawSend : Sender msg -> Impure.Function msg ()
 rawSend =
     Elm.Kernel.Channel.rawSend
 
@@ -55,7 +55,7 @@ rawSend =
 -}
 send : Sender msg -> msg -> RawTask.Task ()
 send channelId msg =
-    RawTask.execImpure (Impure.fromPure (\() -> rawSend channelId msg))
+    RawTask.execImpure (Impure.fromPure (\() -> msg) |> Impure.andThen (rawSend channelId))
 
 
 rawUnbounded : () -> ( Sender msg, Receiver msg )
@@ -73,6 +73,6 @@ rawRecv =
     Elm.Kernel.Channel.rawRecv
 
 
-rawTryRecv : Receiver msg -> Maybe msg
+rawTryRecv : Impure.Function (Receiver msg) (Maybe msg)
 rawTryRecv =
     Elm.Kernel.Channel.rawTryRecv

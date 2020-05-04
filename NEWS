@@ -2,7 +2,71 @@
 
 A little inline blog documenting the development of this library.
 
-# 2020/4/26 -- Another elm
+## 2020/5/4 -- Subscription mental models
+
+I have consistantly found subscriptions to be the most confusing thing about
+elm. The best way to grok them is just to use them and not think too much. I
+think the cannonical explanations of commands live in the [effects/time] and
+the [interop/ports] sections of the elm guide. Both of these sections are very
+useful for helping folk understand how to effectively _use_ a subscription but
+give nothing away about what a subscription really is.
+
+Here is my take (and I guess, as of today, another-elm's take) as to what a
+subscription is. Here is the mental model in three steps:
+
+1. Events happen in the world, the elm app cannot control events, cause events
+   or prevent events from happening. They just happen.
+2. The elm runtime detects all events always: nothing happens that the runtime
+   does not know about.
+3. The runtime uses the `subscription: model -> Sub msg` function given to it on
+   application init to filter events. If one of subscriptions currently active
+   matches an event detected, the elm runtime will use that subscription to
+   process the event and send it to the app (via the `update: msg -> model ->
+   (model, Cmd msg)` function).
+
+   (A subscriptions returned by `subscription: model -> Sub msg` is active
+   between the time that the function returns and the next invocation of the
+   function.)
+
+To take the example of the `Time.every` function:
+
+1. A event occurs repeatedly at a very small time period, say one millisecond.
+2. The elm runtime detects all these notifications.
+3. The runtime checks for a `Time.every` subscription, **if** it has one
+   **and** the current time (measured relative to some epoch) is exactly a
+   multiple of the time interval associated with the subscription **then** the
+   runtime uses the tagger associated with the subscription to send a message
+   to the app.
+
+There are three issues with the mental model applied to the `Time.every`
+function:
+
+1. **It would require a huge amount of overhead in the runtime.** We can write
+   clever kernel code that matches the mental model without actually
+   implementing it.
+2. **Elm uses floating point interval durations** which makes talk of 'exact
+   multiples of intervals' invalid. I think using floating point interval
+   durations is wrong. Time calculations should be exact. Therefore, I say we
+   can ignore this issue for now.
+3. **This mental model does not match behaviour of offical elm/time!** Oh well,
+   at least it matches another-elm implementation.
+
+On my todo list is to write a proposal to better specify the behaviour of
+`Time.every` and to remove all the floating point badness from the module. Not
+very high up my todo list though, partly because no one ever pays any attention
+to such proposals.
+
+Anyway, I have been rambling a bit, time(?) to bring this back on track and to
+conclude. Subscriptions are hard to understand and this is not helped by the
+lack of an officially blessed mental module. Implementing subscriptions in the
+elm runtime is impossible with some mental module to base the implementation
+on. Until such time as I find a better mental model, I will use this model for
+subscriptions in another-elm.
+
+[effects/time]: https://guide.elm-lang.org/effects/time.html#subscriptions
+[/interop/ports]: https://guide.elm-lang.org/interop/ports.html#incoming-messages-sub
+
+## 2020/5/2 -- Another elm
 
 Here goes, a proper home for my take on the elm/* libraries. The idea is one
 repository (https://github.com/another-elm/std) containing everything you need
@@ -20,8 +84,7 @@ time is very doable. Try it out:
    git clone https://github.com/another-elm/std /opt/elm/std
    sudo ln -s /opt/elm/std/tools/another-elm /usr/local/bin/another-elm
 
-
-# 2020/4/26 -- Merge elm/random back into core
+## 2020/4/26 -- Merge elm/random back into core
 
 In my book, things that can manage effects belong in elm/core. This merge
 required replacing effect manager code with an alternative (in this case
@@ -32,7 +95,7 @@ manage to unifiy the two Task types. I think this is a case where the effect
 manager abstraction really worked well. I might just have my rose tinted
 specticles on.
 
-# 2020/4/26 -- A new internal module `Platform.Raw.Impure`
+## 2020/4/26 -- A new internal module `Platform.Raw.Impure`
 
 This module contains an abstaction for functions that **do things** when
 they are run. The functions in this module are constrained to take one argument

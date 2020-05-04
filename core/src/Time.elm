@@ -43,6 +43,8 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Raw.Sub as RawSub
+import Platform.Raw.Impure as Impure
+import Platform.Scheduler as Scheduler
 import Platform.Sub exposing (Sub)
 import Process
 import String exposing (String)
@@ -69,7 +71,12 @@ type Posix
 -}
 now : Task x Posix
 now =
-    Elm.Kernel.Time.now millisToPosix
+    Scheduler.execImpure (Impure.map millisToPosix rawNow)
+
+
+rawNow : Impure.Function () Int
+rawNow =
+    Elm.Kernel.Time.rawNow
 
 
 {-| Turn a `Posix` time into the number of milliseconds since 1970 January 1

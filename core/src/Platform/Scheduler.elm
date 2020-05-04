@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, execImpure, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -46,6 +46,7 @@ import Basics exposing (..)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Platform
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Result exposing (Result(..))
@@ -83,17 +84,9 @@ binding fut =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : (() -> a) -> Platform.Task Never a
+execImpure : (Impure.Function () a) -> Platform.Task never a
 execImpure func =
-    binding
-        { then_ =
-            \doneCallback ->
-                let
-                    () =
-                        doneCallback (succeed (func ()))
-                in
-                \() -> ()
-        }
+    wrapTask (RawTask.execImpure (Impure.map Ok func))
 
 
 andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2

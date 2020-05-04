@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, execImpure, binding, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, execImpure, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -84,7 +84,7 @@ binding fut =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : (Impure.Function () a) -> Platform.Task never a
+execImpure : Impure.Function () a -> Platform.Task never a
 execImpure func =
     wrapTask (RawTask.execImpure (Impure.map Ok func))
 

@@ -1,4 +1,4 @@
-module Platform.Raw.Impure exposing (Function, andThen, function, map, propagate, run, toThunk, unwrapFunction)
+module Platform.Raw.Impure exposing (Function, andThen, function, propagate, unwrapFunction)
 
 {-| This module contains an abstaction for functions that **do things** when
 they are run. The functions in this module are constrained to take one argument.
@@ -26,6 +26,7 @@ Hopefully, it will help us move all effectful functions out of elm.
 -}
 
 import Basics exposing ((|>))
+import Debug
 import Elm.Kernel.Basics
 
 
@@ -43,36 +44,24 @@ function =
 
 andThen : Function b c -> Function a b -> Function a c
 andThen ip2 ip1 =
-    function
-        (\a ->
-            let
-                b =
-                    unwrapFunction ip1 a
-            in
-            unwrapFunction ip2 b
-        )
+    let
+        f1 =
+            unwrapFunction ip1
+
+        f2 =
+            unwrapFunction ip2
+    in
+    function (\a -> f2 (f1 a))
 
 
 map : (b -> c) -> Function a b -> Function a c
-map mapper ip =
-    function
-        (\a ->
-            let
-                b =
-                    unwrapFunction ip a
-            in
-            mapper b
-        )
+map mapper =
+    andThen (function mapper)
 
 
 unwrapFunction : Function a b -> (a -> b)
 unwrapFunction =
     Elm.Kernel.Basics.fudgeType
-
-
-run : a -> Function a b -> b
-run x f =
-    unwrapFunction f x
 
 
 {-| Given an (pure) function that creates an impure function from some input
@@ -81,15 +70,4 @@ function.
 -}
 propagate : (a -> Function b c) -> b -> Function a c
 propagate f b =
-    function
-        (\a ->
-            unwrapFunction
-                (f a)
-                b
-        )
-
-
-toThunk : Function a b -> a -> Function () b
-toThunk f x =
-    function (\() -> x)
-        |> andThen f
+    function (\a -> unwrapFunction (f a) b)

@@ -55,12 +55,13 @@ by M. E. O'Neil. It is not cryptographically secure.
 
 import Basics exposing (..)
 import Bitwise
+import Elm.Kernel.Basics
+import Elm.Kernel.Time
 import Elm.Kernel.Platform
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
-import Platform.Raw.Channel as Channel
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
@@ -977,50 +978,27 @@ generate tagger generator =
         msgGen =
             map tagger generator
     in
-    command
-        (Channel.recv RawTask.Value (Tuple.second updateSeed)
-            |> RawTask.andThen
-                (\oldSeed ->
-                    let
-                        ( randomVal, newSeed ) =
-                            step msgGen oldSeed
-                    in
-                    Channel.send (Tuple.first updateSeed) newSeed
-                        |> RawTask.map (\() -> Ok (Just randomVal))
-                )
-            |> Scheduler.wrapTask
-        )
+    Impure.fromFunction seedStore (step msgGen)
+        |> Scheduler.execImpure
+        |> Task.map Just
+        |> command
 
 
-updateSeed : Channel.Channel Seed
-updateSeed =
-    let
-        ( sender, receiver ) =
-            Channel.rawUnbounded ()
-
-        assertProcessId : RawScheduler.ProcessId -> RawScheduler.ProcessId
-        assertProcessId p =
-            p
-
-        _ =
-            Time.now
-                |> Scheduler.unwrapTask
-                |> RawTask.andThen
-                    (\time ->
-                        case time of
-                            Ok time_ ->
-                                Channel.send sender (initialSeed (Time.posixToMillis time_))
-
-                            Err err ->
-                                never err
-                    )
-                |> Impure.fromFunction RawScheduler.rawSpawn
-                |> Impure.perform
-                |> assertProcessId
-    in
-    ( sender, receiver )
+seedStore : Impure.Function (Seed -> (a, Seed)) a
+seedStore =
+    valueStore (initialSeed (Impure.perform rawNow))
 
 
-command : Platform.Task Never (Maybe msg) -> Cmd msg
+command : Task.Task Never (Maybe msg) -> Cmd msg
 command =
     Elm.Kernel.Platform.command
+
+
+valueStore : state -> Impure.Function (state -> (x, state)) x
+valueStore =
+    Elm.Kernel.Basics.valueStore
+
+
+rawNow : Impure.Action Int
+rawNow =
+    Elm.Kernel.Time.rawNow

@@ -42,3 +42,12 @@ const _Basics_unwrapTypeWrapper__PROD = (wrapped) => wrapped;
 
 const _Basics_isDebug__DEBUG = true;
 const _Basics_isDebug__PROD = false;
+
+const _Basics_valueStore = initialValue => {
+  let value = initialValue;
+  return (stepper1) => {
+    const tuple = stepper1(value);
+    value = tuple.b;
+    return tuple.a;
+  }
+}

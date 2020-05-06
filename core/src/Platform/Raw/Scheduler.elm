@@ -26,12 +26,9 @@ type UniqueId
     = UniqueId UniqueId
 
 
-{-| NON PURE!
-
-Will create, register and **enqueue** a new process.
-
+{-| Will create, register and **enqueue** a new process.
 -}
-rawSpawn : RawTask.Task a -> ProcessId
+rawSpawn : RawTask.Task a -> Impure.Action ProcessId
 rawSpawn initTask =
     enqueue
         (ProcessId { id = getGuid () })
@@ -42,7 +39,7 @@ rawSpawn initTask =
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (Impure.fromThunk (\() -> rawSpawn task))
+    RawTask.execImpure (rawSpawn task)
 
 
 {-| Create a task kills a process.
@@ -69,23 +66,20 @@ batch ids =
                             doneCallback (spawn (RawTask.Value ()))
                     in
                     List.foldr
-                        (\id impure -> impure |> Impure.map (\() -> id) |> Impure.andThen rawKill)
+                        (\id impure -> Impure.andThen (\() -> rawKill id) impure)
                         (Impure.fromPure ())
                         ids
             }
         )
 
 
-{-| NON PURE!
-
-Add a `Process` to the run queue and, unless this is a reenterant
+{-| Add a `Process` to the run queue and, unless this is a reenterant
 call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
-
 -}
-enqueue : ProcessId -> RawTask.Task state -> ProcessId
-enqueue =
-    enqueueWithStepper stepper
+enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
+enqueue id state =
+    Impure.fromFunction (enqueueWithStepper stepper id) state
 
 
 
@@ -94,8 +88,11 @@ enqueue =
 
 {-| NON PURE! (calls enqueue)
 
-This function **must** return a process with the **same ID** as
-the process it is passed as an argument
+This function **must** return a process with the **same ID** as the process it
+is passed as an argument
+
+TODO(harry) this function should return an Action and not use Impure.perform.
+First Future.then_ needs to return something actionified.
 
 -}
 stepper : ProcessId -> RawTask.Task state -> ProcessState state
@@ -110,7 +107,7 @@ stepper processId root =
                     (\newRoot ->
                         let
                             (ProcessId _) =
-                                enqueue processId newRoot
+                                Impure.perform (enqueue processId newRoot)
                         in
                         ()
                     )
@@ -146,6 +143,9 @@ getProcessState =
     Elm.Kernel.Scheduler.getProcessState
 
 
-enqueueWithStepper : (ProcessId -> RawTask.Task state -> ProcessState state) -> ProcessId -> RawTask.Task state -> ProcessId
+enqueueWithStepper :
+    (ProcessId -> RawTask.Task state -> ProcessState state)
+    -> ProcessId
+    -> Impure.Function (RawTask.Task state) ProcessId
 enqueueWithStepper =
     Elm.Kernel.Scheduler.enqueueWithStepper

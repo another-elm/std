@@ -1,7 +1,8 @@
 module Platform.Raw.Impure exposing
     ( Action, andThen, map
-    , Function, unwrapFunction, wrapFunction
+    , Function
     , fromFunction, toFunction, fromPure, fromThunk
+    , perform, unwrapFunction, wrapFunction
     )
 
 {-| This module contains an abstaction for functions that **do things** when
@@ -32,19 +33,26 @@ and removes the awkward dependancy on the input. This alias is much nicer to
 use within elm. A classic example of the most minimal design being best.
 
 
-# Actions
+## Actions
 
 @docs Action, andThen, map
 
 
-# Functions
+## Functions
 
-@docs Function, unwrapFunction, wrapFunction
+@docs Function
 
 
-# Conversions
+## Conversions
 
 @docs fromFunction, toFunction, fromPure, fromThunk
+
+
+## Danger
+
+These functions allow elm code to do impure things!
+
+@docs perform, unwrapFunction, wrapFunction
 
 -}
 
@@ -105,6 +113,11 @@ fromFunction f a =
 toFunction : (a -> Action b) -> Function a b
 toFunction getAction =
     wrapFunction (\a -> unwrapFunction (getAction a) ())
+
+
+perform : Action a -> a
+perform a =
+    unwrapFunction a ()
 
 
 unwrapFunction : Function a b -> (a -> b)

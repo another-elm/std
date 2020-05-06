@@ -148,12 +148,9 @@ spawn =
 TODO(harry) remove once code in other `elm/*` packages has been updated.
 
 -}
-rawSpawn : Platform.Task err ok -> Platform.ProcessId
+rawSpawn : Platform.Task err ok -> Impure.Action Platform.ProcessId
 rawSpawn =
-    taskFn
-        (\task ->
-            wrapProcessId (RawScheduler.rawSpawn task)
-        )
+    taskFn (\task -> Impure.map wrapProcessId (RawScheduler.rawSpawn task) )
 
 
 {-| Create a task kills a process.

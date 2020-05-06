@@ -32,6 +32,7 @@ look at the definitions. We keep them around for now to keep `elm diff` happy.
 -}
 
 import Basics exposing (..)
+import Debug
 import Dict exposing (Dict)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
@@ -49,7 +50,6 @@ import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
-import Debug
 
 
 
@@ -286,7 +286,7 @@ dispatchEffects cmdBag subBag =
                         List.map
                             (\( id, tagger ) ->
                                 ( id
-                                , (\v -> Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate)
+                                , \v -> Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate
                                 )
                             )
                             subs
@@ -300,11 +300,11 @@ dispatchEffects cmdBag subBag =
         )
 
 
-resetSubscriptionsAction : (List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () )) -> Impure.Action ()
+resetSubscriptionsAction : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
 resetSubscriptionsAction updateList =
     Impure.fromFunction
         resetSubscriptions
-        (List.map (\(id, getAction) -> (id, Impure.toFunction getAction)) updateList)
+        (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
 
 
 type alias ImpureSendToApp msg =

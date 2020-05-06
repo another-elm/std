@@ -66,6 +66,7 @@ import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 import Task exposing (Task)
+import Platform.Raw.Impure as Impure
 import Time
 import Tuple
 
@@ -997,6 +998,10 @@ updateSeed =
         ( sender, receiver ) =
             Channel.rawUnbounded ()
 
+        assertProcessId : RawScheduler.ProcessId -> RawScheduler.ProcessId
+        assertProcessId p =
+            p
+
         _ =
             Time.now
                 |> Scheduler.unwrapTask
@@ -1009,7 +1014,9 @@ updateSeed =
                             Err err ->
                                 never err
                     )
-                |> RawScheduler.rawSpawn
+                |> Impure.fromFunction RawScheduler.rawSpawn
+                |> Impure.perform
+                |> assertProcessId
     in
     ( sender, receiver )
 

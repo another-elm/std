@@ -26,23 +26,21 @@ type UniqueId
     = UniqueId UniqueId
 
 
-{-| NON PURE!
+{-|
 
 Will create, register and **enqueue** a new process.
 
 -}
-rawSpawn : RawTask.Task a -> ProcessId
-rawSpawn initTask =
-    enqueue
-        (ProcessId { id = getGuid () })
-        initTask
+rawSpawn : Impure.Function (RawTask.Task a) ProcessId
+rawSpawn =
+    Impure.toFunction (enqueue (ProcessId { id = getGuid () }))
 
 
 {-| Create a task that spawns a processes.
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (Impure.fromThunk (\() -> rawSpawn task))
+    RawTask.execImpure (Impure.fromFunction rawSpawn task)
 
 
 {-| Create a task kills a process.
@@ -83,9 +81,9 @@ call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
 
 -}
-enqueue : ProcessId -> RawTask.Task state -> ProcessId
+enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
 enqueue id state =
-    Impure.unwrapFunction (enqueueWithStepper stepper id) state
+    Impure.fromFunction (enqueueWithStepper stepper id) state
 
 
 
@@ -110,7 +108,7 @@ stepper processId root =
                     (\newRoot ->
                         let
                             (ProcessId _) =
-                                enqueue processId newRoot
+                                Impure.perform (enqueue processId newRoot)
                         in
                         ()
                     )

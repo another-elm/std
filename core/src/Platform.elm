@@ -258,8 +258,16 @@ setupEffectsChannel sendToApp2 =
                 |> Channel.recv receiveMsg
                 |> RawTask.andThen dispatchTask
 
+        assertProcessIdType : RawScheduler.ProcessId -> RawScheduler.ProcessId
+        assertProcessIdType p =
+            p
+
         _ =
-            RawScheduler.rawSpawn (RawTask.andThen dispatchTask (RawTask.sleep 0))
+            RawTask.sleep 0
+                |> RawTask.andThen dispatchTask
+                |> (Impure.fromFunction RawScheduler.rawSpawn)
+                |> Impure.perform
+                |> assertProcessIdType
     in
     Tuple.first dispatchChannel
 

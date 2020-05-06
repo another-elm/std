@@ -49,6 +49,7 @@ import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
+import Debug
 
 
 
@@ -285,18 +286,25 @@ dispatchEffects cmdBag subBag =
                         List.map
                             (\( id, tagger ) ->
                                 ( id
-                                , Impure.wrapFunction (\v -> Impure.unwrapFunction (sendToAppFunc (tagger v)) AsyncUpdate)
+                                , (\v -> Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate)
                                 )
                             )
                             subs
                 in
-                Impure.fromFunction resetSubscriptions thunks
+                resetSubscriptionsAction thunks
         in
         ( Impure.toFunction updateSubs
         , Channel.send
             channel
             cmds
         )
+
+
+resetSubscriptionsAction : (List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () )) -> Impure.Action ()
+resetSubscriptionsAction updateList =
+    Impure.fromFunction
+        resetSubscriptions
+        (List.map (\(id, getAction) -> (id, Impure.toFunction getAction)) updateList)
 
 
 type alias ImpureSendToApp msg =

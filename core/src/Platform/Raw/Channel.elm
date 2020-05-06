@@ -36,7 +36,7 @@ tryRecv : (Maybe msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
 tryRecv tagger chl =
     RawTask.andThen
         tagger
-        (RawTask.execImpure (Impure.fromPure (\() -> chl) |> Impure.andThen rawTryRecv))
+        (RawTask.execImpure (Impure.fromFunction rawTryRecv chl))
 
 
 {-| NON PURE!
@@ -55,7 +55,7 @@ rawSend =
 -}
 send : Sender msg -> msg -> RawTask.Task ()
 send channelId msg =
-    RawTask.execImpure (Impure.fromPure (\() -> msg) |> Impure.andThen (rawSend channelId))
+    RawTask.execImpure (Impure.fromFunction (rawSend channelId) msg)
 
 
 rawUnbounded : () -> ( Sender msg, Receiver msg )
@@ -65,7 +65,7 @@ rawUnbounded =
 
 unbounded : RawTask.Task ( Sender msg, Receiver msg )
 unbounded =
-    RawTask.execImpure (Impure.fromPure rawUnbounded)
+    RawTask.execImpure (Impure.fromThunk rawUnbounded)
 
 
 rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction

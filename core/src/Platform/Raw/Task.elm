@@ -22,7 +22,7 @@ type alias Future a =
 
 
 type alias TryAbortAction =
-    Impure.Function () ()
+    Impure.Action ()
 
 
 andThen : (a -> Task b) -> Task a -> Task b
@@ -41,16 +41,16 @@ andThen func task =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : Impure.Function () a -> Task a
-execImpure func =
+execImpure : Impure.Action a -> Task a
+execImpure action =
     AsyncAction
         { then_ =
             \callback ->
                 let
                     () =
-                        callback (Value (Impure.unwrapFunction func ()))
+                        callback (Value (Impure.unwrapFunction action ()))
                 in
-                Impure.fromPure (\() -> ())
+                Impure.fromPure ()
         }
 
 

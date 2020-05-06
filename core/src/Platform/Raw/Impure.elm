@@ -1,7 +1,12 @@
-module Platform.Raw.Impure exposing (Function, andThen, fromPure, map, propagate, unwrapFunction)
+module Platform.Raw.Impure exposing
+    ( Action, andThen, map
+    , Function, unwrapFunction, wrapFunction
+    , fromFunction, toFunction, fromPure, fromThunk
+    )
 
 {-| This module contains an abstaction for functions that **do things** when
-they are run. The functions in this module are constrained to take one argument.
+they are run. The functions in this module are constrained to take one
+argument.
 
 Why can we not use Task's for this, given that this is _exactly_ what they are
 intended for. Well, two reasons
@@ -19,9 +24,27 @@ intended for. Well, two reasons
     stepping. This function is impure. However, if we represented it as a Task
     we would have an infinite loop!
 
-Hopefully, use of this module can be reduced to a couple of key places and
-maybe even inlined into the scheduler is that is the only place that uses it.
-Hopefully, it will help us move all effectful functions out of elm.
+This should become the cornerstone upon which Tasks and the scheduler is built.
+The Function type is most useful for kernel interop but within elm it is a bit
+clunky. Chaining Functions gets really messy and the code is impossible to
+read. Therefore, we have the Action type alias: this encapsulates the impurity
+and removes the awkward dependancy on the input. This alias is much nicer to
+use within elm. A classic example of the most minimal design being best.
+
+
+# Actions
+
+@docs Action, andThen, map
+
+
+# Functions
+
+@docs Function, unwrapFunction, wrapFunction
+
+
+# Conversions
+
+@docs fromFunction, toFunction, fromPure, fromThunk
 
 -}
 
@@ -34,29 +57,54 @@ import Elm.Kernel.Basics
 functions identically to normal functions.
 -}
 type Function a b
-    = Function
+    = Function__
 
 
-fromPure : (a -> b) -> Function a b
-fromPure =
-    Elm.Kernel.Basics.fudgeType
+{-| Kernel interop: A type alias so that kernel code can use a regular function
+here.
+-}
+type alias Action b =
+    Function () b
 
 
-andThen : Function b c -> Function a b -> Function a c
-andThen ip2 ip1 =
-    let
-        f1 =
-            unwrapFunction ip1
-
-        f2 =
-            unwrapFunction ip2
-    in
-    fromPure (\a -> f2 (f1 a))
+fromPure : b -> Action b
+fromPure b =
+    fromThunk (\() -> b)
 
 
-map : (b -> c) -> Function a b -> Function a c
+fromThunk : (() -> b) -> Action b
+fromThunk f =
+    wrapFunction f
+
+
+andThen : (a -> Action b) -> Action a -> Action b
+andThen func action =
+    fromThunk
+        (\() ->
+            let
+                a =
+                    unwrapFunction action ()
+
+                b =
+                    unwrapFunction (func a) ()
+            in
+            b
+        )
+
+
+map : (a -> b) -> Action a -> Action b
 map mapper =
-    andThen (fromPure mapper)
+    andThen (\x -> fromPure (mapper x))
+
+
+fromFunction : Function a b -> a -> Action b
+fromFunction f a =
+    fromThunk (\() -> unwrapFunction f a)
+
+
+toFunction : (a -> Action b) -> Function a b
+toFunction getAction =
+    wrapFunction (\a -> unwrapFunction (getAction a) ())
 
 
 unwrapFunction : Function a b -> (a -> b)
@@ -64,10 +112,6 @@ unwrapFunction =
     Elm.Kernel.Basics.fudgeType
 
 
-{-| Given an (pure) function that creates an impure function from some input
-and the input that the created impure function needs create a new impure
-function.
--}
-propagate : (a -> Function b c) -> b -> Function a c
-propagate f b =
-    fromPure (\a -> unwrapFunction (f a) b)
+wrapFunction : (a -> b) -> Function a b
+wrapFunction =
+    Elm.Kernel.Basics.fudgeType

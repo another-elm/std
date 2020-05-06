@@ -84,7 +84,7 @@ binding fut =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : Impure.Function () a -> Platform.Task never a
+execImpure : Impure.Action a -> Platform.Task never a
 execImpure func =
     wrapTask (RawTask.execImpure (Impure.map Ok func))
 

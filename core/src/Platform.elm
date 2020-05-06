@@ -279,27 +279,20 @@ dispatchEffects cmdBag subBag =
     \channel ->
         let
             -- Impure functin that resets and re-registers all subscriptions.
-            updateSubs =
-                Impure.propagate
-                    (\sendToAppFunc ->
-                        let
-                            thunks =
-                                List.map
-                                    (\( id, tagger ) ->
-                                        ( id
-                                        , Impure.propagate
-                                            (\v -> sendToAppFunc (tagger v))
-                                            AsyncUpdate
-                                        )
-                                    )
-                                    subs
-                        in
-                        Impure.fromPure (\() -> thunks)
-                            |> Impure.andThen resetSubscriptions
-                    )
-                    ()
+            updateSubs sendToAppFunc =
+                let
+                    thunks =
+                        List.map
+                            (\( id, tagger ) ->
+                                ( id
+                                , Impure.wrapFunction (\v -> Impure.unwrapFunction (sendToAppFunc (tagger v)) AsyncUpdate)
+                                )
+                            )
+                            subs
+                in
+                Impure.fromFunction resetSubscriptions thunks
         in
-        ( updateSubs
+        ( Impure.toFunction updateSubs
         , Channel.send
             channel
             cmds

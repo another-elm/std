@@ -71,7 +71,7 @@ type Posix
 -}
 now : Task x Posix
 now =
-    Scheduler.execImpure (Impure.map millisToPosix rawNow)
+    Scheduler.execImpure (Impure.map millisToPosix (Impure.fromFunction rawNow ()))
 
 
 rawNow : Impure.Function () Int

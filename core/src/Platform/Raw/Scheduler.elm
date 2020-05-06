@@ -42,7 +42,7 @@ rawSpawn initTask =
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (Impure.fromPure (\() -> rawSpawn task))
+    RawTask.execImpure (Impure.fromThunk (\() -> rawSpawn task))
 
 
 {-| Create a task kills a process.
@@ -55,7 +55,7 @@ receive values.
 -}
 kill : ProcessId -> RawTask.Task ()
 kill processId =
-    RawTask.execImpure (Impure.fromPure (\() -> processId) |> Impure.andThen rawKill)
+    RawTask.execImpure (rawKill processId)
 
 
 batch : List ProcessId -> RawTask.Task ProcessId
@@ -70,7 +70,7 @@ batch ids =
                     in
                     List.foldr
                         (\id impure -> impure |> Impure.map (\() -> id) |> Impure.andThen rawKill)
-                        (Impure.fromPure (\() -> ()))
+                        (Impure.fromPure ())
                         ids
             }
         )
@@ -119,21 +119,17 @@ stepper processId root =
 
 {-| NON PURE!
 -}
-rawKill : Impure.Function ProcessId ()
-rawKill =
-    Impure.propagate
-        (\id ->
-            case getProcessState id of
-                Just (Running killer) ->
-                    killer
+rawKill : ProcessId -> Impure.Action ()
+rawKill id =
+    case getProcessState id of
+        Just (Running killer) ->
+            killer
 
-                Just (Ready _) ->
-                    Impure.fromPure (\() -> ())
+        Just (Ready _) ->
+            Impure.fromPure ()
 
-                Nothing ->
-                    Impure.fromPure (\() -> ())
-        )
-        ()
+        Nothing ->
+            Impure.fromPure ()
 
 
 

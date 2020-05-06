@@ -26,9 +26,12 @@ type UniqueId
     = UniqueId UniqueId
 
 
-{-| Will create, register and **enqueue** a new process.
+{-| NON PURE!
+
+Will create, register and **enqueue** a new process.
+
 -}
-rawSpawn : RawTask.Task a -> Impure.Action ProcessId
+rawSpawn : RawTask.Task a -> ProcessId
 rawSpawn initTask =
     enqueue
         (ProcessId { id = getGuid () })
@@ -39,7 +42,7 @@ rawSpawn initTask =
 -}
 spawn : RawTask.Task a -> RawTask.Task ProcessId
 spawn task =
-    RawTask.execImpure (rawSpawn task)
+    RawTask.execImpure (Impure.fromThunk (\() -> rawSpawn task))
 
 
 {-| Create a task kills a process.
@@ -73,13 +76,16 @@ batch ids =
         )
 
 
-{-| Add a `Process` to the run queue and, unless this is a reenterant
+{-| NON PURE!
+
+Add a `Process` to the run queue and, unless this is a reenterant
 call, drain the run queue but stepping all processes.
 Returns the enqueued `Process`.
+
 -}
-enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
+enqueue : ProcessId -> RawTask.Task state -> ProcessId
 enqueue id state =
-    Impure.fromFunction (enqueueWithStepper stepper id) state
+    Impure.unwrapFunction (enqueueWithStepper stepper id) state
 
 
 
@@ -88,11 +94,8 @@ enqueue id state =
 
 {-| NON PURE! (calls enqueue)
 
-This function **must** return a process with the **same ID** as the process it
-is passed as an argument
-
-TODO(harry) this function should return an Action and not use Impure.perform.
-First Future.then_ needs to return something actionified.
+This function **must** return a process with the **same ID** as
+the process it is passed as an argument
 
 -}
 stepper : ProcessId -> RawTask.Task state -> ProcessState state
@@ -107,7 +110,7 @@ stepper processId root =
                     (\newRoot ->
                         let
                             (ProcessId _) =
-                                Impure.perform (enqueue processId newRoot)
+                                enqueue processId newRoot
                         in
                         ()
                     )

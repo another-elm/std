@@ -265,7 +265,7 @@ setupEffectsChannel sendToApp2 =
         _ =
             RawTask.sleep 0
                 |> RawTask.andThen dispatchTask
-                |> (Impure.fromFunction RawScheduler.rawSpawn)
+                |> Impure.fromFunction RawScheduler.rawSpawn
                 |> Impure.perform
                 |> assertProcessIdType
     in

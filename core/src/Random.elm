@@ -55,18 +55,18 @@ by M. E. O'Neil. It is not cryptographically secure.
 
 import Basics exposing (..)
 import Bitwise
-import Elm.Kernel.Time
 import Elm.Kernel.Platform
+import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 import Task exposing (Task)
-import Platform.Raw.Impure as Impure
 import Time
 import Tuple
 
@@ -977,12 +977,12 @@ generate tagger generator =
         msgGen =
             map tagger generator
     in
-        seedStore (\seed -> Task.succeed (step msgGen seed))
+    seedStore (\seed -> Task.succeed (step msgGen seed))
         |> Task.map Just
         |> command
 
 
-seedStore : (Seed -> Task.Task Never (a, Seed)) -> Task.Task never a
+seedStore : (Seed -> Task.Task Never ( a, Seed )) -> Task.Task never a
 seedStore =
     valueStore
         (Time.now
@@ -996,7 +996,7 @@ command =
     Elm.Kernel.Platform.command
 
 
-valueStore : Task.Task Never state -> (state -> Task.Task Never (x, state)) -> Task never x
+valueStore : Task.Task Never state -> (state -> Task.Task Never ( x, state )) -> Task never x
 valueStore =
     Elm.Kernel.Platform.valueStore
 

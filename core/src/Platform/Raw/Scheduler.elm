@@ -26,10 +26,7 @@ type UniqueId
     = UniqueId UniqueId
 
 
-{-|
-
-Will create, register and **enqueue** a new process.
-
+{-| Will create, register and **enqueue** a new process.
 -}
 rawSpawn : Impure.Function (RawTask.Task a) ProcessId
 rawSpawn =

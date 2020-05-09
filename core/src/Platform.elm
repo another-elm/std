@@ -277,35 +277,26 @@ dispatchEffects :
     -> Sub appMsg
     -> Channel.Sender (AppMsgPayload appMsg)
     -> ( Impure.Function (ImpureSendToApp appMsg) (), RawTask.Task () )
-dispatchEffects cmdBag subBag =
+dispatchEffects cmdBag subBag channel =
     let
         cmds =
             unwrapCmd cmdBag
 
-        subs =
-            unwrapSub subBag
+        -- Returns an action that resets and re-registers all subscriptions.
+        updateSubs sendToAppFunc =
+            subBag
+                |> unwrapSub
+                |> List.map
+                    (Tuple.mapSecond
+                        (\tagger v ->
+                            Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate
+                        )
+                    )
+                |> resetSubscriptionsAction
     in
-    \channel ->
-        let
-            -- Impure functin that resets and re-registers all subscriptions.
-            updateSubs sendToAppFunc =
-                let
-                    thunks =
-                        List.map
-                            (\( id, tagger ) ->
-                                ( id
-                                , \v -> Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate
-                                )
-                            )
-                            subs
-                in
-                resetSubscriptionsAction thunks
-        in
-        ( Impure.toFunction updateSubs
-        , Channel.send
-            channel
-            cmds
-        )
+    ( Impure.toFunction updateSubs
+    , Channel.send channel cmds
+    )
 
 
 resetSubscriptionsAction : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()

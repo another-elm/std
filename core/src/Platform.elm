@@ -63,11 +63,7 @@ type alias InitializeHelperFunctions model appMsg =
     { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
     , setupEffectsChannel :
         ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
-    , dispatchEffects :
-        Cmd appMsg
-        -> Sub appMsg
-        -> Channel.Sender (AppMsgPayload appMsg)
-        -> ( Impure.Function (ImpureSendToApp appMsg) (), RawTask.Task () )
+    , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
     }
 
 
@@ -76,7 +72,7 @@ type alias InitializeHelperFunctions model appMsg =
 initializeHelperFunctions : InitializeHelperFunctions model msg
 initializeHelperFunctions =
     { stepperBuilder = \_ _ -> \_ _ -> ()
-    , dispatchEffects = dispatchEffects
+    , updateSubListeners = updateSubListeners
     , setupEffectsChannel = setupEffectsChannel
     }
 
@@ -197,9 +193,8 @@ sendToSelf (Router router) =
 {-| Multiple channels at play here and type fudging means the compiler cannot
 always help us if we get confused so be careful!
 
-The channel who's sender we return is a runtime specific channel, the thunk
-returned by dispatchEffects will use the sender to notify this function that we
-have command and/or subscriptions to process.
+The channel who's sender we return is a runtime specific channel, kernel code
+will send Sub's to this channel.
 
 Each command is a `Platform.Task Never (Maybe msg)`. If the Task resolves with
 `Just something` we must send that `something` to the app.
@@ -272,18 +267,10 @@ setupEffectsChannel sendToApp2 =
     Tuple.first dispatchChannel
 
 
-dispatchEffects :
-    Cmd appMsg
-    -> Sub appMsg
-    -> Channel.Sender (AppMsgPayload appMsg)
-    -> ( Impure.Function (ImpureSendToApp appMsg) (), RawTask.Task () )
-dispatchEffects cmdBag subBag channel =
-    let
-        cmds =
-            unwrapCmd cmdBag
-
-        -- Returns an action that resets and re-registers all subscriptions.
-        updateSubs sendToAppFunc =
+updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+updateSubListeners subBag =
+    Impure.toFunction
+        (\sendToAppFunc ->
             subBag
                 |> unwrapSub
                 |> List.map
@@ -293,10 +280,7 @@ dispatchEffects cmdBag subBag channel =
                         )
                     )
                 |> resetSubscriptionsAction
-    in
-    ( Impure.toFunction updateSubs
-    , Channel.send channel cmds
-    )
+        )
 
 
 resetSubscriptionsAction : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()

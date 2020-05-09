@@ -5,7 +5,7 @@ import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
 import Elm.Kernel.List exposing (Cons, Nil, toArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
-import Elm.Kernel.Basics exposing (isDebug)
+import Elm.Kernel.Basics exposing (isDebug, unwrapTypeWrapper)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions)
@@ -68,14 +68,9 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
         _Platform_effectDispatchInProgress = false;
         return;
       }
-      const tuple = A3(
-        __Platform_initializeHelperFunctions.__$dispatchEffects,
-        fx.__cmds,
-        fx.__subs,
-        cmdSender
-      );
-      tuple.a(sendToApp);
-      __RawScheduler_rawSpawn(tuple.b);
+
+      A2(__Channel_rawSend, cmdSender, __Basics_unwrapTypeWrapper(fx.__cmds));
+      __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(sendToApp);
     }
   };
 

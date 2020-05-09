@@ -59,25 +59,6 @@ a = 2
             """.format(author, package, v, dummy_module).strip())
 
 
-def is_update_needed(package_root, relevant_custom_paths):
-    last_updated_time = None
-
-    try:
-        last_updated_time = os.path.getmtime(
-            os.path.join(package_root, 'custom'))
-    except (FileNotFoundError, ValueError):
-        return True
-
-    for relevant_custom_path in relevant_custom_paths:
-        for dirpath, _, files in os.walk(relevant_custom_path):
-            if os.path.getmtime(dirpath) > last_updated_time:
-                return True
-            for file in files:
-                if os.path.getmtime(os.path.join(dirpath,
-                                                 file)) > last_updated_time:
-                    return True
-
-
 def customize(package, packages_root):
     versions_dir = os.path.join(packages_root, "elm", package)
     custom_package_dir = os.path.join(elm_std_dir, package)
@@ -94,7 +75,7 @@ def customize(package, packages_root):
     for v in dirs:
         package_root = os.path.join(versions_dir, v)
 
-        if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
+        if not os.path.exists(os.path.join(package_root, 'custom')):
             any_modified = True
 
             shutil.rmtree(package_root)
@@ -136,6 +117,7 @@ def wrapped_run(elm, args):
 
     run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
+    # TODO(harry) fixme
     if not os.path.exists(another_elm_home_dir):
         return 0
 

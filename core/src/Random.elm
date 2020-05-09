@@ -977,15 +977,18 @@ generate tagger generator =
         msgGen =
             map tagger generator
     in
-    Impure.fromFunction seedStore (step msgGen)
-        |> Scheduler.execImpure
+        seedStore (\seed -> Task.succeed (step msgGen seed))
         |> Task.map Just
         |> command
 
 
-seedStore : Impure.Function (Seed -> (a, Seed)) a
+seedStore : (Seed -> Task.Task Never (a, Seed)) -> Task.Task never a
 seedStore =
-    valueStore (initialSeed (Impure.perform rawNow))
+    valueStore
+        (Time.now
+            |> Task.map Time.posixToMillis
+            |> Task.map initialSeed
+        )
 
 
 command : Task.Task Never (Maybe msg) -> Cmd msg
@@ -993,7 +996,7 @@ command =
     Elm.Kernel.Platform.command
 
 
-valueStore : state -> Impure.Function (state -> (x, state)) x
+valueStore : Task.Task Never state -> (state -> Task.Task Never (x, state)) -> Task never x
 valueStore =
     Elm.Kernel.Platform.valueStore
 

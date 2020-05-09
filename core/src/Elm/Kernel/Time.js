@@ -28,7 +28,7 @@ function _Time_setInterval(interval) {
     handle = setTimeout(() => {
       handle = null;
       A2(__Channel_rawSend, sender, _Time_rawNow());
-    }, interval - now % interval);
+    }, interval - (now % interval));
   };
 
   // Cancel non-subscribed-to timeouts. Start subscribed-to

@@ -12,7 +12,7 @@ import Platform exposing (Task, ProcessId, initializeHelperFunctions)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
-import Platform.Scheduler as Scheduler exposing (execImpure)
+import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
 
 */
 
@@ -324,11 +324,15 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports) {
   }
 }
 
-const _Platform_valueStore = initialValue => {
-  let value = initialValue;
-  return (stepper1) => {
-    const tuple = stepper1(value);
-    value = tuple.b;
-    return tuple.a;
-  }
-}
+const _Platform_valueStore = (init) => {
+  let task = init;
+  return (stepper) =>
+    __Scheduler_binding({
+      __$then_: (callback) => {
+        const newTask = A2(__Scheduler_andThen, stepper, task);
+        task = A2(__Scheduler_map, (tuple) => tuple.b, newTask);
+        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask));
+        return (x) => x;
+      },
+    });
+};

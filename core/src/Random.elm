@@ -55,7 +55,6 @@ by M. E. O'Neil. It is not cryptographically secure.
 
 import Basics exposing (..)
 import Bitwise
-import Elm.Kernel.Basics
 import Elm.Kernel.Time
 import Elm.Kernel.Platform
 import List exposing ((::))
@@ -996,7 +995,7 @@ command =
 
 valueStore : state -> Impure.Function (state -> (x, state)) x
 valueStore =
-    Elm.Kernel.Basics.valueStore
+    Elm.Kernel.Platform.valueStore
 
 
 rawNow : Impure.Action Int

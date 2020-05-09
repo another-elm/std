@@ -323,3 +323,12 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports) {
       : (obj[name] = exports[name]);
   }
 }
+
+const _Platform_valueStore = initialValue => {
+  let value = initialValue;
+  return (stepper1) => {
+    const tuple = stepper1(value);
+    value = tuple.b;
+    return tuple.a;
+  }
+}

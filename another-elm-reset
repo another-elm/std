@@ -43,7 +43,10 @@ def reset_package(package, packages_root):
         if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
             any_modified = True
 
-            os.remove(os.path.join(package_root, 'custom'))
+            try:
+                os.remove(os.path.join(package_root, 'custom'))
+            except FileNotFoundError:
+                pass
 
     return any_modified
 

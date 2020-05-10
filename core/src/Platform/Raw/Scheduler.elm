@@ -99,19 +99,22 @@ the process it is passed as an argument
 -}
 stepper : ProcessId -> RawTask.Task state -> ProcessState state
 stepper processId root =
+    let
+        doneCallback : RawTask.Task state -> ()
+        doneCallback newRoot =
+            let
+                (ProcessId _) =
+                    Impure.perform (enqueue processId newRoot)
+            in
+            ()
+    in
     case root of
         RawTask.Value val ->
             Ready (RawTask.Value val)
 
         RawTask.AsyncAction doEffect ->
             Running
-                ((\newRoot ->
-                    let
-                        (ProcessId _) =
-                            Impure.perform (enqueue processId newRoot)
-                    in
-                    ()
-                 )
+                (doneCallback
                     |> doEffect.then_
                     |> Impure.perform
                 )

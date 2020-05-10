@@ -18,8 +18,7 @@ import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, bindi
 
 // State
 
-var _Platform_outgoingPorts = new Map();
-var _Platform_incomingPorts = new Map();
+var _Platform_ports = new Map();
 
 var _Platform_effectsQueue = [];
 var _Platform_effectDispatchInProgress = false;
@@ -86,10 +85,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
   );
 
-  for (const [name, port] of _Platform_outgoingPorts.entries()) {
-    ports[name] = port;
-  }
-  for (const [name, port] of _Platform_incomingPorts.entries()) {
+  for (const [name, port] of _Platform_ports.entries()) {
     ports[name] = port;
   }
 
@@ -102,25 +98,12 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   return ports ? { ports } : {};
 });
 
-const _Platform_runAfterLoad = (f) => {
-  if (_Platform_runAfterLoadQueue == null) {
-    f();
-  } else {
-    _Platform_runAfterLoadQueue.push(f);
-  }
-};
-
-// EFFECT MANAGERS
+// EFFECT MANAGERS (not supported)
 
 function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap) {
   __Debug_crash(12, __Debug_runtimeCrashReason("EffectModule"));
 }
 
-// BAGS
-
-/* Called by compiler generated js for event managers for the
- * `command` or `subscription` function within an event manager
- */
 const _Platform_leaf = (home) => (value) => {
   __Debug_crash(12, __Debug_runtimeCrashReason("PlatformLeaf", home));
 };
@@ -128,7 +111,7 @@ const _Platform_leaf = (home) => (value) => {
 // PORTS
 
 function _Platform_checkPortName(name) {
-  if (_Platform_outgoingPorts.has(name) || _Platform_incomingPorts.has(name)) {
+  if (_Platform_ports.has(name)) {
     __Debug_crash(3, name);
   }
 }
@@ -151,7 +134,7 @@ function _Platform_outgoingPort(name, converter) {
     }
   };
 
-  _Platform_outgoingPorts.set(name, { subscribe, unsubscribe });
+  _Platform_ports.set(name, { subscribe, unsubscribe });
   return (payload) =>
     _Platform_command(
       __Scheduler_execImpure((_) => {
@@ -180,12 +163,12 @@ function _Platform_incomingPort(name, converter) {
     key.send(value);
   }
 
-  _Platform_incomingPorts.set(name, { send });
+  _Platform_ports.set(name, { send });
 
   return _Platform_subscription(key);
 }
 
-// Functions exported to elm
+// FUNCTIONS (to be used by kernel code)
 
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
@@ -219,6 +202,16 @@ const _Platform_createSubProcess = (onSubUpdate) => {
 
   return key;
 };
+
+const _Platform_runAfterLoad = (f) => {
+  if (_Platform_runAfterLoadQueue == null) {
+    f();
+  } else {
+    _Platform_runAfterLoadQueue.push(f);
+  }
+};
+
+// FUNCTIONS (to be used by elm code)
 
 const _Platform_resetSubscriptions = (newSubs) => {
   for (const subState of _Platform_subscriptionStates.values()) {

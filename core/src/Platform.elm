@@ -61,8 +61,7 @@ code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions model appMsg =
     { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
-    , setupEffectsChannel :
-        ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
+    , setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task Never
     , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
     }
 
@@ -203,13 +202,9 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Sender (AppMsgPayload appMsg)
-setupEffectsChannel sendToApp2 =
+setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task never
+setupEffectsChannel sendToApp2 receiver =
     let
-        dispatchChannel : Channel.Channel (AppMsgPayload appMsg)
-        dispatchChannel =
-            Channel.rawUnbounded ()
-
         receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
         receiveMsg cmds =
             let
@@ -247,24 +242,14 @@ setupEffectsChannel sendToApp2 =
             cmdTask
                 |> RawTask.map (\_ -> ())
 
-        dispatchTask : () -> RawTask.Task ()
+        dispatchTask : () -> RawTask.Task never
         dispatchTask () =
-            Tuple.second dispatchChannel
+            receiver
                 |> Channel.recv receiveMsg
                 |> RawTask.andThen dispatchTask
-
-        assertProcessIdType : RawScheduler.ProcessId -> RawScheduler.ProcessId
-        assertProcessIdType p =
-            p
-
-        _ =
-            RawTask.sleep 0
-                |> RawTask.andThen dispatchTask
-                |> Impure.fromFunction RawScheduler.rawSpawn
-                |> Impure.perform
-                |> assertProcessIdType
     in
-    Tuple.first dispatchChannel
+    RawTask.sleep 0
+        |> RawTask.andThen dispatchTask
 
 
 updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()

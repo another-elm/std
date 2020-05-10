@@ -48,7 +48,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     }
   }
 
-  let cmdSender;
+  const cmdChannel = __Channel_rawUnbounded();
   const ports = {};
 
   const dispatch = (model, cmds) => {
@@ -69,7 +69,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
         return;
       }
 
-      A2(__Channel_rawSend, cmdSender, __Basics_unwrapTypeWrapper(fx.__cmds));
+      A2(__Channel_rawSend, cmdChannel.a, __Basics_unwrapTypeWrapper(fx.__cmds));
       __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(sendToApp);
     }
   };
@@ -86,7 +86,9 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   }
   _Platform_runAfterLoadQueue = null;
 
-  cmdSender = __Platform_initializeHelperFunctions.__$setupEffectsChannel(sendToApp);
+  __RawScheduler_rawSpawn(
+    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel.b)
+  );
 
   for (const [key, { port }] of _Platform_outgoingPorts.entries()) {
     ports[key] = port;

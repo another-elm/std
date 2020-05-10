@@ -1,7 +1,7 @@
 /*
 
 import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
-import Maybe exposing (Just, Nothing)
+import Maybe exposing (Nothing)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Basics exposing (isDebug)
 */
@@ -34,32 +34,20 @@ function _Scheduler_rawSpawn(task) {
 
 // SCHEDULER
 
-var _Scheduler_guid = 0;
-var _Scheduler_processes = new WeakMap();
+let _Scheduler_guid = 0;
+const _Scheduler_tryAbortForProcesses = new WeakMap();
 
 function _Scheduler_getGuid() {
   return _Scheduler_guid++;
 }
 
-function _Scheduler_getProcessState(id) {
-  const procState = _Scheduler_processes.get(id);
+function _Scheduler_getTryAbortForProcess(id) {
+  const procState = _Scheduler_tryAbortForProcesses.get(id);
   if (procState === undefined) {
     return __Maybe_Nothing;
   }
-  return __Maybe_Just(procState);
+  return procState;
 }
-
-var _Scheduler_registerNewProcess = F2((procId, procState) => {
-  if (__Basics_isDebug && _Scheduler_processes.has(procId)) {
-    __Debug_crash(
-      12,
-      __Debug_runtimeCrashReason("procIdAlreadyRegistered"),
-      procId && procId.a && procId.a.__$id
-    );
-  }
-  _Scheduler_processes.set(procId, procState);
-  return procId;
-});
 
 const _Scheduler_enqueueWithStepper = (stepper) => {
   let working = false;
@@ -85,7 +73,7 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
         return procId;
       }
       const [newProcId, newRootTask] = next;
-      _Scheduler_processes.set(newProcId, A2(stepper, newProcId, newRootTask));
+      _Scheduler_tryAbortForProcesses.set(newProcId, A2(stepper, newProcId, newRootTask));
     }
   };
 };

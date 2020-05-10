@@ -13,11 +13,6 @@ import Platform.Raw.Impure as Impure
 import Platform.Raw.Task as RawTask
 
 
-type ProcessState state
-    = Ready (RawTask.Task state)
-    | Running RawTask.TryAbortAction
-
-
 type ProcessId
     = ProcessId { id : UniqueId }
 
@@ -96,7 +91,7 @@ enqueue id =
 actions that the process needs to perform.
 
 -}
-stepper : ProcessId -> RawTask.Task state -> Impure.Action (ProcessState state)
+stepper : ProcessId -> RawTask.Task state -> Impure.Action (Maybe RawTask.TryAbortAction)
 stepper processId root =
     let
         doneCallback : RawTask.Task state -> Impure.Action ()
@@ -105,33 +100,27 @@ stepper processId root =
                 |> Impure.map (\(ProcessId _) -> ())
     in
     case root of
-        RawTask.Value val ->
-            val
-                |> RawTask.Value
-                |> Ready
-                |> Impure.fromPure
+        RawTask.Value _ ->
+            Impure.fromPure Nothing
 
         RawTask.AsyncAction doEffect ->
             doneCallback
                 |> doEffect.then_
-                |> Impure.map Running
+                |> Impure.map Just
 
 
 rawKill : ProcessId -> Impure.Action ()
 rawKill id =
-    case getProcessState id of
-        Just (Running killer) ->
+    case getTryAbortForProcess id of
+        Just killer ->
             killer
-
-        Just (Ready _) ->
-            Impure.fromPure ()
 
         Nothing ->
             Impure.fromPure ()
 
 
 
--- Kernel function redefinitons --
+-- Kernel interop --
 
 
 getGuid : () -> UniqueId
@@ -139,13 +128,13 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-getProcessState : ProcessId -> Maybe (ProcessState state)
-getProcessState =
-    Elm.Kernel.Scheduler.getProcessState
+getTryAbortForProcess : ProcessId -> Maybe RawTask.TryAbortAction
+getTryAbortForProcess =
+    Elm.Kernel.Scheduler.getTryAbortForProcess
 
 
 enqueueWithStepper :
-    (ProcessId -> Impure.Function (RawTask.Task state) (ProcessState state))
+    (ProcessId -> Impure.Function (RawTask.Task state) (Maybe RawTask.TryAbortAction))
     -> ProcessId
     -> Impure.Function (RawTask.Task state) ProcessId
 enqueueWithStepper =

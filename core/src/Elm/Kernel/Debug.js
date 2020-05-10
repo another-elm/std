@@ -269,9 +269,7 @@ Effect modules are not supported, if you are using elm/* libraries you will need
 
     case "procIdAlreadyInQueue":
       return function () {
-        throw new Error(
-          `A process has been added to queue but it is already in the queue!.`
-        );
+        throw new Error(`A process has been added to queue but it is already in the queue!.`);
       };
   }
   throw new Error(`Unknown reason for runtime crash: ${fact1}!`);

@@ -77,11 +77,7 @@ produces the enqueued `ProcessId` when it is run.
 -}
 enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
 enqueue id =
-    let
-        stepperFunc id2 =
-            Impure.toFunction (stepper id2)
-    in
-    Impure.fromFunction (enqueueWithStepper stepperFunc id)
+    Impure.fromFunction (rawEnqueue id)
 
 
 
@@ -90,34 +86,30 @@ enqueue id =
 
 {-| Steps a process as far as possible and then enqueues any asyncronous
 actions that the process needs to perform.
-
 -}
-stepper : ProcessId -> RawTask.Task state -> Impure.Action (Maybe RawTask.TryAbortAction)
-stepper processId root =
+stepper : ProcessId -> Impure.Function (RawTask.Task state) (RawTask.TryAbortAction)
+stepper processId =
     let
+
         doneCallback : RawTask.Task state -> Impure.Action ()
         doneCallback newRoot =
             enqueue processId newRoot
                 |> Impure.map (\(ProcessId _) -> ())
     in
-    case root of
-        RawTask.Value _ ->
-            Impure.fromPure Nothing
+    Impure.toFunction
+        (\root ->
+            case root of
+                RawTask.Value _ ->
+                    Impure.fromPure (Impure.fromPure ())
 
-        RawTask.AsyncAction doEffect ->
-            doneCallback
-                |> doEffect.then_
-                |> Impure.map Just
+                RawTask.AsyncAction doEffect ->
+                    doEffect.then_ doneCallback
+        )
 
 
 rawKill : ProcessId -> Impure.Action ()
-rawKill id =
-    case getTryAbortForProcess id of
-        Just killer ->
-            killer
-
-        Nothing ->
-            Impure.fromPure ()
+rawKill =
+    Impure.fromFunction tryAbortProcess
 
 
 
@@ -129,14 +121,11 @@ getGuid =
     Elm.Kernel.Scheduler.getGuid
 
 
-getTryAbortForProcess : ProcessId -> Maybe RawTask.TryAbortAction
-getTryAbortForProcess =
-    Elm.Kernel.Scheduler.getTryAbortForProcess
+tryAbortProcess : Impure.Function ProcessId ()
+tryAbortProcess =
+    Elm.Kernel.Scheduler.tryAbortProcess
 
 
-enqueueWithStepper :
-    (ProcessId -> Impure.Function (RawTask.Task state) (Maybe RawTask.TryAbortAction))
-    -> ProcessId
-    -> Impure.Function (RawTask.Task state) ProcessId
-enqueueWithStepper =
-    Elm.Kernel.Scheduler.enqueueWithStepper
+rawEnqueue : ProcessId -> Impure.Function (RawTask.Task state) ProcessId
+rawEnqueue =
+    Elm.Kernel.Scheduler.rawEnqueue

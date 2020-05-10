@@ -56,7 +56,7 @@ type alias ProcessId =
     RawScheduler.ProcessId
 
 
-{-| This type can be handcrafted in kernel code. Grep javascript for "__$then_"
+{-| This type can be handcrafted in kernel code. Grep javascript for "\_\_$then\_"
 when making any change.
 -}
 type alias Future err ok =

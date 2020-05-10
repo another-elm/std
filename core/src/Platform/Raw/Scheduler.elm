@@ -87,10 +87,9 @@ enqueue id =
 {-| Steps a process as far as possible and then enqueues any asyncronous
 actions that the process needs to perform.
 -}
-stepper : ProcessId -> Impure.Function (RawTask.Task state) (RawTask.TryAbortAction)
+stepper : ProcessId -> Impure.Function (RawTask.Task state) RawTask.TryAbortAction
 stepper processId =
     let
-
         doneCallback : RawTask.Task state -> Impure.Action ()
         doneCallback newRoot =
             enqueue processId newRoot

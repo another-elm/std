@@ -25,13 +25,9 @@ var _Platform_effectsQueue = [];
 var _Platform_effectDispatchInProgress = false;
 
 let _Platform_runAfterLoadQueue = [];
-const _Platform_runAfterLoad = (f) => {
-  if (_Platform_runAfterLoadQueue == null) {
-    f();
-  } else {
-    _Platform_runAfterLoadQueue.push(f);
-  }
-};
+
+const _Platform_subscriptionStates = new Map();
+let _Platform_subscriptionProcessIds = 0;
 
 // INITIALIZE A PROGRAM
 
@@ -106,17 +102,13 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   return ports ? { ports } : {};
 });
 
-// TRACK PRELOADS
-//
-// This is used by code in elm/browser and elm/http
-// to register any HTTP requests that are triggered by init.
-//
-
-var _Platform_preload;
-
-function _Platform_registerPreload(url) {
-  _Platform_preload.add(url);
-}
+const _Platform_runAfterLoad = (f) => {
+  if (_Platform_runAfterLoadQueue == null) {
+    f();
+  } else {
+    _Platform_runAfterLoadQueue.push(f);
+  }
+};
 
 // EFFECT MANAGERS
 
@@ -206,9 +198,6 @@ function _Platform_incomingPort(name, converter) {
 
 // Functions exported to elm
 
-const _Platform_subscriptionStates = new Map();
-let _Platform_subscriptionProcessIds = 0;
-
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
   const key = { id: _Platform_subscriptionProcessIds++ };
@@ -218,6 +207,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
       if (__Basics_isDebug && subscriptionState === undefined) {
         __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
+      // TODO(harry) sendToApp via spawning a Task
       for (const sendToApp of subscriptionState.__$listeners) {
         sendToApp(hcst);
       }
@@ -255,8 +245,6 @@ const _Platform_resetSubscriptions = (newSubs) => {
   return __Utils_Tuple0;
 };
 
-const _Platform_effectManagerNameToString = (name) => name;
-
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
@@ -283,6 +271,23 @@ const _Platform_subscription = (id) => (tagger) => {
     };
   }
   return subData;
+};
+
+// valueStore :
+//     Platform.Task Never state
+//     -> (state -> Platform.Task Never ( x, state ))
+//     -> Platform never x
+const _Platform_valueStore = (init) => {
+  let task = init;
+  return (stepper) =>
+    __Scheduler_binding({
+      __$then_: (callback) => () => {
+        const newTask = A2(__Scheduler_andThen, stepper, task);
+        task = A2(__Scheduler_map, (tuple) => tuple.b, newTask);
+        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask))();
+        return (x) => x;
+      },
+    });
 };
 
 // EXPORT ELM MODULES
@@ -320,16 +325,3 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports) {
       : (obj[name] = exports[name]);
   }
 }
-
-const _Platform_valueStore = (init) => {
-  let task = init;
-  return (stepper) =>
-    __Scheduler_binding({
-      __$then_: (callback) => () => {
-        const newTask = A2(__Scheduler_andThen, stepper, task);
-        task = A2(__Scheduler_map, (tuple) => tuple.b, newTask);
-        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask))();
-        return (x) => x;
-      },
-    });
-};

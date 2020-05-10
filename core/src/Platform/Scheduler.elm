@@ -56,8 +56,11 @@ type alias ProcessId =
     RawScheduler.ProcessId
 
 
+{-| This type can be handcrafted in kernel code. Grep javascript for "__$then_"
+when making any change.
+-}
 type alias Future err ok =
-    { then_ : (Platform.Task err ok -> ()) -> Impure.Action TryAbortAction }
+    { then_ : (Platform.Task err ok -> Impure.Action ()) -> Impure.Action TryAbortAction }
 
 
 type alias TryAbortAction =

@@ -328,7 +328,7 @@ const _Platform_valueStore = (init) => {
       __$then_: (callback) => () => {
         const newTask = A2(__Scheduler_andThen, stepper, task);
         task = A2(__Scheduler_map, (tuple) => tuple.b, newTask);
-        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask));
+        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask))();
         return (x) => x;
       },
     });

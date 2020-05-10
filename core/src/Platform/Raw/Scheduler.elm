@@ -69,7 +69,7 @@ batch ids =
                     RawTask.Value ()
                         |> Impure.fromPure
                         |> Impure.map spawn
-                        |> Impure.map doneCallback
+                        |> Impure.andThen doneCallback
                         |> Impure.map (\() -> tryAbort)
             }
         )
@@ -100,13 +100,10 @@ the process it is passed as an argument
 stepper : ProcessId -> RawTask.Task state -> ProcessState state
 stepper processId root =
     let
-        doneCallback : RawTask.Task state -> ()
+        doneCallback : RawTask.Task state -> Impure.Action ()
         doneCallback newRoot =
-            let
-                (ProcessId _) =
-                    Impure.perform (enqueue processId newRoot)
-            in
-            ()
+            enqueue processId newRoot
+                |> Impure.map (\(ProcessId _) -> ())
     in
     case root of
         RawTask.Value val ->

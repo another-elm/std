@@ -184,7 +184,7 @@ function _Platform_incomingPort(name, converter) {
     }
 
     var value = result.a;
-    key.__send(value);
+    key.send(value);
   }
 
   _Platform_incomingPorts.set(name, {
@@ -201,8 +201,8 @@ function _Platform_incomingPort(name, converter) {
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
   const key = {
-    __id: _Platform_subscriptionProcessIds++,
-    __send(msg) {
+    id: _Platform_subscriptionProcessIds++,
+    send(msg) {
       A2(__Channel_rawSend, channel.a, msg);
     },
   };
@@ -210,7 +210,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
     __RawTask_execImpure((_) => {
       const subscriptionState = _Platform_subscriptionStates.get(key);
       if (__Basics_isDebug && subscriptionState === undefined) {
-        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.__id);
+        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
       }
       // TODO(harry) sendToApp via spawning a Task
       for (const sendToApp of subscriptionState.__$listeners) {
@@ -240,7 +240,7 @@ const _Platform_resetSubscriptions = (newSubs) => {
     const sendToApp = tuple.b;
     const subState = _Platform_subscriptionStates.get(key);
     if (__Basics_isDebug && subState.__$listeners === undefined) {
-      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.__id);
+      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
     }
     subState.__$listeners.push(sendToApp);
   }

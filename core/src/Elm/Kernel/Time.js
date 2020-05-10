@@ -27,7 +27,7 @@ function _Time_setInterval(interval) {
     const now = _Time_rawNow();
     handle = setTimeout(() => {
       handle = null;
-      key.__send(_Time_rawNow());
+      key.send(_Time_rawNow());
     }, interval - (now % interval));
   };
 

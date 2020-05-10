@@ -65,7 +65,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
         return;
       }
 
-      A2(__Channel_rawSend, cmdChannel.a, __Basics_unwrapTypeWrapper(fx.__cmds));
+      A2(__Channel_rawSend, cmdChannel, __Basics_unwrapTypeWrapper(fx.__cmds));
       __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(sendToApp);
     }
   };
@@ -83,7 +83,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   _Platform_runAfterLoadQueue = null;
 
   __RawScheduler_rawSpawn(
-    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel.b)
+    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
   );
 
   for (const [key, { port }] of _Platform_outgoingPorts.entries()) {
@@ -203,7 +203,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
   const key = {
     id: _Platform_subscriptionProcessIds++,
     send(msg) {
-      A2(__Channel_rawSend, channel.a, msg);
+      A2(__Channel_rawSend, channel, msg);
     },
   };
   const msgHandler = (hcst) =>
@@ -220,7 +220,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
     });
 
   const onSubEffects = (_) =>
-    A2(__RawTask_andThen, onSubEffects, A2(__RawChannel_recv, msgHandler, channel.b));
+    A2(__RawTask_andThen, onSubEffects, A2(__RawChannel_recv, msgHandler, channel));
 
   _Platform_subscriptionStates.set(key, {
     __$listeners: [],

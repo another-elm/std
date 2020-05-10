@@ -2,7 +2,7 @@
 
 import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Utils exposing (Tuple0)
 
 */
 
@@ -17,7 +17,7 @@ const _Channel_rawUnbounded = (_) => {
     messages: [],
     wakers: new Set(),
   });
-  return __Utils_Tuple2(id, id);
+  return id;
 };
 
 const _Channel_rawRecv = F2((channelId, onMsg) => {
@@ -26,7 +26,7 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
     __Debug_crash(
       12,
       __Debug_runtimeCrashReason("channelIdNotRegistered"),
-      channelId && channelId.a && channelId.a.__$id
+      channelId && channelId.id
     );
   }
   const msg = channel.messages.shift();
@@ -50,7 +50,7 @@ const _Channel_rawSend = F2((sender, msg) => {
     __Debug_crash(
       12,
       __Debug_runtimeCrashReason("channelIdNotRegistered"),
-      sender && sender.a && sender.a.__$id
+      sender && sender.id
     );
   }
 

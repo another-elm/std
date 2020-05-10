@@ -4,7 +4,6 @@ import Time exposing (customZone, Name)
 import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Platform exposing (createSubProcess)
 import Platform.Scheduler as Scheduler exposing (execImpure)
-import Elm.Kernel.Channel exposing (rawSend)
 import Elm.Kernel.Utils exposing (Tuple0)
 
 */

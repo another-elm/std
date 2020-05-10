@@ -25,7 +25,8 @@ type UniqueId
 -}
 rawSpawn : Impure.Function (RawTask.Task a) ProcessId
 rawSpawn =
-    Impure.toFunction (enqueue (ProcessId { id = getGuid () }))
+    Impure.toFunction
+        (\task -> Impure.andThen (\id -> enqueue (ProcessId { id = id }) task) getGuid)
 
 
 {-| Create a task that spawns a processes.
@@ -123,7 +124,7 @@ rawKill id =
 -- Kernel interop --
 
 
-getGuid : () -> UniqueId
+getGuid : Impure.Action UniqueId
 getGuid =
     Elm.Kernel.Scheduler.getGuid
 

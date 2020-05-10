@@ -70,7 +70,7 @@ rawUnbounded =
 
 unbounded : RawTask.Task ( Sender msg, Receiver msg )
 unbounded =
-    RawTask.execImpure (Impure.fromThunk rawUnbounded)
+    RawTask.execImpure (Impure.wrapFunction rawUnbounded)
 
 
 rawRecv : Receiver msg -> Impure.Function (Impure.Function msg ()) RawTask.TryAbortAction

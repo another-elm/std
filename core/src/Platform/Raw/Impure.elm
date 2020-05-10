@@ -1,8 +1,8 @@
 module Platform.Raw.Impure exposing
     ( Action, andThen, map
     , Function
-    , fromFunction, toFunction, fromPure, fromThunk
-    , perform, unwrapFunction, wrapFunction
+    , fromFunction, toFunction, fromPure
+    , unwrapFunction, wrapFunction
     )
 
 {-| This module contains an abstaction for functions that **do things** when
@@ -45,14 +45,14 @@ use within elm. A classic example of the most minimal design being best.
 
 ## Conversions
 
-@docs fromFunction, toFunction, fromPure, fromThunk
+@docs fromFunction, toFunction, fromPure
 
 
 ## Danger
 
 These functions allow elm code to do impure things!
 
-@docs perform, unwrapFunction, wrapFunction
+@docs unwrapFunction, wrapFunction
 
 -}
 
@@ -77,17 +77,12 @@ type alias Action b =
 
 fromPure : b -> Action b
 fromPure b =
-    fromThunk (\() -> b)
-
-
-fromThunk : (() -> b) -> Action b
-fromThunk f =
-    wrapFunction f
+    wrapFunction (\() -> b)
 
 
 andThen : (a -> Action b) -> Action a -> Action b
 andThen func action =
-    fromThunk
+    wrapFunction
         (\() ->
             let
                 a =
@@ -107,17 +102,12 @@ map mapper =
 
 fromFunction : Function a b -> a -> Action b
 fromFunction f a =
-    fromThunk (\() -> unwrapFunction f a)
+    wrapFunction (\() -> unwrapFunction f a)
 
 
 toFunction : (a -> Action b) -> Function a b
 toFunction getAction =
     wrapFunction (\a -> unwrapFunction (getAction a) ())
-
-
-perform : Action a -> a
-perform a =
-    unwrapFunction a ()
 
 
 unwrapFunction : Function a b -> (a -> b)

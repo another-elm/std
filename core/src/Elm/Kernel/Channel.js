@@ -1,9 +1,9 @@
 /*
 
-import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+
 */
 
 const _Channel_channels = new WeakMap();
@@ -17,25 +17,7 @@ const _Channel_rawUnbounded = (_) => {
     messages: [],
     wakers: new Set(),
   });
-  return __Utils_Tuple2(_Channel_rawSendImpl(id), id);
-};
-
-const _Channel_rawTryRecv = (channelId) => {
-  const channel = _Channel_channels.get(channelId);
-  if (__Basics_isDebug && channel === undefined) {
-    __Debug_crash(
-      12,
-      __Debug_runtimeCrashReason("channelIdNotRegistered"),
-      channelId && channelId.a && channelId.a.__$id
-    );
-  }
-
-  const msg = channel.messages.shift();
-  if (msg === undefined) {
-    return __Maybe_Nothing;
-  } else {
-    return __Maybe_Just(msg);
-  }
+  return __Utils_Tuple2(id, id);
 };
 
 const _Channel_rawRecv = F2((channelId, onMsg) => {
@@ -62,13 +44,13 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
   };
 });
 
-const _Channel_rawSendImpl = F2((channelId, msg) => {
-  const channel = _Channel_channels.get(channelId);
+const _Channel_rawSend = F2((sender, msg) => {
+  const channel = _Channel_channels.get(sender);
   if (__Basics_isDebug && channel === undefined) {
     __Debug_crash(
       12,
       __Debug_runtimeCrashReason("channelIdNotRegistered"),
-      channelId && channelId.a && channelId.a.__$id
+      sender && sender.a && sender.a.__$id
     );
   }
 
@@ -81,8 +63,4 @@ const _Channel_rawSendImpl = F2((channelId, msg) => {
     nextWaker(msg);
   }
   return __Utils_Tuple0;
-});
-
-const _Channel_rawSend = F2((sender, msg) => {
-  sender(msg);
 });

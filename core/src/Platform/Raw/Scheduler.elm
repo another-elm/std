@@ -75,29 +75,28 @@ batch ids =
         )
 
 
-{-| NON PURE!
-
-Add a `Process` to the run queue and, unless this is a reenterant
-call, drain the run queue but stepping all processes.
-Returns the enqueued `Process`.
-
+{-| Create an Action that adds a `Process` to the run queue and, unless this is a
+reenterant call, drain the run queue but stepping all processes. The action
+produces the enqueued `ProcessId` when it is run.
 -}
 enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
-enqueue id state =
-    Impure.fromFunction (enqueueWithStepper stepper id) state
+enqueue id =
+    let
+        stepperFunc id2 =
+            Impure.toFunction (stepper id2)
+    in
+    Impure.fromFunction (enqueueWithStepper stepperFunc id)
 
 
 
 -- Helper functions --
 
 
-{-| NON PURE! (calls enqueue)
-
-This function **must** return a process with the **same ID** as
-the process it is passed as an argument
+{-| Steps a process as far as possible and then enqueues any asyncronous
+actions that the process needs to perform.
 
 -}
-stepper : ProcessId -> RawTask.Task state -> ProcessState state
+stepper : ProcessId -> RawTask.Task state -> Impure.Action (ProcessState state)
 stepper processId root =
     let
         doneCallback : RawTask.Task state -> Impure.Action ()
@@ -107,14 +106,15 @@ stepper processId root =
     in
     case root of
         RawTask.Value val ->
-            Ready (RawTask.Value val)
+            val
+                |> RawTask.Value
+                |> Ready
+                |> Impure.fromPure
 
         RawTask.AsyncAction doEffect ->
-            Running
-                (doneCallback
-                    |> doEffect.then_
-                    |> Impure.perform
-                )
+            doneCallback
+                |> doEffect.then_
+                |> Impure.map Running
 
 
 rawKill : ProcessId -> Impure.Action ()
@@ -145,7 +145,7 @@ getProcessState =
 
 
 enqueueWithStepper :
-    (ProcessId -> RawTask.Task state -> ProcessState state)
+    (ProcessId -> Impure.Function (RawTask.Task state) (ProcessState state))
     -> ProcessId
     -> Impure.Function (RawTask.Task state) ProcessId
 enqueueWithStepper =

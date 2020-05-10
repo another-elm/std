@@ -174,17 +174,17 @@ function _Platform_outgoingPort(name, converter) {
 function _Platform_incomingPort(name, converter) {
   _Platform_checkPortName(name);
 
-  const tuple = _Platform_createSubProcess((_) => __Utils_Tuple0);
-  const key = tuple.a;
-  const sender = tuple.b;
+  const key = _Platform_createSubProcess((_) => __Utils_Tuple0);
 
   function send(incomingValue) {
     var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
-    __Result_isOk(result) || __Debug_crash(4, name, result.a);
+    if (!__Result_isOk(result)) {
+      __Debug_crash(4, name, result.a);
+    }
 
     var value = result.a;
-    A2(__Channel_rawSend, sender, value);
+    key.__send(value);
   }
 
   _Platform_incomingPorts.set(name, {
@@ -200,12 +200,17 @@ function _Platform_incomingPort(name, converter) {
 
 const _Platform_createSubProcess = (onSubUpdate) => {
   const channel = __Channel_rawUnbounded();
-  const key = { id: _Platform_subscriptionProcessIds++ };
+  const key = {
+    __id: _Platform_subscriptionProcessIds++,
+    __send(msg) {
+      A2(__Channel_rawSend, channel.a, msg);
+    },
+  };
   const msgHandler = (hcst) =>
     __RawTask_execImpure((_) => {
       const subscriptionState = _Platform_subscriptionStates.get(key);
       if (__Basics_isDebug && subscriptionState === undefined) {
-        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
+        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.__id);
       }
       // TODO(harry) sendToApp via spawning a Task
       for (const sendToApp of subscriptionState.__$listeners) {
@@ -223,7 +228,7 @@ const _Platform_createSubProcess = (onSubUpdate) => {
   });
   _Platform_runAfterLoad(() => __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0)));
 
-  return __Utils_Tuple2(key, channel.a);
+  return key;
 };
 
 const _Platform_resetSubscriptions = (newSubs) => {
@@ -235,7 +240,7 @@ const _Platform_resetSubscriptions = (newSubs) => {
     const sendToApp = tuple.b;
     const subState = _Platform_subscriptionStates.get(key);
     if (__Basics_isDebug && subState.__$listeners === undefined) {
-      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
+      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.__id);
     }
     subState.__$listeners.push(sendToApp);
   }
@@ -262,8 +267,8 @@ const _Platform_command = (task) => {
 };
 
 // subscription : RawSub.Id -> (RawSub.HiddenConvertedSubType -> msg) -> Sub msg
-const _Platform_subscription = (id) => (tagger) => {
-  const subData = __List_Cons(__Utils_Tuple2(id, tagger), __List_Nil);
+const _Platform_subscription = (key) => (tagger) => {
+  const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
   if (__Basics_isDebug) {
     return {
       $: "Sub",

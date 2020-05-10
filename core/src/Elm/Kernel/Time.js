@@ -27,12 +27,12 @@ function _Time_setInterval(interval) {
     const now = _Time_rawNow();
     handle = setTimeout(() => {
       handle = null;
-      A2(__Channel_rawSend, sender, _Time_rawNow());
+      key.__send(_Time_rawNow());
     }, interval - (now % interval));
   };
 
   // Cancel non-subscribed-to timeouts. Start subscribed-to
-  // previously-canceled timeouts.
+  // previously-cancelled timeouts.
   const onSubReset = (n) => {
     if (n === 0) {
       if (handle !== null) {
@@ -46,9 +46,7 @@ function _Time_setInterval(interval) {
     return __Utils_Tuple0;
   };
 
-  const tuple = __Platform_createSubProcess(onSubReset);
-  const key = tuple.a;
-  const sender = tuple.b;
+  const key = __Platform_createSubProcess(onSubReset);
 
   return key;
 }

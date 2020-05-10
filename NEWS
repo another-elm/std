@@ -18,11 +18,11 @@ subscription is. Here is the mental model in three steps:
    or prevent events from happening. They just happen.
 2. The elm runtime detects all events always: nothing happens that the runtime
    does not know about.
-3. The runtime uses the `subscription: model -> Sub msg` function given to it on
-   application init to filter events. If one of subscriptions currently active
-   matches an event detected, the elm runtime will use that subscription to
-   process the event and send it to the app (via the `update: msg -> model ->
-   (model, Cmd msg)` function).
+3. The runtime uses the `subscription: model -> Sub msg` function given to it
+   on application init to filter events. If one of subscriptions currently
+   active matches an event detected, the elm runtime will use that subscription
+   to process the event and send it to the app (via the `update: msg -> model
+   -> (model, Cmd msg)` function).
 
    (A subscriptions returned by `subscription: model -> Sub msg` is active
    between the time that the function returns and the next invocation of the
@@ -69,8 +69,9 @@ subscriptions in another-elm.
 ## 2020/5/2 -- Another elm
 
 Here goes, a proper home for my take on the elm/* libraries. The idea is one
-repository (https://github.com/another-elm/std) containing everything you need
-(except the compiler) to use my custom implementation of the core libaries.
+repository (<https://github.com/another-elm/std)> containing everything you
+need (except the compiler) to use my custom implementation of the core
+libraries.
 
 The big new useful thing is a script './tools/another-elm' that can be used as
 a drop in replacement for the elm compiler. It is (currently) pretty janky, be
@@ -81,7 +82,7 @@ time is very doable. Try it out:
 
    sudo mkdir -p /opt/elm/
    sudo chown $USER /opt/elm
-   git clone https://github.com/another-elm/std /opt/elm/std
+   git clone <https://github.com/another-elm/std> /opt/elm/std
    sudo ln -s /opt/elm/std/tools/another-elm /usr/local/bin/another-elm
 
 ## 2020/4/26 -- Merge elm/random back into core
@@ -121,8 +122,7 @@ Hopefully, use of this module can be reduced to a couple of key places and
 maybe even inlined into the scheduler is that is the only place that uses it.
 Hopefully, it will help us move all effectful functions out of elm.
 
-
-## 2020/04/26 - the future?
+## 2020/04/26 - the future (?)
 
 I wan't to move to away from callbacks and towards async/await and promises (or
 futures). Firstly, I find that async/await is much easier to reason about than

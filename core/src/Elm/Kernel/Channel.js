@@ -47,11 +47,7 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
 const _Channel_rawSend = F2((sender, msg) => {
   const channel = _Channel_channels.get(sender);
   if (__Basics_isDebug && channel === undefined) {
-    __Debug_crash(
-      12,
-      __Debug_runtimeCrashReason("channelIdNotRegistered"),
-      sender && sender.id
-    );
+    __Debug_crash(12, __Debug_runtimeCrashReason("channelIdNotRegistered"), sender && sender.id);
   }
 
   const wakerIter = channel.wakers[Symbol.iterator]();

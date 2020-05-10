@@ -86,11 +86,11 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
   );
 
-  for (const [key, { port }] of _Platform_outgoingPorts.entries()) {
-    ports[key] = port;
+  for (const [name, port] of _Platform_outgoingPorts.entries()) {
+    ports[name] = port;
   }
-  for (const [key, { port }] of _Platform_incomingPorts.entries()) {
-    ports[key] = port;
+  for (const [name, port] of _Platform_incomingPorts.entries()) {
+    ports[name] = port;
   }
 
   const initValue = impl.__$init(flagsResult.a);
@@ -135,7 +135,9 @@ function _Platform_checkPortName(name) {
 
 function _Platform_outgoingPort(name, converter) {
   _Platform_checkPortName(name);
+
   let subs = [];
+
   const subscribe = (callback) => {
     subs.push(callback);
   };
@@ -148,24 +150,15 @@ function _Platform_outgoingPort(name, converter) {
       subs.splice(index, 1);
     }
   };
-  const execSubscribers = (payload) => {
-    const value = __Json_unwrap(converter(payload));
-    for (const sub of subs) {
-      sub(value);
-    }
-    return __Utils_Tuple0;
-  };
-  _Platform_outgoingPorts.set(name, {
-    port: {
-      subscribe,
-      unsubscribe,
-    },
-  });
 
+  _Platform_outgoingPorts.set(name, { subscribe, unsubscribe });
   return (payload) =>
     _Platform_command(
       __Scheduler_execImpure((_) => {
-        execSubscribers(payload);
+        const value = __Json_unwrap(converter(payload));
+        for (const sub of subs) {
+          sub(value);
+        }
         return __Maybe_Nothing;
       })
     );
@@ -187,11 +180,7 @@ function _Platform_incomingPort(name, converter) {
     key.send(value);
   }
 
-  _Platform_incomingPorts.set(name, {
-    port: {
-      send,
-    },
-  });
+  _Platform_incomingPorts.set(name, { send });
 
   return _Platform_subscription(key);
 }

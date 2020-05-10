@@ -18,7 +18,7 @@ type Task val
 
 
 type alias Future a =
-    { then_ : (Task a -> ()) -> TryAbortAction }
+    { then_ : (Task a -> ()) -> Impure.Action TryAbortAction }
 
 
 type alias TryAbortAction =
@@ -47,10 +47,13 @@ execImpure action =
         { then_ =
             \callback ->
                 let
-                    () =
-                        callback (Value (Impure.unwrapFunction action ()))
+                    cannotKill =
+                        Impure.fromPure ()
                 in
-                Impure.fromPure ()
+                action
+                    |> Impure.map Value
+                    |> Impure.map callback
+                    |> Impure.map (\() -> cannotKill)
         }
 
 

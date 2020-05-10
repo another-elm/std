@@ -28,7 +28,7 @@ recv tagger chl =
     RawTask.AsyncAction
         { then_ =
             \doneCallback ->
-                rawRecv chl (\msg -> doneCallback (tagger msg))
+                Impure.fromFunction (rawRecv chl) (\msg -> doneCallback (tagger msg))
         }
 
 
@@ -68,7 +68,7 @@ unbounded =
     RawTask.execImpure (Impure.fromThunk rawUnbounded)
 
 
-rawRecv : Receiver msg -> (msg -> ()) -> RawTask.TryAbortAction
+rawRecv : Receiver msg -> Impure.Function (msg -> ()) RawTask.TryAbortAction
 rawRecv =
     Elm.Kernel.Channel.rawRecv
 

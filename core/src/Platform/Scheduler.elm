@@ -57,7 +57,7 @@ type alias ProcessId =
 
 
 type alias Future err ok =
-    { then_ : (Platform.Task err ok -> ()) -> TryAbortAction }
+    { then_ : (Platform.Task err ok -> ()) -> Impure.Action TryAbortAction }
 
 
 type alias TryAbortAction =

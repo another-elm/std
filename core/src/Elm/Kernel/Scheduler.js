@@ -91,7 +91,7 @@ const _Scheduler_enqueueWithStepper = (stepper) => {
 };
 
 const _Scheduler_delay = F2((time, value) => ({
-  __$then_: (callback) => {
+  __$then_: (callback) => () => {
     let id = setTimeout(() => {
       callback(value);
     }, time);

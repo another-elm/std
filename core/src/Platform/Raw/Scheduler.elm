@@ -60,13 +60,17 @@ batch ids =
             { then_ =
                 \doneCallback ->
                     let
-                        () =
-                            doneCallback (spawn (RawTask.Value ()))
+                        tryAbort =
+                            List.foldr
+                                (\id impure -> Impure.andThen (\() -> rawKill id) impure)
+                                (Impure.fromPure ())
+                                ids
                     in
-                    List.foldr
-                        (\id impure -> Impure.andThen (\() -> rawKill id) impure)
-                        (Impure.fromPure ())
-                        ids
+                    RawTask.Value ()
+                        |> Impure.fromPure
+                        |> Impure.map spawn
+                        |> Impure.map doneCallback
+                        |> Impure.map (\() -> tryAbort)
             }
         )
 
@@ -101,19 +105,18 @@ stepper processId root =
 
         RawTask.AsyncAction doEffect ->
             Running
-                (doEffect.then_
-                    (\newRoot ->
-                        let
-                            (ProcessId _) =
-                                Impure.perform (enqueue processId newRoot)
-                        in
-                        ()
-                    )
+                ((\newRoot ->
+                    let
+                        (ProcessId _) =
+                            Impure.perform (enqueue processId newRoot)
+                    in
+                    ()
+                 )
+                    |> doEffect.then_
+                    |> Impure.perform
                 )
 
 
-{-| NON PURE!
--}
 rawKill : ProcessId -> Impure.Action ()
 rawKill id =
     case getProcessState id of

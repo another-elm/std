@@ -16,6 +16,14 @@ async function* getFiles(dir) {
   }
 }
 
+async function* asyncFlatMap(source, mapper) {
+  for await (const item of source) {
+    for await (const nestedItem of mapper(item)) {
+      yield nestedItem;
+    }
+  }
+}
+
 class CallLocation {
   constructor(path, line) {
     this.path = path;
@@ -69,10 +77,10 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
 
   for await (const { number, line } of lines) {
     const moduleNameMatch = line.match(/module\s*(\S+)\s.*exposing/u);
-    if (moduleNameMatch !== null) {
-      if (moduleName !== null) {
-        errors.push(`Duplicate module line at ${file}:${number}.`);
-      }
+    // Ignore all but the first module line, some comments include example elm
+    // files which cause multiple matches here. In these cases it is the first
+    // module line that is the valid one. (We hope!)
+    if (moduleNameMatch !== null && moduleName == null) {
       moduleName = moduleNameMatch[1];
     }
 
@@ -90,7 +98,7 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
         addDef(elmTypeMatch[1]);
       }
 
-      const elmCustomTypeMatch = line.match(/    [=|] (\w*)/u);
+      const elmCustomTypeMatch = line.match(/  (?:  )?[=|] (\w*)/u);
       if (elmCustomTypeMatch !== null) {
         addDef(elmCustomTypeMatch[1]);
       }
@@ -178,7 +186,10 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       } else {
         const calledModuleName = kernelCallMatch[1];
         const kernelCall = kernelCallMatch[0];
-        if (calledModuleName[0] === calledModuleName[0].toUpperCase()) {
+        if (
+          calledModuleName[0] === calledModuleName[0].toUpperCase() &&
+          !(calledModuleName[0] >= "0" && calledModuleName[0] <= "9")
+        ) {
           if (kernelCall.startsWith("__")) {
             // External kernel call
             if (imports.has(kernelCall)) {
@@ -189,7 +200,7 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
           } else {
             if (calledModuleName !== moduleName) {
               errors.push(
-                `${calledModuleName} === ${moduleName} Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
+                `Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
               );
             }
           }
@@ -209,8 +220,8 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
 }
 
 async function main() {
-  if (process.argv.length !== 3) {
-    console.error("check-kernel-imports: error! path to source directories required");
+  if (process.argv.length < 3) {
+    console.error("check-kernel-imports: error! at least one path to source directories required");
     process.exit(1);
   }
 
@@ -218,7 +229,7 @@ async function main() {
     console.log(
       `
 
-Usage: check-kernel-imports SOURCE_DIRECTORY
+Usage: check-kernel-imports SOURCE_DIRECTORIES ...
 
 check-kernel-imports checks that
   1. Use of kernel definitions match imports in elm files.
@@ -238,7 +249,7 @@ Options:
     process.exit(0);
   }
 
-  const sourceDir = process.argv[2];
+  const sourceDirs = process.argv.slice(2);
 
   // keys: kernel definition full elm path
   const kernelDefinitions = new Set();
@@ -258,7 +269,7 @@ Options:
   const allErrors = [];
   const allWarnings = [];
 
-  for await (const f of getFiles(sourceDir)) {
+  for await (const f of asyncFlatMap(sourceDirs, getFiles)) {
     const extname = path.extname(f);
     if (extname === ".elm") {
       const { errors, warnings } = await processElmFile(f, elmDefinitions, kernelCalls);

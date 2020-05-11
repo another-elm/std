@@ -30,7 +30,7 @@ let _Platform_subscriptionProcessIds = 0;
 
 // INITIALIZE A PROGRAM
 
-const _Platform_initialize = F3((flagDecoder, args, impl) => {
+const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   // Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
   // Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
   const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args["flags"] : undefined));
@@ -86,7 +86,7 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
 
   const initValue = impl.__$init(flagsResult.a);
   let model = initValue.a;
-  const stepper = A2(__Platform_initializeHelperFunctions.__$stepperBuilder, sendToApp, model);
+  const stepper = A2(stepperBuilder, sendToApp, model);
 
   dispatch(model, initValue.b);
 

@@ -97,6 +97,7 @@ worker impl =
                 flagsDecoder
                 args
                 impl
+                (\_ _ -> \_ -> Impure.toFunction (\_ -> Impure.resolve ()))
         )
 
 
@@ -168,10 +169,10 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task never
+setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task never
 setupEffectsChannel sendToApp2 receiver =
     let
-        receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
+        receiveMsg : Cmd appMsg -> RawTask.Task ()
         receiveMsg cmds =
             let
                 processCmdTask (Task t) =
@@ -256,11 +257,13 @@ resetSubscriptionsAction updateList =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions model appMsg =
-    { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
-    , setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task Never
+type alias InitializeHelperFunctions appMsg =
+    { setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
     , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
     }
+
+type alias StepperBuilder model appMsg =
+    ImpureSendToApp appMsg -> model -> model -> Impure.Function UpdateMetadata ()
 
 
 {-| This is the actual type of a Program. This is the value that will be called
@@ -279,10 +282,6 @@ type alias ImpureSendToApp msg =
 
 type alias DebugMetadata =
     Encode.Value
-
-
-type alias AppMsgPayload appMsg =
-    Cmd appMsg
 
 
 type RawJsObject
@@ -312,13 +311,11 @@ type alias Impl flags model msg =
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions model msg
+initializeHelperFunctions : InitializeHelperFunctions msg
 initializeHelperFunctions =
-    { stepperBuilder = \_ _ -> \_ _ -> ()
-    , updateSubListeners = updateSubListeners
+    { updateSubListeners = updateSubListeners
     , setupEffectsChannel = setupEffectsChannel
     }
-
 
 
 -- Kernel interop IMPORTS --
@@ -328,6 +325,7 @@ initialize :
     Decoder flags
     -> RawJsObject
     -> Impl flags model msg
+    -> StepperBuilder model msg
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize

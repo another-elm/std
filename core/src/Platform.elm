@@ -197,6 +197,7 @@ setupEffectsChannel sendToApp2 receiver =
 
                 cmdTask =
                     cmds
+                        |> unwrapCmd
                         |> List.map processCmdTask
                         |> List.map RawScheduler.spawn
                         |> List.foldr
@@ -248,21 +249,6 @@ resetSubscriptionsAction updateList =
         (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
 
 
-type alias AppMsgPayload appMsg =
-    List (Task Never (Maybe appMsg))
-
-
-type RawJsObject
-    = RawJsObject RawJsObject
-
-
-type alias Impl flags model msg =
-    { init : flags -> ( model, Cmd msg )
-    , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
-    }
-
-
 
 -- Kernel interop TYPES
 
@@ -295,6 +281,14 @@ type alias DebugMetadata =
     Encode.Value
 
 
+type alias AppMsgPayload appMsg =
+    Cmd appMsg
+
+
+type RawJsObject
+    = RawJsObject RawJsObject
+
+
 {-| AsyncUpdate is default I think
 
 TODO(harry) understand this by reading source of VirtualDom
@@ -303,6 +297,13 @@ TODO(harry) understand this by reading source of VirtualDom
 type UpdateMetadata
     = SyncUpdate
     | AsyncUpdate
+
+
+type alias Impl flags model msg =
+    { init : flags -> ( model, Cmd msg )
+    , update : msg -> model -> ( model, Cmd msg )
+    , subscriptions : model -> Sub msg
+    }
 
 
 

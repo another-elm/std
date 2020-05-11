@@ -228,6 +228,7 @@ setupEffectsChannel sendToApp2 receiver =
                                     Nothing ->
                                         RawTask.Value ()
                             )
+
                 cmdTask =
                     cmds
                         |> List.map processCmdTask
@@ -315,7 +316,7 @@ type alias Impl flags model msg =
 
 
 
--- kernel --
+-- Kernel interop --
 
 
 initialize :

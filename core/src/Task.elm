@@ -383,7 +383,7 @@ performHelp task =
 
 
 
--- kernel --
+-- Kernel interop --
 
 
 command : Platform.Task Never (Maybe msg) -> Cmd msg

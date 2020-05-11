@@ -1,4 +1,4 @@
-module Platform.Raw.Task exposing (Future, Task(..), TryAbortAction, andThen, execImpure, map, sleep)
+module Platform.Raw.Task exposing (Future, Task(..), TryAbortAction, andThen, execImpure, map, noopAbort, sleep)
 
 {-| This module contains the low level logic for tasks. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -25,6 +25,11 @@ type alias TryAbortAction =
     Impure.Action ()
 
 
+noopAbort : TryAbortAction
+noopAbort =
+    Impure.resolve ()
+
+
 andThen : (a -> Task b) -> Task a -> Task b
 andThen func task =
     case task of
@@ -46,14 +51,10 @@ execImpure action =
     AsyncAction
         { then_ =
             \callback ->
-                let
-                    cannotKill =
-                        Impure.fromPure ()
-                in
                 action
                     |> Impure.map Value
                     |> Impure.andThen callback
-                    |> Impure.map (\() -> cannotKill)
+                    |> Impure.map (\() -> noopAbort)
         }
 
 

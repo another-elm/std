@@ -58,14 +58,13 @@ batch ids =
                     let
                         tryAbort =
                             List.foldr
-                                (\id impure -> Impure.andThen (\() -> rawKill id) impure)
-                                (Impure.fromPure ())
+                                (\id -> Impure.andThen (\() -> rawKill id))
+                                (Impure.resolve ())
                                 ids
                     in
                     RawTask.Value ()
-                        |> Impure.fromPure
-                        |> Impure.map spawn
-                        |> Impure.andThen doneCallback
+                        |> spawn
+                        |> doneCallback
                         |> Impure.map (\() -> tryAbort)
             }
         )
@@ -86,6 +85,9 @@ enqueue id =
 
 {-| Steps a process as far as possible and then enqueues any asyncronous
 actions that the process needs to perform.
+
+Kernel interop: this function is used by the sheduler.
+
 -}
 stepper : ProcessId -> Impure.Function (RawTask.Task state) RawTask.TryAbortAction
 stepper processId =
@@ -99,7 +101,7 @@ stepper processId =
         (\root ->
             case root of
                 RawTask.Value _ ->
-                    Impure.fromPure (Impure.fromPure ())
+                    Impure.resolve RawTask.noopAbort
 
                 RawTask.AsyncAction doEffect ->
                     doEffect.then_ doneCallback

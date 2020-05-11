@@ -53,30 +53,6 @@ import Tuple
 
 
 
--- DEFINTIONS TO BE USED BY KERNEL CODE
-
-
-{-| Kernel code relies on this this type alias. Must be kept consistant with
-code in Elm/Kernel/Platform.js.
--}
-type alias InitializeHelperFunctions model appMsg =
-    { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
-    , setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task Never
-    , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
-    }
-
-
-{-| Kernel code relies on this definitions type and on the behaviour of these functions.
--}
-initializeHelperFunctions : InitializeHelperFunctions model msg
-initializeHelperFunctions =
-    { stepperBuilder = \_ _ -> \_ _ -> ()
-    , updateSubListeners = updateSubListeners
-    , setupEffectsChannel = setupEffectsChannel
-    }
-
-
-
 -- PROGRAMS
 
 
@@ -85,16 +61,6 @@ show anything on screen? Etc.
 -}
 type Program flags model msg
     = Program
-
-
-{-| This is the actual type of a Program. This is the value that will be called
-by javascript so it **must** be this type.
--}
-type alias ActualProgram flags =
-    Decoder flags
-    -> DebugMetadata
-    -> RawJsObject
-    -> RawJsObject
 
 
 {-| Create a [headless] program with no user interface.
@@ -282,6 +248,45 @@ resetSubscriptionsAction updateList =
         (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
 
 
+type alias AppMsgPayload appMsg =
+    List (Task Never (Maybe appMsg))
+
+
+type RawJsObject
+    = RawJsObject RawJsObject
+
+
+type alias Impl flags model msg =
+    { init : flags -> ( model, Cmd msg )
+    , update : msg -> model -> ( model, Cmd msg )
+    , subscriptions : model -> Sub msg
+    }
+
+
+
+-- Kernel interop TYPES
+
+
+{-| Kernel code relies on this this type alias. Must be kept consistant with
+code in Elm/Kernel/Platform.js.
+-}
+type alias InitializeHelperFunctions model appMsg =
+    { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
+    , setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task Never
+    , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+    }
+
+
+{-| This is the actual type of a Program. This is the value that will be called
+by javascript so it **must** be this type.
+-}
+type alias ActualProgram flags =
+    Decoder flags
+    -> DebugMetadata
+    -> RawJsObject
+    -> RawJsObject
+
+
 type alias ImpureSendToApp msg =
     msg -> Impure.Function UpdateMetadata ()
 
@@ -300,23 +305,22 @@ type UpdateMetadata
     | AsyncUpdate
 
 
-type alias AppMsgPayload appMsg =
-    List (Task Never (Maybe appMsg))
+
+-- Kernel interop EXPORTS --
 
 
-type RawJsObject
-    = RawJsObject RawJsObject
-
-
-type alias Impl flags model msg =
-    { init : flags -> ( model, Cmd msg )
-    , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
+{-| Kernel code relies on this definitions type and on the behaviour of these functions.
+-}
+initializeHelperFunctions : InitializeHelperFunctions model msg
+initializeHelperFunctions =
+    { stepperBuilder = \_ _ -> \_ _ -> ()
+    , updateSubListeners = updateSubListeners
+    , setupEffectsChannel = setupEffectsChannel
     }
 
 
 
--- Kernel interop --
+-- Kernel interop IMPORTS --
 
 
 initialize :

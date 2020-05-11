@@ -17,7 +17,7 @@ import VirtualDom exposing (toHandlerInt)
 // HELPERS
 
 
-var _VirtualDom_divertHrefToApp;
+var _VirtualDom_divertHrefToApp = undefined;
 
 var _VirtualDom_doc = typeof document !== 'undefined' ? document : {};
 
@@ -593,7 +593,7 @@ function _VirtualDom_applyEvents(domNode, eventNode, events)
 // PASSIVE EVENTS
 
 
-var _VirtualDom_passiveSupported;
+var _VirtualDom_passiveSupported = undefined;
 
 try
 {

@@ -8,9 +8,9 @@ import Elm.Kernel.Debugger exposing (element, document)
 import Elm.Kernel.Json exposing (runHelp)
 import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Platform exposing (initialize)
-import Elm.Kernel.Scheduler exposing (binding, fail, rawSpawn, succeed, spawn)
+import Platform.Scheduler as Scheduler exposing (binding, fail, rawSpawn, succeed, spawn)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
-import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp)
+import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp, virtualize)
 import Json.Decode as Json exposing (map)
 import Maybe exposing (Just, Nothing)
 import Result exposing (isOk)
@@ -42,7 +42,7 @@ var _Browser_element = __Debugger_element || F4(function(impl, flagDecoder, debu
 			/**__DEBUG/
 			var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
 			//*/
-			var currNode = _VirtualDom_virtualize(domNode);
+			var currNode = __VirtualDom_virtualize(domNode);
 
 			return _Browser_makeAnimator(initialModel, function(model)
 			{
@@ -75,7 +75,7 @@ var _Browser_document = __Debugger_document || F4(function(impl, flagDecoder, de
 			var view = impl.__$view;
 			var title = __VirtualDom_doc.title;
 			var bodyNode = __VirtualDom_doc.body;
-			var currNode = _VirtualDom_virtualize(bodyNode);
+			var currNode = __VirtualDom_virtualize(bodyNode);
 			return _Browser_makeAnimator(initialModel, function(model)
 			{
 				__VirtualDom_divertHrefToApp = divertHrefToApp;
@@ -189,7 +189,7 @@ function _Browser_getUrl()
 
 var _Browser_go = F2(function(key, n)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(function() {
+	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () => {
 		n && history.go(n);
 		key();
 	}));
@@ -197,7 +197,7 @@ var _Browser_go = F2(function(key, n)
 
 var _Browser_pushUrl = F2(function(key, url)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(function() {
+	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () => {
 		history.pushState({}, '', url);
 		key();
 	}));
@@ -205,7 +205,7 @@ var _Browser_pushUrl = F2(function(key, url)
 
 var _Browser_replaceUrl = F2(function(key, url)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(function() {
+	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () =>  {
 		history.replaceState({}, '', url);
 		key();
 	}));
@@ -222,7 +222,7 @@ var _Browser_window = typeof window !== 'undefined' ? window : _Browser_fakeNode
 
 var _Browser_on = F3(function(node, eventName, sendToSelf)
 {
-	return __Scheduler_spawn(__Scheduler_binding(function(callback)
+	return __Scheduler_spawn(__Scheduler_binding(() => () =>
 	{
 		function handler(event)	{ __Scheduler_rawSpawn(sendToSelf(event)); }
 		node.addEventListener(eventName, handler, __VirtualDom_passiveSupported && { passive: true });
@@ -264,7 +264,7 @@ function _Browser_visibilityInfo()
 
 function _Browser_rAF()
 {
-	return __Scheduler_binding(function(callback)
+	return __Scheduler_binding((callback) => () =>
 	{
 		var id = _Browser_requestAnimationFrame(function() {
 			callback(__Scheduler_succeed(Date.now()));
@@ -279,7 +279,7 @@ function _Browser_rAF()
 
 function _Browser_now()
 {
-	return __Scheduler_binding(function(callback)
+	return __Scheduler_binding((callback) => () =>
 	{
 		callback(__Scheduler_succeed(Date.now()));
 	});
@@ -292,7 +292,7 @@ function _Browser_now()
 
 function _Browser_withNode(id, doStuff)
 {
-	return __Scheduler_binding(function(callback)
+	return __Scheduler_binding((callback) => () =>
 	{
 		_Browser_requestAnimationFrame(function() {
 			var node = document.getElementById(id);
@@ -307,7 +307,7 @@ function _Browser_withNode(id, doStuff)
 
 function _Browser_withWindow(doStuff)
 {
-	return __Scheduler_binding(function(callback)
+	return __Scheduler_binding((callback) => () =>
 	{
 		_Browser_requestAnimationFrame(function() {
 			callback(__Scheduler_succeed(doStuff()));
@@ -436,7 +436,7 @@ function _Browser_getElement(id)
 
 function _Browser_reload(skipCache)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(function(callback)
+	return A2(__Task_perform, __Basics_never, __Scheduler_binding((callback) => () =>
 	{
 		__VirtualDom_doc.location.reload(skipCache);
 	}));
@@ -444,7 +444,7 @@ function _Browser_reload(skipCache)
 
 function _Browser_load(url)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(function(callback)
+	return A2(__Task_perform, __Basics_never, __Scheduler_binding((callback) => () =>
 	{
 		try
 		{

@@ -75,7 +75,7 @@ def wrapped_run(elm):
         packages_root = os.path.join(another_elm_home_dir, elm_version,
                                      'packages')
 
-        for pkg in ['core', 'json']:
+        for pkg in ['core', 'json', 'browser']:
             if reset_package(pkg, packages_root):
                 some_packages_reset = True
 

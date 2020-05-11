@@ -124,6 +124,7 @@ def wrapped_run(elm, args):
     replace_with_stub(packages_root, 'elm', 'time')
     replace_with_stub(packages_root, 'elm', 'random')
     replace_with_stub(packages_root, 'elm', 'virtual-dom')
+    replace_with_stub(packages_root, 'elm', 'url')
 
     for pkg in ['core', 'json', 'browser']:
         if customize(pkg, packages_root):

@@ -18,10 +18,10 @@ import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, bindi
 
 // State
 
-var _Platform_ports = new Map();
+const _Platform_ports = {};
 
-var _Platform_effectsQueue = [];
-var _Platform_effectDispatchInProgress = false;
+const _Platform_effectsQueue = [];
+let _Platform_effectDispatchInProgress = false;
 
 let _Platform_runAfterLoadQueue = [];
 
@@ -44,7 +44,6 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
   }
 
   const cmdChannel = __Channel_rawUnbounded();
-  const ports = {};
 
   const dispatch = (model, cmds) => {
     _Platform_effectsQueue.push({
@@ -85,17 +84,13 @@ const _Platform_initialize = F3((flagDecoder, args, impl) => {
     A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
   );
 
-  for (const [name, port] of _Platform_ports.entries()) {
-    ports[name] = port;
-  }
-
   const initValue = impl.__$init(flagsResult.a);
   let model = initValue.a;
   const stepper = A2(__Platform_initializeHelperFunctions.__$stepperBuilder, sendToApp, model);
 
   dispatch(model, initValue.b);
 
-  return ports ? { ports } : {};
+  return { ports: Object.assign({}, _Platform_ports) };
 });
 
 // EFFECT MANAGERS (not supported)
@@ -111,7 +106,7 @@ const _Platform_leaf = (home) => (value) => {
 // PORTS
 
 function _Platform_checkPortName(name) {
-  if (_Platform_ports.has(name)) {
+  if (Object.prototype.hasOwnProperty.call(_Platform_ports, name)) {
     __Debug_crash(3, name);
   }
 }
@@ -134,7 +129,7 @@ function _Platform_outgoingPort(name, converter) {
     }
   };
 
-  _Platform_ports.set(name, { subscribe, unsubscribe });
+  _Platform_ports[name] = { subscribe, unsubscribe };
   return (payload) =>
     _Platform_command(
       __Scheduler_execImpure((_) => {
@@ -163,7 +158,7 @@ function _Platform_incomingPort(name, converter) {
     key.send(value);
   }
 
-  _Platform_ports.set(name, { send });
+  _Platform_ports[name] = { send };
 
   return _Platform_subscription(key);
 }

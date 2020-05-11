@@ -13,10 +13,14 @@ const _Debug_log__PROD = F2(function (tag, value) {
   return value;
 });
 
-const _Debug_log__DEBUG = F2(function (tag, value) {
-  console.log(tag + ": " + _Debug_toString(value));
-  return value;
-});
+const _Debug_log__DEBUG = (tag) => {
+  const p = Promise.reject(new Error("you must pass this function two arguments!"));
+  return (value) =>   {
+    p.catch(x => x);
+    console.log(tag + ": " + _Debug_toString(value));
+    return value;
+  }
+}
 
 // TODOS
 

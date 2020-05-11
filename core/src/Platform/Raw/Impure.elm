@@ -2,7 +2,6 @@ module Platform.Raw.Impure exposing
     ( Action, andThen, map
     , Function
     , fromFunction, toFunction, fromPure
-    , unwrapFunction, wrapFunction
     )
 
 {-| This module contains an abstaction for functions that **do things** when
@@ -47,12 +46,6 @@ use within elm. A classic example of the most minimal design being best.
 
 @docs fromFunction, toFunction, fromPure
 
-
-## Danger
-
-These functions allow elm code to do impure things!
-
-@docs unwrapFunction, wrapFunction
 
 -}
 

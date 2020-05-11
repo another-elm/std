@@ -208,23 +208,29 @@ setupEffectsChannel sendToApp2 receiver =
         receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
         receiveMsg cmds =
             let
+                processCmdTask (Task t) =
+                    t
+                        |> RawTask.map
+                            (\r ->
+                                case r of
+                                    Ok v ->
+                                        v
+
+                                    Err err ->
+                                        never err
+                            )
+                        |> RawTask.andThen
+                            (\maybeMsg ->
+                                case maybeMsg of
+                                    Just msg ->
+                                        RawTask.execImpure (Impure.fromFunction (sendToApp2 msg) AsyncUpdate)
+
+                                    Nothing ->
+                                        RawTask.Value ()
+                            )
                 cmdTask =
                     cmds
-                        |> List.map (\(Task t) -> t)
-                        |> List.map
-                            (RawTask.map
-                                (\r ->
-                                    case r of
-                                        Ok (Just msg) ->
-                                            Impure.unwrapFunction (sendToApp2 msg) AsyncUpdate
-
-                                        Ok Nothing ->
-                                            ()
-
-                                        Err err ->
-                                            never err
-                                )
-                            )
+                        |> List.map processCmdTask
                         |> List.map RawScheduler.spawn
                         |> List.foldr
                             (\curr accTask ->

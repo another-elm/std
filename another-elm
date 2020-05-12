@@ -59,8 +59,8 @@ a = 2
             """.format(author, package, v, dummy_module).strip())
 
 
-def customize(package, packages_root):
-    versions_dir = os.path.join(packages_root, "elm", package)
+def customize(packages_root, author, package):
+    versions_dir = os.path.join(packages_root, author, package)
     custom_package_dir = os.path.join(elm_std_dir, package)
 
     custom_src_dir = os.path.join(custom_package_dir, "src")
@@ -127,12 +127,14 @@ def wrapped_run(elm, args):
     replace_with_stub(packages_root, 'elm', 'url')
     replace_with_stub(packages_root, 'elm', 'html')
 
-    for pkg in ['core', 'json', 'browser']:
-        if customize(pkg, packages_root):
+    for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
+                          ('elm-explorations', 'test')]:
+        if customize(packages_root, author, pkg):
             shutil.rmtree("elm-stuff")
             run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             for author in os.scandir(packages_root):
-                if author.name != "elm" and author.is_dir():
+                if (author.name != "elm" and author.name != "elm-explorations"
+                        and author.is_dir()):
                     shutil.rmtree(author.path)
 
     return run_compiler()

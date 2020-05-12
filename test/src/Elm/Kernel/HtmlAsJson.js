@@ -44,7 +44,7 @@ function forceThunks(vNode) {
 
 function _HtmlAsJson_toJson(html)
 {
-  return _Json_wrap(forceThunks(html));
+  return __Json_wrap(forceThunks(html));
 }
 
 function _HtmlAsJson_eventHandler(event)
@@ -59,5 +59,5 @@ function _HtmlAsJson_taggerFunction(tagger)
 
 function _HtmlAsJson_attributeToJson(attribute)
 {
-  return _Json_wrap(attribute);
+  return __Json_wrap(attribute);
 }

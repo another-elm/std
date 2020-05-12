@@ -43,7 +43,7 @@ want!
 
 -}
 
-import Elm.Kernel.Browser
+-- import Elm.Kernel.Browser
 import Task exposing (Task)
 
 
@@ -88,7 +88,7 @@ making a different choice.
 -}
 pushUrl : Key -> String -> Cmd msg
 pushUrl =
-    Elm.Kernel.Browser.pushUrl
+    Debug.todo "" -- Elm.Kernel.Browser.pushUrl
 
 
 {-| Change the URL, but do not trigger a page load.
@@ -108,7 +108,7 @@ suggests techniques for people changing the URL based on scroll position.
 -}
 replaceUrl : Key -> String -> Cmd msg
 replaceUrl =
-    Elm.Kernel.Browser.replaceUrl
+    Debug.todo "" -- Elm.Kernel.Browser.replaceUrl
 
 
 {-| Go back some number of pages. So `back 1` goes back one page, and `back 2`
@@ -122,7 +122,7 @@ other website!
 -}
 back : Key -> Int -> Cmd msg
 back key n =
-    Elm.Kernel.Browser.go key -n
+    Debug.todo "" -- Elm.Kernel.Browser.go key -n
 
 
 {-| Go forward some number of pages. So `forward 1` goes forward one page, and
@@ -137,7 +137,7 @@ whatever website they visited next!
 -}
 forward : Key -> Int -> Cmd msg
 forward =
-    Elm.Kernel.Browser.go
+    Debug.todo "" -- Elm.Kernel.Browser.go
 
 
 
@@ -162,7 +162,7 @@ handy!
 -}
 load : String -> Cmd msg
 load =
-    Elm.Kernel.Browser.load
+    Debug.todo "" -- Elm.Kernel.Browser.load
 
 
 {-| Reload the current page. **This always results in a page load!**
@@ -172,7 +172,7 @@ if you want to be sure that you are not loading any cached resources.
 -}
 reload : Cmd msg
 reload =
-    Elm.Kernel.Browser.reload False
+    Debug.todo "" -- Elm.Kernel.Browser.reload False
 
 
 {-| Reload the current page without using the browser cache. **This always
@@ -180,4 +180,4 @@ results in a page load!** It is more common to want [`reload`](#reload).
 -}
 reloadAndSkipCache : Cmd msg
 reloadAndSkipCache =
-    Elm.Kernel.Browser.reload True
+    Debug.todo "" -- Elm.Kernel.Browser.reload True

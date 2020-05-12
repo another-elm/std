@@ -31,9 +31,9 @@ module Browser exposing
 -}
 
 import Browser.Navigation as Navigation
-import Debugger.Main
+-- import Debugger.Main
 import Dict
-import Elm.Kernel.Browser
+-- import Elm.Kernel.Browser
 import Html exposing (Html)
 import Url
 
@@ -67,12 +67,14 @@ sandbox :
     }
     -> Program () model msg
 sandbox impl =
-    Elm.Kernel.Browser.element
-        { init = \() -> ( impl.init, Cmd.none )
-        , view = impl.view
-        , update = \msg model -> ( impl.update msg model, Cmd.none )
-        , subscriptions = \_ -> Sub.none
-        }
+    Debug.todo ""
+    -- Elm.Kernel.Browser.element
+    --     { init = \() -> ( impl.init, Cmd.none )
+    --     , view = impl.view
+    --     , update = \msg model -> ( impl.update msg model, Cmd.none )
+    --     , subscriptions = \_ -> Sub.none
+    --     }
+
 
 
 
@@ -109,7 +111,9 @@ element :
     }
     -> Program flags model msg
 element =
+    Debug.todo """
     Elm.Kernel.Browser.element
+"""
 
 
 
@@ -127,7 +131,9 @@ document :
     }
     -> Program flags model msg
 document =
+    Debug.todo """
     Elm.Kernel.Browser.document
+"""
 
 
 {-| This data specifies the `<title>` and all of the nodes that should go in
@@ -214,8 +220,9 @@ application :
     }
     -> Program flags model msg
 application =
+    Debug.todo """
     Elm.Kernel.Browser.application
-
+"""
 
 {-| All links in an [`application`](#application) create a `UrlRequest`. So
 when you click `<a href="/home">Home</a>`, it does not just navigate! It

@@ -16,6 +16,10 @@ async function* getFiles(dir) {
   }
 }
 
+function getSrcFiles(packagePath) {
+  return getFiles(path.join(packagePath, 'src'))
+}
+
 async function* asyncFlatMap(source, mapper) {
   for await (const item of source) {
     for await (const nestedItem of mapper(item)) {
@@ -229,9 +233,10 @@ async function main() {
     console.log(
       `
 
-Usage: check-kernel-imports SOURCE_DIRECTORIES ...
+Usage: check-kernel-imports PACKAGES ...
 
-check-kernel-imports checks that
+Where PACKAGES are paths to one or more elm packages. check-kernel-imports
+checks that:
   1. Use of kernel definitions match imports in elm files.
   2. Use of kernel definition in elm files match a definition in a javascipt
       file.
@@ -239,7 +244,7 @@ check-kernel-imports checks that
       file.
   4. Use of an external definition matches an import in a javascript file.
 Note that 3. is a best effort attempt. There are some missed cases and some
-false postives. Warnings will be issued for unused imports in javascript files.
+false positives. Warnings will be issued for unused imports in javascript files.
 
 Options:
       -h, --help     display this help and exit
@@ -260,16 +265,11 @@ Options:
   // keys: full elm path of call, values: array of CallLocations
   const elmCallsFromKernel = new Map();
 
-  // Add some definitions from elm/json
-  elmDefinitions.add("Elm.Kernel.Json.run");
-  elmDefinitions.add("Elm.Kernel.Json.wrap");
-  elmDefinitions.add("Elm.Kernel.Json.unwrap");
-  elmDefinitions.add("Elm.Kernel.Json.errorToString");
 
   const allErrors = [];
   const allWarnings = [];
 
-  for await (const f of asyncFlatMap(sourceDirs, getFiles)) {
+  for await (const f of asyncFlatMap(sourceDirs, getSrcFiles)) {
     const extname = path.extname(f);
     if (extname === ".elm") {
       const { errors, warnings } = await processElmFile(f, elmDefinitions, kernelCalls);

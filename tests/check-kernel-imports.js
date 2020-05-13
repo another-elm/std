@@ -4,6 +4,29 @@ const path = require("path");
 const fs = require("fs");
 const readline = require("readline");
 
+const HELP = `
+
+Usage: check-kernel-imports PACKAGES ...
+
+Where PACKAGES are paths to one or more elm packages. check-kernel-imports
+checks that:
+1. Use of kernel definitions match imports in elm files.
+2. Use of kernel definition in elm files match a definition in a javascipt
+file.
+3. Use of elm definition in javascript files matches definition in an elm
+file.
+4. Use of an external definition matches an import in a javascript file.
+Note that 3. is a best effort attempt. There are some missed cases and some
+false positives. Warnings will be issued for unused imports in javascript files.
+
+Restrictions on kernel imports not checked:
+1. You cannot import an elm file from another package unless it is exposed.
+
+Options:
+-h, --help     display this help and exit
+
+`.trim();
+
 async function* getFiles(dir) {
   const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const dirent of dirents) {
@@ -17,7 +40,7 @@ async function* getFiles(dir) {
 }
 
 function getSrcFiles(packagePath) {
-  return getFiles(path.join(packagePath, 'src'))
+  return getFiles(path.join(packagePath, "src"));
 }
 
 async function* asyncFlatMap(source, mapper) {
@@ -230,27 +253,7 @@ async function main() {
   }
 
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
-    console.log(
-      `
-
-Usage: check-kernel-imports PACKAGES ...
-
-Where PACKAGES are paths to one or more elm packages. check-kernel-imports
-checks that:
-  1. Use of kernel definitions match imports in elm files.
-  2. Use of kernel definition in elm files match a definition in a javascipt
-      file.
-  3. Use of elm definition in javascript files matches definition in an elm
-      file.
-  4. Use of an external definition matches an import in a javascript file.
-Note that 3. is a best effort attempt. There are some missed cases and some
-false positives. Warnings will be issued for unused imports in javascript files.
-
-Options:
-      -h, --help     display this help and exit
-
-    `.trim()
-    );
+    console.log(HELP);
     process.exit(0);
   }
 
@@ -264,7 +267,6 @@ Options:
   const kernelCalls = new Map();
   // keys: full elm path of call, values: array of CallLocations
   const elmCallsFromKernel = new Map();
-
 
   const allErrors = [];
   const allWarnings = [];

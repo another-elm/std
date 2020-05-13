@@ -15,6 +15,8 @@ def is_update_needed(package_root, relevant_custom_paths):
         return True
 
     for relevant_custom_path in relevant_custom_paths:
+        if os.path.getmtime(relevant_custom_path) > last_updated_time:
+            return True
         for dirpath, _, files in os.walk(relevant_custom_path):
             if os.path.getmtime(dirpath) > last_updated_time:
                 return True

@@ -34,6 +34,8 @@ import Browser.Navigation as Navigation
 -- import Debugger.Main
 import Dict
 import Elm.Kernel.Browser
+import Elm.Kernel.Basics
+import Elm.Kernel.Platform
 import Html exposing (Html)
 import Url
 import Json.Decode exposing (Decoder)

@@ -8,7 +8,7 @@ import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
-import Platform exposing (Task, ProcessId, initializeHelperFunctions)
+import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
 import Platform.Raw.Channel as RawChannel exposing (recv)
@@ -92,6 +92,11 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 
   return { ports: Object.assign({}, _Platform_ports) };
 });
+
+function _Platform_browserifiedSendToApp(sendToApp) {
+  return (msg, updateMetadata) =>
+    sendToApp(msg)(updateMetadata === undefined ? __Platform_AsyncUpdate : __Platform_SyncUpdate);
+}
 
 // EFFECT MANAGERS (not supported)
 

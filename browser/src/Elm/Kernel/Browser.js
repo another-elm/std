@@ -4,10 +4,9 @@ import Basics exposing (never)
 import Browser exposing (Internal, External)
 import Browser.Dom as Dom exposing (NotFound)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.Debugger exposing (element, document)
 import Elm.Kernel.Json exposing (runHelp)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (initialize)
+import Elm.Kernel.Platform exposing (initialize, browserifiedSendToApp)
 import Elm.Kernel.Scheduler exposing (binding)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp, virtualize)
@@ -33,12 +32,13 @@ const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initial
 	var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
 	//*/
 	var currNode = __VirtualDom_virtualize(domNode);
+	const eventNode = __Platform_browserifiedSendToApp(sendToApp);
 
 	return _Browser_makeAnimator(initialModel, function(model)
 	{
 		var nextNode = view(model);
 		var patches = __VirtualDom_diff(currNode, nextNode);
-		domNode = __VirtualDom_applyPatches(domNode, currNode, patches, sendToApp);
+		domNode = __VirtualDom_applyPatches(domNode, currNode, patches, eventNode);
 		currNode = nextNode;
 	});
 };
@@ -46,9 +46,7 @@ const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initial
 // DOCUMENT
 
 
-var __Debugger_document;
-
-var _Browser_document = __Debugger_document || F4(function(impl, flagDecoder, debugMetadata, args)
+var _Browser_document = F4(function(impl, flagDecoder, debugMetadata, args)
 {
 	return __Platform_initialize(
 		flagDecoder,

@@ -15,14 +15,17 @@ const _Debug_log__PROD = F2(function (tag, value) {
 
 const _Debug_log__DEBUG = (tag) => {
   const p = Promise.reject(new Error("you must pass this function two arguments!"));
-  return (value) =>   {
-    const log = typeof scope !== 'undefined' && Object.prototype.hasOwnProperty.call(scope, `_debugLog`) ? scope._debugLog : console.log;
+  return (value) => {
+    const log =
+      typeof scope !== "undefined" && Object.prototype.hasOwnProperty.call(scope, `_debugLog`)
+        ? scope._debugLog
+        : console.log;
 
-    p.catch(x => x);
+    p.catch((x) => x);
     log(tag + ": " + _Debug_toString(value));
     return value;
-  }
-}
+  };
+};
 
 // TODOS
 

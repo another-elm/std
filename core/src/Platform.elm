@@ -172,30 +172,30 @@ can collect these id's and functions and pass them to `resetSubscriptions`.
 setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task never
 setupEffectsChannel sendToApp2 receiver =
     let
+        processCmdTask (Task t) =
+            t
+                |> RawTask.map
+                    (\r ->
+                        case r of
+                            Ok v ->
+                                v
+
+                            Err err ->
+                                never err
+                    )
+                |> RawTask.andThen
+                    (\maybeMsg ->
+                        case maybeMsg of
+                            Just msg ->
+                                RawTask.execImpure (Impure.fromFunction (sendToApp2 msg) AsyncUpdate)
+
+                            Nothing ->
+                                RawTask.Value ()
+                    )
+
         receiveMsg : Cmd appMsg -> RawTask.Task ()
         receiveMsg cmds =
             let
-                processCmdTask (Task t) =
-                    t
-                        |> RawTask.map
-                            (\r ->
-                                case r of
-                                    Ok v ->
-                                        v
-
-                                    Err err ->
-                                        never err
-                            )
-                        |> RawTask.andThen
-                            (\maybeMsg ->
-                                case maybeMsg of
-                                    Just msg ->
-                                        RawTask.execImpure (Impure.fromFunction (sendToApp2 msg) AsyncUpdate)
-
-                                    Nothing ->
-                                        RawTask.Value ()
-                            )
-
                 cmdTask =
                     cmds
                         |> unwrapCmd
@@ -262,6 +262,7 @@ type alias InitializeHelperFunctions appMsg =
     , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
     }
 
+
 type alias StepperBuilder model appMsg =
     ImpureSendToApp appMsg -> model -> model -> Impure.Function UpdateMetadata ()
 
@@ -316,6 +317,7 @@ initializeHelperFunctions =
     { updateSubListeners = updateSubListeners
     , setupEffectsChannel = setupEffectsChannel
     }
+
 
 
 -- Kernel interop IMPORTS --

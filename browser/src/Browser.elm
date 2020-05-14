@@ -36,6 +36,8 @@ import Dict
 import Elm.Kernel.Browser
 import Html exposing (Html)
 import Url
+import Json.Decode exposing (Decoder)
+import Json.Encode as Encode
 
 
 
@@ -67,14 +69,12 @@ sandbox :
     }
     -> Program () model msg
 sandbox impl =
-    Debug.todo ""
-    -- Elm.Kernel.Browser.element
-    --     { init = \() -> ( impl.init, Cmd.none )
-    --     , view = impl.view
-    --     , update = \msg model -> ( impl.update msg model, Cmd.none )
-    --     , subscriptions = \_ -> Sub.none
-    --     }
-
+    element
+        { init = \() -> ( impl.init, Cmd.none )
+        , view = impl.view
+        , update = \msg model -> ( impl.update msg model, Cmd.none )
+        , subscriptions = \_ -> Sub.none
+        }
 
 
 
@@ -110,10 +110,18 @@ element :
     , subscriptions : model -> Sub msg
     }
     -> Program flags model msg
-element =
-    Debug.todo """
-    Elm.Kernel.Browser.element
-"""
+element impl =
+    makeProgram
+        (\flagsDecoder _ args ->
+            initialize
+                flagsDecoder
+                args
+                { init = impl.init
+                , update = impl.update
+                , subscriptions = impl.subscriptions
+                }
+                (elementStepperBuilder impl.view args)
+        )
 
 
 
@@ -294,3 +302,65 @@ for figuring that out!
 type UrlRequest
     = Internal Url.Url
     | External String
+
+
+
+-- Kernel interop TYPES
+
+
+type alias Impl flags model msg =
+    { init : flags -> ( model, Cmd msg )
+    , update : msg -> model -> ( model, Cmd msg )
+    , subscriptions : model -> Sub msg
+    }
+
+
+type alias StepperBuilder model appMsg =
+    ImpureSendToApp appMsg -> model -> model -> UpdateMetadata -> ()
+
+
+type alias ActualProgram flags =
+    Decoder flags
+    -> DebugMetadata
+    -> RawJsObject
+    -> RawJsObject
+
+
+type alias ImpureSendToApp msg =
+    msg -> UpdateMetadata -> ()
+
+
+type alias DebugMetadata =
+    Encode.Value
+
+
+type RawJsObject
+    = RawJsObject RawJsObject
+
+
+type UpdateMetadata
+    = SyncUpdate
+    | AsyncUpdate
+
+
+
+-- Kernel interop
+
+
+makeProgram : ActualProgram flags -> Program flags model msg
+makeProgram =
+    Elm.Kernel.Basics.fudgeType
+
+initialize :
+    Decoder flags
+    -> RawJsObject
+    -> Impl flags model msg
+    -> StepperBuilder model msg
+    -> RawJsObject
+initialize =
+    Elm.Kernel.Platform.initialize
+
+
+elementStepperBuilder : (model -> Html msg) -> RawJsObject -> StepperBuilder model msg
+elementStepperBuilder =
+    Elm.Kernel.Browser.elementStepperBuilder

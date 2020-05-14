@@ -25,38 +25,23 @@ import Url exposing (fromString)
 // ELEMENT
 
 
-var __Debugger_element;
+const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initialModel) => {
+	/**__PROD/
+	var domNode = args['node'];
+	//*/
+	/**__DEBUG/
+	var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
+	//*/
+	var currNode = __VirtualDom_virtualize(domNode);
 
-var _Browser_element = __Debugger_element || F4(function(impl, flagDecoder, debugMetadata, args)
-{
-	return __Platform_initialize(
-		flagDecoder,
-		args,
-		impl.__$init,
-		impl.__$update,
-		impl.__$subscriptions,
-		function(sendToApp, initialModel) {
-			var view = impl.__$view;
-			/**__PROD/
-			var domNode = args['node'];
-			//*/
-			/**__DEBUG/
-			var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
-			//*/
-			var currNode = __VirtualDom_virtualize(domNode);
-
-			return _Browser_makeAnimator(initialModel, function(model)
-			{
-				var nextNode = view(model);
-				var patches = __VirtualDom_diff(currNode, nextNode);
-				domNode = __VirtualDom_applyPatches(domNode, currNode, patches, sendToApp);
-				currNode = nextNode;
-			});
-		}
-	);
-});
-
-
+	return _Browser_makeAnimator(initialModel, function(model)
+	{
+		var nextNode = view(model);
+		var patches = __VirtualDom_diff(currNode, nextNode);
+		domNode = __VirtualDom_applyPatches(domNode, currNode, patches, sendToApp);
+		currNode = nextNode;
+	});
+};
 
 // DOCUMENT
 

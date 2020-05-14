@@ -33,7 +33,7 @@ module Browser exposing
 import Browser.Navigation as Navigation
 -- import Debugger.Main
 import Dict
--- import Elm.Kernel.Browser
+import Elm.Kernel.Browser
 import Html exposing (Html)
 import Url
 

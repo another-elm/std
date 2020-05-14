@@ -8,13 +8,14 @@ import Elm.Kernel.Debugger exposing (element, document)
 import Elm.Kernel.Json exposing (runHelp)
 import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Platform exposing (initialize)
-import Platform.Scheduler as Scheduler exposing (binding, fail, rawSpawn, succeed, spawn)
+import Elm.Kernel.Scheduler exposing (binding)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp, virtualize)
 import Json.Decode as Json exposing (map)
 import Maybe exposing (Just, Nothing)
 import Result exposing (isOk)
-import Task exposing (perform)
+import Task exposing (perform, succeed, fail)
+import Process exposing (spawn)
 import Url exposing (fromString)
 
 */
@@ -222,9 +223,9 @@ var _Browser_window = typeof window !== 'undefined' ? window : _Browser_fakeNode
 
 var _Browser_on = F3(function(node, eventName, sendToSelf)
 {
-	return __Scheduler_spawn(__Scheduler_binding(() => () =>
+	return __Process_spawn(__Scheduler_binding(() => () =>
 	{
-		function handler(event)	{ __Scheduler_rawSpawn(sendToSelf(event)); }
+		function handler(event)	{ rawSpawn(sendToSelf(event)); }
 		node.addEventListener(eventName, handler, __VirtualDom_passiveSupported && { passive: true });
 		return function() { node.removeEventListener(eventName, handler); };
 	}));
@@ -267,7 +268,7 @@ function _Browser_rAF()
 	return __Scheduler_binding((callback) => () =>
 	{
 		var id = _Browser_requestAnimationFrame(function() {
-			callback(__Scheduler_succeed(Date.now()));
+			callback(__Task_succeed(Date.now()));
 		});
 
 		return function() {
@@ -281,7 +282,7 @@ function _Browser_now()
 {
 	return __Scheduler_binding((callback) => () =>
 	{
-		callback(__Scheduler_succeed(Date.now()));
+		callback(__Task_succeed(Date.now()));
 	});
 }
 
@@ -297,8 +298,8 @@ function _Browser_withNode(id, doStuff)
 		_Browser_requestAnimationFrame(function() {
 			var node = document.getElementById(id);
 			callback(node
-				? __Scheduler_succeed(doStuff(node))
-				: __Scheduler_fail(__Dom_NotFound(id))
+				? __Task_succeed(doStuff(node))
+				: __Task_fail(__Dom_NotFound(id))
 			);
 		});
 	});
@@ -310,7 +311,7 @@ function _Browser_withWindow(doStuff)
 	return __Scheduler_binding((callback) => () =>
 	{
 		_Browser_requestAnimationFrame(function() {
-			callback(__Scheduler_succeed(doStuff()));
+			callback(__Task_succeed(doStuff()));
 		});
 	});
 }

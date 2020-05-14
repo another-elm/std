@@ -70,7 +70,7 @@ Hockney explores the history of _perspective_ in art. Really interesting!
 
 -}
 
--- import Elm.Kernel.Browser
+import Elm.Kernel.Browser
 import Task exposing (Task)
 
 
@@ -98,7 +98,7 @@ log the failure with whatever error reporting system you use.
 -}
 focus : String -> Task Error ()
 focus =
-  Debug.todo "" --     Elm.Kernel.Browser.call "focus"
+      Elm.Kernel.Browser.call "focus"
 
 
 {-| Find a DOM node by `id` and make it lose focus. So if you wanted a node
@@ -121,7 +121,7 @@ log the failure with whatever error reporting system you use.
 -}
 blur : String -> Task Error ()
 blur =
-  Debug.todo "" --     Elm.Kernel.Browser.call "blur"
+      Elm.Kernel.Browser.call "blur"
 
 
 
@@ -150,7 +150,7 @@ viewport.
 -}
 getViewport : Task x Viewport
 getViewport =
-  Debug.todo "" --     Elm.Kernel.Browser.withWindow Elm.Kernel.Browser.getViewport
+      Elm.Kernel.Browser.withWindow Elm.Kernel.Browser.getViewport
 
 
 {-| All the information about the current viewport.
@@ -218,7 +218,7 @@ API improvements!
 -}
 getViewportOf : String -> Task Error Viewport
 getViewportOf =
-  Debug.todo "" --     Elm.Kernel.Browser.getViewportOf
+      Elm.Kernel.Browser.getViewportOf
 
 
 
@@ -247,7 +247,7 @@ and want people to start at the top!
 -}
 setViewport : Float -> Float -> Task x ()
 setViewport =
-  Debug.todo "" --     Elm.Kernel.Browser.setViewport
+      Elm.Kernel.Browser.setViewport
 
 
 {-| Change the `x` and `y` offset of a DOM node&rsquo;s viewport by ID. This
@@ -283,7 +283,7 @@ somewhere!
 -}
 setViewportOf : String -> Float -> Float -> Task Error ()
 setViewportOf =
-  Debug.todo "" --     Elm.Kernel.Browser.setViewportOf
+      Elm.Kernel.Browser.setViewportOf
 
 
 
@@ -355,7 +355,7 @@ element in a `<div>` that adds the spacing. Just something to be aware of!
 -}
 getElement : String -> Task Error Element
 getElement =
-  Debug.todo "" --     Elm.Kernel.Browser.getElement
+      Elm.Kernel.Browser.getElement
 
 
 {-| A bunch of information about the position and size of an element relative

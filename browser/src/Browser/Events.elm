@@ -39,7 +39,7 @@ If there is something else you need, use [ports] to do it in JavaScript!
 
 -- import Browser.AnimationManager as AM
 import Dict
--- import Elm.Kernel.Browser
+import Elm.Kernel.Browser
 import Json.Decode as Decode
 import Process
 import Task exposing (Task)
@@ -223,7 +223,7 @@ different tab or window. When the user looks away, you may want to:
 onVisibilityChange : (Visibility -> msg) -> Sub msg
 onVisibilityChange func =
   let
-    info = Debug.todo "" -- Elm.Kernel.Browser.visibilityInfo ()
+    info = Elm.Kernel.Browser.visibilityInfo ()
   in
   on Document info.change <|
     Decode.map (withHidden func) <|
@@ -292,7 +292,7 @@ type alias Event =
 --   let
 --     toMessage ( subKey, MySub node name decoder ) =
 --       if subKey == key then
---         Debug.todo "" -- Elm.Kernel.Browser.decodeEvent decoder event
+--         Elm.Kernel.Browser.decodeEvent decoder event
 --       else
 --         Nothing
 

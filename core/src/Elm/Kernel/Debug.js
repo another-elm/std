@@ -280,6 +280,16 @@ Effect modules are not supported, if you are using elm/* libraries you will need
       return function () {
         throw new Error(`A process has been added to queue but it is already in the queue!.`);
       };
+
+    case "channelIdNotRegistered":
+      return function () {
+        throw new Error(`Trying to send to a channel that has not actually been created!.`);
+      };
+
+    case "alreadyLoaded":
+      return function () {
+        throw new Error(`Trying to setup an init task after init has finished!.`);
+      };
   }
   throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
 }

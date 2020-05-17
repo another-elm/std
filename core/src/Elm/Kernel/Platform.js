@@ -25,8 +25,8 @@ let _Platform_effectDispatchInProgress = false;
 
 let _Platform_runAfterLoadQueue = [];
 
-const _Platform_subscriptionStates = new Map();
 let _Platform_subscriptionProcessIds = 0;
+let _Platform_runtimeCount = 0;
 
 // INITIALIZE A PROGRAM
 
@@ -42,6 +42,20 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
       __Debug_crash(2);
     }
   }
+
+  const sendToApp = F2((msg, viewMetadata) => {
+    const updateValue = A2(impl.__$update, msg, model);
+    model = updateValue.a;
+    A2(stepper, model, viewMetadata);
+    dispatch(model, updateValue.b);
+  });
+
+  const runtimeId = {
+    __$id: _Platform_runtimeCount,
+    __sendToApp: sendToApp,
+    __subscriptionListeners: new Map(),
+    __subscriptionChannels: new Map(),
+  };
 
   const cmdChannel = __Channel_rawUnbounded();
 
@@ -64,21 +78,14 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
       }
 
       A2(__Channel_rawSend, cmdChannel, fx.__cmds);
-      __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(sendToApp);
+      __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(runtimeId);
     }
   };
 
-  const sendToApp = F2((msg, viewMetadata) => {
-    const updateValue = A2(impl.__$update, msg, model);
-    model = updateValue.a;
-    A2(stepper, model, viewMetadata);
-    dispatch(model, updateValue.b);
-  });
-
   for (const f of _Platform_runAfterLoadQueue) {
-    f();
+    f(runtimeId);
   }
-  _Platform_runAfterLoadQueue = null;
+  _Platform_runAfterLoadQueue.loaded = true;
 
   __RawScheduler_rawSpawn(
     A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
@@ -90,7 +97,13 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 
   dispatch(model, initValue.b);
 
-  return { ports: Object.assign({}, _Platform_ports) };
+  const ports = {};
+
+  for (const [name, p] of Object.entries(_Platform_ports)) {
+    ports[name] = p(runtimeId);
+  }
+
+  return { ports };
 });
 
 function _Platform_browserifiedSendToApp(sendToApp) {
@@ -134,7 +147,7 @@ function _Platform_outgoingPort(name, converter) {
     }
   };
 
-  _Platform_ports[name] = { subscribe, unsubscribe };
+  _Platform_ports[name] = () => ({ subscribe, unsubscribe });
   return (payload) =>
     _Platform_command(
       __Scheduler_execImpure((_) => {
@@ -149,63 +162,85 @@ function _Platform_outgoingPort(name, converter) {
 
 function _Platform_incomingPort(name, converter) {
   _Platform_checkPortName(name);
+  const subId = _Platform_createSubscriptionId();
 
-  const key = _Platform_createSubProcess((_) => __Utils_Tuple0);
+  _Platform_ports[name] = (runtimeId) => {
+    function send(incomingValue) {
+      var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
-  function send(incomingValue) {
-    var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
+      if (!__Result_isOk(result)) {
+        __Debug_crash(4, name, result.a);
+      }
 
-    if (!__Result_isOk(result)) {
-      __Debug_crash(4, name, result.a);
+      var value = result.a;
+      A3(_Platform_subscriptionEvent, subId, runtimeId, value);
     }
 
-    var value = result.a;
-    key.send(value);
-  }
+    return { send };
+  };
 
-  _Platform_ports[name] = { send };
-
-  return _Platform_subscription(key);
+  return _Platform_subscription(subId);
 }
 
 // FUNCTIONS (to be used by kernel code)
 
-const _Platform_createSubProcess = (onSubUpdate) => {
-  const channel = __Channel_rawUnbounded();
+const _Platform_createSubscriptionId = () => {
+  const newSubscriptionProcessId = _Platform_subscriptionProcessIds;
+  _Platform_subscriptionProcessIds++;
   const key = {
-    id: _Platform_subscriptionProcessIds++,
-    send(msg) {
-      A2(__Channel_rawSend, channel, msg);
+    __$id: newSubscriptionProcessId,
+    __$children: new Set(),
+  };
+
+  const subId = {
+    __$key: key,
+    __$onSubUpdate: (_runtimeId, _listenerCount) => {},
+    __$subKey(onSubUpdate) {
+      return {
+        __$key: key,
+        __$onSubUpdate: onSubUpdate,
+      };
     },
   };
-  const msgHandler = (hcst) =>
-    __RawTask_execImpure((_) => {
-      const subscriptionState = _Platform_subscriptionStates.get(key);
-      if (__Basics_isDebug && subscriptionState === undefined) {
-        __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
-      }
-      // TODO(harry) sendToApp via spawning a Task
-      for (const sendToApp of subscriptionState.__$listeners) {
-        sendToApp(hcst);
-      }
-      return __Utils_Tuple0;
-    });
 
-  const onSubEffects = (_) =>
-    A2(__RawTask_andThen, onSubEffects, A2(__RawChannel_recv, msgHandler, channel));
+  _Platform_runAfterLoad((runtimeId) => {
+    const channel = __Channel_rawUnbounded();
 
-  _Platform_subscriptionStates.set(key, {
-    __$listeners: [],
-    __$onSubUpdate: onSubUpdate,
+    const onSubEffects = (_) =>
+      A2(
+        __RawTask_andThen,
+        onSubEffects,
+        A2(__RawChannel_recv, (f) => f, channel)
+      );
+
+    runtimeId.__subscriptionListeners.set(subId, new Map());
+    runtimeId.__subscriptionChannels.set(key, channel);
+    __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0));
   });
-  _Platform_runAfterLoad(() => __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0)));
 
-  return key;
+  return subId;
 };
 
+const _Platform_subscriptionEvent = F3((subId, runtime, msg) => {
+  A2(
+    __Channel_rawSend,
+    runtime.__subscriptionChannels.get(subId.__$key),
+    __RawTask_execImpure((_) => {
+      // TODO(harry) sendToApp via spawning a Task
+      const listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
+      for (const listeners of listenerGroup.values()) {
+        for (const listener of listeners) {
+          listener(msg);
+        }
+      }
+      return __Utils_Tuple0;
+    })
+  );
+});
+
 const _Platform_runAfterLoad = (f) => {
-  if (_Platform_runAfterLoadQueue == null) {
-    f();
+  if (_Platform_runAfterLoadQueue.loaded) {
+    __Debug_crash(12, __Debug_runtimeCrashReason("alreadyLoaded"));
   } else {
     _Platform_runAfterLoadQueue.push(f);
   }
@@ -213,24 +248,42 @@ const _Platform_runAfterLoad = (f) => {
 
 // FUNCTIONS (to be used by elm code)
 
-const _Platform_resetSubscriptions = (newSubs) => {
-  for (const subState of _Platform_subscriptionStates.values()) {
-    subState.__$listeners.length = 0;
+const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
+  for (const listenerGroup of runtime.__subscriptionListeners.values()) {
+    for (const listeners of listenerGroup.values()) {
+      listeners.length = 0;
+    }
   }
   for (const tuple of __List_toArray(newSubs)) {
-    const key = tuple.a;
+    const subId = tuple.a;
     const sendToApp = tuple.b;
-    const subState = _Platform_subscriptionStates.get(key);
-    if (__Basics_isDebug && subState.__$listeners === undefined) {
-      __Debug_crash(12, __Debug_runtimeCrashReason("subscriptionProcessMissing"), key && key.id);
+    let listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
+    if (listenerGroup === undefined) {
+      listenerGroup = new Map();
+      runtime.__subscriptionListeners.set(subId.__$key, listenerGroup);
     }
-    subState.__$listeners.push(sendToApp);
+    let listeners = listenerGroup.get(subId);
+    if (listeners === undefined) {
+      listeners = [];
+      listenerGroup.set(subId, listeners);
+    }
+    listeners.push(sendToApp);
   }
-  for (const subState of _Platform_subscriptionStates.values()) {
-    subState.__$onSubUpdate(subState.__$listeners.length);
+  for (const [key, listenerGroup] of runtime.__subscriptionListeners.entries()) {
+    for (const [subId, listeners] of listenerGroup.entries()) {
+      subId.__$onSubUpdate(runtime, listeners.length);
+      if (listeners.length === 0) {
+        listenerGroup.delete(subId);
+      }
+    }
+    if (listenerGroup.size === 0) {
+      runtime.__subscriptionListeners.delete(key);
+    }
   }
   return __Utils_Tuple0;
 };
+
+const _Platform_sendToAppFunction = (runtimeId) => runtimeId.__sendToApp;
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 

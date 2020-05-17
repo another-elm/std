@@ -227,28 +227,32 @@ setupEffectsChannel sendToApp2 receiver =
         |> RawTask.andThen dispatchTask
 
 
-updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+updateSubListeners : Sub appMsg -> Impure.Function RuntimeId ()
 updateSubListeners subBag =
     Impure.toFunction
-        (\sendToAppFunc ->
+        (\runtimeId ->
             subBag
                 |> unwrapSub
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate
+                            sendToAppAction runtimeId (tagger v) AsyncUpdate
                         )
                     )
-                |> resetSubscriptionsAction
+                |> resetSubscriptionsAction runtimeId
         )
 
 
-resetSubscriptionsAction : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
-resetSubscriptionsAction updateList =
+resetSubscriptionsAction : RuntimeId -> List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
+resetSubscriptionsAction runtimeId updateList =
     Impure.fromFunction
-        resetSubscriptions
+        (resetSubscriptions runtimeId)
         (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
 
+
+sendToAppAction : RuntimeId -> msg -> UpdateMetadata -> Impure.Action ()
+sendToAppAction rt msg meta =
+    Impure.fromFunction (sendToAppFunction rt msg) meta
 
 
 -- Kernel interop TYPES
@@ -259,7 +263,7 @@ code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions appMsg =
     { setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
-    , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+    , updateSubListeners : Sub appMsg -> Impure.Function RuntimeId ()
     }
 
 
@@ -287,6 +291,9 @@ type alias DebugMetadata =
 
 type RawJsObject
     = RawJsObject RawJsObject
+
+
+type RuntimeId = RuntimeId
 
 
 {-| AsyncUpdate is default I think
@@ -348,6 +355,11 @@ unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : Impure.Function (List ( RawSub.Id, Impure.Function RawSub.HiddenConvertedSubType () )) ()
+resetSubscriptions : RuntimeId -> Impure.Function (List ( RawSub.Id, Impure.Function RawSub.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
+
+
+sendToAppFunction : RuntimeId -> msg -> Impure.Function UpdateMetadata ()
+sendToAppFunction =
+    Elm.Kernel.Platform.sendToAppFunction

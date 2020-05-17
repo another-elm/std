@@ -2,7 +2,7 @@
 
 import Time exposing (customZone, Name)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (createSubProcess)
+import Elm.Kernel.Platform exposing (createSubscriptionId, subscriptionEvent)
 import Platform.Scheduler as Scheduler exposing (execImpure)
 import Elm.Kernel.Utils exposing (Tuple0)
 
@@ -11,6 +11,8 @@ import Elm.Kernel.Utils exposing (Tuple0)
 function _Time_rawNow() {
   return Date.now();
 }
+
+const _Time_key = __Platform_createSubscriptionId();
 
 /**
  *
@@ -22,32 +24,39 @@ function _Time_setInterval(interval) {
   // TODO(harry): consider floating point rounding issues.
   let handle = null;
 
+  const runtimesListening = new Set();
+
   const restart = () => {
     const now = _Time_rawNow();
     handle = setTimeout(() => {
       handle = null;
-      key.send(_Time_rawNow());
+      const now = _Time_rawNow();
+      for (const runtime of runtimesListening) {
+        A3(__Platform_subscriptionEvent, _Time_key, runtime, now);
+      }
     }, interval - (now % interval));
   };
 
   // Cancel non-subscribed-to timeouts. Start subscribed-to
   // previously-cancelled timeouts.
-  const onSubReset = (n) => {
+  const onSubReset = (runtimeId, n) => {
     if (n === 0) {
+      runtimesListening.delete(runtimeId);
+    } else {
+      runtimesListening.add(runtimeId);
+    }
+    if (runtimesListening.size === 0) {
       if (handle !== null) {
         clearTimeout(handle);
+        handle = null;
       }
-    } else {
-      if (handle === null) {
-        restart();
-      }
+    } else if (handle === null) {
+      restart();
     }
     return __Utils_Tuple0;
   };
 
-  const key = __Platform_createSubProcess(onSubReset);
-
-  return key;
+  return _Time_key.__$subKey(onSubReset);
 }
 
 function _Time_here() {

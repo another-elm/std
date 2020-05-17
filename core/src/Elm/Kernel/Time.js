@@ -2,7 +2,7 @@
 
 import Time exposing (customZone, Name)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (createSubscriptionId, subscriptionEvent)
+import Elm.Kernel.Platform exposing (createSubscriptionId, subscriptionEvent, subscriptionWithUpdater)
 import Platform.Scheduler as Scheduler exposing (execImpure)
 import Elm.Kernel.Utils exposing (Tuple0)
 
@@ -56,7 +56,7 @@ function _Time_setInterval(interval) {
     return __Utils_Tuple0;
   };
 
-  return _Time_key.__$subKey(onSubReset);
+  return __Platform_subscriptionWithUpdater(_Time_key)(onSubReset);
 }
 
 function _Time_here() {

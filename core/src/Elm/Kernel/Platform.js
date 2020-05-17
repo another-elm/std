@@ -25,7 +25,7 @@ let _Platform_effectDispatchInProgress = false;
 
 let _Platform_runAfterLoadQueue = [];
 
-let _Platform_subscriptionProcessIds = 0;
+const _Platform_onSubUpdateFunctions = new Map();
 let _Platform_runtimeCount = 0;
 
 // INITIALIZE A PROGRAM
@@ -184,24 +184,19 @@ function _Platform_incomingPort(name, converter) {
 
 // FUNCTIONS (to be used by kernel code)
 
+/**
+ * Create a new subscription id. Such ids can be used with the subscription
+ * function to create `Sub`s.
+ */
 const _Platform_createSubscriptionId = () => {
-  const newSubscriptionProcessId = _Platform_subscriptionProcessIds;
-  _Platform_subscriptionProcessIds++;
-  const key = {
-    __$id: newSubscriptionProcessId,
-    __$children: new Set(),
-  };
+  const key = Symbol("subscription key");
+  const group = Symbol("default subscription group");
 
   const subId = {
     __$key: key,
-    __$onSubUpdate: (_runtimeId, _listenerCount) => {},
-    __$subKey(onSubUpdate) {
-      return {
-        __$key: key,
-        __$onSubUpdate: onSubUpdate,
-      };
-    },
+    __$group: group,
   };
+  _Platform_onSubUpdateFunctions.set(group, (_runtimeId, _listenerCount) => {});
 
   _Platform_runAfterLoad((runtimeId) => {
     const channel = __Channel_rawUnbounded();
@@ -213,12 +208,20 @@ const _Platform_createSubscriptionId = () => {
         A2(__RawChannel_recv, (f) => f, channel)
       );
 
-    runtimeId.__subscriptionListeners.set(subId, new Map());
     runtimeId.__subscriptionChannels.set(key, channel);
     __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0));
   });
 
   return subId;
+};
+
+const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
+  const group = Symbol("new subscription group");
+  _Platform_onSubUpdateFunctions.set(group, updater);
+  return {
+    __$key: subId.__$key,
+    __$group: group,
+  };
 };
 
 const _Platform_subscriptionEvent = F3((subId, runtime, msg) => {
@@ -248,6 +251,15 @@ const _Platform_runAfterLoad = (f) => {
 
 // FUNCTIONS (to be used by elm code)
 
+function _Platform_get_or_set(map, key, f) {
+  let val = map.get(key);
+  if (val === undefined) {
+    val = f();
+    map.set(key, val);
+  }
+  return val;
+}
+
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   for (const listenerGroup of runtime.__subscriptionListeners.values()) {
     for (const listeners of listenerGroup.values()) {
@@ -257,21 +269,19 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   for (const tuple of __List_toArray(newSubs)) {
     const subId = tuple.a;
     const sendToApp = tuple.b;
-    let listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
-    if (listenerGroup === undefined) {
-      listenerGroup = new Map();
-      runtime.__subscriptionListeners.set(subId.__$key, listenerGroup);
-    }
-    let listeners = listenerGroup.get(subId);
-    if (listeners === undefined) {
-      listeners = [];
-      listenerGroup.set(subId, listeners);
-    }
+    const listenerGroup = _Platform_get_or_set(
+      runtime.__subscriptionListeners,
+      subId.__$key,
+      () => new Map()
+    );
+    const listeners = _Platform_get_or_set(listenerGroup, subId, () => []);
     listeners.push(sendToApp);
   }
+  // Deletion from a Map whilst iterating is valid:
+  // https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
   for (const [key, listenerGroup] of runtime.__subscriptionListeners.entries()) {
     for (const [subId, listeners] of listenerGroup.entries()) {
-      subId.__$onSubUpdate(runtime, listeners.length);
+      _Platform_onSubUpdateFunctions.get(subId.__$group)(runtime, listeners.length);
       if (listeners.length === 0) {
         listenerGroup.delete(subId);
       }

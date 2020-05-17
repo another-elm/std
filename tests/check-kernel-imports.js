@@ -210,30 +210,33 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       const kernelCallMatch = line.substr(index).match(/_?_(\w+?)_\w+/u);
       if (kernelCallMatch === null) {
         break;
-      } else {
-        const calledModuleName = kernelCallMatch[1];
-        const kernelCall = kernelCallMatch[0];
-        if (
-          calledModuleName[0] === calledModuleName[0].toUpperCase() &&
-          !(calledModuleName[0] >= "0" && calledModuleName[0] <= "9")
-        ) {
-          if (kernelCall.startsWith("__")) {
-            // External kernel call
-            if (imports.has(kernelCall)) {
-              imports.set(kernelCall, true);
-            } else {
-              errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
-            }
+      }
+      const isComment = line.substr(0, index + kernelCallMatch.index).includes('//');
+      if (isComment) {
+        break;
+      }
+      const calledModuleName = kernelCallMatch[1];
+      const kernelCall = kernelCallMatch[0];
+      if (
+        calledModuleName[0] === calledModuleName[0].toUpperCase() &&
+        !(calledModuleName[0] >= "0" && calledModuleName[0] <= "9")
+      ) {
+        if (kernelCall.startsWith("__")) {
+          // External kernel call
+          if (imports.has(kernelCall)) {
+            imports.set(kernelCall, true);
           } else {
-            if (calledModuleName !== moduleName) {
-              errors.push(
-                `Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
-              );
-            }
+            errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+          }
+        } else {
+          if (calledModuleName !== moduleName) {
+            errors.push(
+              `Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
+            );
           }
         }
-        index += kernelCallMatch.index + kernelCallMatch[0].length;
       }
+      index += kernelCallMatch.index + kernelCallMatch[0].length;
     }
   }
 

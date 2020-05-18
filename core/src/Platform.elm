@@ -42,9 +42,9 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
+import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Sub as RawSub
 import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
@@ -169,8 +169,8 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task never
-setupEffectsChannel sendToApp2 receiver =
+setupEffectsChannel : Effect.RuntimeId -> Channel.Receiver (Cmd appMsg) -> RawTask.Task never
+setupEffectsChannel runtimeId receiver =
     let
         processCmdTask (Task t) =
             t
@@ -187,7 +187,7 @@ setupEffectsChannel sendToApp2 receiver =
                     (\maybeMsg ->
                         case maybeMsg of
                             Just msg ->
-                                RawTask.execImpure (Impure.fromFunction (sendToApp2 msg) AsyncUpdate)
+                                RawTask.execImpure (sendToAppAction runtimeId msg AsyncUpdate)
 
                             Nothing ->
                                 RawTask.Value ()
@@ -199,7 +199,7 @@ setupEffectsChannel sendToApp2 receiver =
                 cmdTask =
                     cmds
                         |> unwrapCmd
-                        |> List.map processCmdTask
+                        |> List.map (\t -> processCmdTask (t runtimeId))
                         |> List.map RawScheduler.spawn
                         |> List.foldr
                             (\curr accTask ->
@@ -227,7 +227,7 @@ setupEffectsChannel sendToApp2 receiver =
         |> RawTask.andThen dispatchTask
 
 
-updateSubListeners : Sub appMsg -> Impure.Function RuntimeId ()
+updateSubListeners : Sub appMsg -> Impure.Function Effect.RuntimeId ()
 updateSubListeners subBag =
     Impure.toFunction
         (\runtimeId ->
@@ -243,16 +243,17 @@ updateSubListeners subBag =
         )
 
 
-resetSubscriptionsAction : RuntimeId -> List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
+resetSubscriptionsAction : Effect.RuntimeId -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
 resetSubscriptionsAction runtimeId updateList =
     Impure.fromFunction
         (resetSubscriptions runtimeId)
         (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
 
 
-sendToAppAction : RuntimeId -> msg -> UpdateMetadata -> Impure.Action ()
+sendToAppAction : Effect.RuntimeId -> msg -> UpdateMetadata -> Impure.Action ()
 sendToAppAction rt msg meta =
     Impure.fromFunction (sendToAppFunction rt msg) meta
+
 
 
 -- Kernel interop TYPES
@@ -262,8 +263,8 @@ sendToAppAction rt msg meta =
 code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions appMsg =
-    { setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
-    , updateSubListeners : Sub appMsg -> Impure.Function RuntimeId ()
+    { setupEffectsChannel : Effect.RuntimeId -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
+    , updateSubListeners : Sub appMsg -> Impure.Function Effect.RuntimeId ()
     }
 
 
@@ -291,9 +292,6 @@ type alias DebugMetadata =
 
 type RawJsObject
     = RawJsObject RawJsObject
-
-
-type RuntimeId = RuntimeId
 
 
 {-| AsyncUpdate is default I think
@@ -345,21 +343,21 @@ makeProgram =
     Elm.Kernel.Basics.fudgeType
 
 
-unwrapCmd : Cmd a -> List (Task Never (Maybe msg))
+unwrapCmd : Cmd a -> List (Effect.RuntimeId -> Task Never (Maybe msg))
 unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-unwrapSub : Sub a -> List ( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )
+unwrapSub : Sub a -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> msg )
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : RuntimeId -> Impure.Function (List ( RawSub.Id, Impure.Function RawSub.HiddenConvertedSubType () )) ()
+resetSubscriptions : Effect.RuntimeId -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToAppFunction : RuntimeId -> msg -> Impure.Function UpdateMetadata ()
+sendToAppFunction : Effect.RuntimeId -> msg -> Impure.Function UpdateMetadata ()
 sendToAppFunction =
     Elm.Kernel.Platform.sendToAppFunction

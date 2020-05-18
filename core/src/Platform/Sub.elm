@@ -28,7 +28,7 @@ module Platform.Sub exposing
 
 import Basics exposing (..)
 import List
-import Platform.Raw.Sub as RawSub
+import Platform.Raw.Effect as Effect
 
 
 
@@ -53,7 +53,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Sub (RawSub.RawSub msg)
+    = Sub (Effect.RawSub msg)
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -97,6 +97,6 @@ map fn (Sub data) =
         |> Sub
 
 
-getSubMapper : (a -> msg) -> ( RawSub.Id, RawSub.HiddenConvertedSubType -> a ) -> ( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )
+getSubMapper : (a -> msg) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> a ) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> msg )
 getSubMapper fn ( id, tagger ) =
     ( id, \hcst -> fn (tagger hcst) )

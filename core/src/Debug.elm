@@ -59,7 +59,6 @@ use ports for now. That will give you full access to reading and writing in the
 terminal. We may have a package in Elm for this someday, but browser
 applications are the primary focus of platform development for now.
 
-
 **ANOTHER-ELM:** The logging function by default uses `console.log`. It can be
 configured at run time like so:
 

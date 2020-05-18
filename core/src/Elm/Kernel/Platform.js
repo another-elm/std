@@ -53,6 +53,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   const runtimeId = {
     __$id: _Platform_runtimeCount,
     __sendToApp: sendToApp,
+    __outgoingPortSubs: [],
     __subscriptionListeners: new Map(),
     __subscriptionChannels: new Map(),
   };
@@ -88,7 +89,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   _Platform_runAfterLoadQueue.loaded = true;
 
   __RawScheduler_rawSpawn(
-    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, sendToApp, cmdChannel)
+    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, runtimeId, cmdChannel)
   );
 
   const initValue = impl.__$init(flagsResult.a);
@@ -132,27 +133,20 @@ function _Platform_checkPortName(name) {
 function _Platform_outgoingPort(name, converter) {
   _Platform_checkPortName(name);
 
-  let subs = [];
-
-  const subscribe = (callback) => {
-    subs.push(callback);
+  _Platform_ports[name] = (runtimeId) => {
+    const subscribe = (callback) => {
+      runtimeId.__outgoingPortSubs.push(callback);
+    };
+    const unsubscribe = (callback) => {
+      runtimeId.__outgoingPortSubs = runtimeId.__outgoingPortSubs.filter((sub) => sub !== callback);
+    };
+    return { subscribe, unsubscribe };
   };
-  const unsubscribe = (callback) => {
-    // copy subs into a new array in case unsubscribe is called within
-    // a subscribed callback
-    subs = subs.slice();
-    var index = subs.indexOf(callback);
-    if (index >= 0) {
-      subs.splice(index, 1);
-    }
-  };
-
-  _Platform_ports[name] = () => ({ subscribe, unsubscribe });
   return (payload) =>
-    _Platform_command(
+    _Platform_command((runtimeId) =>
       __Scheduler_execImpure((_) => {
         const value = __Json_unwrap(converter(payload));
-        for (const sub of subs) {
+        for (const sub of runtimeId.__outgoingPortSubs) {
           sub(value);
         }
         return __Maybe_Nothing;
@@ -299,9 +293,9 @@ const _Platform_wrapTask = (task) => __Platform_Task(task);
 
 const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
 
-// command : Platform.Task Never (Maybe msg) -> Cmd msg
-const _Platform_command = (task) => {
-  const cmdData = __List_Cons(task, __List_Nil);
+// command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
+const _Platform_command = (createTask) => {
+  const cmdData = __List_Cons(createTask, __List_Nil);
   if (__Basics_isDebug) {
     return {
       $: "Cmd",

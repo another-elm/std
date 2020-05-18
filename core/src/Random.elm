@@ -61,6 +61,7 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
@@ -976,10 +977,11 @@ generate tagger generator =
     let
         msgGen =
             map tagger generator
+
+        task =
+            seedStore (\seed -> Task.succeed (step msgGen seed))
     in
-    seedStore (\seed -> Task.succeed (step msgGen seed))
-        |> Task.map Just
-        |> command
+    command (\_ -> Task.map Just task)
 
 
 seedStore : (Seed -> Task.Task Never ( a, Seed )) -> Task.Task never a
@@ -991,7 +993,7 @@ seedStore =
         )
 
 
-command : Task.Task Never (Maybe msg) -> Cmd msg
+command : (Effect.RuntimeId -> Task.Task Never (Maybe msg)) -> Cmd msg
 command =
     Elm.Kernel.Platform.command
 

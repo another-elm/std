@@ -45,6 +45,7 @@ function _Time_setInterval(interval) {
     } else {
       runtimesListening.add(runtimeId);
     }
+
     if (runtimesListening.size === 0) {
       if (handle !== null) {
         clearTimeout(handle);
@@ -53,6 +54,7 @@ function _Time_setInterval(interval) {
     } else if (handle === null) {
       restart();
     }
+
     return __Utils_Tuple0;
   };
 

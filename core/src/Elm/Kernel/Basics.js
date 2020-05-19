@@ -31,11 +31,12 @@ const _Basics_unwrapTypeWrapper__DEBUG = (wrapped) => {
   if (entries.length !== 2) {
     __Debug_crash(12, __Debug_runtimeCrashReason("failedUnwrap"), wrapped);
   }
+
   if (entries[0][0] === "$") {
     return entries[1][1];
-  } else {
-    return entries[0][1];
   }
+
+  return entries[0][1];
 };
 
 const _Basics_unwrapTypeWrapper__PROD = (wrapped) => wrapped;

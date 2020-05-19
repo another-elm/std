@@ -20,7 +20,7 @@ const _Channel_rawUnbounded = (_) => {
   return id;
 };
 
-const _Channel_rawRecv = F2((channelId, onMsg) => {
+const _Channel_rawRecv = F2((channelId, onMessage) => {
   const channel = _Channel_channels.get(channelId);
   if (__Basics_isDebug && channel === undefined) {
     __Debug_crash(
@@ -29,14 +29,17 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
       channelId && channelId.id
     );
   }
-  const msg = channel.messages.shift();
-  if (msg !== undefined) {
-    onMsg(msg);
+
+  const message = channel.messages.shift();
+  if (message !== undefined) {
+    onMessage(message);
     return (x) => x;
   }
-  const onWake = (msg) => {
-    return onMsg(msg);
+
+  const onWake = (message) => {
+    return onMessage(message);
   };
+
   channel.wakers.add(onWake);
   return (x) => {
     channel.wakers.delete(onWake);
@@ -44,7 +47,7 @@ const _Channel_rawRecv = F2((channelId, onMsg) => {
   };
 });
 
-const _Channel_rawSend = F2((sender, msg) => {
+const _Channel_rawSend = F2((sender, message) => {
   const channel = _Channel_channels.get(sender);
   if (__Basics_isDebug && channel === undefined) {
     __Debug_crash(12, __Debug_runtimeCrashReason("channelIdNotRegistered"), sender && sender.id);
@@ -53,10 +56,11 @@ const _Channel_rawSend = F2((sender, msg) => {
   const wakerIter = channel.wakers[Symbol.iterator]();
   const { value: nextWaker, done } = wakerIter.next();
   if (done) {
-    channel.messages.push(msg);
+    channel.messages.push(message);
   } else {
     channel.wakers.delete(nextWaker);
-    nextWaker(msg);
+    nextWaker(message);
   }
+
   return __Utils_Tuple0;
 });

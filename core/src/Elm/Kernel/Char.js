@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /*
 
 import Elm.Kernel.Utils exposing (chr)

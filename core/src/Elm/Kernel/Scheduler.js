@@ -51,6 +51,7 @@ function _Scheduler_tryAbortProcess(id) {
   if (tryAbortAction !== undefined) {
     tryAbortAction();
   }
+
   return __Utils_Tuple0;
 }
 
@@ -62,17 +63,20 @@ const _Scheduler_rawEnqueue = (procId) => (rootTask) => {
       procId && procId.a && procId.a.__$id
     );
   }
+
   _Scheduler_queue.push([procId, rootTask]);
   if (_Scheduler_working) {
     return procId;
   }
+
   _Scheduler_working = true;
-  while (true) {
+  for (;;) {
     const next = _Scheduler_queue.shift();
     if (next === undefined) {
       _Scheduler_working = false;
       return procId;
     }
+
     const [newProcId, newRootTask] = next;
     if (!_Scheduler_doNotStep.has(newProcId)) {
       _Scheduler_tryAbortForProcesses.set(
@@ -93,6 +97,7 @@ const _Scheduler_delay = F2((time, value) => ({
         clearTimeout(id);
         id = null;
       }
+
       return x;
     };
   },

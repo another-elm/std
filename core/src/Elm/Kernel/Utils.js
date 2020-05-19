@@ -18,8 +18,10 @@ const _Utils_eq = (x, y) => {
     if (pair === undefined) {
       return true;
     }
+
     [x, y] = pair;
   }
+
   return false;
 };
 
@@ -32,6 +34,7 @@ function _Utils_eqHelp(x, y, depth, stack) {
     if (typeof x === "function") {
       __Debug_crash(5);
     }
+
     return false;
   }
 
@@ -48,11 +51,9 @@ function _Utils_eqHelp(x, y, depth, stack) {
       x = __Dict_toList(x);
       y = __Dict_toList(y);
     }
-  } else {
-    if (x.$ < 0) {
-      x = __Dict_toList(x);
-      y = __Dict_toList(y);
-    }
+  } else if (x.$ < 0) {
+    x = __Dict_toList(x);
+    y = __Dict_toList(y);
   }
 
   /* The compiler ensures that the elm types of x and y are the same.
@@ -63,6 +64,7 @@ function _Utils_eqHelp(x, y, depth, stack) {
       return false;
     }
   }
+
   return true;
 }
 
@@ -74,13 +76,13 @@ const _Utils_notEqual = F2(function (a, b) {
 // COMPARISONS
 
 // Code in Generate/JavaScript/Expression.hs and Basics.elm depends on the
-// particular integer values assigned to LT, EQ, and GT. Comparable types are:
+// oarticular integer values assigned to LT, EQ, and GT. Comparable types are:
 // numbers, characters, strings, lists of comparable things, and tuples of
 // comparable things.
 function _Utils_cmp(x, y, ord) {
   // Handle numbers, strings and characters in production mode.
   if (typeof x !== "object") {
-    return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
+    return x === y ? /* EQ */ 0 : x < y ? /* LT */ -1 : /* GT */ 1;
   }
 
   // Handle characters in debug mode.
@@ -97,10 +99,12 @@ function _Utils_cmp(x, y, ord) {
     if (ordA !== 0) {
       return ordA;
     }
+
     const ordB = _Utils_cmp(x.a, y.a);
     if (ordB !== 0) {
       return ordB;
     }
+
     return _Utils_cmp(x.c, y.c);
   }
 
@@ -108,20 +112,24 @@ function _Utils_cmp(x, y, ord) {
   // all the elements in one list are equal to all the elements in other list
   // but the first list is longer than the first list is greater (and visa
   // versa).
-  while (true) {
+  for (;;) {
     if (x.$ === __List_nilKey) {
       if (y.$ === __List_nilKey) {
         return 0;
-      } else {
-        return -1;
       }
-    } else if (y.$ === __List_nilKey) {
+
+      return -1;
+    }
+
+    if (y.$ === __List_nilKey) {
       return 1;
     }
+
     const ord = _Utils_cmp(x.a, y.a);
     if (ord !== 0) {
       return ord;
     }
+
     x = x.b;
     y = y.b;
   }
@@ -141,7 +149,7 @@ const _Utils_Tuple3__PROD = (a, b, c) => ({ a, b, c });
 const _Utils_Tuple3__DEBUG = (a, b, c) => ({ $: "#3", a, b, c });
 
 const _Utils_chr__PROD = (c) => c;
-const _Utils_chr__DEBUG = (c) => new String(c);
+const _Utils_chr__DEBUG = (c) => Object(c);
 
 // RECORDS
 
@@ -150,11 +158,11 @@ const _Utils_update = (oldRecord, updatedFields) => Object.assign({}, oldRecord,
 // APPEND
 
 const _Utils_ap = (xs, ys) => {
-  // append Strings
+  // Append Strings
   if (typeof xs === "string") {
     return xs + ys;
   }
 
-  // append Lists
+  // Append Lists
   return A2(__List_append, xs, ys);
 };

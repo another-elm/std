@@ -22,17 +22,17 @@ const _Platform_ports = {};
 const _Platform_effectsQueue = [];
 let _Platform_effectDispatchInProgress = false;
 
-let _Platform_runAfterLoadQueue = [];
+const _Platform_runAfterLoadQueue = [];
 
 const _Platform_onSubUpdateFunctions = new Map();
-let _Platform_runtimeCount = 0;
+const _Platform_runtimeCount = 0;
 
 // INITIALIZE A PROGRAM
 
 const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   // Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
   // Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
-  const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args["flags"] : undefined));
+  const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args.flags : undefined));
 
   if (!__Result_isOk(flagsResult)) {
     if (__Basics_isDebug) {
@@ -42,8 +42,8 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     }
   }
 
-  const sendToApp = F2((msg, viewMetadata) => {
-    const updateValue = A2(impl.__$update, msg, model);
+  const sendToApp = F2((message, viewMetadata) => {
+    const updateValue = A2(impl.__$update, message, model);
     model = updateValue.a;
     A2(stepper, model, viewMetadata);
     dispatch(model, updateValue.b);
@@ -70,7 +70,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     }
 
     _Platform_effectDispatchInProgress = true;
-    while (true) {
+    for (;;) {
       const fx = _Platform_effectsQueue.shift();
       if (fx === undefined) {
         _Platform_effectDispatchInProgress = false;
@@ -85,6 +85,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   for (const f of _Platform_runAfterLoadQueue) {
     f(runtimeId);
   }
+
   _Platform_runAfterLoadQueue.loaded = true;
 
   __RawScheduler_rawSpawn(
@@ -107,13 +108,15 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 });
 
 function _Platform_browserifiedSendToApp(sendToApp) {
-  return (msg, updateMetadata) =>
-    sendToApp(msg)(updateMetadata === undefined ? __Platform_AsyncUpdate : __Platform_SyncUpdate);
+  return (message, updateMetadata) =>
+    sendToApp(message)(
+      updateMetadata === undefined ? __Platform_AsyncUpdate : __Platform_SyncUpdate
+    );
 }
 
 // EFFECT MANAGERS (not supported)
 
-function _Platform_createManager(init, onEffects, onSelfMsg, cmdMap, subMap) {
+function _Platform_createManager(init, onEffects, onSelfMessage, cmdMap, subMap) {
   __Debug_crash(12, __Debug_runtimeCrashReason("EffectModule"));
 }
 
@@ -136,11 +139,14 @@ function _Platform_outgoingPort(name, converter) {
     const subscribe = (callback) => {
       runtimeId.__outgoingPortSubs.push(callback);
     };
+
     const unsubscribe = (callback) => {
       runtimeId.__outgoingPortSubs = runtimeId.__outgoingPortSubs.filter((sub) => sub !== callback);
     };
+
     return { subscribe, unsubscribe };
   };
+
   return (payload) =>
     _Platform_command((runtimeId) =>
       __Scheduler_execImpure((_) => {
@@ -148,6 +154,7 @@ function _Platform_outgoingPort(name, converter) {
         for (const sub of runtimeId.__outgoingPortSubs) {
           sub(value);
         }
+
         return __Maybe_Nothing;
       })
     );
@@ -159,13 +166,13 @@ function _Platform_incomingPort(name, converter) {
 
   _Platform_ports[name] = (runtimeId) => {
     function send(incomingValue) {
-      var result = A2(__Json_run, converter, __Json_wrap(incomingValue));
+      const result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
       if (!__Result_isOk(result)) {
         __Debug_crash(4, name, result.a);
       }
 
-      var value = result.a;
+      const value = result.a;
       A3(_Platform_subscriptionEvent, subId, runtimeId, value);
     }
 
@@ -209,7 +216,7 @@ const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
   };
 };
 
-const _Platform_subscriptionEvent = F3((subId, runtime, msg) => {
+const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
   A2(
     __Channel_rawSend,
     runtime.__subscriptionChannels.get(subId.__$key),
@@ -218,9 +225,10 @@ const _Platform_subscriptionEvent = F3((subId, runtime, msg) => {
       const listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
       for (const listeners of listenerGroup.values()) {
         for (const listener of listeners) {
-          listener(msg);
+          listener(message);
         }
       }
+
       return __Utils_Tuple0;
     })
   );
@@ -237,12 +245,13 @@ const _Platform_runAfterLoad = (f) => {
 // FUNCTIONS (to be used by elm code)
 
 function _Platform_get_or_set(map, key, f) {
-  let val = map.get(key);
-  if (val === undefined) {
-    val = f();
-    map.set(key, val);
+  let value = map.get(key);
+  if (value === undefined) {
+    value = f();
+    map.set(key, value);
   }
-  return val;
+
+  return value;
 }
 
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
@@ -251,6 +260,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
       listeners.length = 0;
     }
   }
+
   for (const tuple of __List_toArray(newSubs)) {
     const subId = tuple.a;
     const sendToApp = tuple.b;
@@ -262,6 +272,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
     const listeners = _Platform_get_or_set(listenerGroup, subId, () => []);
     listeners.push(sendToApp);
   }
+
   // Deletion from a Map whilst iterating is valid:
   // https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
   for (const [key, listenerGroup] of runtime.__subscriptionListeners.entries()) {
@@ -271,10 +282,12 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
         listenerGroup.delete(subId);
       }
     }
+
     if (listenerGroup.size === 0) {
       runtime.__subscriptionListeners.delete(key);
     }
   }
+
   return __Utils_Tuple0;
 };
 
@@ -293,6 +306,7 @@ const _Platform_command = (createTask) => {
       a: cmdData,
     };
   }
+
   return cmdData;
 };
 
@@ -305,6 +319,7 @@ const _Platform_subscription = (key) => (tagger) => {
       a: subData,
     };
   }
+
   return subData;
 };
 
@@ -327,36 +342,28 @@ const _Platform_valueStore = (init) => {
 
 // EXPORT ELM MODULES
 //
-// Have DEBUG and PROD versions so that we can (1) give nicer errors in
-// debug mode and (2) not pay for the bits needed for that in prod mode.
+// Have DEBUG and PROD versions so that we can (1) give nicer errors in debug
+// mode and (2) not pay for the bits needed for that in prod mode.
 //
 
-function _Platform_export__PROD(exports) {
-  scope["Elm"] ? _Platform_mergeExportsProd(scope["Elm"], exports) : (scope["Elm"] = exports);
-}
-
-function _Platform_mergeExportsProd(obj, exports) {
-  for (var name in exports) {
-    name in obj
-      ? name == "init"
-        ? __Debug_crash(6)
-        : _Platform_mergeExportsProd(obj[name], exports[name])
-      : (obj[name] = exports[name]);
+function _Platform_export(exports) {
+  if (Object.prototype.hasOwnProperty.call(scope, "Elm")) {
+    _Platform_mergeExportsProd("Elm", scope.Elm, exports);
+  } else {
+    scope.Elm = exports;
   }
 }
 
-function _Platform_export__DEBUG(exports) {
-  scope["Elm"]
-    ? _Platform_mergeExportsDebug("Elm", scope["Elm"], exports)
-    : (scope["Elm"] = exports);
-}
-
-function _Platform_mergeExportsDebug(moduleName, obj, exports) {
-  for (var name in exports) {
-    name in obj
-      ? name == "init"
-        ? __Debug_crash(6, moduleName)
-        : _Platform_mergeExportsDebug(moduleName + "." + name, obj[name], exports[name])
-      : (obj[name] = exports[name]);
+function _Platform_mergeExports(moduleName, object, exports) {
+  for (const name of Object.keys(exports)) {
+    if (Object.prototype.hasOwnProperty.call(object, name)) {
+      if (name === "init") {
+        __Debug_crash(6, moduleName);
+      } else {
+        _Platform_mergeExports(moduleName + "." + name, object[name], exports[name]);
+      }
+    } else {
+      object[name] = exports[name];
+    }
   }
 }

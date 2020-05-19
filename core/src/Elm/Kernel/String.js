@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /*
 
 import Elm.Kernel.List exposing (fromArray, toArray)
@@ -7,212 +9,224 @@ import List exposing (Nil_elm_builtin)
 
 */
 
-var _String_cons = F2(function (chr, str) {
-  return chr + str;
+const _String_cons = F2(function (chr, string) {
+  return chr + string;
 });
 
 function _String_uncons(string) {
-  var word = string.charCodeAt(0);
+  const word = string.charCodeAt(0);
   return !isNaN(word)
     ? __Maybe_Just(
-        0xd800 <= word && word <= 0xdbff
+        word >= 0xd800 && word <= 0xdbff
           ? __Utils_Tuple2(__Utils_chr(string[0] + string[1]), string.slice(2))
           : __Utils_Tuple2(__Utils_chr(string[0]), string.slice(1))
       )
     : __Maybe_Nothing;
 }
 
-var _String_append = F2(function (a, b) {
+const _String_append = F2(function (a, b) {
   return a + b;
 });
 
-function _String_length(str) {
-  return str.length;
+function _String_length(string) {
+  return string.length;
 }
 
-var _String_map = F2(function (func, string) {
-  var len = string.length;
-  var array = new Array(len);
-  var i = 0;
-  while (i < len) {
-    var word = string.charCodeAt(i);
-    if (0xd800 <= word && word <= 0xdbff) {
+const _String_map = F2(function (func, string) {
+  const length = string.length;
+  const array = new Array(length);
+  let i = 0;
+  while (i < length) {
+    const word = string.charCodeAt(i);
+    if (word >= 0xd800 && word <= 0xdbff) {
       array[i] = func(__Utils_chr(string[i] + string[i + 1]));
       i += 2;
       continue;
     }
+
     array[i] = func(__Utils_chr(string[i]));
     i++;
   }
+
   return array.join("");
 });
 
-var _String_filter = F2(function (isGood, str) {
-  var arr = [];
-  var len = str.length;
-  var i = 0;
-  while (i < len) {
-    var char = str[i];
-    var word = str.charCodeAt(i);
+const _String_filter = F2(function (isGood, string) {
+  const array = [];
+  const length = string.length;
+  let i = 0;
+  while (i < length) {
+    let char = string[i];
+    const word = string.charCodeAt(i);
     i++;
-    if (0xd800 <= word && word <= 0xdbff) {
-      char += str[i];
+    if (word >= 0xd800 && word <= 0xdbff) {
+      char += string[i];
       i++;
     }
 
     if (isGood(__Utils_chr(char))) {
-      arr.push(char);
+      array.push(char);
     }
   }
-  return arr.join("");
+
+  return array.join("");
 });
 
-function _String_reverse(str) {
-  var len = str.length;
-  var arr = new Array(len);
-  var i = 0;
-  while (i < len) {
-    var word = str.charCodeAt(i);
-    if (0xd800 <= word && word <= 0xdbff) {
-      arr[len - i] = str[i + 1];
+function _String_reverse(string) {
+  const length = string.length;
+  const array = new Array(length);
+  let i = 0;
+  while (i < length) {
+    const word = string.charCodeAt(i);
+    if (word >= 0xd800 && word <= 0xdbff) {
+      array[length - i] = string[i + 1];
       i++;
-      arr[len - i] = str[i - 1];
+      array[length - i] = string[i - 1];
       i++;
     } else {
-      arr[len - i] = str[i];
+      array[length - i] = string[i];
       i++;
     }
   }
-  return arr.join("");
+
+  return array.join("");
 }
 
-var _String_foldl = F3(function (func, state, string) {
-  var len = string.length;
-  var i = 0;
-  while (i < len) {
-    var char = string[i];
-    var word = string.charCodeAt(i);
+const _String_foldl = F3(function (func, state, string) {
+  const length = string.length;
+  let i = 0;
+  while (i < length) {
+    let char = string[i];
+    const word = string.charCodeAt(i);
     i++;
-    if (0xd800 <= word && word <= 0xdbff) {
+    if (word >= 0xd800 && word <= 0xdbff) {
       char += string[i];
       i++;
     }
+
     state = A2(func, __Utils_chr(char), state);
   }
+
   return state;
 });
 
-var _String_foldr = F3(function (func, state, string) {
-  var i = string.length;
+const _String_foldr = F3(function (func, state, string) {
+  let i = string.length;
   while (i--) {
-    var char = string[i];
-    var word = string.charCodeAt(i);
-    if (0xdc00 <= word && word <= 0xdfff) {
+    let char = string[i];
+    const word = string.charCodeAt(i);
+    if (word >= 0xdc00 && word <= 0xdfff) {
       i--;
       char = string[i] + char;
     }
+
     state = A2(func, __Utils_chr(char), state);
   }
+
   return state;
 });
 
-var _String_split = F2(function (sep, str) {
-  return str.split(sep);
+const _String_split = F2(function (sep, string) {
+  return string.split(sep);
 });
 
-var _String_join = F2(function (sep, strs) {
+const _String_join = F2(function (sep, strs) {
   return strs.join(sep);
 });
 
-var _String_slice = F3(function (start, end, str) {
-  return str.slice(start, end);
+const _String_slice = F3(function (start, end, string) {
+  return string.slice(start, end);
 });
 
-function _String_trim(str) {
-  return str.trim();
+function _String_trim(string) {
+  return string.trim();
 }
 
-function _String_trimLeft(str) {
-  return str.replace(/^\s+/, "");
+function _String_trimLeft(string) {
+  return string.replace(/^\s+/, "");
 }
 
-function _String_trimRight(str) {
-  return str.replace(/\s+$/, "");
+function _String_trimRight(string) {
+  return string.replace(/\s+$/, "");
 }
 
-function _String_words(str) {
-  return __List_fromArray(str.trim().split(/\s+/g));
+function _String_words(string) {
+  return __List_fromArray(string.trim().split(/\s+/g));
 }
 
-function _String_lines(str) {
-  return __List_fromArray(str.split(/\r\n|\r|\n/g));
+function _String_lines(string) {
+  return __List_fromArray(string.split(/\r\n|\r|\n/g));
 }
 
-function _String_toUpper(str) {
-  return str.toUpperCase();
+function _String_toUpper(string) {
+  return string.toUpperCase();
 }
 
-function _String_toLower(str) {
-  return str.toLowerCase();
+function _String_toLower(string) {
+  return string.toLowerCase();
 }
 
-var _String_any = F2(function (isGood, string) {
-  var i = string.length;
+const _String_any = F2(function (isGood, string) {
+  let i = string.length;
   while (i--) {
-    var char = string[i];
-    var word = string.charCodeAt(i);
-    if (0xdc00 <= word && word <= 0xdfff) {
+    let char = string[i];
+    const word = string.charCodeAt(i);
+    if (word >= 0xdc00 && word <= 0xdfff) {
       i--;
       char = string[i] + char;
     }
+
     if (isGood(__Utils_chr(char))) {
       return true;
     }
   }
+
   return false;
 });
 
-var _String_all = F2(function (isGood, string) {
-  var i = string.length;
+const _String_all = F2(function (isGood, string) {
+  let i = string.length;
   while (i--) {
-    var char = string[i];
-    var word = string.charCodeAt(i);
-    if (0xdc00 <= word && word <= 0xdfff) {
+    let char = string[i];
+    const word = string.charCodeAt(i);
+    if (word >= 0xdc00 && word <= 0xdfff) {
       i--;
       char = string[i] + char;
     }
+
     if (!isGood(__Utils_chr(char))) {
       return false;
     }
   }
+
   return true;
 });
 
-var _String_contains = F2(function (sub, str) {
-  return str.indexOf(sub) > -1;
+const _String_contains = F2(function (sub, string) {
+  return string.includes(sub);
 });
 
-var _String_startsWith = F2(function (sub, str) {
-  return str.indexOf(sub) === 0;
+const _String_startsWith = F2(function (sub, string) {
+  return string.indexOf(sub) === 0;
 });
 
-var _String_endsWith = F2(function (sub, str) {
-  return str.length >= sub.length && str.lastIndexOf(sub) === str.length - sub.length;
+const _String_endsWith = F2(function (sub, string) {
+  return string.length >= sub.length && string.lastIndexOf(sub) === string.length - sub.length;
 });
 
-var _String_indexes = F2(function (sub, str) {
-  var subLen = sub.length;
+const _String_indexes = F2(function (sub, string) {
+  const subLength = sub.length;
 
-  if (subLen < 1) {
+  if (subLength < 1) {
     return __List_Nil_elm_builtin;
   }
 
-  var i = 0;
-  var is = [];
+  let i = 0;
+  const is = [];
 
-  while ((i = str.indexOf(sub, i)) > -1) {
+  while ((i = string.indexOf(sub, i)) > -1) {
     is.push(i);
-    i = i + subLen;
+    i += subLength;
   }
 
   return __List_fromArray(is);
@@ -221,21 +235,22 @@ var _String_indexes = F2(function (sub, str) {
 // TO STRING
 
 function _String_fromNumber(number) {
-  return number + "";
+  return String(number);
 }
 
 // INT CONVERSIONS
 
-function _String_toInt(str) {
-  var total = 0;
-  var code0 = str.charCodeAt(0);
-  var start = code0 == 0x2b /* + */ || code0 == 0x2d /* - */ ? 1 : 0;
+function _String_toInt(string) {
+  let total = 0;
+  const code0 = string.charCodeAt(0);
+  const start = code0 == 0x2b /* + */ || code0 == 0x2d /* - */ ? 1 : 0;
 
-  for (var i = start; i < str.length; ++i) {
-    var code = str.charCodeAt(i);
-    if (code < 0x30 || 0x39 < code) {
+  for (var i = start; i < string.length; ++i) {
+    const code = string.charCodeAt(i);
+    if (code < 0x30 || code > 0x39) {
       return __Maybe_Nothing;
     }
+
     total = 10 * total + code - 0x30;
   }
 
@@ -245,12 +260,13 @@ function _String_toInt(str) {
 // FLOAT CONVERSIONS
 
 function _String_toFloat(s) {
-  // check if it is a hex, octal, or binary number
+  // Check if it is a hex, octal, or binary number
   if (s.length === 0 || /[\sxbo]/.test(s)) {
     return __Maybe_Nothing;
   }
-  var n = +s;
-  // faster isNaN check
+
+  const n = Number(s);
+  // Faster isNaN check
   return n === n ? __Maybe_Just(n) : __Maybe_Nothing;
 }
 

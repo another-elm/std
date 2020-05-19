@@ -8,13 +8,17 @@
 		"space": true,
 		"ignores": [
 			"browser/**",
-			"core/**",
 			"json/**",
 			"test/**"
 		],
 		"rules": {
 			"no-undef": "off",
-			"no-unused-vars": "off"
+			"no-unused-vars": "off",
+			"camelcase": "off",
+			"unicorn/filename-case": "off",
+			"unicorn/no-abusive-eslint-disable": "warn",
+			"new-cap": "off",
+			"capitalized-comments": "off"
 		}
 	},
 	"prettier": {

@@ -21,7 +21,7 @@ const _Debug_log__DEBUG = (tag) => {
         ? scope._debugLog
         : console.log;
 
-    p.catch((x) => x);
+    p.catch((error) => error);
     log(tag + ": " + _Debug_toString(value));
     return value;
   };
@@ -61,7 +61,7 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof value === "number") {
-    return _Debug_numberColor(ansi, value + "");
+    return _Debug_numberColor(ansi, String(value));
   }
 
   if (value instanceof String) {
@@ -85,6 +85,7 @@ function _Debug_toAnsiString(ansi, value) {
         if (k === "$") continue;
         output.push(_Debug_toAnsiString(ansi, v));
       }
+
       return "(" + output.join(",") + ")";
     }
 
@@ -129,11 +130,12 @@ function _Debug_toAnsiString(ansi, value) {
       if (k === "$") {
         return _Debug_ctorColor(ansi, v);
       }
-      const str = _Debug_toAnsiString(ansi, v);
-      const c0 = str[0];
+
+      const string = _Debug_toAnsiString(ansi, v);
+      const c0 = string[0];
       const parenless =
-        c0 === "{" || c0 === "(" || c0 === "[" || c0 === "<" || c0 === '"' || str.indexOf(" ") < 0;
-      return parenless ? str : "(" + str + ")";
+        c0 === "{" || c0 === "(" || c0 === "[" || c0 === "<" || c0 === '"' || !string.includes(" ");
+      return parenless ? string : "(" + string + ")";
     });
     return parts.join(" ");
   }
@@ -157,8 +159,8 @@ function _Debug_toAnsiString(ansi, value) {
   return _Debug_internalColor(ansi, "<internals>");
 }
 
-function _Debug_addSlashes(str, isChar) {
-  const s = str
+function _Debug_addSlashes(string, isChar) {
+  const s = string
     .replace(/\\/g, "\\\\")
     .replace(/\n/g, "\\n")
     .replace(/\t/g, "\\t")
@@ -167,34 +169,34 @@ function _Debug_addSlashes(str, isChar) {
     .replace(/\0/g, "\\0");
 
   if (isChar) {
-    return s.replace(/\'/g, "\\'");
-  } else {
-    return s.replace(/\"/g, '\\"');
+    return s.replace(/'/g, "\\'");
   }
+
+  return s.replace(/"/g, '\\"');
 }
 
 function _Debug_ctorColor(ansi, string) {
-  return ansi ? "\x1b[96m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[96m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_numberColor(ansi, string) {
-  return ansi ? "\x1b[95m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[95m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_stringColor(ansi, string) {
-  return ansi ? "\x1b[93m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[93m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_charColor(ansi, string) {
-  return ansi ? "\x1b[92m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[92m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_fadeColor(ansi, string) {
-  return ansi ? "\x1b[37m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[37m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_internalColor(ansi, string) {
-  return ansi ? "\x1b[36m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[36m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_toHexDigit(n) {
@@ -290,8 +292,10 @@ Effect modules are not supported, if you are using elm/* libraries you will need
       return function () {
         throw new Error(`Trying to setup an init task after init has finished!.`);
       };
+
+    default:
+      throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
   }
-  throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
 }
 
 function _Debug_crash__PROD(identifier) {
@@ -384,6 +388,9 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
       fact1(fact2, fact3, fact4);
       throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
     }
+
+    default:
+      throw new Error(`Unknown reason for crash: ${identifier}!`);
   }
 }
 
@@ -391,5 +398,6 @@ function _Debug_regionToString(region) {
   if (region.__$start.__$line === region.__$end.__$line) {
     return "on line " + region.__$start.__$line;
   }
+
   return "on lines " + region.__$start.__$line + " through " + region.__$end.__$line;
 }

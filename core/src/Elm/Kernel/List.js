@@ -23,15 +23,19 @@ const _List_Nil = { $: _List_nilKey };
 
 const _List_Cons = (hd, tl) => A2(__List_Cons_elm_builtin, hd, tl);
 
-const _List_fromArray = (arr) =>
-  arr.reduceRight((out, val) => A2(__List_Cons_elm_builtin, val, out), __List_Nil_elm_builtin);
+const _List_fromArray = (array) =>
+  array.reduceRight(
+    (out, value) => A2(__List_Cons_elm_builtin, value, out),
+    __List_Nil_elm_builtin
+  );
 
 const _List_toArray = (xs) => {
   const out = [];
-  while (true) {
+  for (;;) {
     if (xs.$ === _List_nilKey) {
       return out;
     }
+
     out.push(xs.a);
     xs = xs.b;
   }

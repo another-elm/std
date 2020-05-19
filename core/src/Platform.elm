@@ -243,6 +243,12 @@ updateSubListeners subBag =
         )
 
 
+subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task never
+subListenerProcess channel =
+    Channel.recv (\task -> task) channel
+        |> RawTask.andThen (\() -> subListenerProcess channel)
+
+
 resetSubscriptionsAction : Effect.RuntimeId -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
 resetSubscriptionsAction runtimeId updateList =
     Impure.fromFunction
@@ -265,6 +271,7 @@ code in Elm/Kernel/Platform.js.
 type alias InitializeHelperFunctions appMsg =
     { setupEffectsChannel : Effect.RuntimeId -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
     , updateSubListeners : Sub appMsg -> Impure.Function Effect.RuntimeId ()
+    , subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
     }
 
 
@@ -321,6 +328,7 @@ initializeHelperFunctions : InitializeHelperFunctions msg
 initializeHelperFunctions =
     { updateSubListeners = updateSubListeners
     , setupEffectsChannel = setupEffectsChannel
+    , subListenerProcess = subListenerProcess
     }
 
 

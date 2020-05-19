@@ -113,7 +113,7 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
 
     const importMatch = line.match(/^import\s+(Elm\.Kernel\.\w+)/u);
     if (importMatch !== null) {
-      kernelImports.set(importMatch[1], false);
+      kernelImports.set(importMatch[1], { lineNumber: number, used: false });
     } else {
       const elmVarMatch = line.match(/^(\S*).*?=/u);
       if (elmVarMatch !== null) {
@@ -134,19 +134,20 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
       if (kernelCallMatch !== null) {
         const kernelCall = kernelCallMatch[0];
         const kernelModule = kernelCallMatch[1];
-        if (kernelImports.has(kernelModule)) {
-          kernelImports.set(kernelModule, true);
-        } else {
+        const importFacts = kernelImports.get(kernelModule);
+        if (importFacts === undefined) {
           errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+        } else {
+          importFacts.used = true;
         }
         addCall(kernelCalls, kernelCall, new CallLocation(file, number));
       }
     }
   }
 
-  for (const [kernelModule, used] of kernelImports.entries()) {
+  for (const [kernelModule, {lineNumber, used}] of kernelImports.entries()) {
     if (!used) {
-      warnings.push(`Kernel import of ${kernelModule} is unused in ${file}`);
+      warnings.push(`Kernel import of ${kernelModule} is unused in ${file}:${lineNumber}`);
     }
   }
 
@@ -176,7 +177,7 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       const moduleAlias = importMatch[3] !== undefined ? importMatch[3] : importMatch[2];
       const importedModulePath = importMatch[1];
       for (const defName of importMatch[4].split(",").map((s) => s.trim())) {
-        imports.set(`__${moduleAlias}_${defName}`, false);
+        imports.set(`__${moduleAlias}_${defName}`, { lineNumber: number, used: false });
 
         const callFullPath = `${importedModulePath}.${defName}`;
         addCall(importedDefs, callFullPath, new CallLocation(file, number));
@@ -223,10 +224,11 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       ) {
         if (kernelCall.startsWith("__")) {
           // External kernel call
-          if (imports.has(kernelCall)) {
-            imports.set(kernelCall, true);
-          } else {
+          const importFacts = imports.get(kernelCall);
+          if (importFacts === undefined) {
             errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+          } else {
+            importFacts.used = true;
           }
         } else {
           if (calledModuleName !== moduleName) {
@@ -240,9 +242,9 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
     }
   }
 
-  for (const [kernelModule, used] of imports.entries()) {
+  for (const [kernelModule, {lineNumber, used}] of imports.entries()) {
     if (!used) {
-      warnings.push(`Import of ${kernelModule} is unused in ${file}`);
+      warnings.push(`Import of ${kernelModule} is unused in ${file}:${lineNumber}`);
     }
   }
 

@@ -10,8 +10,7 @@ import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
-import Platform.Raw.Task as RawTask exposing (execImpure, andThen)
-import Platform.Raw.Channel as RawChannel exposing (recv)
+import Platform.Raw.Task as RawTask exposing (execImpure)
 import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
 
 */
@@ -194,16 +193,8 @@ const _Platform_createSubscriptionId = () => {
 
   _Platform_runAfterLoad((runtimeId) => {
     const channel = __Channel_rawUnbounded();
-
-    const onSubEffects = (_) =>
-      A2(
-        __RawTask_andThen,
-        onSubEffects,
-        A2(__RawChannel_recv, (f) => f, channel)
-      );
-
     runtimeId.__subscriptionChannels.set(key, channel);
-    __RawScheduler_rawSpawn(onSubEffects(__Utils_Tuple0));
+    __RawScheduler_rawSpawn(__Platform_initializeHelperFunctions.__$subListenerProcess(channel));
   });
 
   return subId;
@@ -305,7 +296,7 @@ const _Platform_command = (createTask) => {
   return cmdData;
 };
 
-// subscription : RawSub.Id -> (RawSub.HiddenConvertedSubType -> msg) -> Sub msg
+// subscription : RawSub.Id -> (Effect.HiddenConvertedSubType -> msg) -> Sub msg
 const _Platform_subscription = (key) => (tagger) => {
   const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
   if (__Basics_isDebug) {

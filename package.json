@@ -1,0 +1,27 @@
+{
+	"devDependencies": {
+		"prettier": "2",
+		"xo": "0.30"
+	},
+	"xo": {
+		"prettier": true,
+		"space": true,
+		"ignores": [
+			"browser/**",
+			"core/**",
+			"json/**",
+			"test/**"
+		],
+		"rules": {
+			"no-undef": "off",
+			"no-unused-vars": "off"
+		}
+	},
+	"prettier": {
+		"printWidth": 100,
+		"useTabs": false,
+		"trailingComma": "es5",
+		"singleQuote": false,
+		"bracketSpacing": true
+	}
+}

@@ -4,5 +4,6 @@ TODO list
 Tests
 -----
 
-- [ ] Merging of exports.
-- [ ] Have generate globals overwite files.
+- Merging of exports.
+- Check Basics.isDebug enables dead code elimination.
+- Have a test for Elm.Kernel.List.nilKey

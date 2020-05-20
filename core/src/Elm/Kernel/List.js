@@ -16,12 +16,23 @@ import List exposing (Nil_elm_builtin, Cons_elm_builtin)
  * javascript below in the elm.js file and so with the above definition we get
  * "XXX is undefined" errors.
  *
- * We also cannot use Elm.Kernel.Basics.isDebug here because the Basics kernel
- * module depends on the Debug kernel module which depends on this module.
+ * We also cannot use Elm.Kernel.Basics.isDebug as we get into circular
+ * dependancy issues:
+ *
+ * We have kernel dependencies that look like
+ *
+ *      Basics <---
+ *        |       |
+ *        v       |/
+ *      Debug     /
+ *        |      /|
+ *        v       |
+ *      List ------
+ *
  *
  */
 /* eslint-disable-next-line no-constant-condition */
-const _List_nilKey = "" === "" ? "Nil_elm_builtin" : 0;
+const _List_nilKey = "__DEBUG" === "" ? "Nil_elm_builtin" : 0;
 const _List_Nil = { $: _List_nilKey };
 
 const _List_Cons = (hd, tl) => A2(__List_Cons_elm_builtin, hd, tl);

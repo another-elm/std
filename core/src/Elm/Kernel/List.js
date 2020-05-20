@@ -1,11 +1,9 @@
 /*
 
-import Basics exposing (EQ, LT)
+import Basics exposing (EQ, LT, isDebug)
 import List exposing (Nil_elm_builtin, Cons_elm_builtin)
 
 */
-
-/* global _List_nilKey -- the elm compiler produces this value by removing __PROD or __DEBUG   */
 
 /* Ideally we would write
  *
@@ -19,8 +17,7 @@ import List exposing (Nil_elm_builtin, Cons_elm_builtin)
  * "XXX is undefined" errors.
  *
  */
-const _List_nilKey__PROD = 0;
-const _List_nilKey__DEBUG = "Nil_elm_builtin";
+const _List_nilKey = __Basics_isDebug ? "Nil_elm_builtin" : 0;
 const _List_Nil = { $: _List_nilKey };
 
 const _List_Cons = (hd, tl) => A2(__List_Cons_elm_builtin, hd, tl);
@@ -59,5 +56,5 @@ const _List_sortWith = F2((f, xs) =>
 
 /* global F2, F3, F4 */
 /* global A2, A3, A4 */
-/* global __Basics_EQ, __Basics_LT */
+/* global __Basics_EQ, __Basics_LT, __Basics_isDebug */
 /* global __List_Nil_elm_builtin, __List_Cons_elm_builtin */

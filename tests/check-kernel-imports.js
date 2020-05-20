@@ -189,12 +189,13 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       /import\s+((?:[.\w]+\.)?(\w+))\s+(?:as (\w+)\s+)?exposing\s+\((\w+(?:,\s+\w+)*)\)/
     );
 
-    if (!importBlockFound && line === '/*') {
+    if (!importBlockFound && line === "/*") {
       importBlockFound = true;
       inImport = true;
       if (number !== 1) {
         errors.push(`Kernel files must begin with imports at ${file}:${number}.`);
       }
+
       continue;
     } else if (inImport) {
       if (importMatch !== null) {
@@ -207,15 +208,18 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
           const callFullPath = `${importedModulePath}.${defName}`;
           addCall(importedDefs, callFullPath, new CallLocation(file, number));
         }
+
         lastImportLineNumber = number;
-      } else if (line === '*/') {
-          if (lastImportLineNumber === 0) {
-            warnings.push(`Empty import block at ${file}:${number}.`);
-          }
-          inImport = false;
-      } else if (line !== '') {
-        errors.push(`Invalid line in imports block at ${file}:${number}.`)
+      } else if (line === "*/") {
+        if (lastImportLineNumber === 0) {
+          warnings.push(`Empty import block at ${file}:${number}.`);
+        }
+
+        inImport = false;
+      } else if (line !== "") {
+        errors.push(`Invalid line in imports block at ${file}:${number}.`);
       }
+
       continue;
     }
 

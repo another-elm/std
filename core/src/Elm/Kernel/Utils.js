@@ -149,7 +149,7 @@ const _Utils_Tuple3__PROD = (a, b, c) => ({ a, b, c });
 const _Utils_Tuple3__DEBUG = (a, b, c) => ({ $: "#3", a, b, c });
 
 const _Utils_chr__PROD = (c) => c;
-const _Utils_chr__DEBUG = (c) => Object(c);
+const _Utils_chr__DEBUG = (c) => new Object(c);
 
 // RECORDS
 

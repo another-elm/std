@@ -3,12 +3,13 @@
 import fileinput
 import re
 import sys
+import glob
 
 HELP = """
 
-Usage: generate-globals FILE ...
+Usage: generate-globals GLOBS ...
 
-Parse the imports of a kernel file and adds suitable eslint global
+Parse the imports of kernel files and append suitable eslint global
 comments to it. See
 <https://eslint.org/docs/user-guide/configuring#specifying-globals>.
 
@@ -33,12 +34,15 @@ import_re = (r"import\s+((?:[.\w]+\.)?(\w+))\s+(?:as (\w+)\s+)?"
 def processFile(file):
     globals = []
 
+    last_line_empty = False
+
     with fileinput.input(file, inplace=True) as f:
         for line in f:
             if line.startswith(warning_comment_lines[0]):
                 break
             else:
                 print(line, end='')
+                last_line_empty = line.strip() == ''
                 importMatch = re.search(import_re, line)
 
                 if importMatch is not None:
@@ -57,6 +61,9 @@ def processFile(file):
                     globals.append("/* global {} */".format(", ".join(vars)))
 
     with open(file, "a") as f:
+        if not last_line_empty:
+            print(file=f)
+
         print("\n".join(warning_comment_lines), file=f)
         print(file=f)
         print("/* global F2, F3, F4 */", file=f)
@@ -65,8 +72,8 @@ def processFile(file):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("check-kernel-imports: error! at path to file required",
+    if len(sys.argv) < 2:
+        print("generate-globals.py: error! At least one path or glob required",
               file=sys.stderr)
         exit(1)
 
@@ -74,7 +81,9 @@ def main():
         print(HELP)
         exit(0)
 
-    processFile(sys.argv[1])
+    for provided_glob in sys.argv[1:]:
+        for path in glob.glob(provided_glob, recursive=True):
+            processFile(path)
 
 
 main()

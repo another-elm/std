@@ -102,10 +102,10 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
   const errors = [];
   const warnings = [];
 
-  function addDef(defName) {
+  function addDef(defName, lineNumber) {
     if (moduleName === null) {
       errors.push(
-        `Elm definition before module line (or missing module line) at ${file}:${number}.`
+        `Elm definition before module line (or missing module line) at ${file}:${lineNumber}.`
       );
     }
 
@@ -129,17 +129,17 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
 
     const elmVarMatch = line.match(/^(\S*).*?=/u);
     if (elmVarMatch !== null) {
-      addDef(elmVarMatch[1]);
+      addDef(elmVarMatch[1], number);
     }
 
     const elmTypeMatch = line.match(/type\s+(?:alias\s+)?(\S+)/u);
     if (elmTypeMatch !== null) {
-      addDef(elmTypeMatch[1]);
+      addDef(elmTypeMatch[1], number);
     }
 
     const elmCustomTypeMatch = line.match(/ {2}(?: {2})?[=|] (\w*)/u);
     if (elmCustomTypeMatch !== null) {
-      addDef(elmCustomTypeMatch[1]);
+      addDef(elmCustomTypeMatch[1], number);
     }
 
     const kernelCallMatch = line.match(/(Elm\.Kernel\.\w+).\w+/u);

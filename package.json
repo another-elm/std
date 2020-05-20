@@ -12,14 +12,14 @@
 			"test/**"
 		],
 		"rules": {
-			"no-undef": "off",
 			"no-unused-vars": "off",
 			"camelcase": "off",
 			"unicorn/filename-case": "off",
 			"unicorn/no-abusive-eslint-disable": "warn",
 			"new-cap": "off",
 			"capitalized-comments": "off",
-			"no-new-object": "off"
+			"no-new-object": "off",
+			"no-undef": ["error", { "typeof": false }]
 		}
 	},
 	"prettier": {

@@ -15,7 +15,6 @@ import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, bindi
 
 */
 
-/* eslint no-undef: "error" */
 /* global scope */
 
 // State

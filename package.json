@@ -18,7 +18,8 @@
 			"unicorn/filename-case": "off",
 			"unicorn/no-abusive-eslint-disable": "warn",
 			"new-cap": "off",
-			"capitalized-comments": "off"
+			"capitalized-comments": "off",
+			"no-new-object": "off"
 		}
 	},
 	"prettier": {

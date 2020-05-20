@@ -10,14 +10,22 @@ Usage: check-kernel-imports PACKAGES ...
 
 Where PACKAGES are paths to one or more elm packages. check-kernel-imports
 checks that:
-1. Use of kernel definitions match imports in elm files.
-2. Use of kernel definition in elm files match a definition in a javascipt
-file.
-3. Use of elm definition in javascript files matches definition in an elm
-file.
-4. Use of an external definition matches an import in a javascript file.
+  1. Use of kernel definitions match imports in elm files.
+  2. Use of kernel definition in elm files match a definition in a javascipt
+    file.
+  3. Use of elm definition in javascript files matches definition in an elm
+    file.
+  4. Use of an external definition matches an import in a javascript file.
+  5. Javascript files begin with an import block (that has an end).
+  6. A line inside an import block is not an import.
+
+
 Note that 3. is a best effort attempt. There are some missed cases and some
-false positives. Warnings will be issued for unused imports in javascript files.
+false positives. Warnings will be issued for:
+  1. Unused imports in javascript files.
+  2. Empty import blocks in javascript files (as it probably means there is a comment before the
+    import block in the file).
+  3. Imports outside the import block in Javascript files.
 
 Restrictions on kernel imports not checked:
 1. You cannot import an elm file from another package unless it is exposed.
@@ -172,22 +180,47 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
   const errors = [];
   const warnings = [];
 
+  let importBlockFound = 0;
+  let inImport = false;
+  let lastImportLineNumber = 0;
+
   for await (const { number, line } of lines) {
     const importMatch = line.match(
       /import\s+((?:[.\w]+\.)?(\w+))\s+(?:as (\w+)\s+)?exposing\s+\((\w+(?:,\s+\w+)*)\)/
     );
-    if (importMatch !== null) {
-      // Use alias if it is there, otherwise use last part of import.
-      const moduleAlias = importMatch[3] === undefined ? importMatch[2] : importMatch[3];
-      const importedModulePath = importMatch[1];
-      for (const defName of importMatch[4].split(",").map((s) => s.trim())) {
-        imports.set(`__${moduleAlias}_${defName}`, { lineNumber: number, used: false });
 
-        const callFullPath = `${importedModulePath}.${defName}`;
-        addCall(importedDefs, callFullPath, new CallLocation(file, number));
+    if (!importBlockFound && line === '/*') {
+      importBlockFound = true;
+      inImport = true;
+      if (number !== 1) {
+        errors.push(`Kernel files must begin with imports at ${file}:${number}.`);
       }
-
       continue;
+    } else if (inImport) {
+      if (importMatch !== null) {
+        // Use alias if it is there, otherwise use last part of import.
+        const moduleAlias = importMatch[3] === undefined ? importMatch[2] : importMatch[3];
+        const importedModulePath = importMatch[1];
+        for (const defName of importMatch[4].split(",").map((s) => s.trim())) {
+          imports.set(`__${moduleAlias}_${defName}`, { lineNumber: number, used: false });
+
+          const callFullPath = `${importedModulePath}.${defName}`;
+          addCall(importedDefs, callFullPath, new CallLocation(file, number));
+        }
+        lastImportLineNumber = number;
+      } else if (line === '*/') {
+          if (lastImportLineNumber === 0) {
+            warnings.push(`Empty import block at ${file}:${number}.`);
+          }
+          inImport = false;
+      } else if (line !== '') {
+        errors.push(`Invalid line in imports block at ${file}:${number}.`)
+      }
+      continue;
+    }
+
+    if (importMatch !== null) {
+      warnings.push(`Import found outside of imports block at ${file}:${number}.`);
     }
 
     let defMatch = line.match(/^(?:var|const|let)\s*(_(\w+?)_(\w+))\s*=/u);
@@ -248,6 +281,10 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
 
       index += kernelCallMatch.index + kernelCallMatch[0].length;
     }
+  }
+
+  if (inImport) {
+    errors.push(`Imports block is missing end at ${file}:${lastImportLineNumber}`);
   }
 
   for (const [kernelModule, { lineNumber, used }] of imports.entries()) {

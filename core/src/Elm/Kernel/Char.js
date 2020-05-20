@@ -1,10 +1,10 @@
-/* eslint-disable */
-
 /*
 
 import Elm.Kernel.Utils exposing (chr)
 
 */
+
+/* eslint-disable */
 
 function _Char_toCode(char) {
   const code = char.charCodeAt(0);

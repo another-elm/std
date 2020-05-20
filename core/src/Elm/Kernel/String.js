@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 /*
 
 import Elm.Kernel.List exposing (fromArray, toArray)
@@ -8,6 +6,8 @@ import Maybe exposing (Just, Nothing)
 import List exposing (Nil_elm_builtin)
 
 */
+
+/* eslint-disable */
 
 const _String_cons = F2(function (chr, string) {
   return chr + string;

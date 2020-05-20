@@ -1,10 +1,10 @@
-/* eslint-disable */
-
 /*
 
 import Elm.Kernel.Utils exposing (Tuple2)
 
 */
+
+/* eslint-disable */
 
 const _JsArray_empty = [];
 

@@ -62,6 +62,10 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 
   const cmdChannel = __Channel_rawUnbounded();
 
+  // We use a queue here to avoid re-entrant calls to dispatch. The code is
+  // copied from https://github.com/elm/core/pull/981. I am not sure if it is
+  // possible to trigger the need for this queue using the current
+  // architecture though. I should investigate if it can be removed.
   const dispatch = (model, cmds) => {
     _Platform_effectsQueue.push({
       __cmds: cmds,

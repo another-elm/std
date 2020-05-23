@@ -11,64 +11,103 @@ def remove_prefix(text, prefix):
     return text[text.startswith(prefix) and len(prefix):]
 
 
+def get_runner():
+    output = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                            stdout=subprocess.PIPE,
+                            encoding='utf8')
+
+    if output.returncode != 0:
+        print("Error finding root dir:")
+        print("     maybe you ran ./x.py outside a git directory?")
+        exit(1)
+
+    root_dir = output.stdout.strip()
+
+    return lambda args: subprocess.run(args, cwd=root_dir).returncode
+
+
 def install():
-    print("Installing xo...")
-    code = subprocess.run(['npm', 'install']).returncode
+    def xo():
+        print("Installing xo...")
+        code = subprocess.run(['npm', 'install']).returncode
 
-    if code != 0:
-        exit(code)
+        if code != 0:
+            exit(code)
 
-    print("Checking for yapf")
-    output = subprocess.run(['yapf', '--version'],
-                            stdout=subprocess.PIPE,
-                            encoding='utf8')
+    def yapf():
+        print("Checking for yapf")
+        output = subprocess.run(['yapf', '--version'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
 
-    if output.returncode != 0:
-        print("** Please install yapf")
-        print("** https://github.com/google/yapf#installation")
-        exit(output.returncode)
+        if output.returncode != 0:
+            print("** Please install yapf")
+            print("** https://github.com/google/yapf#installation")
+            exit(output.returncode)
 
-    yapf_version = remove_prefix(output.stdout, "yapf").strip()
-    if not yapf_version.startswith(YAPF_VERSION):
-        print("** yapf version {}x required, found: {}".format(
-            YAPF_VERSION, yapf_version))
-        exit(1)
+        yapf_version = remove_prefix(output.stdout, "yapf").strip()
+        if not yapf_version.startswith(YAPF_VERSION):
+            print("** yapf version {}x required, found: {}".format(
+                YAPF_VERSION, yapf_version))
+            exit(1)
 
-    print("Checking for flake8")
-    output = subprocess.run(['flake8', '--version'],
-                            stdout=subprocess.PIPE,
-                            encoding='utf8')
+    def flake8():
+        print("Checking for flake8")
+        output = subprocess.run(['flake8', '--version'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
 
-    if output.returncode != 0:
-        print("** Please install flake8")
-        print("** https://flake8.pycqa.org/en/latest/index.html#installation")
-        exit(output.returncode)
+        if output.returncode != 0:
+            print("** Please install flake8")
+            print(
+                "** https://flake8.pycqa.org/en/latest/index.html#installation"
+            )
+            exit(output.returncode)
 
-    if not output.stdout.startswith(FLAKE8_VERSION):
-        print("** flake8 version {}x required found: {}".format(
-            FLAKE8_VERSION, output.stdout))
-        exit(1)
+        if not output.stdout.startswith(FLAKE8_VERSION):
+            print("** flake8 version {}x required found: {}".format(
+                FLAKE8_VERSION, output.stdout))
+            exit(1)
+
+    def git():
+        print("Checking for git")
+        output = subprocess.run(['git', '--version'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
+
+        if output.returncode != 0:
+            print("** Please install git")
+            print(
+                "** https://git-scm.com/book/en/v2/Getting-Started-Installing-Git"  # noqa: E501
+            )
+
+            exit(output.returncode)
+
+    xo()
+    yapf()
+    flake8()
+    git()
 
     exit(0)
 
 
 def tidy():
+    run = get_runner()
+
     print("Running xo...")
-    code = subprocess.run(['npx', 'xo', '--fix']).returncode
+    code = run(['npx', 'xo', '--fix'])
 
     if code != 0:
         exit(code)
 
     print("Running yapf...")
-    code = subprocess.run(['yapf', '.', '--in-place',
-                           '--recursive']).returncode
+    code = run(['yapf', '.', '--in-place', '--recursive'])
 
     if code != 0:
         exit(code)
 
     print("Running generate-globals...")
-    code = subprocess.run(
-        ['./tests/generate-globals.py', "./core/src/**/*.js"]).returncode
+    code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
 
     if code != 0:
         exit(code)
@@ -77,31 +116,31 @@ def tidy():
 
 
 def check():
+    run = get_runner()
+
     print("Checking xo...")
-    code = subprocess.run(['npx', 'xo']).returncode
+    code = run(['npx', 'xo'])
 
     if code != 0:
         print("xo failed!")
         exit(code)
 
     print("Checking yapf...")
-    code = subprocess.run(['yapf', '.', '--diff', '--recursive']).returncode
+    code = run(['yapf', '.', '--diff', '--recursive'])
 
     if code != 0:
         print("yapf wants to make changes!")
         exit(code)
 
     print("Checking flake8...")
-    code = subprocess.run(['flake8', '.']).returncode
+    code = run(['flake8', '.'])
 
     if code != 0:
         print("flake8 failed")
         exit(code)
 
     print("Running check-kernel-imports...")
-    code = subprocess.run(
-        ['./tests/check-kernel-imports.js', "core", "browser",
-         "json"]).returncode
+    code = run(['./tests/check-kernel-imports.js', "core", "browser", "json"])
 
     if code != 0:
         print("There are kernel import issues")
@@ -124,6 +163,9 @@ check_parser.set_defaults(func=check)
 
 args = parser.parse_args()
 
-args.func()
+try:
+    func = args.func
+except AttributeError:
+    func = parser.print_help
 
-parser.print_help()
+func()

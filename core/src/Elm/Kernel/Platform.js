@@ -44,16 +44,17 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     }
   }
 
-  const sendToApp = F2((message, viewMetadata) => {
+  const sendToApp = (message, viewMetadata) => {
     const updateValue = A2(impl.__$update, message, model);
     model = updateValue.a;
     A2(stepper, model, viewMetadata);
     dispatch(model, updateValue.b);
-  });
+  };
 
   const runtimeId = {
     __$id: _Platform_runtimeCount,
-    __sendToApp: sendToApp,
+    __sendToApp: (message) => (viewMetadata) =>
+      __RawTask_execImpure(() => sendToApp(message, viewMetadata)),
     __outgoingPortSubs: [],
     __subscriptionListeners: new Map(),
     __subscriptionChannels: new Map(),
@@ -111,9 +112,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 
 function _Platform_browserifiedSendToApp(sendToApp) {
   return (message, updateMetadata) =>
-    sendToApp(message)(
-      updateMetadata === undefined ? __Platform_AsyncUpdate : __Platform_SyncUpdate
-    );
+    sendToApp(message, updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate);
 }
 
 // EFFECT MANAGERS (not supported)
@@ -227,7 +226,7 @@ const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
       const listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
       for (const listeners of listenerGroup.values()) {
         for (const listener of listeners) {
-          listener(message);
+          __RawScheduler_rawSpawn(listener(message));
         }
       }
 
@@ -293,7 +292,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   return __Utils_Tuple0;
 };
 
-const _Platform_sendToAppFunction = (runtimeId) => runtimeId.__sendToApp;
+const _Platform_sendToApp = (runtimeId) => runtimeId.__sendToApp;
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 

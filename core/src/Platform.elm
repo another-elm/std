@@ -187,7 +187,7 @@ setupEffectsChannel runtimeId receiver =
                     (\maybeMsg ->
                         case maybeMsg of
                             Just msg ->
-                                RawTask.execImpure (sendToAppAction runtimeId msg AsyncUpdate)
+                                sendToApp2 runtimeId msg AsyncUpdate
 
                             Nothing ->
                                 RawTask.Value ()
@@ -236,7 +236,7 @@ updateSubListeners subBag =
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            sendToAppAction runtimeId (tagger v) AsyncUpdate
+                            sendToApp2 runtimeId (tagger v) AsyncUpdate
                         )
                     )
                 |> resetSubscriptionsAction runtimeId
@@ -249,17 +249,11 @@ subListenerProcess channel =
         |> RawTask.andThen (\() -> subListenerProcess channel)
 
 
-resetSubscriptionsAction : Effect.RuntimeId -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
+resetSubscriptionsAction : Effect.RuntimeId -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> RawTask.Task () ) -> Impure.Action ()
 resetSubscriptionsAction runtimeId updateList =
     Impure.fromFunction
         (resetSubscriptions runtimeId)
-        (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
-
-
-sendToAppAction : Effect.RuntimeId -> msg -> UpdateMetadata -> Impure.Action ()
-sendToAppAction rt msg meta =
-    Impure.fromFunction (sendToAppFunction rt msg) meta
-
+        updateList
 
 
 -- Kernel interop TYPES
@@ -361,11 +355,11 @@ unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : Effect.RuntimeId -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
+resetSubscriptions : Effect.RuntimeId -> Impure.Function (List ( Effect.SubId, Effect.HiddenConvertedSubType -> RawTask.Task () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToAppFunction : Effect.RuntimeId -> msg -> Impure.Function UpdateMetadata ()
-sendToAppFunction =
-    Elm.Kernel.Platform.sendToAppFunction
+sendToApp2 : Effect.RuntimeId -> msg -> UpdateMetadata ->  RawTask.Task ()
+sendToApp2 =
+    Elm.Kernel.Platform.sendToApp

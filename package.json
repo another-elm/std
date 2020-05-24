@@ -19,7 +19,12 @@
 			"new-cap": "off",
 			"capitalized-comments": "off",
 			"no-new-object": "off",
-			"no-undef": ["error", { "typeof": false }]
+			"no-undef": [
+				"error",
+				{
+					"typeof": false
+				}
+			]
 		}
 	},
 	"prettier": {

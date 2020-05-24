@@ -5,6 +5,8 @@ import subprocess
 
 YAPF_VERSION = '0.30.'
 FLAKE8_VERSION = '3.8.'
+ELM_VERSION = '0.19.1'
+ELM_FORMAT_VERSION = '0.8.3'
 
 
 def remove_prefix(text, prefix):
@@ -83,10 +85,44 @@ def install():
 
             exit(output.returncode)
 
+    def elm():
+        print("Checking for elm")
+        output = subprocess.run(['elm', '--version'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
+
+        if output.returncode != 0:
+            print("** Please install elm")
+            exit(output.returncode)
+
+        if not output.stdout.strip() == ELM_VERSION:
+            print("** elm version {} required found: {}".format(
+                ELM_VERSION, output.stdout))
+            exit(1)
+
+    def elm_format():
+        print("Checking for elm-format")
+        output = subprocess.run(['elm-format', '--help'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
+
+        if output.returncode != 0:
+            print("** Please install elm-format")
+            exit(output.returncode)
+
+        elm_format_version = remove_prefix(
+            output.stdout.split('\n')[0], "elm-format").strip()
+        if not elm_format_version.startswith(ELM_FORMAT_VERSION):
+            print("** elm-format version {} required found: {}".format(
+                ELM_FORMAT_VERSION, output.stdout))
+            exit(1)
+
     xo()
     yapf()
     flake8()
     git()
+    elm()
+    elm_format()
 
     exit(0)
 
@@ -108,6 +144,12 @@ def tidy():
 
     print("Running generate-globals...")
     code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
+
+    if code != 0:
+        exit(code)
+
+    print("Running elm-format...")
+    code = run(['elm-format', "./core/src", "--yes"])
 
     if code != 0:
         exit(code)

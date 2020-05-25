@@ -27,8 +27,8 @@ let _Platform_effectDispatchInProgress = false;
 const _Platform_runAfterLoadQueue = [];
 
 // TODO(harry) could onSubUpdateFunctions be a WeakMap?
-const _Platform_onSubUpdateFunctions = new Map();
-const _Platform_runtimeCount = 0;
+const _Platform_onSubUpdateFunctions = new WeakMap();
+let _Platform_guidIdCount = 0;
 
 // INITIALIZE A PROGRAM
 
@@ -53,7 +53,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   };
 
   const runtimeId = {
-    __$id: _Platform_runtimeCount,
+    __$id: _Platform_guidIdCount++,
     __sendToApp: (message) => (viewMetadata) =>
       __RawTask_execImpure(() => sendToApp(message, viewMetadata)),
     __outgoingPortSubs: [],
@@ -195,8 +195,8 @@ function _Platform_incomingPort(name, converter) {
  * function to create `Sub`s.
  */
 const _Platform_createSubscriptionId = () => {
-  const key = Symbol("subscription key");
-  const group = Symbol("default subscription group");
+  const key = { __$id: _Platform_guidIdCount++ };
+  const group = { __$id: _Platform_guidIdCount++ };
 
   const subId = {
     __$key: key,
@@ -214,7 +214,7 @@ const _Platform_createSubscriptionId = () => {
 };
 
 const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
-  const group = Symbol("new subscription group");
+  const group = { __$id: _Platform_guidIdCount++ };
   _Platform_onSubUpdateFunctions.set(group, updater);
   return {
     __$key: subId.__$key,

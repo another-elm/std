@@ -12,7 +12,6 @@
 			"test/**"
 		],
 		"rules": {
-			"no-unused-vars": "off",
 			"camelcase": "off",
 			"unicorn/filename-case": "off",
 			"unicorn/no-abusive-eslint-disable": "warn",
@@ -25,7 +24,15 @@
 					"typeof": false
 				}
 			]
-		}
+		},
+		"globals": [
+			"F2",
+			"F3",
+			"F4",
+			"A2",
+			"A3",
+			"A4"
+		]
 	},
 	"prettier": {
 		"printWidth": 100,

@@ -130,30 +130,40 @@ def install():
 def tidy():
     run = get_runner()
 
-    print("Running xo...")
-    code = run(['npx', 'xo', '--fix'])
+    def xo():
+        print("Running xo...")
+        code = run(['npx', 'xo', '--fix'])
 
-    if code != 0:
-        exit(code)
+        if code != 0:
+            exit(code)
 
-    print("Running yapf...")
-    code = run(['yapf', '.', '--in-place', '--recursive'])
+    def yapf():
+        print("Running yapf...")
+        code = run(['yapf', '.', '--in-place', '--recursive'])
 
-    if code != 0:
-        exit(code)
+        if code != 0:
+            exit(code)
 
-    print("Running generate-globals...")
-    code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
+    def generate_globals():
+        print("Running generate-globals...")
+        code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
 
-    if code != 0:
-        exit(code)
+        if code != 0:
+            exit(code)
 
-    print("Running elm-format...")
-    code = run(['elm-format', "./core/src", "--yes"])
+    def elm_format():
+        print("Running elm-format...")
+        code = run(['elm-format', "./core/src", "--yes"])
 
-    if code != 0:
-        exit(code)
+        if code != 0:
+            exit(code)
 
+    # Call generate_globals first as sometime xo only passes after
+    # generate_globals runs.
+    generate_globals()
+    xo()
+    yapf()
+    elm_format()
     exit(0)
 
 

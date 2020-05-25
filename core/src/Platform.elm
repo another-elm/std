@@ -256,6 +256,7 @@ resetSubscriptionsAction runtimeId updateList =
         updateList
 
 
+
 -- Kernel interop TYPES
 
 
@@ -360,6 +361,6 @@ resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToApp2 : Effect.RuntimeId -> msg -> UpdateMetadata ->  RawTask.Task ()
+sendToApp2 : Effect.RuntimeId -> msg -> UpdateMetadata -> RawTask.Task ()
 sendToApp2 =
     Elm.Kernel.Platform.sendToApp

@@ -4,6 +4,7 @@ import fileinput
 import re
 import sys
 import glob
+from pathlib import Path
 
 HELP = """
 
@@ -34,6 +35,8 @@ import_re = (r"import\s+((?:[.\w]+\.)?(\w+))\s+(?:as (\w+)\s+)?"
 def processFile(file):
     globals = []
 
+    module_name = Path(file).stem
+
     last_line_empty = False
 
     with fileinput.input(file, inplace=True) as f:
@@ -60,14 +63,19 @@ def processFile(file):
 
                     globals.append("/* global {} */".format(", ".join(vars)))
 
+    unused_var_config = '{{ "varsIgnorePattern": "_{}_.*" }}'.format(
+        module_name)
+
     with open(file, "a") as f:
         if not last_line_empty:
             print(file=f)
 
         print("\n".join(warning_comment_lines), file=f)
         print(file=f)
-        print("/* global F2, F3, F4 */", file=f)
-        print("/* global A2, A3, A4 */", file=f)
+        print('/* eslint no-unused-vars: ["error", {}] */'.format(
+            unused_var_config),
+              file=f)
+        print(file=f)
         print("\n".join(globals), file=f)
 
 

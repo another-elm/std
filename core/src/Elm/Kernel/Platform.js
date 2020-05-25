@@ -26,6 +26,7 @@ let _Platform_effectDispatchInProgress = false;
 
 const _Platform_runAfterLoadQueue = [];
 
+// TODO(harry) could onSubUpdateFunctions be a WeakMap?
 const _Platform_onSubUpdateFunctions = new Map();
 const _Platform_runtimeCount = 0;
 
@@ -56,7 +57,7 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     __sendToApp: (message) => (viewMetadata) =>
       __RawTask_execImpure(() => sendToApp(message, viewMetadata)),
     __outgoingPortSubs: [],
-    __subscriptionListeners: new Map(),
+    __subscriptionStates: new Map(),
     __subscriptionChannels: new Map(),
   };
 
@@ -205,7 +206,7 @@ const _Platform_createSubscriptionId = () => {
 
   _Platform_runAfterLoad((runtimeId) => {
     const channel = __Channel_rawUnbounded();
-    runtimeId.__subscriptionChannels.set(key, channel);
+    runtimeId.__subscriptionStates.set(key, { __channel: channel, __listenerGroups: new Map() });
     __RawScheduler_rawSpawn(__Platform_initializeHelperFunctions.__$subListenerProcess(channel));
   });
 
@@ -222,13 +223,12 @@ const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
 };
 
 const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
+  const state = runtime.__subscriptionStates.get(subId.__$key);
   A2(
     __Channel_rawSend,
-    runtime.__subscriptionChannels.get(subId.__$key),
+    state.__channel,
     __RawTask_execImpure((_) => {
-      // TODO(harry) sendToApp via spawning a Task
-      const listenerGroup = runtime.__subscriptionListeners.get(subId.__$key);
-      for (const listeners of listenerGroup.values()) {
+      for (const listeners of state.__listenerGroups.values()) {
         for (const listener of listeners) {
           __RawScheduler_rawSpawn(listener(message));
         }
@@ -249,19 +249,19 @@ const _Platform_runAfterLoad = (f) => {
 
 // FUNCTIONS (to be used by elm code)
 
-function _Platform_get_or_set(map, key, f) {
-  let value = map.get(key);
-  if (value === undefined) {
-    value = f();
-    map.set(key, value);
+function _Platform_addListenerToGroup(listenerGroups, group, sendToApp) {
+  let listeners = listenerGroups.get(group);
+  if (listeners === undefined) {
+    listeners = [];
+    listenerGroups.set(group, listeners);
   }
 
-  return value;
+  listeners.push(sendToApp);
 }
 
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
-  for (const listenerGroup of runtime.__subscriptionListeners.values()) {
-    for (const listeners of listenerGroup.values()) {
+  for (const state of runtime.__subscriptionStates.values()) {
+    for (const listeners of state.__listenerGroups.values()) {
       listeners.length = 0;
     }
   }
@@ -269,27 +269,18 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   for (const tuple of __List_toArray(newSubs)) {
     const subId = tuple.a;
     const sendToApp = tuple.b;
-    const listenerGroup = _Platform_get_or_set(
-      runtime.__subscriptionListeners,
-      subId.__$key,
-      () => new Map()
-    );
-    const listeners = _Platform_get_or_set(listenerGroup, subId, () => []);
-    listeners.push(sendToApp);
+    const listenerGroups = runtime.__subscriptionStates.get(subId.__$key).__listenerGroups;
+    _Platform_addListenerToGroup(listenerGroups, subId.__$group, sendToApp);
   }
 
   // Deletion from a Map whilst iterating is valid:
   // https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
-  for (const [key, listenerGroup] of runtime.__subscriptionListeners.entries()) {
-    for (const [subId, listeners] of listenerGroup.entries()) {
-      _Platform_onSubUpdateFunctions.get(subId.__$group)(runtime, listeners.length);
+  for (const state of runtime.__subscriptionStates.values()) {
+    for (const [groupId, listeners] of state.__listenerGroups.entries()) {
+      _Platform_onSubUpdateFunctions.get(groupId)(runtime, listeners.length);
       if (listeners.length === 0) {
-        listenerGroup.delete(subId);
+        state.__listenerGroups.delete(groupId);
       }
-    }
-
-    if (listenerGroup.size === 0) {
-      runtime.__subscriptionListeners.delete(key);
     }
   }
 

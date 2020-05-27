@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import argparse
+import os
 import subprocess
 
 YAPF_VERSION = '0.30.'
@@ -25,7 +26,15 @@ def get_runner():
 
     root_dir = output.stdout.strip()
 
-    return lambda args: subprocess.run(args, cwd=root_dir).returncode
+    def run(args, subdir=None):
+        if subdir is not None:
+            cwd = os.path.join(root_dir, subdir)
+        else:
+            cwd = root_dir
+
+        return subprocess.run(args, cwd=cwd).returncode
+
+    return run
 
 
 def install():
@@ -170,33 +179,52 @@ def tidy():
 def check():
     run = get_runner()
 
-    print("Checking xo...")
-    code = run(['npx', 'xo'])
+    def xo():
+        print("Checking xo...")
+        code = run(['npx', 'xo'])
 
-    if code != 0:
-        print("xo failed!")
-        exit(code)
+        if code != 0:
+            print("xo failed!")
+            exit(code)
 
-    print("Checking yapf...")
-    code = run(['yapf', '.', '--diff', '--recursive'])
+    def yapf():
+        print("Checking yapf...")
+        code = run(['yapf', '.', '--diff', '--recursive'])
 
-    if code != 0:
-        print("yapf wants to make changes!")
-        exit(code)
+        if code != 0:
+            print("yapf wants to make changes!")
+            exit(code)
 
-    print("Checking flake8...")
-    code = run(['flake8', '.'])
+    def flake8():
+        print("Checking flake8...")
+        code = run(['flake8', '.'])
 
-    if code != 0:
-        print("flake8 failed")
-        exit(code)
+        if code != 0:
+            print("flake8 failed")
+            exit(code)
 
-    print("Running check-kernel-imports...")
-    code = run(['./tests/check-kernel-imports.js', "core", "browser", "json"])
+    def kernel_imports():
+        print("Running check-kernel-imports...")
+        code = run(
+            ['./tests/check-kernel-imports.js', "core", "browser", "json"])
 
-    if code != 0:
-        print("There are kernel import issues")
-        exit(code)
+        if code != 0:
+            print("There are kernel import issues")
+            exit(code)
+
+    def elm_make():
+        print("Running elm make in core...")
+        code = run(['elm', "make"], subdir='core')
+
+        if code != 0:
+            print("There are issues with elm make")
+            exit(code)
+
+    xo()
+    yapf()
+    flake8()
+    kernel_imports()
+    elm_make()
 
     exit(0)
 

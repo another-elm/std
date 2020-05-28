@@ -97,7 +97,7 @@ worker impl =
                 flagsDecoder
                 args
                 impl
-                (\_ _ -> \_ -> Impure.toFunction (\_ -> Impure.resolve ()))
+                (stepperBuilder impl.subscriptions)
         )
 
 
@@ -260,6 +260,30 @@ resetSubscriptionsAction runtime updateList =
         updateList
 
 
+stepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
+stepperBuilder subscriptions runtime =
+    Impure.toFunction
+        (\initialModel ->
+            let
+                updateSubAction sub =
+                    Impure.fromFunction (updateSubListeners sub)
+
+                stepper model _ =
+                    updateSubAction (subscriptions model) runtime
+                        |> RawTask.execImpure
+                        |> RawScheduler.spawn
+                        |> Impure.map assertProcessId
+            in
+            stepper initialModel AsyncUpdate
+                |> Impure.map (\() model -> Impure.toFunction (stepper model))
+        )
+
+
+assertProcessId : RawScheduler.ProcessId -> ()
+assertProcessId _ =
+    ()
+
+
 
 -- Kernel interop TYPES
 
@@ -269,13 +293,16 @@ code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions appMsg =
     { setupEffectsChannel : Effect.Runtime appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
-    , updateSubListeners : Sub appMsg -> Impure.Function (Effect.Runtime appMsg) ()
     , subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
     }
 
 
 type alias StepperBuilder model appMsg =
-    ImpureSendToApp appMsg -> model -> model -> Impure.Function UpdateMetadata ()
+    Effect.Runtime appMsg -> Impure.Function model (Stepper model)
+
+
+type alias Stepper model =
+    model -> Impure.Function UpdateMetadata ()
 
 
 {-| This is the actual type of a Program. This is the value that will be called
@@ -325,8 +352,7 @@ type alias Impl flags model msg =
 -}
 initializeHelperFunctions : InitializeHelperFunctions msg
 initializeHelperFunctions =
-    { updateSubListeners = updateSubListeners
-    , setupEffectsChannel = setupEffectsChannel
+    { setupEffectsChannel = setupEffectsChannel
     , subListenerProcess = subListenerProcess
     }
 

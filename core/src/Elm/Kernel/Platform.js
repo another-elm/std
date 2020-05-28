@@ -21,9 +21,6 @@ import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, bindi
 
 const _Platform_ports = {};
 
-const _Platform_effectsQueue = [];
-let _Platform_effectDispatchInProgress = false;
-
 const _Platform_runAfterLoadQueue = [];
 
 // TODO(harry) could onSubUpdateFunctions be a WeakMap?
@@ -45,49 +42,22 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     }
   }
 
+  const cmdChannel = __Channel_rawUnbounded();
+
   const sendToApp = (message, viewMetadata) => {
     const updateValue = A2(impl.__$update, message, model);
     model = updateValue.a;
     A2(stepper, model, viewMetadata);
-    dispatch(model, updateValue.b);
+    const cmd = updateValue.b;
+    A2(__Channel_rawSend, cmdChannel, cmd);
   };
 
   const runtimeId = {
     __$id: _Platform_guidIdCount++,
-    __sendToApp: (message) => (viewMetadata) =>
-      __RawTask_execImpure(() => sendToApp(message, viewMetadata)),
+    __sendToApp: sendToApp,
     __outgoingPortSubs: [],
     __subscriptionStates: new Map(),
     __subscriptionChannels: new Map(),
-  };
-
-  const cmdChannel = __Channel_rawUnbounded();
-
-  // We use a queue here to avoid re-entrant calls to dispatch. The code is
-  // copied from https://github.com/elm/core/pull/981. I am not sure if it is
-  // possible to trigger the need for this queue using the current
-  // architecture though. I should investigate if it can be removed.
-  const dispatch = (model, cmds) => {
-    _Platform_effectsQueue.push({
-      __cmds: cmds,
-      __subs: impl.__$subscriptions(model),
-    });
-
-    if (_Platform_effectDispatchInProgress) {
-      return;
-    }
-
-    _Platform_effectDispatchInProgress = true;
-    for (;;) {
-      const fx = _Platform_effectsQueue.shift();
-      if (fx === undefined) {
-        _Platform_effectDispatchInProgress = false;
-        return;
-      }
-
-      A2(__Channel_rawSend, cmdChannel, fx.__cmds);
-      __Platform_initializeHelperFunctions.__$updateSubListeners(fx.__subs)(runtimeId);
-    }
   };
 
   for (const f of _Platform_runAfterLoadQueue) {
@@ -102,9 +72,9 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
 
   const initValue = impl.__$init(flagsResult.a);
   let model = initValue.a;
-  const stepper = A2(stepperBuilder, sendToApp, model);
-
-  dispatch(model, initValue.b);
+  const initCmd = initValue.b;
+  const stepper = A2(stepperBuilder, runtimeId, model);
+  A2(__Channel_rawSend, cmdChannel, initCmd);
 
   const ports = {};
 
@@ -115,9 +85,9 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   return { ports };
 });
 
-function _Platform_browserifiedSendToApp(sendToApp) {
+function _Platform_browserifiedSendToApp(runtimeId) {
   return (message, updateMetadata) =>
-    sendToApp(message, updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate);
+    runtimeId.__sendToApp(message, updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate);
 }
 
 // EFFECT MANAGERS (not supported)
@@ -287,7 +257,8 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   return __Utils_Tuple0;
 };
 
-const _Platform_sendToApp = (runtimeId) => runtimeId.__sendToApp;
+const _Platform_sendToApp = (runtimeId) => (message) => (viewMetadata) =>
+  __RawTask_execImpure(() => runtimeId.__sendToApp(message, viewMetadata));
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 

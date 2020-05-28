@@ -137,12 +137,13 @@ There is no way to send messages to a process spawned in this way.
 
 -}
 spawn : Platform.Task err ok -> Platform.Task never Platform.ProcessId
-spawn =
-    wrapTaskFn
-        (\task ->
-            RawTask.map
-                (\proc -> Ok (wrapProcessId proc))
-                (RawScheduler.spawn task)
+spawn task =
+    map
+        (\proc -> wrapProcessId proc)
+        (task
+            |> unwrapTask
+            |> RawScheduler.spawn
+            |> execImpure
         )
 
 

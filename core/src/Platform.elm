@@ -193,37 +193,38 @@ setupEffectsChannel runtime receiver =
                                 RawTask.Value ()
                     )
 
-        receiveMsg : Cmd appMsg -> RawTask.Task ()
+        receiveMsg : Cmd appMsg -> Impure.Action ()
         receiveMsg cmds =
             let
                 runtimeId =
                     Effect.getId runtime
 
-                cmdTask =
+                cmdAction : Impure.Action RawScheduler.ProcessId
+                cmdAction =
                     cmds
                         |> unwrapCmd
                         |> List.map (\getTaskFromId -> processCmdTask (getTaskFromId runtimeId))
                         |> List.map RawScheduler.spawn
                         |> List.foldr
                             (\curr accTask ->
-                                RawTask.andThen
+                                Impure.andThen
                                     (\acc ->
-                                        RawTask.map
+                                        Impure.map
                                             (\id -> id :: acc)
                                             curr
                                     )
                                     accTask
                             )
-                            (RawTask.Value [])
-                        |> RawTask.andThen RawScheduler.batch
+                            (Impure.resolve [])
+                        |> Impure.andThen RawScheduler.batch
             in
-            cmdTask
-                |> RawTask.map (\_ -> ())
+            cmdAction
+                |> Impure.map (\_ -> ())
 
         dispatchTask : () -> RawTask.Task never
         dispatchTask () =
             receiver
-                |> Channel.recv receiveMsg
+                |> Channel.recv (receiveMsg >> RawTask.execImpure)
                 |> RawTask.andThen dispatchTask
     in
     RawTask.sleep 0

@@ -24,19 +24,17 @@ const _Platform_runAfterLoadQueue = [];
 // TODO(harry) could onSubUpdateFunctions be a WeakMap?
 const _Platform_onSubUpdateFunctions = new WeakMap();
 let _Platform_guidIdCount = 0;
+let _Platform_initDone = false;
 
 // INITIALIZE A PROGRAM
 
 const _Platform_initialize = F2((args, mainLoop) => {
+  _Platform_initDone = true;
   const messageChannel = __Channel_rawUnbounded();
-
-  const sendToApp = (message, viewMetadata) => {
-    A2(__Channel_rawSend, messageChannel, __Utils_Tuple2(message, viewMetadata));
-  };
 
   const runtimeId = {
     __$id: _Platform_guidIdCount++,
-    __sendToApp: sendToApp,
+    __sendToApp: __Channel_rawSend(messageChannel),
     __outgoingPortSubs: [],
     __subscriptionStates: new Map(),
   };
@@ -44,8 +42,6 @@ const _Platform_initialize = F2((args, mainLoop) => {
   for (const f of _Platform_runAfterLoadQueue) {
     f(runtimeId);
   }
-
-  _Platform_runAfterLoadQueue.loaded = true;
 
   mainLoop({
     __$receiver: messageChannel,
@@ -62,10 +58,10 @@ const _Platform_initialize = F2((args, mainLoop) => {
   return { ports };
 });
 
-function _Platform_browserifiedSendToApp(runtimeId) {
-  return (message, updateMetadata) =>
-    runtimeId.__sendToApp(message, updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate);
-}
+const _Platform_browserifiedSendToApp = (runtimeId) => (message, updateMetadata) => {
+  const meta = updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate;
+  return runtimeId.__sendToApp(__Utils_Tuple2(message, meta));
+};
 
 // EFFECT MANAGERS (not supported)
 
@@ -182,7 +178,7 @@ const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
 });
 
 const _Platform_runAfterLoad = (f) => {
-  if (_Platform_runAfterLoadQueue.loaded) {
+  if (_Platform_initDone) {
     __Debug_crash(12, __Debug_runtimeCrashReason("alreadyLoaded"));
   } else {
     _Platform_runAfterLoadQueue.push(f);
@@ -237,8 +233,7 @@ function _Platform_invalidFlags(stringifiedError) {
   }
 }
 
-const _Platform_sendToApp = (runtimeId) => (message) => (viewMetadata) =>
-  runtimeId.__sendToApp(message, viewMetadata);
+const _Platform_sendToApp = (runtimeId) => runtimeId.__sendToApp;
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 

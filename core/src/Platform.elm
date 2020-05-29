@@ -94,9 +94,8 @@ worker impl =
     makeProgram
         (\flagsDecoder _ args ->
             initialize
-                flagsDecoder
                 args
-                (mainLoop impl)
+                (mainLoop flagsDecoder impl)
         )
 
 
@@ -218,9 +217,17 @@ dispatchCmd runtime cmds =
         |> Impure.map (\_ -> ())
 
 
-mainLoop : Impl flags model msg -> MainLoopArgs flags msg -> RawTask.Task never
-mainLoop impl { receiver, flags, runtime } =
+mainLoop : Decoder flags -> Impl flags model msg -> MainLoopArgs msg -> RawTask.Task never
+mainLoop decoder impl { receiver, encodedFlags, runtime } =
     let
+        flags =
+            case Json.Decode.decodeValue decoder encodedFlags of
+                Ok f ->
+                    f
+
+                Err e ->
+                    invalidFlags (Json.Decode.errorToString e)
+
         stepperBuilder =
             effectsStepperBuilder impl.subscriptions
 
@@ -320,9 +327,9 @@ type alias InitializeHelperFunctions =
     }
 
 
-type alias MainLoopArgs flags msg =
+type alias MainLoopArgs msg =
     { receiver : Channel.Receiver ( msg, UpdateMetadata )
-    , flags : flags
+    , encodedFlags : Json.Decode.Value
     , runtime : Effect.Runtime msg
     }
 
@@ -391,9 +398,8 @@ initializeHelperFunctions =
 
 
 initialize :
-    Decoder flags
-    -> RawJsObject
-    -> (MainLoopArgs flags msg -> RawTask.Task Never)
+    RawJsObject
+    -> (MainLoopArgs msg -> RawTask.Task Never)
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize
@@ -422,3 +428,8 @@ resetSubscriptions =
 sendToApp2 : Effect.Runtime msg -> msg -> UpdateMetadata -> RawTask.Task ()
 sendToApp2 =
     Elm.Kernel.Platform.sendToApp
+
+
+invalidFlags : String -> never
+invalidFlags =
+    Elm.Kernel.Platform.invalidFlags

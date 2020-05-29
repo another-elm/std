@@ -1,7 +1,7 @@
 /*
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
-import Elm.Kernel.Json exposing (run, wrap, unwrap, errorToString)
+import Elm.Kernel.Json exposing (run, wrap, unwrap)
 import Elm.Kernel.List exposing (Cons, Nil, toArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
@@ -29,19 +29,7 @@ let _Platform_guidIdCount = 0;
 
 // INITIALIZE A PROGRAM
 
-const _Platform_initialize = F3((flagDecoder, args, mainLoop) => {
-  // Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
-  // Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
-  const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args.flags : undefined));
-
-  if (!__Result_isOk(flagsResult)) {
-    if (__Basics_isDebug) {
-      __Debug_crash(2, __Json_errorToString(flagsResult.a));
-    } else {
-      __Debug_crash(2);
-    }
-  }
-
+const _Platform_initialize = F2((args, mainLoop) => {
   const messageChannel = __Channel_rawUnbounded();
 
   const sendToApp = (message, viewMetadata) => {
@@ -64,7 +52,7 @@ const _Platform_initialize = F3((flagDecoder, args, mainLoop) => {
   __RawScheduler_rawSpawn(
     mainLoop({
       __$receiver: messageChannel,
-      __$flags: flagsResult.a,
+      __$encodedFlags: __Json_wrap(args ? args.flags : undefined),
       __$runtime: runtimeId,
     })
   );
@@ -250,6 +238,14 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   return __Utils_Tuple0;
 };
 
+function _Platform_invalidFlags(stringifiedError) {
+  if (__Basics_isDebug) {
+    __Debug_crash(2, stringifiedError);
+  } else {
+    __Debug_crash(2);
+  }
+}
+
 const _Platform_sendToApp = (runtimeId) => (message) => (viewMetadata) =>
   __RawTask_execImpure(() => runtimeId.__sendToApp(message, viewMetadata));
 
@@ -336,7 +332,7 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Platform_.*" }] */
 
 /* global __Debug_crash, __Debug_runtimeCrashReason */
-/* global __Json_run, __Json_wrap, __Json_unwrap, __Json_errorToString */
+/* global __Json_run, __Json_wrap, __Json_unwrap */
 /* global __List_Cons, __List_Nil, __List_toArray */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */

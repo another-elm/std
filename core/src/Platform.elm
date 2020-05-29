@@ -188,7 +188,8 @@ dispatchCmd runtime cmds =
                     (\maybeMsg ->
                         case maybeMsg of
                             Just msg ->
-                                sendToApp2 runtime msg AsyncUpdate
+                                RawTask.execImpure
+                                    (Impure.fromFunction (sendToApp2 runtime msg) AsyncUpdate)
 
                             Nothing ->
                                 RawTask.Value ()
@@ -271,24 +272,26 @@ updateSubListeners subBag =
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            sendToApp2 runtime (tagger v) AsyncUpdate
+                            Impure.fromFunction (sendToApp2 runtime (tagger v)) AsyncUpdate
                         )
                     )
                 |> resetSubscriptionsAction runtime
         )
 
 
-subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task never
+subListenerProcess : Channel.Receiver (Impure.Function () ()) -> RawTask.Task never
 subListenerProcess channel =
-    Channel.recv (\task -> task) channel
+    Channel.recv RawTask.execImpure channel
         |> RawTask.andThen (\() -> subListenerProcess channel)
 
 
-resetSubscriptionsAction : Effect.Runtime msg -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> RawTask.Task () ) -> Impure.Action ()
+resetSubscriptionsAction : Effect.Runtime msg -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
         (resetSubscriptions runtime)
-        updateList
+        (updateList
+            |> List.map (Tuple.mapSecond Impure.toFunction)
+        )
 
 
 effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
@@ -323,7 +326,7 @@ assertProcessId _ =
 code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions =
-    { subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
+    { subListenerProcess : Channel.Receiver (Impure.Function () ()) -> RawTask.Task Never
     }
 
 
@@ -420,12 +423,14 @@ unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : Effect.Runtime msg -> Impure.Function (List ( Effect.SubId, Effect.HiddenConvertedSubType -> RawTask.Task () )) ()
+resetSubscriptions :
+    Effect.Runtime msg
+    -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToApp2 : Effect.Runtime msg -> msg -> UpdateMetadata -> RawTask.Task ()
+sendToApp2 : Effect.Runtime msg -> msg -> Impure.Function UpdateMetadata ()
 sendToApp2 =
     Elm.Kernel.Platform.sendToApp
 

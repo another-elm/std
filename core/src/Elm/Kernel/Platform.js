@@ -10,7 +10,6 @@ import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
-import Platform.Raw.Task as RawTask exposing (execImpure)
 import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
 
 */
@@ -174,19 +173,15 @@ const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
 
 const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
   const state = runtime.__subscriptionStates.get(subId.__$key);
-  A2(
-    __Channel_rawSend,
-    state.__channel,
-    __RawTask_execImpure(() => {
-      for (const listeners of state.__listenerGroups.values()) {
-        for (const listener of listeners) {
-          __RawScheduler_rawSpawn(listener(message));
-        }
+  A2(__Channel_rawSend, state.__channel, () => {
+    for (const listeners of state.__listenerGroups.values()) {
+      for (const listener of listeners) {
+        listener(message);
       }
+    }
 
-      return __Utils_Tuple0;
-    })
-  );
+    return __Utils_Tuple0;
+  });
 });
 
 const _Platform_runAfterLoad = (f) => {
@@ -246,7 +241,7 @@ function _Platform_invalidFlags(stringifiedError) {
 }
 
 const _Platform_sendToApp = (runtimeId) => (message) => (viewMetadata) =>
-  __RawTask_execImpure(() => runtimeId.__sendToApp(message, viewMetadata));
+  runtimeId.__sendToApp(message, viewMetadata);
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 
@@ -340,5 +335,4 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Maybe_Nothing */
 /* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
 /* global __RawScheduler_rawSpawn */
-/* global __RawTask_execImpure */
 /* global __Scheduler_execImpure, __Scheduler_andThen, __Scheduler_map, __Scheduler_binding */

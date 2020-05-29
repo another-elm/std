@@ -96,8 +96,7 @@ worker impl =
             initialize
                 flagsDecoder
                 args
-                impl
-                (effectsStepperBuilder impl.subscriptions)
+                (mainLoop impl)
         )
 
 
@@ -219,9 +218,12 @@ dispatchCmd runtime cmds =
         |> Impure.map (\_ -> ())
 
 
-mainLoop : MainLoopArgs flags model msg -> RawTask.Task never
-mainLoop { impl, receiver, flags, runtime, stepperBuilder } =
+mainLoop : Impl flags model msg -> MainLoopArgs flags msg -> RawTask.Task never
+mainLoop impl { receiver, flags, runtime } =
     let
+        stepperBuilder =
+            effectsStepperBuilder impl.subscriptions
+
         ( initialModel, initialCmd ) =
             impl.init flags
 
@@ -313,18 +315,15 @@ assertProcessId _ =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions flags model appMsg =
+type alias InitializeHelperFunctions =
     { subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
-    , mainLoop : MainLoopArgs flags model appMsg -> RawTask.Task Never
     }
 
 
-type alias MainLoopArgs flags model msg =
-    { impl : Impl flags model msg
-    , receiver : Channel.Receiver ( msg, UpdateMetadata )
+type alias MainLoopArgs flags msg =
+    { receiver : Channel.Receiver ( msg, UpdateMetadata )
     , flags : flags
     , runtime : Effect.Runtime msg
-    , stepperBuilder : StepperBuilder model msg
     }
 
 
@@ -381,10 +380,9 @@ type alias Impl flags model msg =
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions flags model msg
+initializeHelperFunctions : InitializeHelperFunctions
 initializeHelperFunctions =
-    { mainLoop = mainLoop
-    , subListenerProcess = subListenerProcess
+    { subListenerProcess = subListenerProcess
     }
 
 
@@ -395,8 +393,7 @@ initializeHelperFunctions =
 initialize :
     Decoder flags
     -> RawJsObject
-    -> Impl flags model msg
-    -> StepperBuilder model msg
+    -> (MainLoopArgs flags msg -> RawTask.Task Never)
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize

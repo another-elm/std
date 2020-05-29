@@ -29,7 +29,7 @@ let _Platform_guidIdCount = 0;
 
 // INITIALIZE A PROGRAM
 
-const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
+const _Platform_initialize = F3((flagDecoder, args, mainLoop) => {
   // Elm.Kernel.Json.wrap : RawJsObject -> Json.Decode.Value
   // Elm.Kernel.Json.run : Json.Decode.Decoder a -> Json.Decode.Value -> Result Json.Decode.Error a
   const flagsResult = A2(__Json_run, flagDecoder, __Json_wrap(args ? args.flags : undefined));
@@ -53,7 +53,6 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     __sendToApp: sendToApp,
     __outgoingPortSubs: [],
     __subscriptionStates: new Map(),
-    __subscriptionChannels: new Map(),
   };
 
   for (const f of _Platform_runAfterLoadQueue) {
@@ -63,12 +62,10 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   _Platform_runAfterLoadQueue.loaded = true;
 
   __RawScheduler_rawSpawn(
-    __Platform_initializeHelperFunctions.__$mainLoop({
-      __$impl: impl,
+    mainLoop({
       __$receiver: messageChannel,
       __$flags: flagsResult.a,
       __$runtime: runtimeId,
-      __$stepperBuilder: stepperBuilder,
     })
   );
 

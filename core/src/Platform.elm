@@ -97,7 +97,7 @@ worker impl =
                 flagsDecoder
                 args
                 impl
-                (stepperBuilder impl.subscriptions)
+                (effectsStepperBuilder impl.subscriptions)
         )
 
 
@@ -169,9 +169,12 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : Effect.Runtime msg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task never
-setupEffectsChannel runtime receiver =
+dispatchCmd : Effect.Runtime msg -> Cmd appMsg -> Impure.Action ()
+dispatchCmd runtime cmds =
     let
+        runtimeId =
+            Effect.getId runtime
+
         processCmdTask (Task t) =
             t
                 |> RawTask.map
@@ -193,42 +196,61 @@ setupEffectsChannel runtime receiver =
                                 RawTask.Value ()
                     )
 
-        receiveMsg : Cmd appMsg -> Impure.Action ()
-        receiveMsg cmds =
-            let
-                runtimeId =
-                    Effect.getId runtime
-
-                cmdAction : Impure.Action RawScheduler.ProcessId
-                cmdAction =
-                    cmds
-                        |> unwrapCmd
-                        |> List.map (\getTaskFromId -> processCmdTask (getTaskFromId runtimeId))
-                        |> List.map RawScheduler.spawn
-                        |> List.foldr
-                            (\curr accTask ->
-                                Impure.andThen
-                                    (\acc ->
-                                        Impure.map
-                                            (\id -> id :: acc)
-                                            curr
-                                    )
-                                    accTask
+        cmdAction : Impure.Action RawScheduler.ProcessId
+        cmdAction =
+            cmds
+                |> unwrapCmd
+                |> List.map (\getTaskFromId -> processCmdTask (getTaskFromId runtimeId))
+                |> List.map RawScheduler.spawn
+                |> List.foldr
+                    (\curr accTask ->
+                        Impure.andThen
+                            (\acc ->
+                                Impure.map
+                                    (\id -> id :: acc)
+                                    curr
                             )
-                            (Impure.resolve [])
-                        |> Impure.andThen RawScheduler.batch
-            in
-            cmdAction
-                |> Impure.map (\_ -> ())
-
-        dispatchTask : () -> RawTask.Task never
-        dispatchTask () =
-            receiver
-                |> Channel.recv (receiveMsg >> RawTask.execImpure)
-                |> RawTask.andThen dispatchTask
+                            accTask
+                    )
+                    (Impure.resolve [])
+                |> Impure.andThen RawScheduler.batch
     in
-    RawTask.sleep 0
-        |> RawTask.andThen dispatchTask
+    cmdAction
+        |> Impure.map (\_ -> ())
+
+
+mainLoop : MainLoopArgs flags model msg -> RawTask.Task never
+mainLoop { impl, receiver, flags, runtime, stepperBuilder } =
+    let
+        ( initialModel, initialCmd ) =
+            impl.init flags
+
+        dispatcher cmd =
+            RawTask.andThen
+                (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
+                (RawTask.sleep 0)
+
+        receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
+        receiveMsg stepper oldModel ( message, meta ) =
+            let
+                ( newModel, newCmd ) =
+                    impl.update message oldModel
+            in
+            dispatchCmd runtime newCmd
+                |> Impure.andThen (\() -> Impure.fromFunction (stepper newModel) meta)
+                |> Impure.map (\() -> newModel)
+
+        loop stepper model =
+            receiver
+                |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
+                |> RawTask.andThen (loop stepper)
+    in
+    Impure.fromFunction (stepperBuilder runtime) initialModel
+        |> RawTask.execImpure
+        |> RawTask.andThen
+            (\stepper ->
+                RawTask.andThen (\() -> loop stepper initialModel) (dispatcher initialCmd)
+            )
 
 
 updateSubListeners : Sub appMsg -> Impure.Function (Effect.Runtime msg) ()
@@ -260,8 +282,8 @@ resetSubscriptionsAction runtime updateList =
         updateList
 
 
-stepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
-stepperBuilder subscriptions runtime =
+effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
+effectsStepperBuilder subscriptions runtime =
     Impure.toFunction
         (\initialModel ->
             let
@@ -291,9 +313,18 @@ assertProcessId _ =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions appMsg =
-    { setupEffectsChannel : Effect.Runtime appMsg -> Channel.Receiver (Cmd appMsg) -> RawTask.Task Never
-    , subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
+type alias InitializeHelperFunctions flags model appMsg =
+    { subListenerProcess : Channel.Receiver (RawTask.Task ()) -> RawTask.Task Never
+    , mainLoop : MainLoopArgs flags model appMsg -> RawTask.Task Never
+    }
+
+
+type alias MainLoopArgs flags model msg =
+    { impl : Impl flags model msg
+    , receiver : Channel.Receiver ( msg, UpdateMetadata )
+    , flags : flags
+    , runtime : Effect.Runtime msg
+    , stepperBuilder : StepperBuilder model msg
     }
 
 
@@ -350,9 +381,9 @@ type alias Impl flags model msg =
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions msg
+initializeHelperFunctions : InitializeHelperFunctions flags model msg
 initializeHelperFunctions =
-    { setupEffectsChannel = setupEffectsChannel
+    { mainLoop = mainLoop
     , subListenerProcess = subListenerProcess
     }
 

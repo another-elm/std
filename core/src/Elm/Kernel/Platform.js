@@ -42,14 +42,10 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
     }
   }
 
-  const cmdChannel = __Channel_rawUnbounded();
+  const messageChannel = __Channel_rawUnbounded();
 
   const sendToApp = (message, viewMetadata) => {
-    const updateValue = A2(impl.__$update, message, model);
-    model = updateValue.a;
-    A2(stepper, model, viewMetadata);
-    const cmd = updateValue.b;
-    A2(__Channel_rawSend, cmdChannel, cmd);
+    A2(__Channel_rawSend, messageChannel, __Utils_Tuple2(message, viewMetadata));
   };
 
   const runtimeId = {
@@ -67,14 +63,14 @@ const _Platform_initialize = F4((flagDecoder, args, impl, stepperBuilder) => {
   _Platform_runAfterLoadQueue.loaded = true;
 
   __RawScheduler_rawSpawn(
-    A2(__Platform_initializeHelperFunctions.__$setupEffectsChannel, runtimeId, cmdChannel)
+    __Platform_initializeHelperFunctions.__$mainLoop({
+      __$impl: impl,
+      __$receiver: messageChannel,
+      __$flags: flagsResult.a,
+      __$runtime: runtimeId,
+      __$stepperBuilder: stepperBuilder,
+    })
   );
-
-  const initValue = impl.__$init(flagsResult.a);
-  let model = initValue.a;
-  const initCmd = initValue.b;
-  const stepper = A2(stepperBuilder, runtimeId, model);
-  A2(__Channel_rawSend, cmdChannel, initCmd);
 
   const ports = {};
 

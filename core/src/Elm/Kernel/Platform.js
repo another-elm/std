@@ -9,7 +9,6 @@ import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
-import Platform.Raw.Scheduler as RawScheduler exposing (rawSpawn)
 import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
 
 */
@@ -48,13 +47,11 @@ const _Platform_initialize = F2((args, mainLoop) => {
 
   _Platform_runAfterLoadQueue.loaded = true;
 
-  __RawScheduler_rawSpawn(
-    mainLoop({
-      __$receiver: messageChannel,
-      __$encodedFlags: __Json_wrap(args ? args.flags : undefined),
-      __$runtime: runtimeId,
-    })
-  );
+  mainLoop({
+    __$receiver: messageChannel,
+    __$encodedFlags: __Json_wrap(args ? args.flags : undefined),
+    __$runtime: runtimeId,
+  });
 
   const ports = {};
 
@@ -156,7 +153,7 @@ const _Platform_createSubscriptionId = () => {
   _Platform_runAfterLoad((runtimeId) => {
     const channel = __Channel_rawUnbounded();
     runtimeId.__subscriptionStates.set(key, { __channel: channel, __listenerGroups: new Map() });
-    __RawScheduler_rawSpawn(__Platform_initializeHelperFunctions.__$subListenerProcess(channel));
+    __Platform_initializeHelperFunctions.__$subListenerProcess(channel);
   });
 
   return subId;
@@ -334,5 +331,4 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Result_isOk */
 /* global __Maybe_Nothing */
 /* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
-/* global __RawScheduler_rawSpawn */
 /* global __Scheduler_execImpure, __Scheduler_andThen, __Scheduler_map, __Scheduler_binding */

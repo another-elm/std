@@ -34,7 +34,7 @@ const _Platform_initialize = F2((args, mainLoop) => {
 
   const runtimeId = {
     __$id: _Platform_guidIdCount++,
-    __sendToApp: __Channel_rawSend(messageChannel),
+    __messageChannel: messageChannel,
     __outgoingPortSubs: [],
     __subscriptionStates: new Map(),
   };
@@ -60,7 +60,7 @@ const _Platform_initialize = F2((args, mainLoop) => {
 
 const _Platform_browserifiedSendToApp = (runtimeId) => (message, updateMetadata) => {
   const meta = updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate;
-  return runtimeId.__sendToApp(__Utils_Tuple2(message, meta));
+  return  __Channel_rawSend(runtimeId.__messageChannel)(__Utils_Tuple2(message, meta));
 };
 
 // EFFECT MANAGERS (not supported)
@@ -233,7 +233,7 @@ function _Platform_invalidFlags(stringifiedError) {
   }
 }
 
-const _Platform_sendToApp = (runtimeId) => runtimeId.__sendToApp;
+const _Platform_sendToApp = (runtimeId) => __Channel_rawSend(runtimeId.__messageChannel);
 
 const _Platform_wrapTask = (task) => __Platform_Task(task);
 

@@ -19,7 +19,7 @@ import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, bindi
 
 // State
 
-const _Platform_ports = {};
+const _Platform_ports = new Map();
 
 const _Platform_runAfterLoadQueue = [];
 
@@ -59,7 +59,7 @@ const _Platform_initialize = F2((args, mainLoop) => {
 
   const ports = {};
 
-  for (const [name, p] of Object.entries(_Platform_ports)) {
+  for (const [name, p] of _Platform_ports.entries()) {
     ports[name] = p(runtimeId);
   }
 
@@ -83,16 +83,16 @@ const _Platform_leaf = (home) => () => {
 
 // PORTS
 
-function _Platform_checkPortName(name) {
-  if (Object.prototype.hasOwnProperty.call(_Platform_ports, name)) {
+function _Platform_registerPort(name, portInit) {
+  if (_Platform_ports.has(name)) {
     __Debug_crash(3, name);
   }
+
+  _Platform_ports.set(name, portInit);
 }
 
 function _Platform_outgoingPort(name, converter) {
-  _Platform_checkPortName(name);
-
-  _Platform_ports[name] = (runtimeId) => {
+  _Platform_registerPort(name, (runtimeId) => {
     const subscribe = (callback) => {
       runtimeId.__outgoingPortSubs.push(callback);
     };
@@ -102,7 +102,7 @@ function _Platform_outgoingPort(name, converter) {
     };
 
     return { subscribe, unsubscribe };
-  };
+  });
 
   return (payload) =>
     _Platform_command((runtimeId) =>
@@ -118,10 +118,9 @@ function _Platform_outgoingPort(name, converter) {
 }
 
 function _Platform_incomingPort(name, converter) {
-  _Platform_checkPortName(name);
   const subId = _Platform_createSubscriptionId();
 
-  _Platform_ports[name] = (runtimeId) => {
+  _Platform_registerPort(name, (runtimeId) => {
     function send(incomingValue) {
       const result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
@@ -134,7 +133,7 @@ function _Platform_incomingPort(name, converter) {
     }
 
     return { send };
-  };
+  });
 
   return _Platform_subscription(subId);
 }

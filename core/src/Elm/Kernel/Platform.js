@@ -60,7 +60,7 @@ const _Platform_initialize = F2((args, mainLoop) => {
 
 const _Platform_browserifiedSendToApp = (runtimeId) => (message, updateMetadata) => {
   const meta = updateMetadata ? __Platform_SyncUpdate : __Platform_AsyncUpdate;
-  return  __Channel_rawSend(runtimeId.__messageChannel)(__Utils_Tuple2(message, meta));
+  return __Channel_rawSend(runtimeId.__messageChannel)(__Utils_Tuple2(message, meta));
 };
 
 // EFFECT MANAGERS (not supported)

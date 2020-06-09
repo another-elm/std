@@ -53,27 +53,21 @@ def reset_package(packages_root, author, package):
     return any_modified
 
 
-def wrapped_run(elm):
+def main():
     elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
     another_elm_home_dir = os.path.join(elm_home_dir, 'another')
-
-    custom_env = os.environ.copy()
-    custom_env["ELM_HOME"] = another_elm_home_dir
-
-    some_packages_reset = False
 
     try:
         elm_versions = os.listdir(another_elm_home_dir)
     except FileNotFoundError:
-        if not some_packages_reset:
-            print((
-                "Warning: "
-                "nothing reset as elm home is empty (just run `another-elm`)"))
+        print("""
+        Warning: nothing reset as elm home is empty (just run `another-elm`)
+        """.strip())
 
         return 0
 
+    some_packages_reset = False
     for elm_version in elm_versions:
-
         packages_root = os.path.join(another_elm_home_dir, elm_version,
                                      'packages')
 
@@ -84,12 +78,12 @@ def wrapped_run(elm):
                 some_packages_reset = True
 
     if not some_packages_reset:
-        print(("Warning: "
-               "nothing reset as source is no newer than linked packages."))
+        print("""
+        Warning: nothing reset as source is no newer than linked packages.)
+        """.strip())
 
     return 0
 
 
-elm = os.getenv('ELM', 'elm')
-
-exit(wrapped_run(elm))
+if __name__ == '__main__':
+    exit(main())

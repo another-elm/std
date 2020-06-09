@@ -189,7 +189,7 @@ dispatchCmd runtime cmds =
                         case maybeMsg of
                             Just msg ->
                                 RawTask.execImpure
-                                    (Impure.fromFunction (sendToApp2 runtime) (msg, AsyncUpdate))
+                                    (Impure.fromFunction (sendToApp2 runtime) ( msg, AsyncUpdate ))
 
                             Nothing ->
                                 RawTask.Value ()
@@ -277,7 +277,7 @@ updateSubListeners subBag =
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            Impure.fromFunction (sendToApp2 runtime) (tagger v, AsyncUpdate)
+                            Impure.fromFunction (sendToApp2 runtime) ( tagger v, AsyncUpdate )
                         )
                     )
                 |> resetSubscriptionsAction runtime

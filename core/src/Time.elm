@@ -42,8 +42,8 @@ import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
+import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
-import Platform.Raw.Sub as RawSub
 import Platform.Scheduler as Scheduler
 import Platform.Sub exposing (Sub)
 import Process
@@ -574,12 +574,12 @@ every interval tagger =
     subscription (setInterval interval) (\f -> tagger (millisToPosix (round f)))
 
 
-setInterval : Float -> RawSub.Id
+setInterval : Float -> Effect.SubId
 setInterval =
     Elm.Kernel.Time.setInterval
 
 
-subscription : RawSub.Id -> (Float -> msg) -> Sub msg
+subscription : Effect.SubId -> (Float -> msg) -> Sub msg
 subscription =
     Elm.Kernel.Platform.subscription
 

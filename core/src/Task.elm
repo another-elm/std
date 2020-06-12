@@ -36,6 +36,7 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Effect as Effect
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 
@@ -379,13 +380,13 @@ attempt resultToMessage task =
 
 performHelp : Task Never msg -> Cmd msg
 performHelp task =
-    command (map Just task)
+    command (\_ -> map Just task)
 
 
 
 -- Kernel interop --
 
 
-command : Platform.Task Never (Maybe msg) -> Cmd msg
+command : (Effect.RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 command =
     Elm.Kernel.Platform.command

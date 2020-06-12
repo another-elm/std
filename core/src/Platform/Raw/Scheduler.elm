@@ -31,9 +31,9 @@ rawSpawn =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : RawTask.Task a -> RawTask.Task ProcessId
+spawn : RawTask.Task a -> Impure.Action ProcessId
 spawn task =
-    RawTask.execImpure (Impure.fromFunction rawSpawn task)
+    Impure.fromFunction rawSpawn task
 
 
 {-| Create a task kills a process.
@@ -49,7 +49,7 @@ kill processId =
     RawTask.execImpure (rawKill processId)
 
 
-batch : List ProcessId -> RawTask.Task ProcessId
+batch : List ProcessId -> Impure.Action ProcessId
 batch ids =
     spawn
         (RawTask.AsyncAction
@@ -64,6 +64,7 @@ batch ids =
                     in
                     RawTask.Value ()
                         |> spawn
+                        |> RawTask.execImpure
                         |> doneCallback
                         |> Impure.map (\() -> tryAbort)
             }

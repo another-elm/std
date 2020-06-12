@@ -1,5 +1,5 @@
-Quick Installation Guide for musl libc
-======================================
+Quick Installation Guide for another-elm
+========================================
 
 
 another-elm comes with a wrapper script of the same name. The wrapper should be
@@ -23,12 +23,14 @@ support may be removed at any time.
 Build and Installation Procedure
 --------------------------------
 
-To build and install another-elm:
+To install another-elm to "~/.local/bin":
 
-   sudo mkdir -p /opt/elm/
-   sudo chown $USER /opt/elm
-   git clone https://github.com/another-elm/std /opt/elm/std
-   sudo ln -s /opt/elm/std/tools/another-elm /usr/local/bin/another-elm
+   ANOTHER_ELM_DIR="${XDG_DATA_HOME:-~/.local/share}/another-elm"
+   mkdir -p "$ANOTHER_ELM_DIR"
+   cd "$ANOTHER_ELM_DIR"
+   git clone https://github.com/another-elm/std
+   cd std
+   ./init.py
 
 
 Checking for Successful Installation

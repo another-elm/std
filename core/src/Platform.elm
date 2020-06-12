@@ -42,9 +42,9 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
+import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Sub as RawSub
 import Platform.Raw.Task as RawTask
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
@@ -94,9 +94,8 @@ worker impl =
     makeProgram
         (\flagsDecoder _ args ->
             initialize
-                flagsDecoder
                 args
-                impl
+                (mainLoop flagsDecoder impl)
         )
 
 
@@ -168,85 +167,169 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
 can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task never
-setupEffectsChannel sendToApp2 receiver =
+dispatchCmd : Effect.Runtime msg -> Cmd appMsg -> Impure.Action ()
+dispatchCmd runtime cmds =
     let
-        receiveMsg : AppMsgPayload appMsg -> RawTask.Task ()
-        receiveMsg cmds =
-            let
-                processCmdTask (Task t) =
-                    t
-                        |> RawTask.map
-                            (\r ->
-                                case r of
-                                    Ok v ->
-                                        v
+        runtimeId =
+            Effect.getId runtime
 
-                                    Err err ->
-                                        never err
+        processCmdTask (Task t) =
+            t
+                |> RawTask.map
+                    (\r ->
+                        case r of
+                            Ok v ->
+                                v
+
+                            Err err ->
+                                never err
+                    )
+                |> RawTask.andThen
+                    (\maybeMsg ->
+                        case maybeMsg of
+                            Just msg ->
+                                RawTask.execImpure
+                                    (Impure.fromFunction (sendToApp2 runtime) ( msg, AsyncUpdate ))
+
+                            Nothing ->
+                                RawTask.Value ()
+                    )
+
+        cmdAction : Impure.Action RawScheduler.ProcessId
+        cmdAction =
+            cmds
+                |> unwrapCmd
+                |> List.map (\getTaskFromId -> processCmdTask (getTaskFromId runtimeId))
+                |> List.map RawScheduler.spawn
+                |> List.foldr
+                    (\curr accTask ->
+                        Impure.andThen
+                            (\acc ->
+                                Impure.map
+                                    (\id -> id :: acc)
+                                    curr
                             )
-                        |> RawTask.andThen
-                            (\maybeMsg ->
-                                case maybeMsg of
-                                    Just msg ->
-                                        RawTask.execImpure (Impure.fromFunction (sendToApp2 msg) AsyncUpdate)
-
-                                    Nothing ->
-                                        RawTask.Value ()
-                            )
-
-                cmdTask =
-                    cmds
-                        |> unwrapCmd
-                        |> List.map processCmdTask
-                        |> List.map RawScheduler.spawn
-                        |> List.foldr
-                            (\curr accTask ->
-                                RawTask.andThen
-                                    (\acc ->
-                                        RawTask.map
-                                            (\id -> id :: acc)
-                                            curr
-                                    )
-                                    accTask
-                            )
-                            (RawTask.Value [])
-                        |> RawTask.andThen RawScheduler.batch
-            in
-            cmdTask
-                |> RawTask.map (\_ -> ())
-
-        dispatchTask : () -> RawTask.Task never
-        dispatchTask () =
-            receiver
-                |> Channel.recv receiveMsg
-                |> RawTask.andThen dispatchTask
+                            accTask
+                    )
+                    (Impure.resolve [])
+                |> Impure.andThen RawScheduler.batch
     in
-    RawTask.sleep 0
-        |> RawTask.andThen dispatchTask
+    cmdAction
+        |> Impure.map (\_ -> ())
 
 
-updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+mainLoop : Decoder flags -> Impl flags model msg -> Impure.Function (MainLoopArgs msg) ()
+mainLoop decoder impl =
+    Impure.toFunction
+        (\{ receiver, encodedFlags, runtime } ->
+            let
+                flags =
+                    case Json.Decode.decodeValue decoder encodedFlags of
+                        Ok f ->
+                            f
+
+                        Err e ->
+                            invalidFlags (Json.Decode.errorToString e)
+
+                stepperBuilder =
+                    effectsStepperBuilder impl.subscriptions
+
+                ( initialModel, initialCmd ) =
+                    impl.init flags
+
+                dispatcher cmd =
+                    RawTask.andThen
+                        (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
+                        (RawTask.sleep 0)
+
+                receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
+                receiveMsg stepper oldModel ( message, meta ) =
+                    let
+                        ( newModel, newCmd ) =
+                            impl.update message oldModel
+                    in
+                    dispatchCmd runtime newCmd
+                        |> Impure.andThen (\() -> Impure.fromFunction (stepper newModel) meta)
+                        |> Impure.map (\() -> newModel)
+
+                loop stepper model =
+                    receiver
+                        |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
+                        |> RawTask.andThen (loop stepper)
+            in
+            Impure.fromFunction (stepperBuilder runtime) initialModel
+                |> RawTask.execImpure
+                |> RawTask.andThen
+                    (\stepper ->
+                        RawTask.andThen (\() -> loop stepper initialModel) (dispatcher initialCmd)
+                    )
+                |> RawScheduler.spawn
+                |> Impure.map assertProcessId
+        )
+
+
+updateSubListeners : Sub appMsg -> Impure.Function (Effect.Runtime msg) ()
 updateSubListeners subBag =
     Impure.toFunction
-        (\sendToAppFunc ->
+        (\runtime ->
             subBag
                 |> unwrapSub
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            Impure.fromFunction (sendToAppFunc (tagger v)) AsyncUpdate
+                            Impure.fromFunction (sendToApp2 runtime) ( tagger v, AsyncUpdate )
                         )
                     )
-                |> resetSubscriptionsAction
+                |> resetSubscriptionsAction runtime
         )
 
 
-resetSubscriptionsAction : List ( RawSub.Id, RawSub.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
-resetSubscriptionsAction updateList =
+subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task never
+subListenerHelper channel =
+    Channel.recv RawTask.execImpure channel
+        |> RawTask.andThen (\() -> subListenerHelper channel)
+
+
+subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
+subListenerProcess =
+    Impure.toFunction
+        (subListenerHelper
+            >> RawScheduler.spawn
+            >> Impure.map assertProcessId
+        )
+
+
+resetSubscriptionsAction : Effect.Runtime msg -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
+resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
-        resetSubscriptions
-        (List.map (\( id, getAction ) -> ( id, Impure.toFunction getAction )) updateList)
+        (resetSubscriptions runtime)
+        (updateList
+            |> List.map (Tuple.mapSecond Impure.toFunction)
+        )
+
+
+effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
+effectsStepperBuilder subscriptions runtime =
+    Impure.toFunction
+        (\initialModel ->
+            let
+                updateSubAction sub =
+                    Impure.fromFunction (updateSubListeners sub)
+
+                stepper model _ =
+                    updateSubAction (subscriptions model) runtime
+                        |> RawTask.execImpure
+                        |> RawScheduler.spawn
+                        |> Impure.map assertProcessId
+            in
+            stepper initialModel AsyncUpdate
+                |> Impure.map (\() model -> Impure.toFunction (stepper model))
+        )
+
+
+assertProcessId : RawScheduler.ProcessId -> ()
+assertProcessId _ =
+    ()
 
 
 
@@ -256,11 +339,24 @@ resetSubscriptionsAction updateList =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions model appMsg =
-    { stepperBuilder : ImpureSendToApp appMsg -> model -> appMsg -> UpdateMetadata -> ()
-    , setupEffectsChannel : ImpureSendToApp appMsg -> Channel.Receiver (AppMsgPayload appMsg) -> RawTask.Task Never
-    , updateSubListeners : Sub appMsg -> Impure.Function (ImpureSendToApp appMsg) ()
+type alias InitializeHelperFunctions =
+    { subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
     }
+
+
+type alias MainLoopArgs msg =
+    { receiver : Channel.Receiver ( msg, UpdateMetadata )
+    , encodedFlags : Json.Decode.Value
+    , runtime : Effect.Runtime msg
+    }
+
+
+type alias StepperBuilder model appMsg =
+    Effect.Runtime appMsg -> Impure.Function model (Stepper model)
+
+
+type alias Stepper model =
+    model -> Impure.Function UpdateMetadata ()
 
 
 {-| This is the actual type of a Program. This is the value that will be called
@@ -279,10 +375,6 @@ type alias ImpureSendToApp msg =
 
 type alias DebugMetadata =
     Encode.Value
-
-
-type alias AppMsgPayload appMsg =
-    Cmd appMsg
 
 
 type RawJsObject
@@ -312,11 +404,9 @@ type alias Impl flags model msg =
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions model msg
+initializeHelperFunctions : InitializeHelperFunctions
 initializeHelperFunctions =
-    { stepperBuilder = \_ _ -> \_ _ -> ()
-    , updateSubListeners = updateSubListeners
-    , setupEffectsChannel = setupEffectsChannel
+    { subListenerProcess = subListenerProcess
     }
 
 
@@ -325,9 +415,8 @@ initializeHelperFunctions =
 
 
 initialize :
-    Decoder flags
-    -> RawJsObject
-    -> Impl flags model msg
+    RawJsObject
+    -> Impure.Function (MainLoopArgs msg) ()
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize
@@ -338,16 +427,28 @@ makeProgram =
     Elm.Kernel.Basics.fudgeType
 
 
-unwrapCmd : Cmd a -> List (Task Never (Maybe msg))
+unwrapCmd : Cmd a -> List (Effect.RuntimeId -> Task Never (Maybe msg))
 unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-unwrapSub : Sub a -> List ( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )
+unwrapSub : Sub a -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> msg )
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-resetSubscriptions : Impure.Function (List ( RawSub.Id, Impure.Function RawSub.HiddenConvertedSubType () )) ()
+resetSubscriptions :
+    Effect.Runtime msg
+    -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
+
+
+sendToApp2 : Effect.Runtime msg -> Impure.Function ( msg, UpdateMetadata ) ()
+sendToApp2 =
+    Elm.Kernel.Platform.sendToApp
+
+
+invalidFlags : String -> never
+invalidFlags =
+    Elm.Kernel.Platform.invalidFlags

@@ -31,6 +31,7 @@ import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import List
 import Maybe exposing (Maybe)
+import Platform.Raw.Effect as Effect
 import Platform.Raw.Task as RawTask
 import Result exposing (Result)
 
@@ -54,7 +55,7 @@ fit into a real application!
 
 -}
 type Cmd msg
-    = Cmd (List (Task Never (Maybe msg)))
+    = Cmd (List (Effect.RuntimeId -> Task Never (Maybe msg)))
 
 
 {-| Tell the runtime that there are no commands.
@@ -100,9 +101,9 @@ map fn (Cmd data) =
         |> Cmd
 
 
-getCmdMapper : (a -> msg) -> Task Never (Maybe a) -> Task Never (Maybe msg)
-getCmdMapper tagger task =
-    wrapTask (RawTask.map (Result.map (Maybe.map tagger)) (unwrapTask task))
+getCmdMapper : (a -> msg) -> RawCmd a -> RawCmd msg
+getCmdMapper tagger createTask runtimeId =
+    wrapTask (RawTask.map (Result.map (Maybe.map tagger)) (unwrapTask (createTask runtimeId)))
 
 
 wrapTask : RawTask.Task (Result e o) -> Task e o
@@ -119,3 +120,7 @@ unwrapTask =
 -}
 type Task e o
     = Task (RawTask.Task (Result e o))
+
+
+type alias RawCmd msg =
+    Effect.RuntimeId -> Task Never (Maybe msg)

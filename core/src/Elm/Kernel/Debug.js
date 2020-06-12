@@ -7,6 +7,11 @@ import Elm.Kernel.List exposing (toArray)
 
 */
 
+/* global scope */
+
+/* global _Debug_toString, _Debug_crash
+ */
+
 // LOG
 
 const _Debug_log__PROD = F2(function (tag, value) {
@@ -15,14 +20,17 @@ const _Debug_log__PROD = F2(function (tag, value) {
 
 const _Debug_log__DEBUG = (tag) => {
   const p = Promise.reject(new Error("you must pass this function two arguments!"));
-  return (value) =>   {
-    const log = typeof scope !== 'undefined' && Object.prototype.hasOwnProperty.call(scope, `_debugLog`) ? scope._debugLog : console.log;
+  return (value) => {
+    const log =
+      typeof scope !== "undefined" && Object.prototype.hasOwnProperty.call(scope, `_debugLog`)
+        ? scope._debugLog
+        : console.log;
 
-    p.catch(x => x);
+    p.catch((error) => error);
     log(tag + ": " + _Debug_toString(value));
     return value;
-  }
-}
+  };
+};
 
 // TODOS
 
@@ -40,7 +48,7 @@ function _Debug_todoCase(moduleName, region, value) {
 
 // TO STRING
 
-function _Debug_toString__PROD(value) {
+function _Debug_toString__PROD() {
   return "<internals>";
 }
 
@@ -58,7 +66,7 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof value === "number") {
-    return _Debug_numberColor(ansi, value + "");
+    return _Debug_numberColor(ansi, String(value));
   }
 
   if (value instanceof String) {
@@ -82,6 +90,7 @@ function _Debug_toAnsiString(ansi, value) {
         if (k === "$") continue;
         output.push(_Debug_toAnsiString(ansi, v));
       }
+
       return "(" + output.join(",") + ")";
     }
 
@@ -126,11 +135,12 @@ function _Debug_toAnsiString(ansi, value) {
       if (k === "$") {
         return _Debug_ctorColor(ansi, v);
       }
-      const str = _Debug_toAnsiString(ansi, v);
-      const c0 = str[0];
+
+      const string = _Debug_toAnsiString(ansi, v);
+      const c0 = string[0];
       const parenless =
-        c0 === "{" || c0 === "(" || c0 === "[" || c0 === "<" || c0 === '"' || str.indexOf(" ") < 0;
-      return parenless ? str : "(" + str + ")";
+        c0 === "{" || c0 === "(" || c0 === "[" || c0 === "<" || c0 === '"' || !string.includes(" ");
+      return parenless ? string : "(" + string + ")";
     });
     return parts.join(" ");
   }
@@ -139,7 +149,10 @@ function _Debug_toAnsiString(ansi, value) {
     return _Debug_stringColor(ansi, "<" + value.byteLength + " bytes>");
   }
 
-  if (typeof File !== "undefined" && value instanceof File) {
+  if (
+    typeof File !== "undefined" &&
+    value instanceof File // eslint-disable-line no-undef
+  ) {
     return _Debug_internalColor(ansi, "<" + value.name + ">");
   }
 
@@ -154,8 +167,8 @@ function _Debug_toAnsiString(ansi, value) {
   return _Debug_internalColor(ansi, "<internals>");
 }
 
-function _Debug_addSlashes(str, isChar) {
-  const s = str
+function _Debug_addSlashes(string, isChar) {
+  const s = string
     .replace(/\\/g, "\\\\")
     .replace(/\n/g, "\\n")
     .replace(/\t/g, "\\t")
@@ -164,34 +177,34 @@ function _Debug_addSlashes(str, isChar) {
     .replace(/\0/g, "\\0");
 
   if (isChar) {
-    return s.replace(/\'/g, "\\'");
-  } else {
-    return s.replace(/\"/g, '\\"');
+    return s.replace(/'/g, "\\'");
   }
+
+  return s.replace(/"/g, '\\"');
 }
 
 function _Debug_ctorColor(ansi, string) {
-  return ansi ? "\x1b[96m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[96m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_numberColor(ansi, string) {
-  return ansi ? "\x1b[95m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[95m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_stringColor(ansi, string) {
-  return ansi ? "\x1b[93m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[93m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_charColor(ansi, string) {
-  return ansi ? "\x1b[92m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[92m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_fadeColor(ansi, string) {
-  return ansi ? "\x1b[37m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[37m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_internalColor(ansi, string) {
-  return ansi ? "\x1b[36m" + string + "\x1b[0m" : string;
+  return ansi ? "\u001B[36m" + string + "\u001B[0m" : string;
 }
 
 function _Debug_toHexDigit(n) {
@@ -200,57 +213,57 @@ function _Debug_toHexDigit(n) {
 
 // CRASH
 
-function _Debug_runtimeCrashReason__PROD(reason) {}
+function _Debug_runtimeCrashReason__PROD() {}
 
 function _Debug_runtimeCrashReason__DEBUG(reason) {
   switch (reason) {
     case "subMap":
-      return function (fact2, fact3, fact4) {
+      return function () {
         throw new Error(
           "Bug in elm runtime: attempting to subMap an effect from a command only effect module."
         );
       };
 
     case "cmdMap":
-      return function (fact2, fact3, fact4) {
+      return function () {
         throw new Error(
           "Bug in elm runtime: attempting to cmdMap an effect from a subscription only effect module."
         );
       };
 
     case "procIdAlreadyRegistered":
-      return function (fact2, fact3, fact4) {
+      return function (fact2) {
         throw new Error(`Bug in elm runtime: state for process ${fact2} is already registered!`);
       };
 
     case "procIdNotRegistered":
-      return function (fact2, fact3, fact4) {
+      return function (fact2) {
         throw new Error(`Bug in elm runtime: state for process ${fact2} been has not registered!`);
       };
 
     case "cannotBeStepped":
-      return function (fact2, fact3, fact4) {
+      return function (fact2) {
         throw new Error(
           `Bug in elm runtime: attempting to step process with id ${fact2} whilst it is processing an async action!`
         );
       };
 
     case "procIdAlreadyReady":
-      return function (fact2, fact3, fact4) {
+      return function (fact2, fact3) {
         throw new Error(
           `Bug in elm runtime: process ${fact2} already has a ready flag set (with value ${fact3}). Refusing to reset the value before it is cleared`
         );
       };
 
     case "subscriptionProcessMissing":
-      return function (fact2, fact3, fact4) {
+      return function (fact2) {
         throw new Error(
           `Bug in elm runtime: expected there to be a subscriptionProcess with id ${fact2}.`
         );
       };
 
     case "failedUnwrap":
-      return function (fact2, fact3, fact4) {
+      return function (fact2) {
         throw new Error(
           `Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(
             fact2
@@ -259,14 +272,14 @@ function _Debug_runtimeCrashReason__DEBUG(reason) {
       };
 
     case "EffectModule":
-      return function (fact2, fact3, fact4) {
+      return function () {
         throw new Error(
           `Effect modules are not supported, if you are using elm/* libraries you will need to switch to a custom version.`
         );
       };
 
     case "PlatformLeaf":
-      return function (home, fact3, fact4) {
+      return function (home) {
         throw new Error(
           `Trying to create a command or a subscription for event manager ${home}.
 Effect modules are not supported, if you are using elm/* libraries you will need to switch to a custom version.`
@@ -277,8 +290,20 @@ Effect modules are not supported, if you are using elm/* libraries you will need
       return function () {
         throw new Error(`A process has been added to queue but it is already in the queue!.`);
       };
+
+    case "channelIdNotRegistered":
+      return function () {
+        throw new Error(`Trying to send to a channel that has not actually been created!.`);
+      };
+
+    case "alreadyLoaded":
+      return function () {
+        throw new Error(`Trying to setup an init task after init has finished!.`);
+      };
+
+    default:
+      throw new Error(`Unknown reason for runtime crash: ${reason}!`);
   }
-  throw new Error(`Unknown reason for runtime crash: ${fact1}!`);
 }
 
 function _Debug_crash__PROD(identifier) {
@@ -292,12 +317,18 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
         'What node should I take over? In JavaScript I need something like:\n\n    Elm.Main.init({\n        node: document.getElementById("elm-node")\n    })\n\nYou need to do this with any Browser.sandbox or Browser.element program.'
       );
 
-    case 1:
+    case 1: {
+      let href = "<unknown>";
+      if (typeof document !== "undefined") {
+        href = document.location.href; // eslint-disable-line no-undef
+      }
+
       throw new Error(
         "Browser.application programs cannot handle URLs like this:\n\n    " +
-          document.location.href +
+          href +
           "\n\nWhat is the root? The root of your file system? Try looking at this program with `elm reactor` or some other server."
       );
+    }
 
     case 2: {
       const jsonErrorString = fact1;
@@ -371,6 +402,9 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
       fact1(fact2, fact3, fact4);
       throw new Error(`Unknown bug in elm runtime tag: ${fact1}!`);
     }
+
+    default:
+      throw new Error(`Unknown reason for crash: ${identifier}!`);
   }
 }
 
@@ -378,5 +412,18 @@ function _Debug_regionToString(region) {
   if (region.__$start.__$line === region.__$end.__$line) {
     return "on line " + region.__$start.__$line;
   }
+
   return "on lines " + region.__$start.__$line + " through " + region.__$end.__$line;
 }
+
+/* ESLINT GLOBAL VARIABLES"
+ *
+ * Do not edit below this line as it is generated by tests/generate-globals.py.
+ */
+
+/* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Debug_.*" }] */
+
+/* global __Array_toList */
+/* global __Dict_toList */
+/* global __Set_toList */
+/* global __List_toArray */

@@ -1,10 +1,22 @@
 Quick Installation Guide for musl libc
 ======================================
 
-
 Contributions are very welcome, currently we do not have any explicit
 guidelines.
 
+Getting started
+---------------
+
+After cloning the repository run `$ ./x.py install` which will install some
+dependencies and check other dependencies are installed. If it runs
+successfully you should be good to go.
+
+Tools
+
+- `$ ./x.py tidy` runs formatting and automatic eslint fixing.
+- `$ ./x.py check` runs all the static analysis tools we have.
+- `$ cd tests && elm-test --compiler ../another-elm` runs unit tests. We will
+  hopefully get a nice python sub-command for testing soon.
 
 Acknowledgements
 ----------------

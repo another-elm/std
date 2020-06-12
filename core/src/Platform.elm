@@ -277,7 +277,7 @@ updateSubListeners subBag =
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            Impure.fromFunction (sendToApp2 runtime) ( tagger v, AsyncUpdate )
+                            sendToAppAction runtime ( tagger v, AsyncUpdate )
                         )
                     )
                 |> resetSubscriptionsAction runtime
@@ -299,7 +299,15 @@ subListenerProcess =
         )
 
 
-resetSubscriptionsAction : Effect.Runtime msg -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () ) -> Impure.Action ()
+sendToAppAction : Effect.Runtime msg -> ( msg, UpdateMetadata ) -> Impure.Action ()
+sendToAppAction runtime =
+    Impure.fromFunction (sendToApp2 runtime)
+
+
+resetSubscriptionsAction :
+    Effect.Runtime msg
+    -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () )
+    -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
         (resetSubscriptions runtime)

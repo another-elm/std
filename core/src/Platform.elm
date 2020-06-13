@@ -190,7 +190,7 @@ dispatchCmd runtime cmds =
 
         processCmdTask (Task t) =
             t
-                |> RawTask.map unwrapResult
+                |> RawTask.map assertResultIsOk
                 |> RawTask.andThen
                     (\maybeMsg ->
                         case maybeMsg of
@@ -229,12 +229,9 @@ mainLoop : Decoder flags -> Impl flags model msg -> MainLoopArgs msg -> Impure.A
 mainLoop decoder impl { receiver, encodedFlags, runtime } =
     let
         flags =
-            case Json.Decode.decodeValue decoder encodedFlags of
-                Ok f ->
-                    f
-
-                Err e ->
-                    invalidFlags (Json.Decode.errorToString e)
+            Json.Decode.decodeValue decoder encodedFlags
+                |> Result.mapError (Json.Decode.errorToString >> invalidFlags)
+                |> assertResultIsOk
 
         stepperBuilder =
             effectsStepperBuilder impl.subscriptions
@@ -254,7 +251,7 @@ mainLoop decoder impl { receiver, encodedFlags, runtime } =
                     impl.update message oldModel
             in
             dispatchCmd runtime newCmd
-                |> Impure.andThen (\() -> Impure.fromFunction (stepper newModel) meta)
+                |> Impure.andThen (\() -> stepper newModel meta)
                 |> Impure.map (\() -> newModel)
 
         loop stepper model =
@@ -262,35 +259,33 @@ mainLoop decoder impl { receiver, encodedFlags, runtime } =
                 |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
                 |> RawTask.andThen (loop stepper)
     in
-    Impure.fromFunction (stepperBuilder runtime) initialModel
+    stepperBuilder runtime initialModel
         |> RawTask.execImpure
         |> RawTask.andThen
             (\stepper ->
-                RawTask.andThen (\() -> loop stepper initialModel) (dispatcher initialCmd)
+                dispatcher initialCmd
+                    |> RawTask.andThen (\() -> loop stepper initialModel)
             )
         |> RawScheduler.spawn
         |> Impure.map assertProcessId
 
 
-updateSubListeners : Sub appMsg -> Impure.Function (Effect.Runtime msg) ()
-updateSubListeners subBag =
-    Impure.toFunction
-        (\runtime ->
-            subBag
-                |> unwrapSub
-                |> List.map
-                    (Tuple.mapSecond
-                        (\tagger v ->
-                            case tagger v of
-                                Just msg ->
-                                    sendToAppAction runtime ( msg, AsyncUpdate )
+updateSubListeners : Sub appMsg -> Effect.Runtime msg -> Impure.Action ()
+updateSubListeners subBag runtime =
+    subBag
+        |> unwrapSub
+        |> List.map
+            (Tuple.mapSecond
+                (\tagger v ->
+                    case tagger v of
+                        Just msg ->
+                            sendToAppAction runtime ( msg, AsyncUpdate )
 
-                                Nothing ->
-                                    Impure.resolve ()
-                        )
-                    )
-                |> resetSubscriptionsAction runtime
-        )
+                        Nothing ->
+                            Impure.resolve ()
+                )
+            )
+        |> resetSubscriptionsAction runtime
 
 
 valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
@@ -301,17 +296,17 @@ valueStoreHelper (Task oldTask) stepper =
                 (\res ->
                     let
                         (Task task) =
-                            stepper (unwrapResult res)
+                            stepper (assertResultIsOk res)
                     in
                     task
                 )
                 oldTask
 
         outputTask =
-            RawTask.map (unwrapResult >> Tuple.first >> Ok) newTask
+            RawTask.map (assertResultIsOk >> Tuple.first >> Ok) newTask
 
         stateTask =
-            RawTask.map (unwrapResult >> Tuple.second >> Ok) newTask
+            RawTask.map (assertResultIsOk >> Tuple.second >> Ok) newTask
     in
     ( Task outputTask, Task stateTask )
 
@@ -349,22 +344,16 @@ resetSubscriptionsAction runtime updateList =
 
 
 effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
-effectsStepperBuilder subscriptions runtime =
-    Impure.toFunction
-        (\initialModel ->
-            let
-                updateSubAction sub =
-                    Impure.fromFunction (updateSubListeners sub)
-
-                stepper model _ =
-                    updateSubAction (subscriptions model) runtime
-                        |> RawTask.execImpure
-                        |> RawScheduler.spawn
-                        |> Impure.map assertProcessId
-            in
-            stepper initialModel AsyncUpdate
-                |> Impure.map (\() model -> Impure.toFunction (stepper model))
-        )
+effectsStepperBuilder subscriptions runtime initialModel =
+    let
+        stepper model _ =
+            updateSubListeners (subscriptions model) runtime
+                |> RawTask.execImpure
+                |> RawScheduler.spawn
+                |> Impure.map assertProcessId
+    in
+    stepper initialModel AsyncUpdate
+        |> Impure.map (\() -> stepper)
 
 
 assertProcessId : RawScheduler.ProcessId -> ()
@@ -372,8 +361,8 @@ assertProcessId _ =
     ()
 
 
-unwrapResult : Result Never a -> a
-unwrapResult res =
+assertResultIsOk : Result Never a -> a
+assertResultIsOk res =
     case res of
         Ok v ->
             v
@@ -403,11 +392,11 @@ type alias MainLoopArgs msg =
 
 
 type alias StepperBuilder model appMsg =
-    Effect.Runtime appMsg -> Impure.Function model (Stepper model)
+    Effect.Runtime appMsg -> model -> Impure.Action (Stepper model)
 
 
 type alias Stepper model =
-    model -> Impure.Function UpdateMetadata ()
+    model -> UpdateMetadata -> Impure.Action ()
 
 
 {-| This is the actual type of a Program. This is the value that will be called
@@ -418,10 +407,6 @@ type alias ActualProgram flags =
     -> DebugMetadata
     -> RawJsObject
     -> RawJsObject
-
-
-type alias ImpureSendToApp msg =
-    msg -> Impure.Function UpdateMetadata ()
 
 
 type alias DebugMetadata =

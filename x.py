@@ -14,6 +14,15 @@ def remove_prefix(text, prefix):
     return text[text.startswith(prefix) and len(prefix):]
 
 
+def elm_make(run):
+    print("Running elm make in core...")
+    code = run(['elm', "make"], subdir='core')
+
+    if code != 0:
+        print("There are issues with elm make")
+        exit(code)
+
+
 def get_runner():
     output = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                             stdout=subprocess.PIPE,
@@ -173,6 +182,7 @@ def tidy():
     xo()
     yapf()
     elm_format()
+    elm_make(run)
     exit(0)
 
 
@@ -212,19 +222,11 @@ def check():
             print("There are kernel import issues")
             exit(code)
 
-    def elm_make():
-        print("Running elm make in core...")
-        code = run(['elm', "make"], subdir='core')
-
-        if code != 0:
-            print("There are issues with elm make")
-            exit(code)
-
     xo()
     yapf()
     flake8()
     kernel_imports()
-    elm_make()
+    elm_make(run)
 
     exit(0)
 

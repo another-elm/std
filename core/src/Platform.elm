@@ -188,9 +188,9 @@ dispatchCmd runtime cmds =
         runtimeId =
             Effect.getId runtime
 
-        processCmdTask (Task t) =
-            t
-                |> RawTask.map assertResultIsOk
+        processCmdTask getTaskFromId =
+            getTaskFromId runtimeId
+                |> getRawTask
                 |> RawTask.andThen
                     (\maybeMsg ->
                         case maybeMsg of
@@ -201,28 +201,24 @@ dispatchCmd runtime cmds =
                             Nothing ->
                                 RawTask.Value ()
                     )
-
-        cmdAction : Impure.Action RawScheduler.ProcessId
-        cmdAction =
-            cmds
-                |> unwrapCmd
-                |> List.map (\getTaskFromId -> processCmdTask (getTaskFromId runtimeId))
-                |> List.map RawScheduler.spawn
-                |> List.foldr
-                    (\curr accTask ->
-                        Impure.andThen
-                            (\acc ->
-                                Impure.map
-                                    (\id -> id :: acc)
-                                    curr
-                            )
-                            accTask
-                    )
-                    (Impure.resolve [])
-                |> Impure.andThen RawScheduler.batch
     in
-    cmdAction
-        |> Impure.map (\_ -> ())
+    cmds
+        |> unwrapCmd
+        |> List.map processCmdTask
+        |> List.map RawScheduler.spawn
+        |> List.foldr
+            (\curr accTask ->
+                Impure.andThen
+                    (\acc ->
+                        Impure.map
+                            (\id -> id :: acc)
+                            curr
+                    )
+                    accTask
+            )
+            (Impure.resolve [])
+        |> Impure.andThen RawScheduler.batch
+        |> Impure.map assertProcessId
 
 
 mainLoop : Decoder flags -> Impl flags model msg -> MainLoopArgs msg -> Impure.Action ()
@@ -289,24 +285,18 @@ updateSubListeners subBag runtime =
 
 
 valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
-valueStoreHelper (Task oldTask) stepper =
+valueStoreHelper oldTask stepper =
     let
         newTask =
             RawTask.andThen
-                (\res ->
-                    let
-                        (Task task) =
-                            stepper (assertResultIsOk res)
-                    in
-                    task
-                )
-                oldTask
+                (stepper >> getRawTask)
+                (getRawTask oldTask)
 
         outputTask =
-            RawTask.map (assertResultIsOk >> Tuple.first >> Ok) newTask
+            RawTask.map (Tuple.first >> Ok) newTask
 
         stateTask =
-            RawTask.map (assertResultIsOk >> Tuple.second >> Ok) newTask
+            RawTask.map (Tuple.second >> Ok) newTask
     in
     ( Task outputTask, Task stateTask )
 
@@ -369,6 +359,11 @@ assertResultIsOk res =
 
         Err err ->
             never err
+
+
+getRawTask : Task Never a -> RawTask.Task a
+getRawTask (Task task) =
+    RawTask.map assertResultIsOk task
 
 
 

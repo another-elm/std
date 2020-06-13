@@ -110,7 +110,7 @@ def main():
         """.strip(),
               file=sys.stderr)
 
-    print("Success!", end='')
+    print("Success!", end=' ')
     if binary_path.exists():
         print('Reinstalled another-elm to "{}" and reset std packages.'.format(
             binary_path))

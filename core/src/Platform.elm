@@ -62,6 +62,22 @@ type Program flags model msg
     = Program
 
 
+
+-- program :
+--     { init : flags -> ( model, Cmd msg )
+--     , update : msg -> model -> ( model, Cmd msg )
+--     , subscriptions : model -> Sub msg
+--     }
+--     -> Program flags model msg
+-- program impl =
+--     makeProgram
+--         (\flagsDecoder _ args ->
+--             initialize
+--                 args
+--                 (mainLoop flagsDecoder impl)
+--         )
+
+
 {-| Create a [headless] program with no user interface.
 
 This is great if you want to use Elm as the &ldquo;brain&rdquo; for something
@@ -94,7 +110,7 @@ worker impl =
         (\flagsDecoder _ args ->
             initialize
                 args
-                (mainLoop flagsDecoder impl)
+                (Impure.toFunction (mainLoop flagsDecoder impl))
         )
 
 
@@ -209,54 +225,51 @@ dispatchCmd runtime cmds =
         |> Impure.map (\_ -> ())
 
 
-mainLoop : Decoder flags -> Impl flags model msg -> Impure.Function (MainLoopArgs msg) ()
-mainLoop decoder impl =
-    Impure.toFunction
-        (\{ receiver, encodedFlags, runtime } ->
+mainLoop : Decoder flags -> Impl flags model msg -> MainLoopArgs msg -> Impure.Action ()
+mainLoop decoder impl { receiver, encodedFlags, runtime } =
+    let
+        flags =
+            case Json.Decode.decodeValue decoder encodedFlags of
+                Ok f ->
+                    f
+
+                Err e ->
+                    invalidFlags (Json.Decode.errorToString e)
+
+        stepperBuilder =
+            effectsStepperBuilder impl.subscriptions
+
+        ( initialModel, initialCmd ) =
+            impl.init flags
+
+        dispatcher cmd =
+            RawTask.andThen
+                (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
+                (RawTask.sleep 0)
+
+        receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
+        receiveMsg stepper oldModel ( message, meta ) =
             let
-                flags =
-                    case Json.Decode.decodeValue decoder encodedFlags of
-                        Ok f ->
-                            f
-
-                        Err e ->
-                            invalidFlags (Json.Decode.errorToString e)
-
-                stepperBuilder =
-                    effectsStepperBuilder impl.subscriptions
-
-                ( initialModel, initialCmd ) =
-                    impl.init flags
-
-                dispatcher cmd =
-                    RawTask.andThen
-                        (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
-                        (RawTask.sleep 0)
-
-                receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
-                receiveMsg stepper oldModel ( message, meta ) =
-                    let
-                        ( newModel, newCmd ) =
-                            impl.update message oldModel
-                    in
-                    dispatchCmd runtime newCmd
-                        |> Impure.andThen (\() -> Impure.fromFunction (stepper newModel) meta)
-                        |> Impure.map (\() -> newModel)
-
-                loop stepper model =
-                    receiver
-                        |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
-                        |> RawTask.andThen (loop stepper)
+                ( newModel, newCmd ) =
+                    impl.update message oldModel
             in
-            Impure.fromFunction (stepperBuilder runtime) initialModel
-                |> RawTask.execImpure
-                |> RawTask.andThen
-                    (\stepper ->
-                        RawTask.andThen (\() -> loop stepper initialModel) (dispatcher initialCmd)
-                    )
-                |> RawScheduler.spawn
-                |> Impure.map assertProcessId
-        )
+            dispatchCmd runtime newCmd
+                |> Impure.andThen (\() -> Impure.fromFunction (stepper newModel) meta)
+                |> Impure.map (\() -> newModel)
+
+        loop stepper model =
+            receiver
+                |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
+                |> RawTask.andThen (loop stepper)
+    in
+    Impure.fromFunction (stepperBuilder runtime) initialModel
+        |> RawTask.execImpure
+        |> RawTask.andThen
+            (\stepper ->
+                RawTask.andThen (\() -> loop stepper initialModel) (dispatcher initialCmd)
+            )
+        |> RawScheduler.spawn
+        |> Impure.map assertProcessId
 
 
 updateSubListeners : Sub appMsg -> Impure.Function (Effect.Runtime msg) ()

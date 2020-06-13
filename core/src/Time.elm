@@ -571,7 +571,18 @@ being much smoother for any moving visuals.
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
-    subscription (setInterval interval) (\f -> tagger (millisToPosix (round f)))
+    subscription (setInterval interval)
+        (\payload ->
+            if payload.interval == interval then
+                payload.now
+                    |> round
+                    |> millisToPosix
+                    |> tagger
+                    |> Just
+
+            else
+                Nothing
+        )
 
 
 setInterval : Float -> Effect.SubId
@@ -579,9 +590,15 @@ setInterval =
     Elm.Kernel.Time.setInterval
 
 
-subscription : Effect.SubId -> (Float -> msg) -> Sub msg
+subscription : Effect.SubId -> (SubPayload -> Maybe msg) -> Sub msg
 subscription =
     Elm.Kernel.Platform.subscription
+
+
+type alias SubPayload =
+    { interval : Float
+    , now : Float
+    }
 
 
 

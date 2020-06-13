@@ -28,11 +28,15 @@ function _Time_setInterval(interval) {
 
   const restart = () => {
     const now = _Time_rawNow();
+    // console.log(`interval ${interval}   delaying ${interval - (now % interval)}`);
     handle = setTimeout(() => {
       handle = null;
       const now = _Time_rawNow();
       for (const runtime of runtimesListening) {
-        A3(__Platform_subscriptionEvent, _Time_key, runtime, now);
+        A3(__Platform_subscriptionEvent, _Time_key, runtime, {
+          __$interval: interval,
+          __$now: now,
+        });
       }
     }, interval - (now % interval));
   };

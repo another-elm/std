@@ -7,7 +7,7 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Nothing)
+import Maybe exposing (Just, Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
 
@@ -127,7 +127,7 @@ function _Platform_incomingPort(name, converter) {
     return { send };
   });
 
-  return _Platform_subscription(subId);
+  return (tagger) => _Platform_subscription(subId)((hcst) => __Maybe_Just(tagger(hcst)));
 }
 
 // FUNCTIONS (to be used by kernel code)
@@ -252,7 +252,7 @@ const _Platform_command = (createTask) => {
   return cmdData;
 };
 
-// subscription : RawSub.Id -> (Effect.HiddenConvertedSubType -> msg) -> Sub msg
+// subscription : RawSub.Id -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
 const _Platform_subscription = (key) => (tagger) => {
   const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
   if (__Basics_isDebug) {
@@ -281,6 +281,12 @@ const _Platform_valueStore = (init) => {
       },
     });
 };
+
+function _Platform_randSeed() {
+  return typeof scope !== "undefined" && Object.prototype.hasOwnProperty.call(scope, `_randSeed`)
+    ? scope._randSeed()
+    : Math.floor(Math.random() * 2 ** 32);
+}
 
 // EXPORT ELM MODULES
 //
@@ -324,6 +330,6 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */
 /* global __Result_isOk */
-/* global __Maybe_Nothing */
+/* global __Maybe_Just, __Maybe_Nothing */
 /* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
 /* global __Scheduler_execImpure, __Scheduler_andThen, __Scheduler_map, __Scheduler_binding */

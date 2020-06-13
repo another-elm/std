@@ -28,6 +28,7 @@ module Platform.Sub exposing
 
 import Basics exposing (..)
 import List
+import Maybe exposing (Maybe)
 import Platform.Raw.Effect as Effect
 
 
@@ -97,6 +98,6 @@ map fn (Sub data) =
         |> Sub
 
 
-getSubMapper : (a -> msg) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> a ) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> msg )
+getSubMapper : (a -> msg) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe a ) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe msg )
 getSubMapper fn ( id, tagger ) =
-    ( id, \hcst -> fn (tagger hcst) )
+    ( id, \hcst -> Maybe.map fn (tagger hcst) )

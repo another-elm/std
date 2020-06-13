@@ -8,10 +8,14 @@ module Platform.Raw.Effect exposing
     )
 
 import Elm.Kernel.Basics
+import Maybe exposing (Maybe)
 
 
+{-| When making changes to this type grep for HiddenConvertedSubType,
+_Platform_subscription and Platform.subscription.
+-}
 type alias RawSub msg =
-    List ( SubId, HiddenConvertedSubType -> msg )
+    List ( SubId, HiddenConvertedSubType -> Maybe msg )
 
 
 type SubId

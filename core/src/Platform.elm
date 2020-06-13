@@ -163,8 +163,8 @@ will send Sub's to this channel.
 Each command is a `Platform.Task Never (Maybe msg)`. If the Task resolves with
 `Just something` we must send that `something` to the app.
 
-Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> msg )` we
-can collect these id's and functions and pass them to `resetSubscriptions`.
+Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> Maybe msg )`
+we can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
 dispatchCmd : Effect.Runtime msg -> Cmd appMsg -> Impure.Action ()
@@ -277,7 +277,12 @@ updateSubListeners subBag =
                 |> List.map
                     (Tuple.mapSecond
                         (\tagger v ->
-                            sendToAppAction runtime ( tagger v, AsyncUpdate )
+                            case tagger v of
+                                Just msg ->
+                                    sendToAppAction runtime ( msg, AsyncUpdate )
+
+                                Nothing ->
+                                    Impure.resolve ()
                         )
                     )
                 |> resetSubscriptionsAction runtime
@@ -440,7 +445,7 @@ unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
 
-unwrapSub : Sub a -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> msg )
+unwrapSub : Sub a -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe msg )
 unwrapSub =
     Elm.Kernel.Basics.unwrapTypeWrapper
 

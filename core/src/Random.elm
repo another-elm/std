@@ -987,8 +987,7 @@ generate tagger generator =
 seedStore : (Seed -> Task.Task Never ( a, Seed )) -> Task.Task never a
 seedStore =
     valueStore
-        (Time.now
-            |> Task.map Time.posixToMillis
+        (Scheduler.execImpure (Impure.fromFunction randSeed ())
             |> Task.map initialSeed
         )
 
@@ -1006,3 +1005,8 @@ valueStore =
 rawNow : Impure.Action Int
 rawNow =
     Elm.Kernel.Time.rawNow
+
+
+randSeed : Impure.Function () Int
+randSeed =
+    Elm.Kernel.Platform.randSeed

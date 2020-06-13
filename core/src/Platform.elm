@@ -32,7 +32,6 @@ look at the definitions. We keep them around for now to keep `elm diff` happy.
 -}
 
 import Basics exposing (..)
-import Debug
 import Dict exposing (Dict)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
@@ -175,15 +174,7 @@ dispatchCmd runtime cmds =
 
         processCmdTask (Task t) =
             t
-                |> RawTask.map
-                    (\r ->
-                        case r of
-                            Ok v ->
-                                v
-
-                            Err err ->
-                                never err
-                    )
+                |> RawTask.map unwrapResult
                 |> RawTask.andThen
                     (\maybeMsg ->
                         case maybeMsg of
@@ -289,6 +280,29 @@ updateSubListeners subBag =
         )
 
 
+valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
+valueStoreHelper (Task oldTask) stepper =
+    let
+        newTask =
+            RawTask.andThen
+                (\res ->
+                    let
+                        (Task task) =
+                            stepper (unwrapResult res)
+                    in
+                    task
+                )
+                oldTask
+
+        outputTask =
+            RawTask.map (unwrapResult >> Tuple.first >> Ok) newTask
+
+        stateTask =
+            RawTask.map (unwrapResult >> Tuple.second >> Ok) newTask
+    in
+    ( Task outputTask, Task stateTask )
+
+
 subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task never
 subListenerHelper channel =
     Channel.recv RawTask.execImpure channel
@@ -345,6 +359,16 @@ assertProcessId _ =
     ()
 
 
+unwrapResult : Result Never a -> a
+unwrapResult res =
+    case res of
+        Ok v ->
+            v
+
+        Err err ->
+            never err
+
+
 
 -- Kernel interop TYPES
 
@@ -352,8 +376,9 @@ assertProcessId _ =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions =
+type alias InitializeHelperFunctions state x =
     { subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
+    , valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
     }
 
 
@@ -417,9 +442,10 @@ type alias Impl flags model msg =
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions
+initializeHelperFunctions : InitializeHelperFunctions state x
 initializeHelperFunctions =
     { subListenerProcess = subListenerProcess
+    , valueStoreHelper = valueStoreHelper
     }
 
 

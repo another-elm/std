@@ -9,7 +9,7 @@ import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Just, Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
-import Platform.Scheduler as Scheduler exposing (execImpure, andThen, map, binding)
+import Platform.Scheduler as Scheduler exposing (execImpure, syncBinding)
 
 */
 
@@ -272,13 +272,10 @@ const _Platform_subscription = (key) => (tagger) => {
 const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
-    __Scheduler_binding({
-      __$then_: (callback) => () => {
-        const newTask = A2(__Scheduler_andThen, stepper, task);
-        task = A2(__Scheduler_map, (tuple) => tuple.b, newTask);
-        callback(A2(__Scheduler_map, (tuple) => tuple.a, newTask))();
-        return (x) => x;
-      },
+    __Scheduler_syncBinding(() => {
+      const tuple = A2(__Platform_initializeHelperFunctions.valueStoreHelper, task, stepper);
+      task = tuple.b;
+      return tuple.a;
     });
 };
 
@@ -332,4 +329,4 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Result_isOk */
 /* global __Maybe_Just, __Maybe_Nothing */
 /* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
-/* global __Scheduler_execImpure, __Scheduler_andThen, __Scheduler_map, __Scheduler_binding */
+/* global __Scheduler_execImpure, __Scheduler_syncBinding */

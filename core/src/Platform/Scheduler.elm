@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, execImpure, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, execImpure, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, syncBinding, unwrapTask, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -83,6 +83,12 @@ binding fut =
         (RawTask.AsyncAction
             { then_ = \doneCallback -> fut.then_ (taskFn (\task -> doneCallback task)) }
         )
+
+
+syncBinding : Impure.Function () (Platform.Task never a) -> Platform.Task never a
+syncBinding a =
+    execImpure a
+        |> andThen (\t -> t)
 
 
 {-| Create a task that executes a non pure function

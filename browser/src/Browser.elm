@@ -40,6 +40,7 @@ import Html exposing (Html)
 import Url
 import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
+import Platform
 
 
 
@@ -112,18 +113,13 @@ element :
     , subscriptions : model -> Sub msg
     }
     -> Program flags model msg
-element impl =
-    makeProgram
-        (\flagsDecoder _ args ->
-            initialize
-                flagsDecoder
-                args
-                { init = impl.init
-                , update = impl.update
-                , subscriptions = impl.subscriptions
-                }
-                (elementStepperBuilder impl.view args)
-        )
+element { init, update, subscriptions, view } =
+    Platform.program
+        (elementStepperBuilder view)
+        { init = \flags _ -> init flags
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 
@@ -140,10 +136,14 @@ document :
     , subscriptions : model -> Sub msg
     }
     -> Program flags model msg
-document =
-    Debug.todo """
-    Elm.Kernel.Browser.document
-"""
+document  { init, update, subscriptions, view } =
+    Platform.program
+        (documentStepperBuilder view)
+        { init = \flags _ -> init flags
+        , update = update
+        , subscriptions = subscriptions
+        }
+
 
 
 {-| This data specifies the `<title>` and all of the nodes that should go in
@@ -229,10 +229,21 @@ application :
     , onUrlChange : Url.Url -> msg
     }
     -> Program flags model msg
-application =
-    Debug.todo """
-    Elm.Kernel.Browser.application
-"""
+application impl =
+    let
+        stepperBuilder =
+            applicationStepperBuilder impl
+    in
+    Platform.program
+        stepperBuilder
+        { init = \flags runtime ->
+            impl.init
+                flags
+                (Elm.Kernel.Browser.getUrl ())
+                (Elm.Kernel.Browser.getKey runtime)
+        , update = impl.update
+        , subscriptions = impl.subscriptions
+        }
 
 {-| All links in an [`application`](#application) create a `UrlRequest`. So
 when you click `<a href="/home">Home</a>`, it does not just navigate! It
@@ -349,20 +360,12 @@ type UpdateMetadata
 -- Kernel interop
 
 
-makeProgram : ActualProgram flags -> Program flags model msg
-makeProgram =
-    Elm.Kernel.Basics.fudgeType
-
-initialize :
-    Decoder flags
-    -> RawJsObject
-    -> Impl flags model msg
-    -> StepperBuilder model msg
-    -> RawJsObject
-initialize =
-    Elm.Kernel.Platform.initialize
-
-
-elementStepperBuilder : (model -> Html msg) -> RawJsObject -> StepperBuilder model msg
 elementStepperBuilder =
     Elm.Kernel.Browser.elementStepperBuilder
+
+
+documentStepperBuilder =
+    Elm.Kernel.Browser.documentStepperBuilder
+
+applicationStepperBuilder =
+    Elm.Kernel.Browser.applicationStepperBuilder

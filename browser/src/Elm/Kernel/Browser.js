@@ -24,7 +24,7 @@ import Url exposing (fromString)
 // ELEMENT
 
 
-const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initialModel) => {
+const _Browser_elementStepperBuilder = (view) => (runtime) => args => (initialModel) => () => {
 	/**__PROD/
 	var domNode = args['node'];
 	//*/
@@ -32,7 +32,7 @@ const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initial
 	var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
 	//*/
 	var currNode = __VirtualDom_virtualize(domNode);
-	const eventNode = __Platform_browserifiedSendToApp(sendToApp);
+	const eventNode = __Platform_browserifiedSendToApp(runtime);
 
 	return _Browser_makeAnimator(initialModel, function(model)
 	{
@@ -46,34 +46,26 @@ const _Browser_elementStepperBuilder = (view) => args => (sendToApp) => (initial
 // DOCUMENT
 
 
-var _Browser_document = F4(function(impl, flagDecoder, debugMetadata, args)
-{
-	return __Platform_initialize(
-		flagDecoder,
-		args,
-		impl.__$init,
-		impl.__$update,
-		impl.__$subscriptions,
-		function(sendToApp, initialModel) {
-			var divertHrefToApp = impl.__$setup && impl.__$setup(sendToApp)
-			var view = impl.__$view;
-			var title = __VirtualDom_doc.title;
-			var bodyNode = __VirtualDom_doc.body;
-			var currNode = __VirtualDom_virtualize(bodyNode);
-			return _Browser_makeAnimator(initialModel, function(model)
-			{
-				__VirtualDom_divertHrefToApp = divertHrefToApp;
-				var doc = view(model);
-				var nextNode = __VirtualDom_node('body')(__List_Nil)(doc.__$body);
-				var patches = __VirtualDom_diff(currNode, nextNode);
-				bodyNode = __VirtualDom_applyPatches(bodyNode, currNode, patches, sendToApp);
-				currNode = nextNode;
-				__VirtualDom_divertHrefToApp = 0;
-				(title !== doc.__$title) && (__VirtualDom_doc.title = title = doc.__$title);
-			});
+var _Browser_documentStepperBuilder = (view) => (runtime) => args => (initialModel) => () => {
+	const eventNode = __Platform_browserifiedSendToApp(runtime);
+	var title = __VirtualDom_doc.title;
+	var bodyNode = __VirtualDom_doc.body;
+	var currNode = __VirtualDom_virtualize(bodyNode);
+	return _Browser_makeAnimator(initialModel, function(model)
+	{
+		__VirtualDom_divertHrefToApp = divertHrefToApp;
+		var doc = view(model);
+		var nextNode = __VirtualDom_node('body')(__List_Nil)(doc.__$body);
+		var patches = __VirtualDom_diff(currNode, nextNode);
+		bodyNode = __VirtualDom_applyPatches(bodyNode, currNode, patches, eventNode);
+		currNode = nextNode;
+		__VirtualDom_divertHrefToApp = 0;
+		if (title !== doc.__$title) {
+			__VirtualDom_doc.title = doc.__$title;
+			title = doc.__$title;
 		}
-	);
-});
+	});
+};
 
 
 
@@ -104,8 +96,7 @@ function _Browser_makeAnimator(model, draw)
 			: ( _Browser_requestAnimationFrame(updateIfNeeded), draw(model), __4_EXTRA_REQUEST );
 	}
 
-	return function(nextModel, isSync)
-	{
+	return (nextModel) => (isSync) =>	() => {
 		model = nextModel;
 
 		isSync
@@ -123,52 +114,68 @@ function _Browser_makeAnimator(model, draw)
 // APPLICATION
 
 
-function _Browser_application(impl)
-{
+const _Browser_applicationStepperBuilder = (impl) => (runtime) => args => (initialModel) => () => {
+
+	const eventNode = __Platform_browserifiedSendToApp(runtime);
+	var title = __VirtualDom_doc.title;
+	var bodyNode = __VirtualDom_doc.body;
+	var currNode = __VirtualDom_virtualize(bodyNode);
+
 	var onUrlChange = impl.__$onUrlChange;
 	var onUrlRequest = impl.__$onUrlRequest;
-	var key = function() { key.__sendToApp(onUrlChange(_Browser_getUrl())); };
+	var key = _Browser_getKey(runtime);
 
-	return _Browser_document({
-		__$setup: function(sendToApp)
+	const setup = () => {
+		_Browser_window.addEventListener('popstate', key);
+		if (_Browser_window.navigator.userAgent.indexOf('Trident') === -1) {
+			_Browser_window.addEventListener('hashchange', key);
+		}
+
+		return F2(function(domNode, event)
 		{
-			key.__sendToApp = sendToApp;
-			_Browser_window.addEventListener('popstate', key);
-			_Browser_window.navigator.userAgent.indexOf('Trident') < 0 || _Browser_window.addEventListener('hashchange', key);
-
-			return F2(function(domNode, event)
+			if (!event.ctrlKey && !event.metaKey && !event.shiftKey && event.button < 1 && !domNode.target && !domNode.hasAttribute('download'))
 			{
-				if (!event.ctrlKey && !event.metaKey && !event.shiftKey && event.button < 1 && !domNode.target && !domNode.hasAttribute('download'))
-				{
-					event.preventDefault();
-					var href = domNode.href;
-					var curr = _Browser_getUrl();
-					var next = __Url_fromString(href).a;
-					sendToApp(onUrlRequest(
-						(next
-							&& curr.__$protocol === next.__$protocol
-							&& curr.__$host === next.__$host
-							&& curr.__$port_.a === next.__$port_.a
-						)
-							? __Browser_Internal(next)
-							: __Browser_External(href)
-					));
-				}
-			});
-		},
-		__$init: function(flags)
-		{
-			return A3(impl.__$init, flags, _Browser_getUrl(), key);
-		},
-		__$view: impl.__$view,
-		__$update: impl.__$update,
-		__$subscriptions: impl.__$subscriptions
+				event.preventDefault();
+				var href = domNode.href;
+				var curr = _Browser_getUrl();
+				var next = __Url_fromString(href).a;
+				eventNode(onUrlRequest(
+					(next
+						&& curr.__$protocol === next.__$protocol
+						&& curr.__$host === next.__$host
+						&& curr.__$port_.a === next.__$port_.a
+					)
+						? __Browser_Internal(next)
+						: __Browser_External(href)
+				));
+			}
+		});
+	};
+	var divertHrefToApp = setup();
+	return _Browser_makeAnimator(initialModel, function(model) {
+		__VirtualDom_divertHrefToApp = divertHrefToApp;
+		var doc = impl.view(model);
+		var nextNode = __VirtualDom_node('body')(__List_Nil)(doc.__$body);
+		var patches = __VirtualDom_diff(currNode, nextNode);
+		bodyNode = __VirtualDom_applyPatches(bodyNode, currNode, patches, eventNode);
+		currNode = nextNode;
+		__VirtualDom_divertHrefToApp = 0;
+		if (title !== doc.__$title) {
+			__VirtualDom_doc.title = doc.__$title;
+			title = doc.__$title;
+		}
 	});
 }
 
 function _Browser_getUrl()
 {
 	return __Url_fromString(__VirtualDom_doc.location.href).a || __Debug_crash(1);
+}
+
+function _Browser_getKey(runtime)
+{
+	const eventNode = __Platform_browserifiedSendToApp(runtime);
+	return () => eventNode(onUrlChange(_Browser_getUrl()));
 }
 
 var _Browser_go = F2(function(key, n)

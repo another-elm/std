@@ -1,5 +1,5 @@
 module Platform exposing
-    ( Program, worker
+    ( Program, program, worker
     , Task, ProcessId
     , Router, sendToApp, sendToSelf
     )
@@ -9,7 +9,7 @@ module Platform exposing
 
 # Programs
 
-@docs Program, worker
+@docs Program, program, worker
 
 
 # Platform Internals
@@ -62,20 +62,22 @@ type Program flags model msg
     = Program
 
 
-
--- program :
---     { init : flags -> ( model, Cmd msg )
---     , update : msg -> model -> ( model, Cmd msg )
---     , subscriptions : model -> Sub msg
---     }
---     -> Program flags model msg
--- program impl =
---     makeProgram
---         (\flagsDecoder _ args ->
---             initialize
---                 args
---                 (mainLoop flagsDecoder impl)
---         )
+program :
+    StepperBuilder model msg
+    ->
+        { any
+            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
+            , update : msg -> model -> ( model, Cmd msg )
+            , subscriptions : model -> Sub msg
+        }
+    -> Program flags model msg
+program stepperBuilder impl =
+    makeProgram
+        (\flagsDecoder _ args ->
+            initialize
+                args
+                (Impure.toFunction (mainLoop stepperBuilder flagsDecoder args impl))
+        )
 
 
 {-| Create a [headless] program with no user interface.
@@ -105,14 +107,13 @@ worker :
     , subscriptions : model -> Sub msg
     }
     -> Program flags model msg
-worker impl =
-    makeProgram
-        (\flagsDecoder _ args ->
-            initialize
-                args
-                (Impure.toFunction (mainLoop flagsDecoder impl))
-        )
-
+worker { init, update, subscriptions } =
+    program
+        nullStepperBuilder
+        { init = \flags _ -> init flags
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 -- TASKS and PROCESSES
@@ -221,8 +222,19 @@ dispatchCmd runtime cmds =
         |> Impure.map assertProcessId
 
 
-mainLoop : Decoder flags -> Impl flags model msg -> MainLoopArgs msg -> Impure.Action ()
-mainLoop decoder impl { receiver, encodedFlags, runtime } =
+mainLoop :
+    StepperBuilder model msg
+    -> Decoder flags
+    -> RawJsObject
+    ->
+        { any
+            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
+            , update : msg -> model -> ( model, Cmd msg )
+            , subscriptions : model -> Sub msg
+        }
+    -> MainLoopArgs any msg
+    -> Impure.Action ()
+mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime } =
     let
         flags =
             Json.Decode.decodeValue decoder encodedFlags
@@ -230,10 +242,12 @@ mainLoop decoder impl { receiver, encodedFlags, runtime } =
                 |> assertResultIsOk
 
         stepperBuilder =
-            effectsStepperBuilder impl.subscriptions
+            combineStepperBuilders
+                (effectsStepperBuilder impl.subscriptions)
+                extraStepperBuilder
 
         ( initialModel, initialCmd ) =
-            impl.init flags
+            impl.init flags runtime
 
         dispatcher cmd =
             RawTask.andThen
@@ -255,7 +269,7 @@ mainLoop decoder impl { receiver, encodedFlags, runtime } =
                 |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
                 |> RawTask.andThen (loop stepper)
     in
-    stepperBuilder runtime initialModel
+    stepperBuilder runtime args initialModel
         |> RawTask.execImpure
         |> RawTask.andThen
             (\stepper ->
@@ -334,7 +348,7 @@ resetSubscriptionsAction runtime updateList =
 
 
 effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
-effectsStepperBuilder subscriptions runtime initialModel =
+effectsStepperBuilder subscriptions runtime _ initialModel =
     let
         stepper model _ =
             updateSubListeners (subscriptions model) runtime
@@ -366,6 +380,30 @@ getRawTask (Task task) =
     RawTask.map assertResultIsOk task
 
 
+combineStepperBuilders :
+    StepperBuilder model msg
+    -> StepperBuilder model msg
+    -> StepperBuilder model msg
+combineStepperBuilders firstBuilder secondBuilder runtime args initialModel =
+    firstBuilder runtime args initialModel
+        |> Impure.andThen
+            (\firstStepper ->
+                secondBuilder runtime args initialModel
+                    |> Impure.map
+                        (\secondStepper model meta ->
+                            firstStepper model meta
+                                |> Impure.andThen (\() -> secondStepper model meta)
+                        )
+            )
+
+
+{-| Do nothing with initial model and do nothing with subsequent models.
+-}
+nullStepperBuilder : StepperBuilder model msg
+nullStepperBuilder _ _ _ =
+    Impure.resolve (\_ _ -> Impure.resolve ())
+
+
 
 -- Kernel interop TYPES
 
@@ -379,15 +417,16 @@ type alias InitializeHelperFunctions state x =
     }
 
 
-type alias MainLoopArgs msg =
-    { receiver : Channel.Receiver ( msg, UpdateMetadata )
-    , encodedFlags : Json.Decode.Value
-    , runtime : Effect.Runtime msg
+type alias MainLoopArgs a msg =
+    { a
+        | receiver : Channel.Receiver ( msg, UpdateMetadata )
+        , encodedFlags : Json.Decode.Value
+        , runtime : Effect.Runtime msg
     }
 
 
 type alias StepperBuilder model appMsg =
-    Effect.Runtime appMsg -> model -> Impure.Action (Stepper model)
+    Effect.Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
 
 
 type alias Stepper model =
@@ -422,13 +461,6 @@ type UpdateMetadata
     | AsyncUpdate
 
 
-type alias Impl flags model msg =
-    { init : flags -> ( model, Cmd msg )
-    , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
-    }
-
-
 
 -- Kernel interop EXPORTS --
 
@@ -448,7 +480,7 @@ initializeHelperFunctions =
 
 initialize :
     RawJsObject
-    -> Impure.Function (MainLoopArgs msg) ()
+    -> Impure.Function (MainLoopArgs any msg) ()
     -> RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize

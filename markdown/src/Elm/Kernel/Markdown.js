@@ -12,7 +12,7 @@ import Maybe exposing (isJust)
 
 var _Markdown_toHtml = F3(function(options, factList, rawMarkdown)
 {
-	return _VirtualDom_custom(
+	return __VirtualDom_custom(
 		factList,
 		{
 			__options: options,
@@ -30,7 +30,7 @@ var _Markdown_toHtml = F3(function(options, factList, rawMarkdown)
 
 function _Markdown_render(model)
 {
-	return A2(_Markdown_replace, model, _VirtualDom_doc.createElement('div'));
+	return A2(_Markdown_replace, model, __VirtualDom_doc.createElement('div'));
 }
 
 

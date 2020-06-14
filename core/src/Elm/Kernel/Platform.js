@@ -273,7 +273,7 @@ const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
     __Scheduler_syncBinding(() => {
-      const tuple = A2(__Platform_initializeHelperFunctions.valueStoreHelper, task, stepper);
+      const tuple = A2(__Platform_initializeHelperFunctions.__$valueStoreHelper, task, stepper);
       task = tuple.b;
       return tuple.a;
     });

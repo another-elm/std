@@ -127,7 +127,8 @@ def run_elm(elm, args):
     replace_with_stub(packages_root, 'elm', 'html')
 
     for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
-                          ('elm-explorations', 'test')]:
+                          ('elm-explorations', 'test'),
+                          ('elm-explorations', 'markdown')]:
         if customize(packages_root, author, pkg):
             try:
                 shutil.rmtree('elm-stuff')

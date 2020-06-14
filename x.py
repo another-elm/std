@@ -215,8 +215,10 @@ def check():
 
     def kernel_imports():
         print("Running check-kernel-imports...")
-        code = run(
-            ['./tests/check-kernel-imports.js', "core", "browser", "json"])
+        code = run([
+            './tests/check-kernel-imports.js', "core", "browser", "json",
+            "test", "markdown"
+        ])
 
         if code != 0:
             print("There are kernel import issues")

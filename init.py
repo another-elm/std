@@ -99,8 +99,8 @@ def main():
                                      'packages')
 
         for (author, pkg) in [('elm', 'core'), ('elm', 'json'),
-                              ('elm', 'browser'),
-                              ('elm-explorations', 'test')]:
+                              ('elm', 'browser'), ('elm-explorations', 'test'),
+                              ('elm-explorations', 'markdown')]:
             if reset_package(packages_root, author, pkg):
                 some_packages_reset = True
 
@@ -109,6 +109,8 @@ def main():
         Warning: nothing reset as source is no newer than linked packages.
         """.strip(),
               file=sys.stderr)
+
+    install_exe(binary_path)
 
     print("Success!", end=' ')
     if binary_path.exists():

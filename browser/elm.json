@@ -22,7 +22,13 @@
 		"Optimize": [
 			"Html.Keyed",
 			"Html.Lazy"
-		]
+        ],
+        "URL": [
+            "Url",
+            "Url.Builder",
+            "Url.Parser",
+            "Url.Parser.Query"
+        ]
     },
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {

@@ -3,12 +3,14 @@
 import Elm.Kernel.Json exposing (decodePrim, expecting)
 import Elm.Kernel.List exposing (fromArray)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Utils exposing (Tuple2)
 import Result exposing (Ok)
 import String exposing (join)
 import Time exposing (millisToPosix)
 
 */
+
+/* global File, document, Blob, navigator, location, MouseEvent, window, FileReader */
 
 // DECODER
 
@@ -42,11 +44,15 @@ function _File_lastModified(file) {
 let _File_downloadNode;
 
 function _File_getDownloadNode() {
-  return _File_downloadNode || (_File_downloadNode = document.createElement("a"));
+  if (_File_downloadNode === undefined) {
+    _File_downloadNode = document.createElement("a");
+  }
+
+  return _File_downloadNode;
 }
 
 const _File_download = F3(function (name, mime, content) {
-  return __Scheduler_binding(function (callback) {
+  return __Scheduler_binding(function () {
     const blob = new Blob([content], { type: mime });
 
     // for IE10+
@@ -66,11 +72,14 @@ const _File_download = F3(function (name, mime, content) {
 });
 
 function _File_downloadUrl(href) {
-  return __Scheduler_binding(function (callback) {
+  return __Scheduler_binding(function () {
     const node = _File_getDownloadNode();
     node.href = href;
     node.download = "";
-    node.origin === location.origin || (node.target = "_blank");
+    if (node.origin === location.origin) {
+      node.target = "_blank";
+    }
+
     _File_click(node);
   });
 }
@@ -196,7 +205,7 @@ function _File_toUrl(blob) {
 /* global __Json_decodePrim, __Json_expecting */
 /* global __List_fromArray */
 /* global __Scheduler_binding, __Scheduler_succeed */
-/* global __Utils_Tuple0, __Utils_Tuple2 */
+/* global __Utils_Tuple2 */
 /* global __Result_Ok */
 /* global __String_join */
 /* global __Time_millisToPosix */

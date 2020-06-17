@@ -2,10 +2,12 @@
 
 import Bytes.Encode as Encode exposing (getWidth, write)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
-import Elm.Kernel.Utils exposing (Tuple2, chr)
+import Elm.Kernel.Utils exposing (Tuple2)
 import Maybe exposing (Just, Nothing)
 
 */
+
+/* eslint no-throw-literal: "off" */
 
 // BYTES
 
@@ -71,12 +73,18 @@ const _Bytes_write_f64 = F4(function (mb, i, n, isLE) {
 // BYTES
 
 const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
-  for (var i = 0, length = bytes.byteLength, limit = length - 4; i <= limit; i += 4) {
+  let i = 0;
+  const length = bytes.byteLength;
+  const limit = length - 4;
+
+  while (i <= limit) {
     mb.setUint32(offset + i, bytes.getUint32(i));
+    i += 4;
   }
 
-  for (; i < length; i++) {
+  while (i <= length) {
     mb.setUint8(offset + i, bytes.getUint8(i));
+    i += 1;
   }
 
   return offset + length;
@@ -85,12 +93,7 @@ const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
 // STRINGS
 
 function _Bytes_getStringWidth(string) {
-  for (var width = 0, i = 0; i < string.length; i++) {
-    const code = string.charCodeAt(i);
-    width += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0xd800 || code > 0xdbff ? 3 : (i++, 4);
-  }
-
-  return width;
+  return new TextEncoder().encode(string).length;
 }
 
 const _Bytes_write_string = F3(function (mb, offset, string) {
@@ -217,5 +220,5 @@ const _Bytes_decodeFailure = F2(function () {
 
 /* global __Encode_getWidth, __Encode_write */
 /* global __Scheduler_binding, __Scheduler_succeed */
-/* global __Utils_Tuple2, __Utils_chr */
+/* global __Utils_Tuple2 */
 /* global __Maybe_Just, __Maybe_Nothing */

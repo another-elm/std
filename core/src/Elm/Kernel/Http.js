@@ -1,14 +1,15 @@
 /*
 
 import Dict exposing (empty, update)
-import Elm.Kernel.Scheduler exposing (binding, fail, rawSpawn, succeed)
+import Elm.Kernel.Scheduler exposing (binding, rawSpawn)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Http exposing (BadUrl_, Timeout_, NetworkError_, BadStatus_, GoodStatus_, Sending, Receiving)
 import Maybe exposing (Just, Nothing, isJust)
-import Platform exposing (sendToApp, sendToSelf)
-import Result exposing (map, isOk)
+import Platform exposing (sendToSelf)
 
 */
+
+/* global XMLHttpRequest, Blob, FormData */
 
 // SEND REQUEST
 
@@ -28,7 +29,9 @@ const _Http_toTask = F3(function (router, toTask, request) {
     xhr.addEventListener("load", function () {
       done(_Http_toResponse(request.__$expect.__toBody, xhr));
     });
-    __Maybe_isJust(request.__$tracker) && _Http_track(router, xhr, request.__$tracker.a);
+    if (__Maybe_isJust(request.__$tracker)) {
+      _Http_track(router, xhr, request.__$tracker.a);
+    }
 
     try {
       xhr.open(request.__$method, request.__$url, true);
@@ -38,7 +41,10 @@ const _Http_toTask = F3(function (router, toTask, request) {
 
     _Http_configureRequest(xhr, request);
 
-    request.__$body.a && xhr.setRequestHeader("Content-Type", request.__$body.a);
+    if (request.__$body.a) {
+      xhr.setRequestHeader("Content-Type", request.__$body.a);
+    }
+
     xhr.send(request.__$body.b);
 
     return function () {
@@ -99,7 +105,7 @@ function _Http_parseHeaders(rawHeaders) {
     const index = headerPair.indexOf(": ");
     if (index > 0) {
       const key = headerPair.slice(0, Math.max(0, index));
-      var value = headerPair.slice(Math.max(0, index + 2));
+      const value = headerPair.slice(Math.max(0, index + 2));
 
       headers = A3(
         __Dict_update,
@@ -149,8 +155,9 @@ const _Http_pair = F2(function (a, b) {
 });
 
 function _Http_toFormData(parts) {
+  const formData = new FormData();
   for (
-    var formData = new FormData();
+    ;
     parts.b;
     parts = parts.b // WHILE_CONS
   ) {
@@ -218,9 +225,8 @@ function _Http_track(router, xhr, tracker) {
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Http_.*" }] */
 
 /* global __Dict_empty, __Dict_update */
-/* global __Scheduler_binding, __Scheduler_fail, __Scheduler_rawSpawn, __Scheduler_succeed */
+/* global __Scheduler_binding, __Scheduler_rawSpawn */
 /* global __Utils_Tuple2 */
 /* global __Http_BadUrl_, __Http_Timeout_, __Http_NetworkError_, __Http_BadStatus_, __Http_GoodStatus_, __Http_Sending, __Http_Receiving */
 /* global __Maybe_Just, __Maybe_Nothing, __Maybe_isJust */
-/* global __Platform_sendToApp, __Platform_sendToSelf */
-/* global __Result_map, __Result_isOk */
+/* global __Platform_sendToSelf */

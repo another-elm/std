@@ -11,6 +11,20 @@ import sys
 elm_std_dir = None  # REPLACE ME
 assert elm_std_dir is not None
 
+stub_packages = {
+    'bytes',
+    'file',
+    'html',
+    'http',
+    'parser',
+    'random',
+    'regex',
+    'svg',
+    'time',
+    'url',
+    'virtual-dom',
+}
+
 
 def replace_with_stub(packages_root, author, package):
     versions_dir = os.path.join(packages_root, author, package)
@@ -120,11 +134,8 @@ def run_elm(elm, args):
 
     assert os.path.exists(another_elm_home_dir)
 
-    replace_with_stub(packages_root, 'elm', 'time')
-    replace_with_stub(packages_root, 'elm', 'random')
-    replace_with_stub(packages_root, 'elm', 'virtual-dom')
-    replace_with_stub(packages_root, 'elm', 'url')
-    replace_with_stub(packages_root, 'elm', 'html')
+    for stub_package in stub_packages:
+        replace_with_stub(packages_root, 'elm', stub_package)
 
     for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
                           ('elm-explorations', 'test'),
@@ -139,6 +150,7 @@ def run_elm(elm, args):
                 if (author.name != "elm" and author.name != "elm-explorations"
                         and author.is_dir()):
                     shutil.rmtree(author.path)
+            shutil.to
 
     return run_compiler()
 

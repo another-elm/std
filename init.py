@@ -72,6 +72,7 @@ def install_exe(binary):
               file=sys.stderr)
 
     with create_executable(binary) as f:
+
         def print_to_file(s):
             print(s, file=f, end='')
 

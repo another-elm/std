@@ -7,9 +7,10 @@ import shutil
 import string
 import subprocess
 import sys
+from pathlib import Path
 
 elm_std_dir = None  # REPLACE ME
-assert elm_std_dir is not None
+assert isinstance(elm_std_dir, Path)
 
 stub_packages = {
     'bytes',
@@ -27,21 +28,21 @@ stub_packages = {
 
 
 def replace_with_stub(packages_root, author, package):
-    versions_dir = os.path.join(packages_root, author, package)
+    versions_dir = packages_root / author / package
     try:
         dirs = os.listdir(versions_dir)
     except FileNotFoundError:
         return
 
     for v in dirs:
-        package_root = os.path.join(versions_dir, v)
-        src_dir = os.path.join(package_root, "src")
-        stub_file = os.path.join(package_root, "stub")
-        elm_json_path = os.path.join(package_root, "elm.json")
+        package_root = versions_dir / v
+        src_dir = package_root / "src"
+        stub_file = package_root / "stub"
+        elm_json_path = package_root / "elm.json"
 
         dummy_module = "P{}".format(''.join(
             [random.choice(string.ascii_letters) for n in range(32)]))
-        dummy_path = os.path.join(src_dir, "{}.elm".format(dummy_module))
+        dummy_path = (src_dir / dummy_module).with_suffix(".elm")
 
         shutil.rmtree(package_root)
         os.makedirs(src_dir)
@@ -62,7 +63,7 @@ a = 2
                     "name": "{}/{}".format(author, package),
                     "summary": "Encode and decode JSON values",
                     "license": "BSD-3-Clause",
-                    "version": v,
+                    "version": str(v),
                     "exposed-modules": [dummy_module],
                     "elm-version": "0.19.0 <= v < 0.20.0",
                     "dependencies": {
@@ -75,11 +76,11 @@ a = 2
 
 
 def customize(packages_root, author, package):
-    versions_dir = os.path.join(packages_root, author, package)
-    custom_package_dir = os.path.join(elm_std_dir, package)
+    versions_dir = packages_root / author / package
+    custom_package_dir = elm_std_dir / package
 
-    custom_src_dir = os.path.join(custom_package_dir, "src")
-    custom_json_file = os.path.join(custom_package_dir, "elm.json")
+    custom_src_dir = custom_package_dir / "src"
+    custom_json_file = custom_package_dir / "elm.json"
 
     try:
         dirs = os.listdir(versions_dir)
@@ -88,27 +89,26 @@ def customize(packages_root, author, package):
 
     any_modified = False
     for v in dirs:
-        package_root = os.path.join(versions_dir, v)
+        package_root = versions_dir / v
 
-        if not os.path.exists(os.path.join(package_root, 'custom')):
+        if not (package_root / 'custom').exists():
             any_modified = True
 
             shutil.rmtree(package_root)
-            os.makedirs(package_root)
+            package_root.mkdir()
 
-            shutil.copytree(custom_src_dir, os.path.join(package_root, "src"))
-            shutil.copy(custom_json_file, os.path.join(package_root,
-                                                       "elm.json"))
+            shutil.copytree(custom_src_dir, package_root / "src")
+            shutil.copy(custom_json_file, package_root / "elm.json")
 
-            with open(os.path.join(package_root, 'custom'), 'w'):
+            with open(package_root / 'custom', 'w'):
                 pass
 
     return any_modified
 
 
 def run_elm(elm, args):
-    elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
-    another_elm_home_dir = os.path.join(elm_home_dir, 'another')
+    elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
+    another_elm_home_dir = Path(elm_home_dir) / 'another'
 
     custom_env = os.environ.copy()
     custom_env["ELM_HOME"] = another_elm_home_dir
@@ -118,13 +118,14 @@ def run_elm(elm, args):
                                  stdout=subprocess.PIPE,
                                  check=True).stdout.decode("utf-8").strip()
 
-    packages_root = os.path.join(another_elm_home_dir, elm_version, 'packages')
+    packages_root = another_elm_home_dir / elm_version / 'packages'
 
     def run_compiler(**kwargs):
         return subprocess.run([elm] + args, env=custom_env,
                               **kwargs).returncode
 
     if not os.path.exists(packages_root):
+    if not packages_root.exists():
         try:
             shutil.rmtree('elm-stuff')
         except FileNotFoundError:
@@ -132,7 +133,7 @@ def run_elm(elm, args):
 
     run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
-    assert os.path.exists(another_elm_home_dir)
+    assert another_elm_home_dir.is_dir()
 
     for stub_package in stub_packages:
         replace_with_stub(packages_root, 'elm', stub_package)
@@ -150,7 +151,6 @@ def run_elm(elm, args):
                 if (author.name != "elm" and author.name != "elm-explorations"
                         and author.is_dir()):
                     shutil.rmtree(author.path)
-            shutil.to
 
     return run_compiler()
 

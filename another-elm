@@ -210,7 +210,7 @@ def run_elm(elm, args):
                 any_customized = True
 
         if any_customized:
-            packages_marker.touch(exists_ok=True)
+            packages_marker.touch(exist_ok=True)
 
         ret = run_compiler()
         elm_stuff.mark()

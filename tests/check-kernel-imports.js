@@ -35,6 +35,12 @@ Options:
 
 `.trim();
 
+/* Future additions:
+ *
+ * * Check we do not use Bool in kernel interop.
+ *
+ */
+
 async function* getFiles(dir) {
   const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const dirent of dirents) {

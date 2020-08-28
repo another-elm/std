@@ -7,6 +7,8 @@ import Maybe exposing (Just, Nothing)
 
 */
 
+/* eslint-disable */
+
 // BYTES
 
 function _Bytes_width(bytes) {

@@ -10,7 +10,10 @@
             "String",
             "Char",
             "Bitwise",
-            "Tuple"
+            "Tuple",
+            "Bytes",
+            "Bytes.Encode",
+            "Bytes.Decode"
         ],
         "Collections": [
             "List",

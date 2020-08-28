@@ -55,7 +55,15 @@ module Bytes.Decode exposing
 
 -}
 
+import Basics exposing (..)
 import Bytes exposing (Bytes, Endianness(..))
+import Char exposing (Char)
+import Elm.Kernel.Bytes
+import List exposing ((::))
+import Maybe exposing (Maybe(..))
+import Result exposing (Result(..))
+import String exposing (String)
+import Tuple
 
 
 

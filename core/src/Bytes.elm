@@ -17,8 +17,15 @@ module Bytes exposing
 
 -}
 
+import Basics exposing (..)
+import Char exposing (Char)
 import Elm.Kernel.Bytes
+import List exposing ((::))
+import Maybe exposing (Maybe(..))
+import Result exposing (Result(..))
+import String exposing (String)
 import Task exposing (Task)
+import Tuple
 
 
 

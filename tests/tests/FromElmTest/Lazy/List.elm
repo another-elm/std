@@ -31,7 +31,7 @@ module FromElmTest.Lazy.List exposing
 -}
 
 import Array exposing (Array)
-import Lazy exposing (Lazy, force, lazy)
+import FromElmTest.Lazy exposing (Lazy, force, lazy)
 import List
 
 

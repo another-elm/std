@@ -1,10 +1,10 @@
 module FromElmTest.Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, combineValid, frequencyList, invalidReason, map)
 
-import Lazy
-import Lazy.List exposing (LazyList)
-import MicroRandomExtra
+import FromElmTest.Lazy
+import FromElmTest.Lazy.List exposing (LazyList)
+import FromElmTest.MicroRandomExtra as MicroRandomExtra
 import Random exposing (Generator)
-import RoseTree exposing (RoseTree(..))
+import FromElmTest.RoseTree as RoseTree exposing (RoseTree(..))
 
 
 type alias Fuzzer a =
@@ -42,7 +42,7 @@ sequenceRoseTree (Rose root branches) =
     Random.map2
         Rose
         root
-        (Lazy.List.map sequenceRoseTree branches |> sequenceLazyList)
+        (FromElmTest.Lazy.List.map sequenceRoseTree branches |> sequenceLazyList)
 
 
 sequenceLazyList : LazyList (Generator a) -> Generator (LazyList a)
@@ -53,18 +53,18 @@ sequenceLazyList xs =
 
 runAll : LazyList (Generator a) -> Random.Seed -> LazyList a
 runAll xs seed =
-    Lazy.lazy <|
+    FromElmTest.Lazy.lazy <|
         \_ ->
-            case Lazy.force xs of
-                Lazy.List.Nil ->
-                    Lazy.List.Nil
+            case FromElmTest.Lazy.force xs of
+                FromElmTest.Lazy.List.Nil ->
+                    FromElmTest.Lazy.List.Nil
 
-                Lazy.List.Cons firstGenerator rest ->
+                FromElmTest.Lazy.List.Cons firstGenerator rest ->
                     let
                         ( x, newSeed ) =
                             Random.step firstGenerator seed
                     in
-                    Lazy.List.Cons x (runAll rest newSeed)
+                    FromElmTest.Lazy.List.Cons x (runAll rest newSeed)
 
 
 getValid : Valid a -> Maybe a

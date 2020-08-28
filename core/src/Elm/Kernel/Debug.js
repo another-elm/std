@@ -146,7 +146,13 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof DataView === "function" && value instanceof DataView) {
-    return _Debug_stringColor(ansi, "<" + value.byteLength + " bytes>");
+    const bytes = new Uint8Array(value.buffer);
+    const suffix = bytes.length > 10 ? " ..." : "";
+
+    return _Debug_stringColor(
+      ansi,
+      "<" + value.byteLength + " bytes: " + Array.from(bytes.slice(0, 10)).map((i) => i.toString(16)).join(" ") + suffix + ">"
+    );
   }
 
   if (

@@ -10,6 +10,8 @@ import Time exposing (millisToPosix)
 
 */
 
+/* eslint-disable */
+
 // DECODER
 
 const _File_decoder = __Json_decodePrim(function (value) {

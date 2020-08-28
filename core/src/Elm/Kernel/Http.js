@@ -10,6 +10,8 @@ import Result exposing (map, isOk)
 
 */
 
+/* eslint-disable */
+
 // SEND REQUEST
 
 const _Http_toTask = F3(function (router, toTask, request) {

@@ -172,6 +172,7 @@ const _Bytes_read_bytes = F3(function (length, bytes, offset) {
   return __Utils_Tuple2(
     offset + length,
     new DataView(bytes.buffer, bytes.byteOffset + offset, length)
+  );
 });
 
 const _Bytes_read_string = F3(function (length, bytes, offset) {

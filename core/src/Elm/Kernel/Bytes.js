@@ -176,6 +176,9 @@ const _Bytes_read_bytes = F3(function (length, bytes, offset) {
 });
 
 const _Bytes_read_string = F3(function (length, bytes, offset) {
+  // TODO(harry): we to not start the slice at offset here so decoding a string
+  // that is not at the start of some bytes should fail. Do not fix until we
+  // can think of a test that fails (and verify that is does fail).
   const end = offset + length;
   const decoder = new TextDecoder('utf8', { fatal:  true});
   const sliceView = new DataView(bytes.buffer, bytes.byteOffset, length);

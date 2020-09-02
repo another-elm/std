@@ -172,38 +172,14 @@ const _Bytes_read_bytes = F3(function (length, bytes, offset) {
   return __Utils_Tuple2(
     offset + length,
     new DataView(bytes.buffer, bytes.byteOffset + offset, length)
-  );
 });
 
 const _Bytes_read_string = F3(function (length, bytes, offset) {
-  let string = "";
   const end = offset + length;
-  for (; offset < end; ) {
-    let byte = bytes.getUint8(offset++);
-    string +=
-      byte < 128
-        ? String.fromCharCode(byte)
-        : (byte & 0xe0) /* 0b11100000 */ === 0xc0 /* 0b11000000 */
-        ? String.fromCharCode(
-            ((byte & 0x1f) /* 0b00011111 */ << 6) |
-              (bytes.getUint8(offset++) & 0x3f) /* 0b00111111 */
-          )
-        : (byte & 0xf0) /* 0b11110000 */ === 0xe0 /* 0b11100000 */
-        ? String.fromCharCode(
-            ((byte & 0xf) /* 0b00001111 */ << 12) |
-              ((bytes.getUint8(offset++) & 0x3f) /* 0b00111111 */ << 6) |
-              (bytes.getUint8(offset++) & 0x3f) /* 0b00111111 */
-          )
-        : ((byte =
-            (((byte & 0x7) /* 0b00000111 */ << 18) |
-              ((bytes.getUint8(offset++) & 0x3f) /* 0b00111111 */ << 12) |
-              ((bytes.getUint8(offset++) & 0x3f) /* 0b00111111 */ << 6) |
-              (bytes.getUint8(offset++) & 0x3f)) /* 0b00111111 */ -
-            0x10000),
-          String.fromCharCode(Math.floor(byte / 0x400) + 0xd800, (byte % 0x400) + 0xdc00));
-  }
+  const decoder = new TextDecoder('utf8', { fatal:  true});
+  const sliceView = new DataView(bytes.buffer, bytes.byteOffset, length);
 
-  return __Utils_Tuple2(offset, string);
+  return __Utils_Tuple2(end, decoder.decode(sliceView));
 });
 
 const _Bytes_decodeFailure = F2(function () {

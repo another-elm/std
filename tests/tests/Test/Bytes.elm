@@ -6,9 +6,8 @@ import Bytes.Decode as Decode
 import Bytes.Encode as Encode
 import Expect
 import FromElmTest.Fuzz
-import Fuzz exposing (Fuzzer, intRange)
+import Fuzz exposing (Fuzzer)
 import Test exposing (..)
-import Fuzz exposing (int)
 
 
 endianFuzzer : Fuzzer Bytes.Endianness
@@ -19,44 +18,215 @@ endianFuzzer =
         ]
 
 
-codecFuzzer : Fuzzer ( String, Int, Bytes -> Maybe Bytes )
+messyFloatFuzzer : Fuzzer Float
+messyFloatFuzzer =
+    Fuzz.frequency
+        [ ( 0.8, Fuzz.float )
+        , ( 0.05, Fuzz.constant (0 / 0) )
+        , ( 0.05, Fuzz.constant (1 / 0) )
+        , ( 0.05, Fuzz.constant (-1 / 0) )
+        ]
+
+
+encoderFuzzer : Fuzzer { name : String, width : Int, encoder : Encode.Encoder }
+encoderFuzzer =
+    Fuzz.oneOf
+        [ -- signed ints
+          Fuzz.map
+            (\i ->
+                { name = "signedInt8"
+                , width = 1
+                , encoder = Encode.signedInt8 i
+                }
+            )
+            Fuzz.int
+        , Fuzz.map2
+            (\i en ->
+                { name = "signedInt16"
+                , width = 2
+                , encoder = Encode.signedInt16 en i
+                }
+            )
+            Fuzz.int
+            endianFuzzer
+        , Fuzz.map2
+            (\i en ->
+                { name = "signedInt32"
+                , width = 4
+                , encoder = Encode.signedInt32 en i
+                }
+            )
+            Fuzz.int
+            endianFuzzer
+        , -- unsigned ints
+          Fuzz.map
+            (\i ->
+                { name = "unsignedInt8"
+                , width = 1
+                , encoder = Encode.unsignedInt8 i
+                }
+            )
+            Fuzz.int
+        , Fuzz.map2
+            (\i en ->
+                { name = "unsignedInt16"
+                , width = 2
+                , encoder = Encode.unsignedInt16 en i
+                }
+            )
+            Fuzz.int
+            endianFuzzer
+        , Fuzz.map2
+            (\i en ->
+                { name = "unsignedInt32"
+                , width = 4
+                , encoder = Encode.unsignedInt32 en i
+                }
+            )
+            Fuzz.int
+            endianFuzzer
+        , -- floats
+          Fuzz.map2
+            (\f en ->
+                { name = "float32"
+                , width = 4
+                , encoder = Encode.float32 en f
+                }
+            )
+            messyFloatFuzzer
+            endianFuzzer
+        , Fuzz.map2
+            (\f en ->
+                { name = "float64"
+                , width = 8
+                , encoder = Encode.float64 en f
+                }
+            )
+            messyFloatFuzzer
+            endianFuzzer
+        , -- string
+          Fuzz.map
+            (\s ->
+                { name = "string"
+                , width = Encode.getStringWidth s
+                , encoder = Encode.string s
+                }
+            )
+            FromElmTest.Fuzz.string
+        , -- bytes
+          Fuzz.map
+            (\b ->
+                { name = "bytes"
+                , width = Bytes.width b
+                , encoder = Encode.bytes b
+                }
+            )
+            bytesFuzzer
+        ]
+
+
+encoderSequenceFuzzer : Fuzzer { names : List String, width : Int, encoder : Encode.Encoder }
+encoderSequenceFuzzer =
+    let
+        maybeEncoder =
+            Fuzz.maybe encoderFuzzer
+    in
+    Fuzz.list encoderFuzzer
+        |> Fuzz.map
+            (\encoders ->
+                { names = List.map .name encoders
+                , width = encoders |> List.map .width |> List.sum
+                , encoder =
+                    encoders |> List.map .encoder |> Encode.sequence
+                }
+            )
+
+
+codecFuzzer : Fuzzer { name : String, width : Int, roundTrip : Bytes -> Maybe Bytes }
 codecFuzzer =
     let
         intFuzzers =
             Fuzz.oneOf
                 [ -- signed ints
-                  Fuzz.constant ( "signedInt8", ( 1, Encode.signedInt8, Decode.signedInt8 ) )
+                  Fuzz.constant
+                    { name = "signedInt8"
+                    , width = 1
+                    , enc = Encode.signedInt8
+                    , dec = Decode.signedInt8
+                    }
                 , Fuzz.map
-                    (\en -> ( "signedInt16", ( 2, Encode.signedInt16 en, Decode.signedInt16 en ) ))
+                    (\en ->
+                        { name = "signedInt16"
+                        , width = 2
+                        , enc = Encode.signedInt16 en
+                        , dec = Decode.signedInt16 en
+                        }
+                    )
                     endianFuzzer
                 , Fuzz.map
-                    (\en -> ( "signedInt32", ( 4, Encode.signedInt32 en, Decode.signedInt32 en ) ))
+                    (\en ->
+                        { name = "signedInt32"
+                        , width = 4
+                        , enc = Encode.signedInt32 en
+                        , dec = Decode.signedInt32 en
+                        }
+                    )
                     endianFuzzer
 
                 -- unsigned ints
-                , Fuzz.constant ( "unsignedInt8", ( 1, Encode.unsignedInt8, Decode.unsignedInt8 ) )
+                , Fuzz.constant
+                    { name = "unsignedInt8"
+                    , width = 1
+                    , enc = Encode.unsignedInt8
+                    , dec = Decode.unsignedInt8
+                    }
                 , Fuzz.map
-                    (\en -> ( "unsignedInt16", ( 2, Encode.unsignedInt16 en, Decode.unsignedInt16 en ) ))
+                    (\en ->
+                        { name = "unsignedInt16"
+                        , width = 2
+                        , enc = Encode.unsignedInt16 en
+                        , dec = Decode.unsignedInt16 en
+                        }
+                    )
                     endianFuzzer
                 , Fuzz.map
-                    (\en -> ( "unsignedInt32", ( 4, Encode.unsignedInt32 en, Decode.unsignedInt32 en ) ))
+                    (\en ->
+                        { name = "unsignedInt32"
+                        , width = 4
+                        , enc = Encode.unsignedInt32 en
+                        , dec = Decode.unsignedInt32 en
+                        }
+                    )
                     endianFuzzer
                 ]
 
         floatFuzzer =
             Fuzz.oneOf
                 [ Fuzz.map
-                    (\en -> ( "float64", ( 8, Encode.float64 en, Decode.float64 en ) ))
+                    (\en ->
+                        { name = "float64"
+                        , width = 8
+                        , enc = Encode.float64 en
+                        , dec = Decode.float64 en
+                        }
+                    )
                     endianFuzzer
                 ]
 
-        tagger : ( String, ( Int, a -> Encode.Encoder, Decode.Decoder a ) ) -> ( String, Int, Bytes -> Maybe Bytes )
-        tagger ( label, ( len, enc, dec ) ) =
-            ( label
-            , len
-            , Decode.decode dec
-                >> Maybe.map (\i -> Encode.encode (enc i))
-            )
+        tagger :
+            { name : String
+            , width : Int
+            , enc : a -> Encode.Encoder
+            , dec : Decode.Decoder a
+            }
+            -> { name : String, width : Int, roundTrip : Bytes -> Maybe Bytes }
+        tagger { name, width, enc, dec } =
+            { name = name
+            , width = width
+            , roundTrip =
+                Decode.decode dec
+                    >> Maybe.map (\i -> Encode.encode (enc i))
+            }
     in
     Fuzz.oneOf
         [ intFuzzers
@@ -145,14 +315,11 @@ roundTripTests =
                 bytes
                     |> Decode.decode (Decode.bytes (Bytes.width bytes))
                     |> Expect.equal (Just bytes)
-
-
-
         , fuzz2 bytesFuzzer codecFuzzer "simple" <|
-            \bytes_ ( _, n, roundTrip ) ->
+            \bytes_ { width, roundTrip } ->
                 let
                     bytes =
-                        zeroFill n bytes_
+                        zeroFill width bytes_
                 in
                 roundTrip bytes
                     |> Expect.equal (Just bytes)
@@ -272,13 +439,13 @@ lengthTests =
                         |> Expect.equal 4
             ]
         , describe "floats"
-            [ fuzz2 endianFuzzer Fuzz.float "float32" <|
+            [ fuzz2 endianFuzzer messyFloatFuzzer "float32" <|
                 \e i ->
                     Encode.float32 e i
                         |> Encode.encode
                         |> Bytes.width
                         |> Expect.equal 4
-            , fuzz2 endianFuzzer Fuzz.float "float64" <|
+            , fuzz2 endianFuzzer messyFloatFuzzer "float64" <|
                 \e i ->
                     Encode.float64 e i
                         |> Encode.encode
@@ -306,5 +473,19 @@ lengthTests =
                     Encode.encode (Encode.string str)
                         |> Bytes.width
                         |> Expect.equal (Encode.getStringWidth str)
+            ]
+        , describe "random encoder"
+            [ fuzz encoderFuzzer "single" <|
+                \{ width, encoder } ->
+                    encoder
+                        |> Encode.encode
+                        |> Bytes.width
+                        |> Expect.equal width
+            , fuzz encoderSequenceFuzzer "sequence" <|
+                \{ width, encoder } ->
+                    encoder
+                        |> Encode.encode
+                        |> Bytes.width
+                        |> Expect.equal width
             ]
         ]

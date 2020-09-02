@@ -7,7 +7,84 @@ import Bytes.Encode as Encode
 import Expect
 import FromElmTest.Fuzz
 import Fuzz exposing (Fuzzer)
+import Hex
 import Test exposing (..)
+
+
+type Hash
+    = Hash String
+
+
+startingHash : Hash
+startingHash =
+    Hash ""
+
+
+combineHash : Hash -> Hash -> Hash
+combineHash (Hash a) (Hash b) =
+    Hash (a ++ b)
+
+
+hashString : String -> Hash
+hashString s =
+    Hash ("__string " ++ s)
+
+
+hashInt : Int -> Hash
+hashInt i =
+    Hash ("__int" ++ String.fromInt i)
+
+
+hashFloat : Float -> Hash
+hashFloat f =
+    Hash ("__float" ++ String.fromFloat f)
+
+
+{-| Hash in such a way that the `float -> 32 bits -> float` conversion does not
+change hash.
+-}
+hashFloat32 : Float -> Hash
+hashFloat32 f =
+    Hash
+        ("__float32"
+            ++ (if f < 0 then
+                    "-"
+
+                else
+                    ""
+               )
+            ++ "2^"
+            ++ (f |> logBase 2 |> round |> String.fromInt)
+        )
+
+
+hashBytes : Bytes -> Hash
+hashBytes b =
+    let
+        width =
+            Bytes.width b
+
+        hex =
+            Hex.toString
+                >> String.padLeft 2 '0'
+
+        listStep ( n, s ) =
+            if n <= 0 then
+                Decode.succeed (Decode.Done s)
+
+            else
+                Decode.map (\x -> Decode.Loop ( n - 1, s ++ hex x )) Decode.unsignedInt8
+    in
+    case
+        Decode.decode
+            (Decode.loop ( width, "" ) listStep)
+            b
+    of
+        Just s ->
+            Hash ("__bytes0x" ++ s)
+
+        Nothing ->
+            Hash "__WARNING_ERROR_BAD_THING_HAS_HAPPENED"
 
 
 endianFuzzer : Fuzzer Bytes.Endianness
@@ -28,69 +105,104 @@ messyFloatFuzzer =
         ]
 
 
-encoderFuzzer : Fuzzer { name : String, width : Int, encoder : Encode.Encoder }
-encoderFuzzer =
+codecFuzzer :
+    Fuzzer
+        { name : String
+        , width : Int
+        , hash : Hash
+        , encoder : Encode.Encoder
+        , decoder : Decode.Decoder Hash
+        }
+codecFuzzer =
     Fuzz.oneOf
         [ -- signed ints
           Fuzz.map
             (\i ->
                 { name = "signedInt8"
                 , width = 1
+                , hash = hashInt i
                 , encoder = Encode.signedInt8 i
+                , decoder =
+                    Decode.signedInt8
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange (0 - 0x80) 0x7F)
         , Fuzz.map2
             (\i en ->
                 { name = "signedInt16"
                 , width = 2
+                , hash = hashInt i
                 , encoder = Encode.signedInt16 en i
+                , decoder =
+                    Decode.signedInt16 en
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange (0 - 0x8000) 0x7FFF)
             endianFuzzer
         , Fuzz.map2
             (\i en ->
                 { name = "signedInt32"
                 , width = 4
+                , hash = hashInt i
                 , encoder = Encode.signedInt32 en i
+                , decoder =
+                    Decode.signedInt32 en
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange (0 - 0x80000000) 0x7FFFFFFF)
             endianFuzzer
         , -- unsigned ints
           Fuzz.map
             (\i ->
                 { name = "unsignedInt8"
                 , width = 1
+                , hash = hashInt i
                 , encoder = Encode.unsignedInt8 i
+                , decoder =
+                    Decode.unsignedInt8
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange 0 0xFF)
         , Fuzz.map2
             (\i en ->
                 { name = "unsignedInt16"
                 , width = 2
+                , hash = hashInt i
                 , encoder = Encode.unsignedInt16 en i
+                , decoder =
+                    Decode.unsignedInt16 en
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange 0 0xFFFF)
             endianFuzzer
         , Fuzz.map2
             (\i en ->
                 { name = "unsignedInt32"
                 , width = 4
+                , hash = hashInt i
                 , encoder = Encode.unsignedInt32 en i
+                , decoder =
+                    Decode.unsignedInt32 en
+                        |> Decode.map (\ii -> hashInt ii)
                 }
             )
-            Fuzz.int
+            (Fuzz.intRange 0 0xFFFFFFFF)
             endianFuzzer
         , -- floats
           Fuzz.map2
             (\f en ->
                 { name = "float32"
                 , width = 4
+                , hash = hashFloat32 f
                 , encoder = Encode.float32 en f
+                , decoder =
+                    Decode.float32 en
+                        |> Decode.map (\ff -> hashFloat32 ff)
                 }
             )
             messyFloatFuzzer
@@ -99,7 +211,11 @@ encoderFuzzer =
             (\f en ->
                 { name = "float64"
                 , width = 8
+                , hash = hashFloat f
                 , encoder = Encode.float64 en f
+                , decoder =
+                    Decode.float64 en
+                        |> Decode.map (\ff -> hashFloat ff)
                 }
             )
             messyFloatFuzzer
@@ -107,43 +223,76 @@ encoderFuzzer =
         , -- string
           Fuzz.map
             (\s ->
+                let
+                    width =
+                        Encode.getStringWidth s
+                in
                 { name = "string"
-                , width = Encode.getStringWidth s
+                , width = width
+                , hash = hashString s
                 , encoder = Encode.string s
+                , decoder =
+                    Decode.string width
+                        |> Decode.map (\ss -> hashString ss)
                 }
             )
             FromElmTest.Fuzz.string
         , -- bytes
           Fuzz.map
             (\b ->
+                let
+                    width =
+                        Bytes.width b
+                in
                 { name = "bytes"
-                , width = Bytes.width b
+                , width = width
+                , hash = hashBytes b
                 , encoder = Encode.bytes b
+                , decoder =
+                    Decode.bytes width
+                        |> Decode.map (\bb -> hashBytes bb)
                 }
             )
             bytesFuzzer
         ]
 
 
-encoderSequenceFuzzer : Fuzzer { names : List String, width : Int, encoder : Encode.Encoder }
-encoderSequenceFuzzer =
-    let
-        maybeEncoder =
-            Fuzz.maybe encoderFuzzer
-    in
-    Fuzz.list encoderFuzzer
+codecSequenceFuzzer :
+    Fuzzer
+        { names : List String
+        , width : Int
+        , hash : Hash
+        , encoder : Encode.Encoder
+        , decoder : Decode.Decoder Hash
+        }
+codecSequenceFuzzer =
+    Fuzz.list codecFuzzer
         |> Fuzz.map
-            (\encoders ->
-                { names = List.map .name encoders
-                , width = encoders |> List.map .width |> List.sum
+            (\codecs ->
+                { names = List.map .name codecs
+                , width = codecs |> List.map .width |> List.sum
+                , hash = List.foldl (\{ hash } acc -> combineHash acc hash) startingHash codecs
                 , encoder =
-                    encoders |> List.map .encoder |> Encode.sequence
+                    codecs |> List.map .encoder |> Encode.sequence
+                , decoder =
+                    Decode.loop
+                        ( codecs, startingHash )
+                        (\( codecsLeft, acc ) ->
+                            case codecsLeft of
+                                [] ->
+                                    Decode.succeed (Decode.Done acc)
+
+                                { decoder } :: rest ->
+                                    Decode.map
+                                        (\newHash -> Decode.Loop ( rest, combineHash acc newHash ))
+                                        decoder
+                        )
                 }
             )
 
 
-codecFuzzer : Fuzzer { name : String, width : Int, roundTrip : Bytes -> Maybe Bytes }
-codecFuzzer =
+codecFuzzer2 : Fuzzer { name : String, width : Int, roundTrip : Bytes -> Maybe Bytes }
+codecFuzzer2 =
     let
         intFuzzers =
             Fuzz.oneOf
@@ -304,77 +453,91 @@ expect32bitNan bytes en =
 roundTripTests : Test
 roundTripTests =
     describe "round trip"
-        [ fuzz bytesFuzzer "bytes (encoding)" <|
-            \bytes ->
-                bytes
-                    |> Encode.bytes
-                    |> Encode.encode
-                    |> Expect.equal bytes
-        , fuzz bytesFuzzer "bytes (decoding)" <|
-            \bytes ->
-                bytes
-                    |> Decode.decode (Decode.bytes (Bytes.width bytes))
-                    |> Expect.equal (Just bytes)
-        , fuzz2 bytesFuzzer codecFuzzer "simple" <|
-            \bytes_ { width, roundTrip } ->
-                let
-                    bytes =
-                        zeroFill width bytes_
-                in
-                roundTrip bytes
-                    |> Expect.equal (Just bytes)
-        , fuzz2 endianFuzzer bytesFuzzer "float32" <|
-            \en bytes_ ->
-                let
-                    bytes =
-                        zeroFill 4 bytes_
-                in
-                case
-                    Decode.decode (Decode.float32 en) bytes
-                of
-                    Just float ->
-                        if isNaN float then
-                            expect32bitNan bytes en
-
-                        else
-                            Encode.float32 en float
-                                |> Encode.encode
-                                |> Expect.equal bytes
-
-                    Nothing ->
-                        Expect.fail "bug: cannot convert bytes to float32"
-        , fuzz bytesFuzzer "strings from bytes" <|
-            \bytes ->
-                let
-                    width =
-                        Bytes.width bytes
-                in
-                case
-                    Decode.decode (Decode.string width) bytes
-                        |> Maybe.map (Encode.string >> Encode.encode)
-                of
-                    Just newBytes ->
-                        newBytes |> Expect.equal bytes
-
-                    Nothing ->
-                        Expect.pass
-        , fuzz FromElmTest.Fuzz.string "utf8 strings" <|
-            \str ->
-                let
-                    width =
-                        Encode.getStringWidth str
-                in
-                case
-                    str
-                        |> Encode.string
+        [ describe "starting with bytes"
+            [ fuzz bytesFuzzer "bytes (encoding)" <|
+                \bytes ->
+                    bytes
+                        |> Encode.bytes
                         |> Encode.encode
-                        |> Decode.decode (Decode.string width)
-                of
-                    Just newStr ->
-                        newStr |> Expect.equal str
+                        |> Expect.equal bytes
+            , fuzz bytesFuzzer "bytes (decoding)" <|
+                \bytes ->
+                    bytes
+                        |> Decode.decode (Decode.bytes (Bytes.width bytes))
+                        |> Expect.equal (Just bytes)
+            , fuzz2 bytesFuzzer codecFuzzer2 "simple" <|
+                \bytes_ { width, roundTrip } ->
+                    let
+                        bytes =
+                            zeroFill width bytes_
+                    in
+                    roundTrip bytes
+                        |> Expect.equal (Just bytes)
+            , fuzz2 endianFuzzer bytesFuzzer "float32" <|
+                \en bytes_ ->
+                    let
+                        bytes =
+                            zeroFill 4 bytes_
+                    in
+                    case
+                        Decode.decode (Decode.float32 en) bytes
+                    of
+                        Just float ->
+                            if isNaN float then
+                                expect32bitNan bytes en
 
-                    Nothing ->
-                        Expect.fail "String did not encode into utf8 bytes"
+                            else
+                                Encode.float32 en float
+                                    |> Encode.encode
+                                    |> Expect.equal bytes
+
+                        Nothing ->
+                            Expect.fail "bug: cannot convert bytes to float32"
+            , fuzz bytesFuzzer "strings from bytes" <|
+                \bytes ->
+                    let
+                        width =
+                            Bytes.width bytes
+                    in
+                    case
+                        Decode.decode (Decode.string width) bytes
+                            |> Maybe.map (Encode.string >> Encode.encode)
+                    of
+                        Just newBytes ->
+                            newBytes |> Expect.equal bytes
+
+                        Nothing ->
+                            Expect.pass
+            , fuzz FromElmTest.Fuzz.string "utf8 strings" <|
+                \str ->
+                    let
+                        width =
+                            Encode.getStringWidth str
+                    in
+                    case
+                        str
+                            |> Encode.string
+                            |> Encode.encode
+                            |> Decode.decode (Decode.string width)
+                    of
+                        Just newStr ->
+                            newStr |> Expect.equal str
+
+                        Nothing ->
+                            Expect.fail "String did not encode into utf8 bytes"
+            ]
+        , describe "starting with encoder"
+            [ fuzz codecFuzzer "single" <|
+                \{ hash, encoder, decoder } ->
+                    Encode.encode encoder
+                        |> Decode.decode decoder
+                        |> Expect.equal (Just hash)
+            , fuzz codecSequenceFuzzer "sequences" <|
+                \{ hash, encoder, decoder } ->
+                    Encode.encode encoder
+                        |> Decode.decode decoder
+                        |> Expect.equal (Just hash)
+            ]
         ]
 
 
@@ -475,13 +638,13 @@ lengthTests =
                         |> Expect.equal (Encode.getStringWidth str)
             ]
         , describe "random encoder"
-            [ fuzz encoderFuzzer "single" <|
+            [ fuzz codecFuzzer "single" <|
                 \{ width, encoder } ->
                     encoder
                         |> Encode.encode
                         |> Bytes.width
                         |> Expect.equal width
-            , fuzz encoderSequenceFuzzer "sequence" <|
+            , fuzz codecSequenceFuzzer "sequence" <|
                 \{ width, encoder } ->
                     encoder
                         |> Encode.encode

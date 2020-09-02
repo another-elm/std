@@ -19,8 +19,9 @@
     },
     "test-dependencies": {
         "direct": {
+            "elm/bytes": "1.0.8",
             "elm-explorations/test": "1.2.2",
-            "elm/bytes": "1.0.8"
+            "rtfeldman/elm-hex": "1.0.0"
         },
         "indirect": {
             "elm/random": "1.0.0"

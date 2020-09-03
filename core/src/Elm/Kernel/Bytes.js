@@ -1,12 +1,10 @@
 /*
 
 import Elm.Kernel.Scheduler exposing (binding, succeed)
-import Elm.Kernel.Utils exposing (Tuple2, chr)
+import Elm.Kernel.Utils exposing (Tuple2)
 import Maybe exposing (Just, Nothing)
 
 */
-
-/* eslint-disable */
 
 // BYTES
 
@@ -73,7 +71,10 @@ const _Bytes_write_f64 = F4(function (mb, i, n, isLE) {
 
 const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
   // TODO(harry) consider aligning `offset + i` to a multiple of 4 here.
-  for (var i = 0, length = bytes.byteLength, limit = length - 4; i <= limit; i += 4) {
+  let i = 0;
+  const length = bytes.byteLength;
+
+  for (; i <= length - 4; i += 4) {
     mb.setUint32(offset + i, bytes.getUint32(i));
   }
 
@@ -87,16 +88,16 @@ const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
 // STRINGS
 
 function _Bytes_getStringWidth(string) {
-  return (new TextEncoder().encode(string)).length;
+  return new TextEncoder().encode(string).length;
 }
 
 const _Bytes_write_string = F3(function (mb, offset, string) {
   // TODO(harry): consider using encodeInto if it is available.
   const src = new TextEncoder().encode(string);
-  const len = src.length;
-  const dst = new Uint8Array(mb.buffer, mb.byteOffset + offset, len);
+  const length = src.length;
+  const dst = new Uint8Array(mb.buffer, mb.byteOffset + offset, length);
   dst.set(src);
-  return offset + len;
+  return offset + length;
 });
 
 // DECODER
@@ -143,14 +144,14 @@ const _Bytes_read_bytes = F3(function (length, bytes, offset) {
 
 const _Bytes_read_string = F3(function (length, bytes, offset) {
   const end = offset + length;
-  const decoder = new TextDecoder('utf8', { fatal:  true});
+  const decoder = new TextDecoder("utf8", { fatal: true });
   const sliceView = new DataView(bytes.buffer, bytes.byteOffset + offset, length);
 
   return __Utils_Tuple2(end, decoder.decode(sliceView));
 });
 
 const _Bytes_decodeFailure = F2(function () {
-  throw 0;
+  throw 0; // eslint-disable-line no-throw-literal
 });
 
 /* ESLINT GLOBAL VARIABLES
@@ -161,5 +162,5 @@ const _Bytes_decodeFailure = F2(function () {
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Bytes_.*" }] */
 
 /* global __Scheduler_binding, __Scheduler_succeed */
-/* global __Utils_Tuple2, __Utils_chr */
+/* global __Utils_Tuple2 */
 /* global __Maybe_Just, __Maybe_Nothing */

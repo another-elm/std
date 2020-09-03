@@ -23,6 +23,27 @@ def elm_make(run):
         exit(code)
 
 
+def check_kernel_imports(run):
+    print("Running check-kernel-imports...")
+    code = run([
+        './tests/check-kernel-imports.js', "core", "browser", "json", "test",
+        "markdown"
+    ])
+
+    if code != 0:
+        print("There are kernel import issues")
+        exit(code)
+
+
+def flake8(run):
+    print("Checking flake8...")
+    code = run(['flake8', '.'])
+
+    if code != 0:
+        print("flake8 failed")
+        exit(code)
+
+
 def get_runner():
     output = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                             stdout=subprocess.PIPE,
@@ -181,6 +202,8 @@ def tidy():
     generate_globals()
     xo()
     yapf()
+    flake8(run)
+    check_kernel_imports(run)
     elm_format()
     elm_make(run)
     exit(0)
@@ -205,31 +228,19 @@ def check():
             print("yapf wants to make changes!")
             exit(code)
 
-    def flake8():
-        print("Checking flake8...")
-        code = run(['flake8', '.'])
+    def elm_format():
+        print("Running elm-format verify...")
+        code = run(['elm-format', "./core/src", "--verify"])
 
         if code != 0:
-            print("flake8 failed")
-            exit(code)
-
-    def kernel_imports():
-        print("Running check-kernel-imports...")
-        code = run([
-            './tests/check-kernel-imports.js', "core", "browser", "json",
-            "test", "markdown"
-        ])
-
-        if code != 0:
-            print("There are kernel import issues")
             exit(code)
 
     xo()
     yapf()
-    flake8()
-    kernel_imports()
+    flake8(run)
+    check_kernel_imports(run)
+    elm_format()
     elm_make(run)
-
     exit(0)
 
 

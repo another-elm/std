@@ -22,10 +22,11 @@ const _Bytes_getHostEndianness = F2(function (le, be) {
 
 // ENCODERS
 
-function _Bytes_newMutableBytes(width) {
+const _Bytes_newMutableBytesWith = (width) => (initialiser) => {
   const mutableBytes = new DataView(new ArrayBuffer(width));
+  initialiser(mutableBytes);
   return mutableBytes;
-}
+};
 
 // SIGNED INTEGERS
 

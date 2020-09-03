@@ -44,6 +44,7 @@ import Elm.Kernel.Basics
 import Elm.Kernel.Bytes
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
@@ -115,13 +116,11 @@ this intermediate `Encoder` can help reduce allocation quite a lot!
 encode : Encoder -> Bytes
 encode encoder =
     let
-        mb =
-            newMutableBytes (getWidth encoder)
-
-        _ =
+        initialiser mb =
             write encoder mb 0
+                |> Impure.map (\_ -> ())
     in
-    markImmutable mb
+    newMutableBytesWith (getWidth encoder) (Impure.toFunction initialiser)
 
 
 
@@ -320,51 +319,56 @@ sequence builders =
 -- WRITE
 
 
-write : Encoder -> MutableBytes -> Int -> Int
+write : Encoder -> MutableBytes -> Int -> Impure.Action Int
 write builder mb offset =
     case builder of
         I8 n ->
-            write_i8 mb offset n
+            write_i8_action mb offset n
 
         I16 e n ->
-            write_i16 mb offset n (e == LE)
+            write_i16_action mb offset n (e == LE)
 
         I32 e n ->
-            write_i32 mb offset n (e == LE)
+            write_i32_action mb offset n (e == LE)
 
         U8 n ->
-            write_u8 mb offset n
+            write_u8_action mb offset n
 
         U16 e n ->
-            write_u16 mb offset n (e == LE)
+            write_u16_action mb offset n (e == LE)
 
         U32 e n ->
-            write_u32 mb offset n (e == LE)
+            write_u32_action mb offset n (e == LE)
 
         F32 e n ->
-            write_f32 mb offset n (e == LE)
+            write_f32_action mb offset n (e == LE)
 
         F64 e n ->
-            write_f64 mb offset n (e == LE)
+            write_f64_action mb offset n (e == LE)
 
         Seq _ bs ->
-            writeSequence bs mb offset
+            writeSequence bs mb (Impure.resolve offset)
 
         Utf8 _ s ->
-            write_string mb offset s
+            write_string_action mb offset s
 
         Bytes bs ->
-            write_bytes mb offset bs
+            write_bytes_action mb offset bs
 
 
-writeSequence : List Encoder -> MutableBytes -> Int -> Int
-writeSequence builders mb offset =
+writeSequence : List Encoder -> MutableBytes -> Impure.Action Int -> Impure.Action Int
+writeSequence builders mb getOffset =
     case builders of
         [] ->
-            offset
+            getOffset
 
         b :: bs ->
-            writeSequence bs mb (write b mb offset)
+            -- This is a bit of a dance to keep `writeSequence` tail recursive.
+            let
+                writeAndGetNewOffset =
+                    Impure.andThen (write b mb) getOffset
+            in
+            writeSequence bs mb writeAndGetNewOffset
 
 
 
@@ -418,6 +422,56 @@ getWidths width builders =
             getWidths (width + getWidth b) bs
 
 
+write_i8_action : MutableBytes -> Int -> Int -> Impure.Action Int
+write_i8_action mb offset value =
+    Impure.fromFunction (write_i8 mb offset) value
+
+
+write_i16_action : MutableBytes -> Int -> Int -> Bool -> Impure.Action Int
+write_i16_action mb offset value isLE =
+    Impure.fromFunction (write_i16 mb offset value) isLE
+
+
+write_i32_action : MutableBytes -> Int -> Int -> Bool -> Impure.Action Int
+write_i32_action mb offset value isLE =
+    Impure.fromFunction (write_i32 mb offset value) isLE
+
+
+write_u8_action : MutableBytes -> Int -> Int -> Impure.Action Int
+write_u8_action mb offset value =
+    Impure.fromFunction (write_u8 mb offset) value
+
+
+write_u16_action : MutableBytes -> Int -> Int -> Bool -> Impure.Action Int
+write_u16_action mb offset value isLE =
+    Impure.fromFunction (write_u16 mb offset value) isLE
+
+
+write_u32_action : MutableBytes -> Int -> Int -> Bool -> Impure.Action Int
+write_u32_action mb offset value isLE =
+    Impure.fromFunction (write_u32 mb offset value) isLE
+
+
+write_f32_action : MutableBytes -> Int -> Float -> Bool -> Impure.Action Int
+write_f32_action mb offset value isLE =
+    Impure.fromFunction (write_f32 mb offset value) isLE
+
+
+write_f64_action : MutableBytes -> Int -> Float -> Bool -> Impure.Action Int
+write_f64_action mb offset value isLE =
+    Impure.fromFunction (write_f64 mb offset value) isLE
+
+
+write_string_action : MutableBytes -> Int -> String -> Impure.Action Int
+write_string_action mb offset value =
+    Impure.fromFunction (write_string mb offset) value
+
+
+write_bytes_action : MutableBytes -> Int -> Bytes -> Impure.Action Int
+write_bytes_action mb offset value =
+    Impure.fromFunction (write_bytes mb offset) value
+
+
 
 -- Kernel interop
 
@@ -426,61 +480,56 @@ type MutableBytes
     = Stub_MutableBytes MutableBytes
 
 
-newMutableBytes : Int -> MutableBytes
-newMutableBytes =
-    Elm.Kernel.Bytes.newMutableBytes
+newMutableBytesWith : Int -> Impure.Function MutableBytes () -> Bytes
+newMutableBytesWith =
+    Elm.Kernel.Bytes.newMutableBytesWith
 
 
-markImmutable : MutableBytes -> Bytes
-markImmutable =
-    Elm.Kernel.Basics.fudgeType
-
-
-write_i8 : MutableBytes -> Int -> Int -> Int
+write_i8 : MutableBytes -> Int -> Impure.Function Int Int
 write_i8 =
     Elm.Kernel.Bytes.write_i8
 
 
-write_i16 : MutableBytes -> Int -> Int -> Bool -> Int
+write_i16 : MutableBytes -> Int -> Int -> Impure.Function Bool Int
 write_i16 =
     Elm.Kernel.Bytes.write_i16
 
 
-write_i32 : MutableBytes -> Int -> Int -> Bool -> Int
+write_i32 : MutableBytes -> Int -> Int -> Impure.Function Bool Int
 write_i32 =
     Elm.Kernel.Bytes.write_i32
 
 
-write_u8 : MutableBytes -> Int -> Int -> Int
+write_u8 : MutableBytes -> Int -> Impure.Function Int Int
 write_u8 =
     Elm.Kernel.Bytes.write_u8
 
 
-write_u16 : MutableBytes -> Int -> Int -> Bool -> Int
+write_u16 : MutableBytes -> Int -> Int -> Impure.Function Bool Int
 write_u16 =
     Elm.Kernel.Bytes.write_u16
 
 
-write_u32 : MutableBytes -> Int -> Int -> Bool -> Int
+write_u32 : MutableBytes -> Int -> Int -> Impure.Function Bool Int
 write_u32 =
     Elm.Kernel.Bytes.write_u32
 
 
-write_f32 : MutableBytes -> Int -> Float -> Bool -> Int
+write_f32 : MutableBytes -> Int -> Float -> Impure.Function Bool Int
 write_f32 =
     Elm.Kernel.Bytes.write_f32
 
 
-write_f64 : MutableBytes -> Int -> Float -> Bool -> Int
+write_f64 : MutableBytes -> Int -> Float -> Impure.Function Bool Int
 write_f64 =
     Elm.Kernel.Bytes.write_f64
 
 
-write_string : MutableBytes -> Int -> String -> Int
+write_string : MutableBytes -> Int -> Impure.Function String Int
 write_string =
     Elm.Kernel.Bytes.write_string
 
 
-write_bytes : MutableBytes -> Int -> Bytes -> Int
+write_bytes : MutableBytes -> Int -> Impure.Function Bytes Int
 write_bytes =
     Elm.Kernel.Bytes.write_bytes

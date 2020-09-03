@@ -257,19 +257,72 @@ codecFuzzer =
         ]
 
 
+type Tree
+    = Leaf
+    | Branch Tree Tree
+
+
+tree : Int -> Fuzzer Tree
+tree i =
+    if i <= 0 then
+        Fuzz.constant Leaf
+
+    else
+        Fuzz.frequency
+            [ ( 1, Fuzz.constant Leaf )
+            , ( 2, Fuzz.map2 Branch (tree (i - 1)) (tree (i - 1)) )
+            ]
+
+
 codecSequenceFuzzer :
-    Fuzzer
-        { names : List String
-        , width : Int
-        , hash : Hash
-        , encoder : Encode.Encoder
-        , decoder : Decode.Decoder Hash
-        }
+        Fuzzer
+            { names : List String
+            , width : Int
+            , hash : Hash
+            , encoder : Encode.Encoder
+            , decoder : Decode.Decoder Hash
+            }
 codecSequenceFuzzer =
-    Fuzz.list codecFuzzer
+    codecSequenceFuzzerDepth 3
+
+
+
+codecSequenceFuzzerDepth :
+    Int
+    ->
+        Fuzzer
+            { names : List String
+            , width : Int
+            , hash : Hash
+            , encoder : Encode.Encoder
+            , decoder : Decode.Decoder Hash
+            }
+codecSequenceFuzzerDepth maxDepth =
+    let
+        singleCodec =
+            codecFuzzer
+                |> Fuzz.map
+                    (\codec ->
+                        { names = List.singleton codec.name
+                        , width = codec.width
+                        , hash = codec.hash
+                        , encoder = codec.encoder
+                        , decoder = codec.decoder
+                        }
+                    )
+    in
+    Fuzz.list
+        (if maxDepth <= 0 then
+            singleCodec
+        else
+            Fuzz.frequency
+                [ (9, singleCodec)
+                , (1, codecSequenceFuzzerDepth (maxDepth - 1))
+                ]
+        )
         |> Fuzz.map
             (\codecs ->
-                { names = List.map .name codecs
+                { names = List.concatMap .names codecs
                 , width = codecs |> List.map .width |> List.sum
                 , hash = List.foldl (\{ hash } acc -> combineHash acc hash) startingHash codecs
                 , encoder =

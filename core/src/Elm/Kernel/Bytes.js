@@ -1,6 +1,5 @@
 /*
 
-import Bytes.Encode as Encode exposing (getWidth, write)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
 import Elm.Kernel.Utils exposing (Tuple2, chr)
 import Maybe exposing (Just, Nothing)
@@ -23,9 +22,8 @@ const _Bytes_getHostEndianness = F2(function (le, be) {
 
 // ENCODERS
 
-function _Bytes_encode(encoder) {
-  const mutableBytes = new DataView(new ArrayBuffer(__Encode_getWidth(encoder)));
-  __Encode_write(encoder)(mutableBytes)(0);
+function _Bytes_newMutableBytes(width) {
+  const mutableBytes = new DataView(new ArrayBuffer(width));
   return mutableBytes;
 }
 
@@ -73,6 +71,7 @@ const _Bytes_write_f64 = F4(function (mb, i, n, isLE) {
 // BYTES
 
 const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
+  // TODO(harry) consider aligning `offset + i` to a multiple of 4 here.
   for (var i = 0, length = bytes.byteLength, limit = length - 4; i <= limit; i += 4) {
     mb.setUint32(offset + i, bytes.getUint32(i));
   }
@@ -194,7 +193,6 @@ const _Bytes_decodeFailure = F2(function () {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Bytes_.*" }] */
 
-/* global __Encode_getWidth, __Encode_write */
 /* global __Scheduler_binding, __Scheduler_succeed */
 /* global __Utils_Tuple2, __Utils_chr */
 /* global __Maybe_Just, __Maybe_Nothing */

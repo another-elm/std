@@ -40,6 +40,7 @@ module Bytes.Encode exposing
 import Basics exposing (..)
 import Bytes exposing (Bytes, Endianness(..))
 import Char exposing (Char)
+import Elm.Kernel.Basics
 import Elm.Kernel.Bytes
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
@@ -112,8 +113,15 @@ this intermediate `Encoder` can help reduce allocation quite a lot!
 
 -}
 encode : Encoder -> Bytes
-encode =
-    Elm.Kernel.Bytes.encode
+encode encoder =
+    let
+        mb =
+            newMutableBytes (getWidth encoder)
+
+        _ =
+            write encoder mb 0
+    in
+    markImmutable mb
 
 
 
@@ -255,7 +263,7 @@ to make negative numbers small.
 -}
 string : String -> Encoder
 string str =
-    Utf8 (Elm.Kernel.Bytes.getStringWidth str) str
+    Utf8 (getStringWidth str) str
 
 
 {-| Get the width of a `String` in UTF-8 bytes.
@@ -312,44 +320,44 @@ sequence builders =
 -- WRITE
 
 
-write : Encoder -> Bytes -> Int -> Int
+write : Encoder -> MutableBytes -> Int -> Int
 write builder mb offset =
     case builder of
         I8 n ->
-            Elm.Kernel.Bytes.write_i8 mb offset n
+            write_i8 mb offset n
 
         I16 e n ->
-            Elm.Kernel.Bytes.write_i16 mb offset n (e == LE)
+            write_i16 mb offset n (e == LE)
 
         I32 e n ->
-            Elm.Kernel.Bytes.write_i32 mb offset n (e == LE)
+            write_i32 mb offset n (e == LE)
 
         U8 n ->
-            Elm.Kernel.Bytes.write_u8 mb offset n
+            write_u8 mb offset n
 
         U16 e n ->
-            Elm.Kernel.Bytes.write_u16 mb offset n (e == LE)
+            write_u16 mb offset n (e == LE)
 
         U32 e n ->
-            Elm.Kernel.Bytes.write_u32 mb offset n (e == LE)
+            write_u32 mb offset n (e == LE)
 
         F32 e n ->
-            Elm.Kernel.Bytes.write_f32 mb offset n (e == LE)
+            write_f32 mb offset n (e == LE)
 
         F64 e n ->
-            Elm.Kernel.Bytes.write_f64 mb offset n (e == LE)
+            write_f64 mb offset n (e == LE)
 
         Seq _ bs ->
             writeSequence bs mb offset
 
         Utf8 _ s ->
-            Elm.Kernel.Bytes.write_string mb offset s
+            write_string mb offset s
 
         Bytes bs ->
-            Elm.Kernel.Bytes.write_bytes mb offset bs
+            write_bytes mb offset bs
 
 
-writeSequence : List Encoder -> Bytes -> Int -> Int
+writeSequence : List Encoder -> MutableBytes -> Int -> Int
 writeSequence builders mb offset =
     case builders of
         [] ->
@@ -397,7 +405,7 @@ getWidth builder =
             w
 
         Bytes bs ->
-            Elm.Kernel.Bytes.width bs
+            Bytes.width bs
 
 
 getWidths : Int -> List Encoder -> Int
@@ -408,3 +416,71 @@ getWidths width builders =
 
         b :: bs ->
             getWidths (width + getWidth b) bs
+
+
+
+-- Kernel interop
+
+
+type MutableBytes
+    = Stub_MutableBytes MutableBytes
+
+
+newMutableBytes : Int -> MutableBytes
+newMutableBytes =
+    Elm.Kernel.Bytes.newMutableBytes
+
+
+markImmutable : MutableBytes -> Bytes
+markImmutable =
+    Elm.Kernel.Basics.fudgeType
+
+
+write_i8 : MutableBytes -> Int -> Int -> Int
+write_i8 =
+    Elm.Kernel.Bytes.write_i8
+
+
+write_i16 : MutableBytes -> Int -> Int -> Bool -> Int
+write_i16 =
+    Elm.Kernel.Bytes.write_i16
+
+
+write_i32 : MutableBytes -> Int -> Int -> Bool -> Int
+write_i32 =
+    Elm.Kernel.Bytes.write_i32
+
+
+write_u8 : MutableBytes -> Int -> Int -> Int
+write_u8 =
+    Elm.Kernel.Bytes.write_u8
+
+
+write_u16 : MutableBytes -> Int -> Int -> Bool -> Int
+write_u16 =
+    Elm.Kernel.Bytes.write_u16
+
+
+write_u32 : MutableBytes -> Int -> Int -> Bool -> Int
+write_u32 =
+    Elm.Kernel.Bytes.write_u32
+
+
+write_f32 : MutableBytes -> Int -> Float -> Bool -> Int
+write_f32 =
+    Elm.Kernel.Bytes.write_f32
+
+
+write_f64 : MutableBytes -> Int -> Float -> Bool -> Int
+write_f64 =
+    Elm.Kernel.Bytes.write_f64
+
+
+write_string : MutableBytes -> Int -> String -> Int
+write_string =
+    Elm.Kernel.Bytes.write_string
+
+
+write_bytes : MutableBytes -> Int -> Bytes -> Int
+write_bytes =
+    Elm.Kernel.Bytes.write_bytes

@@ -87,50 +87,16 @@ const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
 // STRINGS
 
 function _Bytes_getStringWidth(string) {
-  for (var width = 0, i = 0; i < string.length; i++) {
-    const code = string.charCodeAt(i);
-    width += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0xd800 || code > 0xdbff ? 3 : (i++, 4);
-  }
-
-  return width;
+  return (new TextEncoder().encode(string)).length;
 }
 
 const _Bytes_write_string = F3(function (mb, offset, string) {
-  for (let i = 0; i < string.length; i++) {
-    let code = string.charCodeAt(i);
-    offset +=
-      code < 0x80
-        ? (mb.setUint8(offset, code), 1)
-        : code < 0x800
-        ? (mb.setUint16(
-            offset,
-            0xc080 /* 0b1100000010000000 */ |
-              (((code >>> 6) & 0x1f) /* 0b00011111 */ << 8) |
-              (code & 0x3f) /* 0b00111111 */
-          ),
-          2)
-        : code < 0xd800 || code > 0xdbff
-        ? (mb.setUint16(
-            offset,
-            0xe080 /* 0b1110000010000000 */ |
-              (((code >>> 12) & 0xf) /* 0b00001111 */ << 8) |
-              ((code >>> 6) & 0x3f) /* 0b00111111 */
-          ),
-          mb.setUint8(offset + 2, 0x80 /* 0b10000000 */ | (code & 0x3f) /* 0b00111111 */),
-          3)
-        : ((code = (code - 0xd800) * 0x400 + string.charCodeAt(++i) - 0xdc00 + 0x10000),
-          mb.setUint32(
-            offset,
-            0xf0808080 /* 0b11110000100000001000000010000000 */ |
-              (((code >>> 18) & 0x7) /* 0b00000111 */ << 24) |
-              (((code >>> 12) & 0x3f) /* 0b00111111 */ << 16) |
-              (((code >>> 6) & 0x3f) /* 0b00111111 */ << 8) |
-              (code & 0x3f) /* 0b00111111 */
-          ),
-          4);
-  }
-
-  return offset;
+  // TODO(harry): consider using encodeInto if it is available.
+  const src = new TextEncoder().encode(string);
+  const len = src.length;
+  const dst = new Uint8Array(mb.buffer, mb.byteOffset + offset, len);
+  dst.set(src);
+  return offset + len;
 });
 
 // DECODER

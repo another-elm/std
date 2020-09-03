@@ -133,6 +133,13 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
       continue;
     }
 
+    const skippedIportMatch = line.match(/^-- skipme import\s+(Elm\.Kernel\.\w+)/u);
+    if (skippedIportMatch !== null) {
+      kernelImports.set(importMatch[1], { lineNumber: number, used: false });
+      warnings.push(`Kernel import of ${importMatch[1]} skipped at  ${file}:${number}`);
+      continue;
+    }
+
     const elmVarMatch = line.match(/^(\S*).*?=/u);
     if (elmVarMatch !== null) {
       addDef(elmVarMatch[1], number);

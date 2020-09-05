@@ -133,7 +133,7 @@ information on this. It is only defined here because it is a platform
 primitive.
 -}
 type ProcessId
-    = ProcessId RawScheduler.ProcessId
+    = Stub_ProcessId
 
 
 
@@ -184,8 +184,8 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> Maybe msg )`
 we can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-dispatchCmd : Effect.Runtime msg -> Cmd appMsg -> Impure.Action ()
-dispatchCmd runtime cmds =
+dispatchCmd : Effect.Runtime msg -> Cmd msg -> Impure.Action ()
+dispatchCmd runtime (Effect.Cmd cmds)  =
     let
         runtimeId =
             Effect.getId runtime
@@ -207,7 +207,6 @@ dispatchCmd runtime cmds =
                     )
     in
     cmds
-        |> unwrapCmd
         |> List.map processCmdTask
         |> List.map RawScheduler.spawn
         |> List.foldr
@@ -283,10 +282,9 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         |> Impure.map assertProcessId
 
 
-updateSubListeners : Sub appMsg -> Effect.Runtime msg -> Impure.Action ()
-updateSubListeners subBag runtime =
+updateSubListeners : Sub msg -> Effect.Runtime msg -> Impure.Action ()
+updateSubListeners (Effect.Sub subBag)  runtime =
     subBag
-        |> unwrapSub
         |> List.map
             (Tuple.mapSecond
                 (\tagger v ->
@@ -519,16 +517,6 @@ initialize =
 makeProgram : ActualProgram flags -> Program flags model msg
 makeProgram =
     Elm.Kernel.Basics.fudgeType
-
-
-unwrapCmd : Cmd a -> List (Effect.RuntimeId -> RawTask.Task Never (Maybe msg))
-unwrapCmd =
-    Elm.Kernel.Basics.unwrapTypeWrapper
-
-
-unwrapSub : Sub a -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe msg )
-unwrapSub =
-    Elm.Kernel.Basics.unwrapTypeWrapper
 
 
 resetSubscriptions :

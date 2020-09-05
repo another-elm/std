@@ -8,7 +8,7 @@ import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Just, Nothing)
-import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
+import Platform exposing (initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 
 */
@@ -235,10 +235,6 @@ function _Platform_invalidFlags(stringifiedError) {
 
 const _Platform_sendToApp = (runtimeId) => __Channel_rawSend(runtimeId.__messageChannel);
 
-const _Platform_wrapTask = (task) => __Platform_Task(task);
-
-const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
-
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {
   const cmdData = __List_Cons(createTask, __List_Nil);
@@ -327,5 +323,5 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Basics_isDebug */
 /* global __Result_isOk */
 /* global __Maybe_Just, __Maybe_Nothing */
-/* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
+/* global __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
 /* global __RawTask_execImpure, __RawTask_syncBinding */

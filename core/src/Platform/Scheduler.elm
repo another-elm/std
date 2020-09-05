@@ -42,149 +42,11 @@ to some kernel code magic to wrap and unwrap `Task`s and `Process`s.
 
 -}
 
-import Basics exposing (..)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Platform
-import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
-import Result exposing (Result(..))
-
-
-type alias ProcessId =
-    RawScheduler.ProcessId
-
-
-{-| This type can be handcrafted in kernel code. Grep javascript for "\_\_$then\_"
-when making any change.
--}
-type alias Future err ok =
-    { then_ : (Platform.Task err ok -> Impure.Action ()) -> Impure.Action TryAbortAction }
-
-
-type alias TryAbortAction =
-    RawTask.TryAbortAction
-
-
-succeed : ok -> Platform.Task never ok
-succeed val =
-    wrapTask (RawTask.Value (Ok val))
-
-
-fail : err -> Platform.Task err never
-fail e =
-    wrapTask (RawTask.Value (Err e))
-
-
-binding : Future err ok -> Platform.Task err ok
-binding fut =
-    wrapTask
-        (RawTask.AsyncAction
-            { then_ = \doneCallback -> fut.then_ (taskFn (\task -> doneCallback task)) }
-        )
-
-
-{-| Create a task that executes a non pure function
--}
-execImpure : Impure.Action a -> Platform.Task never a
-execImpure func =
-    wrapTask (RawTask.execImpure func)
-
-
-andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
-andThen func =
-    wrapTaskFn
-        (\task ->
-            RawTask.andThen
-                (\r ->
-                    case r of
-                        Ok val ->
-                            unwrapTask (func val)
-
-                        Err e ->
-                            RawTask.Value (Err e)
-                )
-                task
-        )
-
-
-map : (ok1 -> ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
-map func =
-    andThen (func >> succeed)
-
-
-onError : (err1 -> Platform.Task err2 ok) -> Platform.Task err1 ok -> Platform.Task err2 ok
-onError func =
-    wrapTaskFn
-        (\task ->
-            RawTask.andThen
-                (\r ->
-                    case r of
-                        Ok val ->
-                            RawTask.Value (Ok val)
-
-                        Err e ->
-                            unwrapTask (func e)
-                )
-                task
-        )
-
-
-{-| Create a task that, when run, will spawn a process.
-
-There is no way to send messages to a process spawned in this way.
-
--}
-spawn : Platform.Task err ok -> Platform.Task never Platform.ProcessId
-spawn task =
-    map
-        (\proc -> wrapProcessId proc)
-        (task
-            |> unwrapTask
-            |> RawScheduler.spawn
-            |> execImpure
-        )
-
-
-{-| This is provided to make `__Scheduler_rawSpawn` work!
-
-TODO(harry) remove once code in other `elm/*` packages has been updated.
-
--}
-rawSpawn : Impure.Function (Platform.Task e ok) Platform.ProcessId
-rawSpawn =
-    (Impure.fromFunction RawScheduler.rawSpawn >> Impure.map wrapProcessId)
-        |> taskFn
-        |> Impure.toFunction
-
-
-{-| Create a task kills a process.
--}
-kill : Platform.ProcessId -> Platform.Task never ()
-kill processId =
-    wrapTask (RawScheduler.kill (unwrapProcessId processId))
-
-
-{-| Create a task that sleeps for `time` milliseconds
--}
-sleep : Float -> Platform.Task x ()
-sleep time =
-    wrapTask (RawTask.sleep time)
-
-
-
--- wrapping helpers --
-
-
-wrapTaskFn : (RawTask.Task e1 o1 -> RawTask.Task e2 o2) -> Platform.Task e1 o1 -> Platform.Task e2 o2
-wrapTaskFn fn task =
-    wrapTask (taskFn fn task)
-
-
-taskFn : (RawTask.Task e1 o1 -> a) -> Platform.Task e1 o1 -> a
-taskFn fn task =
-    fn (unwrapTask task)
 
 
 wrapTask : RawTask.Task e o -> Platform.Task e o
@@ -197,11 +59,11 @@ unwrapTask =
     Elm.Kernel.Basics.fudgeType
 
 
-wrapProcessId : ProcessId -> Platform.ProcessId
+wrapProcessId : RawScheduler.ProcessId -> Platform.ProcessId
 wrapProcessId =
-    Elm.Kernel.Platform.wrapProcessId
+    Elm.Kernel.Basics.fudgeType
 
 
-unwrapProcessId : Platform.ProcessId -> ProcessId
+unwrapProcessId : Platform.ProcessId -> RawScheduler.ProcessId
 unwrapProcessId =
-    Elm.Kernel.Basics.unwrapTypeWrapper
+    Elm.Kernel.Basics.fudgeType

@@ -1,6 +1,6 @@
 /*
 
-import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
+import Elm.Kernel.Debug exposing (crash)
 
 */
 
@@ -26,21 +26,6 @@ const _Basics_modBy0 = () => __Debug_crash(11);
 
 const _Basics_fudgeType = (x) => x;
 
-const _Basics_unwrapTypeWrapper__DEBUG = (wrapped) => {
-  const entries = Object.entries(wrapped);
-  if (entries.length !== 2) {
-    __Debug_crash(12, __Debug_runtimeCrashReason("failedUnwrap"), wrapped);
-  }
-
-  if (entries[0][0] === "$") {
-    return entries[1][1];
-  }
-
-  return entries[0][1];
-};
-
-const _Basics_unwrapTypeWrapper__PROD = (wrapped) => wrapped;
-
 const _Basics_isDebug__DEBUG = true;
 const _Basics_isDebug__PROD = false;
 
@@ -51,4 +36,4 @@ const _Basics_isDebug__PROD = false;
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Basics_.*" }] */
 
-/* global __Debug_crash, __Debug_runtimeCrashReason */
+/* global __Debug_crash */

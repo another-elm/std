@@ -275,15 +275,6 @@ function _Debug_runtimeCrashReason__DEBUG(reason) {
         );
       };
 
-    case "failedUnwrap":
-      return function (fact2) {
-        throw new Error(
-          `Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(
-            fact2
-          ).join(", ")}`
-        );
-      };
-
     case "EffectModule":
       return function () {
         throw new Error(

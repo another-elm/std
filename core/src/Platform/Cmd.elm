@@ -54,8 +54,8 @@ Tutorial](https://guide.elm-lang.org/architecture/) and see how they
 fit into a real application!
 
 -}
-type Cmd msg
-    = Cmd (List (Effect.RuntimeId -> Task Never (Maybe msg)))
+type alias Cmd msg
+    = Effect.Cmd msg
 
 
 {-| Tell the runtime that there are no commands.
@@ -76,9 +76,9 @@ all do the same thing.
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-    List.map (\(Cmd cmd) -> cmd)
+    List.map (\(Effect.Cmd cmd) -> cmd)
         >> List.concat
-        >> Cmd
+        >> Effect.Cmd
 
 
 
@@ -95,32 +95,18 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
-map fn (Cmd data) =
+map fn (Effect.Cmd data) =
     data
         |> List.map (getCmdMapper fn)
-        |> Cmd
+        |> Effect.Cmd
 
 
 getCmdMapper : (a -> msg) -> RawCmd a -> RawCmd msg
 getCmdMapper tagger createTask runtimeId =
-    wrapTask (RawTask.map (Result.map (Maybe.map tagger)) (unwrapTask (createTask runtimeId)))
-
-
-wrapTask : RawTask.Task e o -> Task e o
-wrapTask =
-    Elm.Kernel.Platform.wrapTask
-
-
-unwrapTask : Task e o -> RawTask.Task e o
-unwrapTask =
-    Elm.Kernel.Basics.unwrapTypeWrapper
-
-
-{-| MUST mirror the definition in Platform
--}
-type Task e o
-    = Task (RawTask.Task e o)
+    RawTask.map
+        (Result.map (Maybe.map tagger))
+        (createTask runtimeId)
 
 
 type alias RawCmd msg =
-    Effect.RuntimeId -> Task Never (Maybe msg)
+    Effect.RuntimeId -> RawTask.Task Never (Maybe msg)

@@ -229,8 +229,8 @@ def check():
             exit(code)
 
     def elm_format():
-        print("Running elm-format verify...")
-        code = run(['elm-format', "./core/src", "--verify"])
+        print("Running elm-format validation...")
+        code = run(['elm-format', "./core/src", "--validate"])
 
         if code != 0:
             exit(code)

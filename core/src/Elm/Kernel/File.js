@@ -3,14 +3,12 @@
 import Elm.Kernel.Json exposing (decodePrim, expecting)
 import Elm.Kernel.List exposing (fromArray)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Utils exposing (Tuple2)
 import Result exposing (Ok)
 import String exposing (join)
 import Time exposing (millisToPosix)
 
 */
-
-/* eslint-disable */
 
 // DECODER
 
@@ -38,6 +36,8 @@ function _File_size(file) {
 function _File_lastModified(file) {
   return __Time_millisToPosix(file.lastModified);
 }
+
+/* eslint-disable */
 
 // DOWNLOAD
 
@@ -147,6 +147,9 @@ function _File_uploadOneOrMore(mimes) {
   });
 }
 
+
+/* eslint-enable */
+
 // CONTENT
 
 function _File_toString(blob) {
@@ -198,7 +201,7 @@ function _File_toUrl(blob) {
 /* global __Json_decodePrim, __Json_expecting */
 /* global __List_fromArray */
 /* global __Scheduler_binding, __Scheduler_succeed */
-/* global __Utils_Tuple0, __Utils_Tuple2 */
+/* global __Utils_Tuple2 */
 /* global __Result_Ok */
 /* global __String_join */
 /* global __Time_millisToPosix */

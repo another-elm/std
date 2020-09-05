@@ -162,10 +162,7 @@ function _Debug_toAnsiString(ansi, value) {
     );
   }
 
-  if (
-    typeof File !== "undefined" &&
-    value instanceof File // eslint-disable-line no-undef
-  ) {
+  if (typeof File !== "undefined" && value instanceof File) {
     return _Debug_internalColor(ansi, "<" + value.name + ">");
   }
 
@@ -324,7 +321,7 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
     case 1: {
       let href = "<unknown>";
       if (typeof document !== "undefined") {
-        href = document.location.href; // eslint-disable-line no-undef
+        href = document.location.href;
       }
 
       throw new Error(

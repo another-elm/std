@@ -4,6 +4,7 @@
 		"xo": "0.30"
 	},
 	"xo": {
+		"env": "browser",
 		"prettier": true,
 		"space": true,
 		"ignores": [

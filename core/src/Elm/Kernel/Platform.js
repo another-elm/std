@@ -9,7 +9,7 @@ import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Just, Nothing)
 import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
-import Platform.Scheduler as Scheduler exposing (execImpure, syncBinding)
+import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 
 */
 
@@ -98,7 +98,7 @@ function _Platform_outgoingPort(name, converter) {
 
   return (payload) =>
     _Platform_command((runtimeId) =>
-      __Scheduler_execImpure(() => {
+      __RawTask_execImpure(() => {
         const value = __Json_unwrap(converter(payload));
         for (const sub of runtimeId.__outgoingPortSubs) {
           sub(value);
@@ -267,12 +267,11 @@ const _Platform_subscription = (key) => (tagger) => {
 
 // valueStore :
 //     Platform.Task Never state
-//     -> (state -> Platform.Task Never ( x, state ))
-//     -> Platform never x
+//     -> Impure.Function (state -> Platform.Task Never ( x, state )) (Platform.Task never a)
 const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
-    __Scheduler_syncBinding(() => {
+    __RawTask_syncBinding(() => {
       const tuple = A2(__Platform_initializeHelperFunctions.__$valueStoreHelper, task, stepper);
       task = tuple.b;
       return tuple.a;
@@ -329,4 +328,4 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Result_isOk */
 /* global __Maybe_Just, __Maybe_Nothing */
 /* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
-/* global __Scheduler_execImpure, __Scheduler_syncBinding */
+/* global __RawTask_execImpure, __RawTask_syncBinding */

@@ -44,6 +44,7 @@ import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
+import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Platform.Sub exposing (Sub)
 import Process
@@ -71,7 +72,10 @@ type Posix
 -}
 now : Task x Posix
 now =
-    Scheduler.execImpure (Impure.map millisToPosix (Impure.fromFunction rawNow ()))
+    Impure.fromFunction rawNow ()
+        |> Impure.map millisToPosix
+        |> RawTask.execImpure
+        |> Scheduler.wrapTask
 
 
 rawNow : Impure.Function () Int

@@ -43,8 +43,11 @@ longer. That’s kind of what Elm is all about.
 
 -}
 
-import Basics exposing (Float)
+import Basics exposing ((>>), Float)
 import Platform
+import Platform.Raw.Impure as Impure
+import Platform.Raw.Scheduler as RawScheduler
+import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Task exposing (Task)
 
@@ -81,7 +84,11 @@ come in a later release!
 -}
 spawn : Task x a -> Task y Id
 spawn =
-    Scheduler.spawn
+    Scheduler.unwrapTask
+        >> RawScheduler.spawn
+        >> Impure.map Scheduler.wrapProcessId
+        >> RawTask.execImpure
+        >> Scheduler.wrapTask
 
 
 {-| Block progress on the current process for the given number of milliseconds.
@@ -93,7 +100,7 @@ delay work until later.
 -}
 sleep : Float -> Task x ()
 sleep =
-    Scheduler.sleep
+    RawTask.sleep >> Scheduler.wrapTask
 
 
 {-| Sometimes you `spawn` a process, but later decide it would be a waste to
@@ -103,4 +110,6 @@ flight, it will also abort the request.
 -}
 kill : Id -> Task x ()
 kill =
-    Scheduler.kill
+    Scheduler.unwrapProcessId
+        >> RawScheduler.kill
+        >> Scheduler.wrapTask

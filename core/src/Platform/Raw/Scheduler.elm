@@ -11,6 +11,7 @@ import List
 import Maybe exposing (Maybe(..))
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Task as RawTask
+import Result exposing (Result(..))
 
 
 type ProcessId
@@ -23,7 +24,7 @@ type UniqueId
 
 {-| Will create, register and **enqueue** a new process.
 -}
-rawSpawn : Impure.Function (RawTask.Task a) ProcessId
+rawSpawn : Impure.Function (RawTask.Task e a) ProcessId
 rawSpawn =
     Impure.toFunction
         (\task -> Impure.andThen (\id -> enqueue (ProcessId { id = id }) task) getGuid)
@@ -31,7 +32,7 @@ rawSpawn =
 
 {-| Create a task that spawns a processes.
 -}
-spawn : RawTask.Task a -> Impure.Action ProcessId
+spawn : RawTask.Task e a -> Impure.Action ProcessId
 spawn task =
     Impure.fromFunction rawSpawn task
 
@@ -44,7 +45,7 @@ on the offical core library to lead the way regarding processes that can
 receive values.
 
 -}
-kill : ProcessId -> RawTask.Task ()
+kill : ProcessId -> RawTask.Task never ()
 kill processId =
     RawTask.execImpure (rawKill processId)
 
@@ -62,7 +63,7 @@ batch ids =
                                 (Impure.resolve ())
                                 ids
                     in
-                    RawTask.Value ()
+                    RawTask.Value (Ok ())
                         |> spawn
                         |> RawTask.execImpure
                         |> doneCallback
@@ -75,7 +76,7 @@ batch ids =
 reenterant call, drain the run queue but stepping all processes. The action
 produces the enqueued `ProcessId` when it is run.
 -}
-enqueue : ProcessId -> RawTask.Task state -> Impure.Action ProcessId
+enqueue : ProcessId -> RawTask.Task e state -> Impure.Action ProcessId
 enqueue id =
     Impure.fromFunction (rawEnqueue id)
 
@@ -90,10 +91,10 @@ actions that the process needs to perform.
 Kernel interop: this function is used by the sheduler.
 
 -}
-stepper : ProcessId -> Impure.Function (RawTask.Task state) RawTask.TryAbortAction
+stepper : ProcessId -> Impure.Function (RawTask.Task Never state) RawTask.TryAbortAction
 stepper processId =
     let
-        doneCallback : RawTask.Task state -> Impure.Action ()
+        doneCallback : RawTask.Task Never state -> Impure.Action ()
         doneCallback newRoot =
             enqueue processId newRoot
                 |> Impure.map (\(ProcessId _) -> ())
@@ -128,6 +129,6 @@ tryAbortProcess =
     Elm.Kernel.Scheduler.tryAbortProcess
 
 
-rawEnqueue : ProcessId -> Impure.Function (RawTask.Task state) ProcessId
+rawEnqueue : ProcessId -> Impure.Function (RawTask.Task e state) ProcessId
 rawEnqueue =
     Elm.Kernel.Scheduler.rawEnqueue

@@ -30,13 +30,14 @@ HTTP requests or writing to a database.
 
 -}
 
-import Basics exposing ((<<), (|>), Never, never)
+import Basics exposing ((<<), (>>), (|>), Never, never)
 import Elm.Kernel.Platform
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Effect as Effect
+import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 
@@ -86,7 +87,7 @@ type alias Task x a =
 -}
 succeed : a -> Task x a
 succeed =
-    Scheduler.succeed
+    Ok >> RawTask.Value >> Scheduler.wrapTask
 
 
 {-| A task that fails immediately when run. Like with `succeed`, this can be
@@ -102,7 +103,7 @@ used with `andThen` to check on the outcome of another task.
 -}
 fail : x -> Task x a
 fail =
-    Scheduler.fail
+    Err >> RawTask.Value >> Scheduler.wrapTask
 
 
 
@@ -256,8 +257,18 @@ First the process sleeps for an hour **and then** it tells us what time it is.
 
 -}
 andThen : (a -> Task x b) -> Task x a -> Task x b
-andThen =
-    Scheduler.andThen
+andThen func =
+    Scheduler.unwrapTask
+        >> RawTask.andThen
+            (\r ->
+                case r of
+                    Ok val ->
+                        Scheduler.unwrapTask (func val)
+
+                    Err e ->
+                        RawTask.Value (Err e)
+            )
+        >> Scheduler.wrapTask
 
 
 
@@ -277,8 +288,18 @@ callback to recover.
 
 -}
 onError : (x -> Task y a) -> Task x a -> Task y a
-onError =
-    Scheduler.onError
+onError func =
+    Scheduler.unwrapTask
+        >> RawTask.andThen
+            (\r ->
+                case r of
+                    Ok val ->
+                        RawTask.Value (Ok val)
+
+                    Err e ->
+                        Scheduler.unwrapTask (func e)
+            )
+        >> Scheduler.wrapTask
 
 
 {-| Transform the error value. This can be useful if you need a bunch of error

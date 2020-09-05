@@ -44,7 +44,7 @@ import Platform.Raw.Channel as Channel
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Task as RawTask
+import Platform.Raw.Task as RawTask exposing (andThen)
 import Platform.Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
@@ -125,7 +125,7 @@ information on this. It is only defined here because it is a platform
 primitive.
 -}
 type Task err ok
-    = Task (RawTask.Task (Result err ok))
+    = Stub_Task
 
 
 {-| Head over to the documentation for the [`Process`](Process) module for
@@ -192,16 +192,18 @@ dispatchCmd runtime cmds =
 
         processCmdTask getTaskFromId =
             getTaskFromId runtimeId
-                |> getRawTask
                 |> RawTask.andThen
                     (\maybeMsg ->
                         case maybeMsg of
-                            Just msg ->
+                            Ok (Just msg) ->
                                 RawTask.execImpure
                                     (Impure.fromFunction (sendToApp2 runtime) ( msg, AsyncUpdate ))
 
-                            Nothing ->
-                                RawTask.Value ()
+                            Ok Nothing ->
+                                RawTask.Value (Ok ())
+
+                            Err n ->
+                                never n
                     )
     in
     cmds
@@ -251,7 +253,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
             impl.init flags runtime
 
         dispatcher cmd =
-            RawTask.andThen
+            andThenOk
                 (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
                 (RawTask.sleep 0)
 
@@ -268,14 +270,14 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         loop stepper model =
             receiver
                 |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
-                |> RawTask.andThen (loop stepper)
+                |> andThenOk (loop stepper)
     in
     stepperBuilder runtime args initialModel
         |> RawTask.execImpure
-        |> RawTask.andThen
+        |> andThenOk
             (\stepper ->
                 dispatcher initialCmd
-                    |> RawTask.andThen (\() -> loop stepper initialModel)
+                    |> andThenOk (\() -> loop stepper initialModel)
             )
         |> RawScheduler.spawn
         |> Impure.map assertProcessId
@@ -299,27 +301,28 @@ updateSubListeners subBag runtime =
         |> resetSubscriptionsAction runtime
 
 
-valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
+valueStoreHelper :
+    RawTask.Task Never state
+    -> (state -> RawTask.Task Never ( x, state ))
+    -> ( RawTask.Task Never x, RawTask.Task Never state )
 valueStoreHelper oldTask stepper =
     let
         newTask =
-            RawTask.andThen
-                (stepper >> getRawTask)
-                (getRawTask oldTask)
+            andThenOk stepper oldTask
 
         outputTask =
-            RawTask.map (Tuple.first >> Ok) newTask
+            mapOk Tuple.first newTask
 
         stateTask =
-            RawTask.map (Tuple.second >> Ok) newTask
+            mapOk Tuple.second newTask
     in
-    ( Task outputTask, Task stateTask )
+    ( outputTask, stateTask )
 
 
-subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task never
+subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
 subListenerHelper channel =
     Channel.recv RawTask.execImpure channel
-        |> RawTask.andThen (\() -> subListenerHelper channel)
+        |> andThenOk (\() -> subListenerHelper channel)
 
 
 subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
@@ -366,6 +369,34 @@ assertProcessId _ =
     ()
 
 
+andThenOk : (a1 -> RawTask.Task e a2) -> RawTask.Task Never a1 -> RawTask.Task e a2
+andThenOk func task =
+    RawTask.andThen
+        (\x ->
+            case x of
+                Ok val ->
+                    func val
+
+                Err n ->
+                    never n
+        )
+        task
+
+
+mapOk : (a1 -> a2) -> RawTask.Task Never a1 -> RawTask.Task never a2
+mapOk func task =
+    RawTask.map
+        (\x ->
+            case x of
+                Ok val ->
+                    Ok (func val)
+
+                Err n ->
+                    never n
+        )
+        task
+
+
 assertResultIsOk : Result Never a -> a
 assertResultIsOk res =
     case res of
@@ -374,11 +405,6 @@ assertResultIsOk res =
 
         Err err ->
             never err
-
-
-getRawTask : Task Never a -> RawTask.Task a
-getRawTask (Task task) =
-    RawTask.map assertResultIsOk task
 
 
 combineStepperBuilders :
@@ -414,7 +440,10 @@ code in Elm/Kernel/Platform.js.
 -}
 type alias InitializeHelperFunctions state x =
     { subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
-    , valueStoreHelper : Task Never state -> (state -> Task Never ( x, state )) -> ( Task Never x, Task Never state )
+    , valueStoreHelper :
+        RawTask.Task Never state
+        -> (state -> RawTask.Task Never ( x, state ))
+        -> ( RawTask.Task Never x, RawTask.Task Never state )
     }
 
 
@@ -492,7 +521,7 @@ makeProgram =
     Elm.Kernel.Basics.fudgeType
 
 
-unwrapCmd : Cmd a -> List (Effect.RuntimeId -> Task Never (Maybe msg))
+unwrapCmd : Cmd a -> List (Effect.RuntimeId -> RawTask.Task Never (Maybe msg))
 unwrapCmd =
     Elm.Kernel.Basics.unwrapTypeWrapper
 

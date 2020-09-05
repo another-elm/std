@@ -1,6 +1,5 @@
 /*
 
-import Elm.Kernel.Scheduler exposing (binding, succeed)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Maybe exposing (Just, Nothing)
 
@@ -12,11 +11,9 @@ function _Bytes_width(bytes) {
   return bytes.byteLength;
 }
 
-const _Bytes_getHostEndianness = F2(function (le, be) {
-  return __Scheduler_binding(function (callback) {
-    callback(__Scheduler_succeed(new Uint8Array(new Uint32Array([1]))[0] === 1 ? le : be));
-  });
-});
+const _Bytes_getHostEndianness = F2((le, be) =>
+  new Uint8Array(new Uint32Array([1]))[0] === 1 ? le : be
+);
 
 // ENCODERS
 
@@ -161,6 +158,5 @@ const _Bytes_decodeFailure = F2(function () {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Bytes_.*" }] */
 
-/* global __Scheduler_binding, __Scheduler_succeed */
 /* global __Utils_Tuple2 */
 /* global __Maybe_Just, __Maybe_Nothing */

@@ -106,12 +106,12 @@ getCmdMapper tagger createTask runtimeId =
     wrapTask (RawTask.map (Result.map (Maybe.map tagger)) (unwrapTask (createTask runtimeId)))
 
 
-wrapTask : RawTask.Task (Result e o) -> Task e o
+wrapTask : RawTask.Task e o -> Task e o
 wrapTask =
     Elm.Kernel.Platform.wrapTask
 
 
-unwrapTask : Task e o -> RawTask.Task (Result e o)
+unwrapTask : Task e o -> RawTask.Task e o
 unwrapTask =
     Elm.Kernel.Basics.unwrapTypeWrapper
 
@@ -119,7 +119,7 @@ unwrapTask =
 {-| MUST mirror the definition in Platform
 -}
 type Task e o
-    = Task (RawTask.Task (Result e o))
+    = Task (RawTask.Task e o)
 
 
 type alias RawCmd msg =

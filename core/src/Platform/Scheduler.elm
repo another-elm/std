@@ -1,4 +1,4 @@
-module Platform.Scheduler exposing (ProcessId, TryAbortAction, andThen, binding, execImpure, fail, kill, map, onError, rawSpawn, sleep, spawn, succeed, syncBinding, unwrapTask, wrapTask)
+module Platform.Scheduler exposing (unwrapProcessId, unwrapTask, wrapProcessId, wrapTask)
 
 {-| The definition of the `Task` and `ProcessId` really belong in the
 `Platform.RawScheduler` module for two reasons.
@@ -85,17 +85,11 @@ binding fut =
         )
 
 
-syncBinding : Impure.Function () (Platform.Task never a) -> Platform.Task never a
-syncBinding a =
-    execImpure a
-        |> andThen (\t -> t)
-
-
 {-| Create a task that executes a non pure function
 -}
 execImpure : Impure.Action a -> Platform.Task never a
 execImpure func =
-    wrapTask (RawTask.execImpure (Impure.map Ok func))
+    wrapTask (RawTask.execImpure func)
 
 
 andThen : (ok1 -> Platform.Task err ok2) -> Platform.Task err ok1 -> Platform.Task err ok2
@@ -158,7 +152,7 @@ spawn task =
 TODO(harry) remove once code in other `elm/*` packages has been updated.
 
 -}
-rawSpawn : Impure.Function (Platform.Task err ok) Platform.ProcessId
+rawSpawn : Impure.Function (Platform.Task e ok) Platform.ProcessId
 rawSpawn =
     (Impure.fromFunction RawScheduler.rawSpawn >> Impure.map wrapProcessId)
         |> taskFn
@@ -169,38 +163,38 @@ rawSpawn =
 -}
 kill : Platform.ProcessId -> Platform.Task never ()
 kill processId =
-    wrapTask (RawTask.map Ok (RawScheduler.kill (unwrapProcessId processId)))
+    wrapTask (RawScheduler.kill (unwrapProcessId processId))
 
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
 sleep : Float -> Platform.Task x ()
 sleep time =
-    wrapTask (RawTask.map Ok (RawTask.sleep time))
+    wrapTask (RawTask.sleep time)
 
 
 
 -- wrapping helpers --
 
 
-wrapTaskFn : (RawTask.Task (Result e1 o1) -> RawTask.Task (Result e2 o2)) -> Platform.Task e1 o1 -> Platform.Task e2 o2
+wrapTaskFn : (RawTask.Task e1 o1 -> RawTask.Task e2 o2) -> Platform.Task e1 o1 -> Platform.Task e2 o2
 wrapTaskFn fn task =
     wrapTask (taskFn fn task)
 
 
-taskFn : (RawTask.Task (Result e1 o1) -> a) -> Platform.Task e1 o1 -> a
+taskFn : (RawTask.Task e1 o1 -> a) -> Platform.Task e1 o1 -> a
 taskFn fn task =
     fn (unwrapTask task)
 
 
-wrapTask : RawTask.Task (Result e o) -> Platform.Task e o
+wrapTask : RawTask.Task e o -> Platform.Task e o
 wrapTask =
-    Elm.Kernel.Platform.wrapTask
+    Elm.Kernel.Basics.fudgeType
 
 
-unwrapTask : Platform.Task e o -> RawTask.Task (Result e o)
+unwrapTask : Platform.Task e o -> RawTask.Task e o
 unwrapTask =
-    Elm.Kernel.Basics.unwrapTypeWrapper
+    Elm.Kernel.Basics.fudgeType
 
 
 wrapProcessId : ProcessId -> Platform.ProcessId

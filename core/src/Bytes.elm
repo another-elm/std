@@ -22,6 +22,9 @@ import Char exposing (Char)
 import Elm.Kernel.Bytes
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
+import Platform.Raw.Impure as Impure
+import Platform.Raw.Task as RawTask
+import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
 import String exposing (String)
 import Task exposing (Task)
@@ -142,4 +145,11 @@ type Endianness
 -}
 getHostEndianness : Task x Endianness
 getHostEndianness =
-    Elm.Kernel.Bytes.getHostEndianness LE BE
+    Impure.fromFunction getHostEndianness_ { le = LE, be = BE }
+        |> RawTask.execImpure
+        |> Scheduler.wrapTask
+
+
+getHostEndianness_ : Impure.Function { le : Endianness, be : Endianness } Endianness
+getHostEndianness_ =
+    Elm.Kernel.Bytes.getHostEndianness

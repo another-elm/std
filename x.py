@@ -252,12 +252,22 @@ parser = argparse.ArgumentParser(description='Hack on anther-elm')
 
 subparsers = parser.add_subparsers()
 
-tidy_parser = subparsers.add_parser('install',
-                                    help='install required programs')
-tidy_parser.set_defaults(func=install)
-tidy_parser = subparsers.add_parser('tidy', help='tidy files')
+install_parser = subparsers.add_parser(
+    'install',
+    help='install required programs',
+)
+install_parser.set_defaults(func=install)
+
+tidy_parser = subparsers.add_parser(
+    'tidy',
+    help='tidy files',
+)
 tidy_parser.set_defaults(func=tidy)
-check_parser = subparsers.add_parser('check', help='check files are tidy')
+
+check_parser = subparsers.add_parser(
+    'check',
+    help='check files are tidy',
+)
 check_parser.set_defaults(func=check)
 
 args = parser.parse_args()

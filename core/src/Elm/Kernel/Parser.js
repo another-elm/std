@@ -28,7 +28,7 @@ const _Parser_isSubChar = F3(function (predicate, offset, string) {
   return string.length <= offset
     ? -1
     : (string.charCodeAt(offset) & 0xf800) === 0xd800
-    ? predicate(__Utils_chr(string.substr(offset, 2)))
+    ? predicate(__Utils_chr(string.slice(offset, offset + 2)))
       ? offset + 2
       : -1
     : predicate(__Utils_chr(string[offset]))
@@ -56,7 +56,8 @@ const _Parser_chompBase10 = F2(function (offset, string) {
 });
 
 const _Parser_consumeBase = F3(function (base, offset, string) {
-  for (var total = 0; offset < string.length; offset++) {
+  let total = 0;
+  for (; offset < string.length; offset++) {
     const digit = string.charCodeAt(offset) - 0x30;
     if (digit < 0 || base <= digit) break;
     total = base * total + digit;
@@ -66,7 +67,8 @@ const _Parser_consumeBase = F3(function (base, offset, string) {
 });
 
 const _Parser_consumeBase16 = F2(function (offset, string) {
-  for (var total = 0; offset < string.length; offset++) {
+  let total = 0;
+  for (; offset < string.length; offset++) {
     const code = string.charCodeAt(offset);
     if (code >= 0x30 && code <= 0x39) {
       total = 16 * total + code - 0x30;
@@ -90,7 +92,15 @@ const _Parser_findSubString = F5(function (smallString, offset, row, col, bigStr
 
   while (offset < target) {
     const code = bigString.charCodeAt(offset++);
-    code === 0x000a /* \n */ ? ((col = 1), row++) : (col++, (code & 0xf800) === 0xd800 && offset++);
+    if (code === 0x000a /* \n */) {
+      col = 1;
+      row++;
+    } else {
+      col++;
+      if ((code & 0xf800) === 0xd800) {
+        offset++;
+      }
+    }
   }
 
   return __Utils_Tuple3(newOffset, row, col);

@@ -3,7 +3,7 @@
 import Time exposing (customZone, Name)
 import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Platform exposing (createSubscriptionId, subscriptionEvent, subscriptionWithUpdater)
-import Platform.Scheduler as Scheduler exposing (execImpure)
+import Platform.Raw.Task as RawTask exposing (execImpure)
 import Elm.Kernel.Utils exposing (Tuple0)
 
 */
@@ -22,26 +22,10 @@ const _Time_key = __Platform_createSubscriptionId();
 function _Time_setInterval(interval) {
   // TODO(harry): consider overhead of the fmod call.
   // TODO(harry): consider floating point rounding issues.
-  let handle = null;
-
+  let timeoutHandle = null;
   const runtimesListening = new Set();
 
-  const restart = () => {
-    const now = _Time_rawNow();
-    // console.log(`interval ${interval}   delaying ${interval - (now % interval)}`);
-    handle = setTimeout(() => {
-      handle = null;
-      const now = _Time_rawNow();
-      for (const runtime of runtimesListening) {
-        A3(__Platform_subscriptionEvent, _Time_key, runtime, {
-          __$interval: interval,
-          __$now: now,
-        });
-      }
-    }, interval - (now % interval));
-  };
-
-  // Cancel non-subscribed-to timeouts. Start subscribed-to
+  // Cancel any timeouts with no subscribers. Restart any timeouts that have subscribed-to but
   // previously-cancelled timeouts.
   const onSubReset = (runtimeId, n) => {
     if (n === 0) {
@@ -51,12 +35,22 @@ function _Time_setInterval(interval) {
     }
 
     if (runtimesListening.size === 0) {
-      if (handle !== null) {
-        clearTimeout(handle);
-        handle = null;
+      if (timeoutHandle !== null) {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = null;
       }
-    } else if (handle === null) {
-      restart();
+    } else if (timeoutHandle === null) {
+      const now = _Time_rawNow();
+      timeoutHandle = setTimeout(() => {
+        timeoutHandle = null;
+        const now = _Time_rawNow();
+        for (const runtime of runtimesListening) {
+          A3(__Platform_subscriptionEvent, _Time_key, runtime, {
+            __$interval: interval,
+            __$now: now,
+          });
+        }
+      }, interval - (now % interval));
     }
 
     return __Utils_Tuple0;
@@ -66,15 +60,13 @@ function _Time_setInterval(interval) {
 }
 
 function _Time_here() {
-  return __Scheduler_execImpure(() =>
+  return __RawTask_execImpure(() =>
     A2(__Time_customZone, -new Date().getTimezoneOffset(), __List_Nil)
   );
 }
 
 function _Time_getZoneName() {
-  return __Scheduler_execImpure(() =>
-    __Time_Name(Intl.DateTimeFormat().resolvedOptions().timeZone)
-  );
+  return __RawTask_execImpure(() => __Time_Name(Intl.DateTimeFormat().resolvedOptions().timeZone));
 }
 
 /* ESLINT GLOBAL VARIABLES
@@ -87,5 +79,5 @@ function _Time_getZoneName() {
 /* global __Time_customZone, __Time_Name */
 /* global __List_Nil */
 /* global __Platform_createSubscriptionId, __Platform_subscriptionEvent, __Platform_subscriptionWithUpdater */
-/* global __Scheduler_execImpure */
+/* global __RawTask_execImpure */
 /* global __Utils_Tuple0 */

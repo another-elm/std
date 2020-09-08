@@ -575,7 +575,8 @@ being much smoother for any moving visuals.
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
-    subscription (setInterval interval)
+    subscription
+        (setInterval interval)
         (\payload ->
             if payload.interval == interval then
                 payload.now

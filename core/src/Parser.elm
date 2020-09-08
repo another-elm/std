@@ -65,9 +65,15 @@ module Parser exposing
 
 -}
 
-import Char
+import Basics exposing (..)
+import Char exposing (Char)
+import List
+import Maybe exposing (Maybe(..))
 import Parser.Advanced as A exposing ((|.), (|=))
+import Result exposing (Result(..))
 import Set
+import String exposing (String)
+import Tuple
 
 
 

@@ -68,9 +68,15 @@ certain scenarios.**
 
 -}
 
-import Char
+import Char exposing (..)
 import Elm.Kernel.Parser
 import Set
+import Basics exposing (..)
+import String exposing (String)
+import Result exposing (Result(..))
+import List exposing ((::))
+import Tuple
+import Maybe exposing (Maybe(..))
 
 
 

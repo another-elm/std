@@ -124,7 +124,7 @@ function _Http_toDataView(arrayBuffer) {
 
 const _Http_emptyBodyContents = null;
 
-function _Http_toFormData(parts) {
+function _Http_multipartBodyContents(parts) {
   const formData = new FormData();
   for (const part of __List_iterate(parts)) {
     formData.append(part.a, part.b);

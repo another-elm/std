@@ -668,7 +668,7 @@ application!
 expectStringResponse : (Result x a -> msg) -> (Response String -> Result x a) -> Expect msg
 expectStringResponse toMsg toResult =
     stringBodyInterpretter (toResult >> toMsg)
-        |> hideInterpretterInteralType
+        |> hideInterpretterInternalType
         |> Expect
 
 
@@ -681,7 +681,7 @@ more access to headers and more leeway in defining your own errors.
 expectBytesResponse : (Result x a -> msg) -> (Response Bytes -> Result x a) -> Expect msg
 expectBytesResponse toMsg toResult =
     bytesBodyInterpretter (toResult >> toMsg)
-        |> hideInterpretterInteralType
+        |> hideInterpretterInternalType
         |> Expect
 
 
@@ -950,7 +950,7 @@ Similar to [`expectStringResponse`](#expectStringResponse).
 -}
 stringResolver : (Response String -> Result x a) -> Resolver x a
 stringResolver =
-    stringBodyInterpretter >> hideInterpretterInteralType >> Resolver
+    stringBodyInterpretter >> hideInterpretterInternalType >> Resolver
 
 
 {-| Turn a response with a `Bytes` body into a result.
@@ -958,7 +958,7 @@ Similar to [`expectBytesResponse`](#expectBytesResponse).
 -}
 bytesResolver : (Response Bytes -> Result x a) -> Resolver x a
 bytesResolver =
-    bytesBodyInterpretter >> hideInterpretterInteralType >> Resolver
+    bytesBodyInterpretter >> hideInterpretterInternalType >> Resolver
 
 
 {-| Just like [`riskyRequest`](#riskyRequest), but it creates a `Task`. **Use
@@ -1052,10 +1052,10 @@ requestHelp r allowCookies =
 
         (Body contentType bodyContents) =
             r.body
-    in
-    command <|
-        \runtimeId ->
-            requestHelper2
+
+        thenWithId runtimeId doneCallback =
+            Impure.fromFunction
+                makeRequest
                 { tracker = r.tracker |> Maybe.map (\tracker -> ( runtimeId, tracker ))
                 , contentType = contentType
                 , body = bodyContents
@@ -1074,8 +1074,25 @@ requestHelp r allowCookies =
                             FromAllDomains ->
                                 1
                     }
+                , onCompletion =
+                    Impure.toFunction
+                        (bodyInterpretter.toValue >> Just >> Ok >> RawTask.Value >> doneCallback)
+                , onCancelation =
+                    Impure.toFunction
+                        (\() -> Nothing |> Ok |> RawTask.Value |> doneCallback)
                 }
-                (bodyInterpretter.toValue >> Just)
+                |> Impure.map
+                    (\{} ->
+                        -- The way to cancel cmd requests is **not** to
+                        -- kill the task. Instead a canceler function is
+                        -- stored in a global lookup table and can be
+                        -- involved via the cancel Cmd. Therefore, we use a
+                        -- null TryAbortAction callback here.
+                        Impure.resolve ()
+                    )
+    in
+    command <|
+        \runtimeId -> RawTask.AsyncAction { then_ = thenWithId runtimeId }
 
 
 resultToTask : Result x a -> Task x a
@@ -1092,54 +1109,9 @@ resultToTask result =
 -- effects
 
 
-requestHelper2 :
-    { tracker : Maybe ( Effect.RuntimeId, String )
-    , contentType : Maybe String
-    , body : RequestBodyContents
-    , toBody : RawBodyContents -> ResponseBodyContents
-    , method : String
-    , url : String
-    , config : KernelRequestConfiguration
-    }
-    -> (Response ResponseBodyContents -> Maybe msg)
-    -> RawTask.Task never (Maybe msg)
-requestHelper2 kernelRequest toMsg =
-    RawTask.AsyncAction
-        { then_ =
-            \doneCallback ->
-                Impure.fromFunction
-                    makeRequest
-                    { tracker = kernelRequest.tracker
-                    , contentType = kernelRequest.contentType
-                    , body = kernelRequest.body
-                    , toBody = kernelRequest.toBody
-                    , method = kernelRequest.method
-                    , url = kernelRequest.url
-                    , config = kernelRequest.config
-                    , onCompletion =
-                        Impure.toFunction
-                            (toMsg >> Ok >> RawTask.Value >> doneCallback)
-                    , onCancelation =
-                        Impure.toFunction
-                            (\() -> Nothing |> Ok |> RawTask.Value |> doneCallback)
-                    }
-                    |> Impure.map
-                        (\{} ->
-                            -- The way to cancel cmd requests is **not** to
-                            -- kill the task. Instead a canceler function is
-                            -- stored in a global lookup table and can be
-                            -- involved via the cancel Cmd. Therefore, we use a
-                            -- null TryAbortAction callback here.
-                            Impure.resolve ()
-                        )
-        }
-
-
 type alias BodyInterpretter body a =
     { type_ : String
-    , toBody :
-        -- todo
-        RawBodyContents -> body
+    , toBody : RawBodyContents -> body
     , toValue : Response body -> a
     }
 
@@ -1246,7 +1218,7 @@ fileBodyContents =
 
 multipartBodyContents : List Part -> RequestBodyContents
 multipartBodyContents =
-    Elm.Kernel.Http.toFormData
+    Elm.Kernel.Http.multipartBodyContents
 
 
 stringPartContents : String -> PartContents
@@ -1269,8 +1241,8 @@ cancel_ =
     Elm.Kernel.Http.cancel
 
 
-hideInterpretterInteralType : BodyInterpretter body a -> BodyInterpretter ResponseBodyContents a
-hideInterpretterInteralType =
+hideInterpretterInternalType : BodyInterpretter body a -> BodyInterpretter ResponseBodyContents a
+hideInterpretterInternalType =
     Elm.Kernel.Basics.fudgeType
 
 

@@ -39,13 +39,13 @@ import Json.Decode exposing (Decoder)
 import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Cmd exposing (Cmd)
+import Platform.Cmd as Cmd exposing (Cmd)
 import Platform.Raw.Channel as Channel
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask exposing (andThen)
-import Platform.Sub exposing (Sub)
+import Platform.Sub as Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
@@ -185,43 +185,29 @@ we can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
 dispatchCmd : Effect.Runtime msg -> Cmd msg -> Impure.Action ()
-dispatchCmd runtime (Effect.Cmd cmds)  =
+dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
     let
         runtimeId =
             Effect.getId runtime
 
         processCmdTask getTaskFromId =
             getTaskFromId runtimeId
-                |> RawTask.andThen
+                |> andThenOk
                     (\maybeMsg ->
                         case maybeMsg of
-                            Ok (Just msg) ->
-                                RawTask.execImpure
-                                    (Impure.fromFunction (sendToApp2 runtime) ( msg, AsyncUpdate ))
+                            Just msg ->
+                                RawTask.execImpure (sendToAppAction runtime ( msg, AsyncUpdate ))
 
-                            Ok Nothing ->
+                            Nothing ->
                                 RawTask.Value (Ok ())
-
-                            Err n ->
-                                never n
                     )
     in
     cmds
         |> List.map processCmdTask
         |> List.map RawScheduler.spawn
         |> List.foldr
-            (\curr accTask ->
-                Impure.andThen
-                    (\acc ->
-                        Impure.map
-                            (\id -> id :: acc)
-                            curr
-                    )
-                    accTask
-            )
-            (Impure.resolve [])
-        |> Impure.andThen RawScheduler.batch
-        |> Impure.map assertProcessId
+            (\id -> Impure.andThen (\() -> id) >> Impure.map assertProcessId)
+            (Impure.resolve ())
 
 
 mainLoop :
@@ -251,11 +237,6 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         ( initialModel, initialCmd ) =
             impl.init flags runtime
 
-        dispatcher cmd =
-            andThenOk
-                (\() -> RawTask.execImpure (dispatchCmd runtime cmd))
-                (RawTask.sleep 0)
-
         receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
         receiveMsg stepper oldModel ( message, meta ) =
             let
@@ -275,7 +256,8 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         |> RawTask.execImpure
         |> andThenOk
             (\stepper ->
-                dispatcher initialCmd
+                RawTask.sleep 0
+                    |> andThenOk (\() -> RawTask.execImpure (dispatchCmd runtime initialCmd))
                     |> andThenOk (\() -> loop stepper initialModel)
             )
         |> RawScheduler.spawn
@@ -283,7 +265,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
 
 
 updateSubListeners : Sub msg -> Effect.Runtime msg -> Impure.Action ()
-updateSubListeners (Effect.Sub subBag)  runtime =
+updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
     subBag
         |> List.map
             (Tuple.mapSecond
@@ -315,6 +297,16 @@ valueStoreHelper oldTask stepper =
             mapOk Tuple.second newTask
     in
     ( outputTask, stateTask )
+
+
+createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
+createCmd createTask =
+    Cmd.Cmd (Effect.Cmd [ createTask ])
+
+
+subscriptionHelper : Effect.SubId -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
+subscriptionHelper key tagger =
+    Sub.Sub (Effect.Sub [ ( key, tagger ) ])
 
 
 subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
@@ -436,12 +428,14 @@ nullStepperBuilder _ _ _ =
 {-| Kernel code relies on this this type alias. Must be kept consistant with
 code in Elm/Kernel/Platform.js.
 -}
-type alias InitializeHelperFunctions state x =
+type alias InitializeHelperFunctions state x msg =
     { subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
     , valueStoreHelper :
         RawTask.Task Never state
         -> (state -> RawTask.Task Never ( x, state ))
         -> ( RawTask.Task Never x, RawTask.Task Never state )
+    , subscriptionHelper : Effect.SubId -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
+    , createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
     }
 
 
@@ -495,10 +489,12 @@ type UpdateMetadata
 
 {-| Kernel code relies on this definitions type and on the behaviour of these functions.
 -}
-initializeHelperFunctions : InitializeHelperFunctions state x
+initializeHelperFunctions : InitializeHelperFunctions state x msg
 initializeHelperFunctions =
     { subListenerProcess = subListenerProcess
     , valueStoreHelper = valueStoreHelper
+    , subscriptionHelper = subscriptionHelper
+    , createCmd = createCmd
     }
 
 

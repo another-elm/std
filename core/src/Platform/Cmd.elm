@@ -1,5 +1,5 @@
 module Platform.Cmd exposing
-    ( Cmd, none, batch
+    ( Cmd(..), none, batch
     , map
     )
 
@@ -54,8 +54,8 @@ Tutorial](https://guide.elm-lang.org/architecture/) and see how they
 fit into a real application!
 
 -}
-type alias Cmd msg
-    = Effect.Cmd msg
+type Cmd msg
+    = Cmd (Effect.Cmd msg)
 
 
 {-| Tell the runtime that there are no commands.
@@ -76,9 +76,10 @@ all do the same thing.
 -}
 batch : List (Cmd msg) -> Cmd msg
 batch =
-    List.map (\(Effect.Cmd cmd) -> cmd)
+    List.map (\(Cmd (Effect.Cmd cmd)) -> cmd)
         >> List.concat
         >> Effect.Cmd
+        >> Cmd
 
 
 
@@ -95,10 +96,11 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Cmd a -> Cmd msg
-map fn (Effect.Cmd data) =
+map fn (Cmd (Effect.Cmd data)) =
     data
         |> List.map (getCmdMapper fn)
         |> Effect.Cmd
+        >> Cmd
 
 
 getCmdMapper : (a -> msg) -> RawCmd a -> RawCmd msg

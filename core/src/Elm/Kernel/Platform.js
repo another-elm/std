@@ -2,7 +2,7 @@
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (run, wrap, unwrap)
-import Elm.Kernel.List exposing (Cons, Nil, toArray)
+import Elm.Kernel.List exposing (iterate)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
@@ -204,7 +204,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
     }
   }
 
-  for (const tuple of __List_toArray(newSubs)) {
+  for (const tuple of __List_iterate(newSubs)) {
     const subId = tuple.a;
     const sendToApp = tuple.b;
     const listenerGroups = runtime.__subscriptionStates.get(subId.__$key).__listenerGroups;
@@ -237,28 +237,11 @@ const _Platform_sendToApp = (runtimeId) => __Channel_rawSend(runtimeId.__message
 
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {
-  const cmdData = __List_Cons(createTask, __List_Nil);
-  if (__Basics_isDebug) {
-    return {
-      $: "Cmd",
-      a: cmdData,
-    };
-  }
-
-  return cmdData;
+  return __Platform_initializeHelperFunctions.__$createCmd(createTask);
 };
 
-// subscription : RawSub.Id -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
 const _Platform_subscription = (key) => (tagger) => {
-  const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
-  if (__Basics_isDebug) {
-    return {
-      $: "Sub",
-      a: subData,
-    };
-  }
-
-  return subData;
+  return __Platform_initializeHelperFunctions.__$subscriptionHelper(key)(tagger);
 };
 
 // valueStore :
@@ -317,7 +300,7 @@ function _Platform_mergeExports(moduleName, object, exports) {
 
 /* global __Debug_crash, __Debug_runtimeCrashReason */
 /* global __Json_run, __Json_wrap, __Json_unwrap */
-/* global __List_Cons, __List_Nil, __List_toArray */
+/* global __List_iterate */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */

@@ -43,16 +43,19 @@ const _List_fromArray = (array) =>
     __List_Nil_elm_builtin
   );
 
-const _List_toArray = (xs) => {
-  const out = [];
+function* _List_iterate(xs) {
   for (;;) {
     if (xs.$ === _List_nilKey) {
-      return out;
+      return;
     }
 
-    out.push(xs.a);
+    yield xs.a;
     xs = xs.b;
   }
+}
+
+const _List_toArray = (xs) => {
+  return [..._List_iterate(xs)];
 };
 
 const _List_sortWith = F2((f, xs) =>

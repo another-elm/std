@@ -242,7 +242,7 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
 
     let defMatch = line.match(/^(?:var|const|let)\s*(_(\w+?)_(\w+))\s*=/u);
     if (defMatch === null) {
-      defMatch = line.match(/^function\s*(_(\w+?)_(\w+))\s*\(/u);
+      defMatch = line.match(/^function\*?\s*(_(\w+?)_(\w+))\s*\(/u);
     }
 
     if (defMatch !== null) {

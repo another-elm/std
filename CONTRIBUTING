@@ -1,5 +1,5 @@
-Quick Installation Guide for musl libc
-======================================
+Quick Installation Guide for another-elm/std
+============================================
 
 Contributions are very welcome, currently we do not have any explicit
 guidelines.
@@ -15,13 +15,13 @@ Tools
 
 - `$ ./x.py tidy` runs formatting and automatic eslint fixing.
 - `$ ./x.py check` runs all the static analysis tools we have.
-- `$ cd tests && elm-test --compiler ../another-elm` runs unit tests. We will
-  hopefully get a nice python sub-command for testing soon.
+- `$ ./init.py cd tests && elm-test --compiler ../another-elm` runs unit tests.
+  We will hopefully get a nice python sub-command for testing soon.
 
 Acknowledgements
 ----------------
 
-The vast majority of the code in another-elm is derived from the relavant elm/*
+The vast majority of the code in another-elm is derived from the relevant elm/*
 packages.
 
 The documentation of another-elm is inspired by that of [musl].

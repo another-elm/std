@@ -20,7 +20,8 @@ def elm_make(run):
 
     if code != 0:
         print("There are issues with elm make")
-        exit(code)
+
+    return bool(code)
 
 
 def check_kernel_imports(run):
@@ -32,7 +33,8 @@ def check_kernel_imports(run):
 
     if code != 0:
         print("There are kernel import issues")
-        exit(code)
+
+    return bool(code)
 
 
 def flake8(run):
@@ -41,7 +43,8 @@ def flake8(run):
 
     if code != 0:
         print("flake8 failed")
-        exit(code)
+
+    return bool(code)
 
 
 def get_runner():
@@ -173,40 +176,38 @@ def tidy():
         print("Running xo...")
         code = run(['npx', 'xo', '--fix'])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def yapf():
         print("Running yapf...")
         code = run(['yapf', '.', '--in-place', '--recursive'])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def generate_globals():
         print("Running generate-globals...")
         code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def elm_format():
         print("Running elm-format...")
         code = run(['elm-format', "./core/src", "--yes"])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     # Call generate_globals first as sometime xo only passes after
     # generate_globals runs.
-    generate_globals()
-    xo()
-    yapf()
-    flake8(run)
-    check_kernel_imports(run)
-    elm_format()
-    elm_make(run)
-    exit(0)
+    code = True
+    code |= generate_globals()
+    code |= xo()
+    code |= yapf()
+    code |= flake8(run)
+    code |= check_kernel_imports(run)
+    code |= elm_format()
+    code |= elm_make(run)
+
+    exit(code)
 
 
 def check():
@@ -218,7 +219,8 @@ def check():
 
         if code != 0:
             print("xo failed!")
-            exit(code)
+
+        return bool(code)
 
     def yapf():
         print("Checking yapf...")
@@ -226,21 +228,23 @@ def check():
 
         if code != 0:
             print("yapf wants to make changes!")
-            exit(code)
+
+        return bool(code)
 
     def elm_format():
         print("Running elm-format validation...")
         code = run(['elm-format', "./core/src", "--validate"])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
-    xo()
-    yapf()
-    flake8(run)
-    check_kernel_imports(run)
-    elm_format()
-    elm_make(run)
+    code = True
+    code |= xo()
+    code |= yapf()
+    code |= flake8(run)
+    code |= check_kernel_imports(run)
+    code |= elm_format()
+    code |= elm_make(run)
+
     exit(0)
 
 

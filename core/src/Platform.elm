@@ -61,7 +61,8 @@ show anything on screen? Etc.
 type Program flags model msg
     = Program
 
-{-|  -}
+
+{-| -}
 program :
     StepperBuilder model msg
     ->

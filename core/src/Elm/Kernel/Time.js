@@ -25,8 +25,8 @@ function _Time_setInterval(interval) {
   let timeoutHandle = null;
   const runtimesListening = new Set();
 
-  // Cancel any timeouts with no subscribers. Restart any timeouts that have subscribed-to but
-  // previously-cancelled timeouts.
+  // Cancel any timeouts with no subscribers. Restart any timeouts that have
+  // subscribed-to but previously-cancelled timeouts.
   const onSubReset = (runtimeId, n) => {
     if (n === 0) {
       runtimesListening.delete(runtimeId);

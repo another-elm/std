@@ -93,7 +93,7 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Sub a -> Sub msg
-map fn (Sub(Effect.Sub data)) =
+map fn (Sub (Effect.Sub data)) =
     data
         |> List.map (getSubMapper fn)
         |> Effect.Sub

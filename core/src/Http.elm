@@ -1,4 +1,4 @@
-effect module Http where { command = MyCmd, subscription = MySub } exposing
+module Http exposing
     ( get, post, request
     , Header, header
     , Body, emptyBody, stringBody, jsonBody, fileBody, bytesBody
@@ -65,14 +65,29 @@ effect module Http where { command = MyCmd, subscription = MySub } exposing
 
 -}
 
+import Basics exposing (..)
 import Bytes exposing (Bytes)
 import Bytes.Decode as Bytes
+import Debug
 import Dict exposing (Dict)
+import Elm.Kernel.Basics
 import Elm.Kernel.Http
+import Elm.Kernel.Platform
 import File exposing (File)
 import Json.Decode as Decode
 import Json.Encode as Encode
+import List
+import Maybe exposing (Maybe(..))
+import Platform
+import Platform.Cmd exposing (Cmd)
+import Platform.Raw.Effect as Effect
+import Platform.Raw.Impure as Impure
+import Platform.Raw.Task as RawTask
+import Platform.Scheduler
+import Platform.Sub exposing (Sub)
 import Process
+import Result exposing (Result(..))
+import String exposing (String)
 import Task exposing (Task)
 
 
@@ -200,17 +215,7 @@ request :
     }
     -> Cmd msg
 request r =
-    command <|
-        Request <|
-            { method = r.method
-            , headers = r.headers
-            , url = r.url
-            , body = r.body
-            , expect = r.expect
-            , timeout = r.timeout
-            , tracker = r.tracker
-            , allowCookiesFromOtherDomains = False
-            }
+    requestHelp r FromThisDomainOnly
 
 
 
@@ -245,7 +250,7 @@ header =
 {-| Represents the body of a `Request`.
 -}
 type Body
-    = Body
+    = Body (Maybe String) RequestBodyContents
 
 
 {-| Create an empty body for your `Request`. This is useful for GET requests
@@ -253,7 +258,7 @@ and POST requests where you are not sending any data.
 -}
 emptyBody : Body
 emptyBody =
-    Elm.Kernel.Http.emptyBody
+    Body Nothing emptyBodyContents
 
 
 {-| Put some JSON value in the body of your `Request`.
@@ -282,7 +287,7 @@ Maybe you want to search for 10 books relevant to a certain topic:
 -}
 jsonBody : Encode.Value -> Body
 jsonBody value =
-    Elm.Kernel.Http.pair "application/json" (Encode.encode 0 value)
+    Body (Just "application/json") (stringBodyContents (Encode.encode 0 value))
 
 
 {-| Put some string in the body of your `Request`. Defining `jsonBody` looks
@@ -299,8 +304,8 @@ of the body. Some servers are strict about this!
 
 -}
 stringBody : String -> String -> Body
-stringBody =
-    Elm.Kernel.Http.pair
+stringBody mimeType body =
+    Body (Just mimeType) (stringBodyContents body)
 
 
 {-| Put some `Bytes` in the body of your `Request`. This allows you to use
@@ -322,8 +327,8 @@ or `image/jpeg` instead.
 
 -}
 bytesBody : String -> Bytes -> Body
-bytesBody =
-    Elm.Kernel.Http.pair
+bytesBody mimeType body =
+    Body (Just mimeType) (bytesBodyContents body)
 
 
 {-| Use a file as the body of your `Request`. When someone uploads an image
@@ -336,8 +341,8 @@ This will automatically set the `Content-Type` to the MIME type of the file.
 
 -}
 fileBody : File -> Body
-fileBody =
-    Elm.Kernel.Http.pair ""
+fileBody file =
+    Body Nothing (fileBodyContents file)
 
 
 
@@ -386,13 +391,13 @@ creating a body this way.
 -}
 multipartBody : List Part -> Body
 multipartBody parts =
-    Elm.Kernel.Http.pair "" (Elm.Kernel.Http.toFormData parts)
+    Body Nothing (multipartBodyContents parts)
 
 
 {-| One part of a `multipartBody`.
 -}
 type Part
-    = Part
+    = Part String PartContents
 
 
 {-| A part that contains `String` data.
@@ -404,8 +409,8 @@ type Part
 
 -}
 stringPart : String -> String -> Part
-stringPart =
-    Elm.Kernel.Http.pair
+stringPart name value =
+    Part name (stringPartContents value)
 
 
 {-| A part that contains a file. You can use
@@ -422,8 +427,8 @@ browser. From there, you can send it along to a server like this:
 
 -}
 filePart : String -> File -> Part
-filePart =
-    Elm.Kernel.Http.pair
+filePart name file =
+    Part name (filePartContents file)
 
 
 {-| A part that contains bytes, allowing you to use
@@ -441,7 +446,7 @@ how to interpret the bytes.
 -}
 bytesPart : String -> String -> Bytes -> Part
 bytesPart key mime bytes =
-    Elm.Kernel.Http.pair key (Elm.Kernel.Http.bytesToBlob mime bytes)
+    Part key (bytesToBlob mime bytes)
 
 
 
@@ -451,7 +456,7 @@ bytesPart key mime bytes =
 {-| Logic for interpreting a response body.
 -}
 type Expect msg
-    = Expect
+    = Expect (BodyInterpretter ResponseBodyContents msg)
 
 
 {-| Expect the response body to be a `String`. Like when getting the full text
@@ -662,7 +667,9 @@ application!
 -}
 expectStringResponse : (Result x a -> msg) -> (Response String -> Result x a) -> Expect msg
 expectStringResponse toMsg toResult =
-    Elm.Kernel.Http.expect "" identity (toResult >> toMsg)
+    stringBodyInterpretter (toResult >> toMsg)
+        |> hideInterpretterInteralType
+        |> Expect
 
 
 {-| Expect a [`Response`](#Response) with a `Bytes` body.
@@ -673,7 +680,9 @@ more access to headers and more leeway in defining your own errors.
 -}
 expectBytesResponse : (Result x a -> msg) -> (Response Bytes -> Result x a) -> Expect msg
 expectBytesResponse toMsg toResult =
-    Elm.Kernel.Http.expect "arraybuffer" Elm.Kernel.Http.toDataView (toResult >> toMsg)
+    bytesBodyInterpretter (toResult >> toMsg)
+        |> hideInterpretterInteralType
+        |> Expect
 
 
 {-| A `Response` can come back a couple different ways:
@@ -726,7 +735,12 @@ type alias Metadata =
 -}
 cancel : String -> Cmd msg
 cancel tracker =
-    command (Cancel tracker)
+    command
+        (\runtimeId ->
+            Impure.fromFunction (cancel_ runtimeId) tracker
+                |> Impure.map (\() -> Nothing)
+                |> RawTask.execImpure
+        )
 
 
 
@@ -739,7 +753,15 @@ cancel tracker =
 -}
 track : String -> (Progress -> msg) -> Sub msg
 track tracker toMsg =
-    subscription (MySub tracker toMsg)
+    subscription
+        trackerKey
+        (\( aTracker, progress ) ->
+            if aTracker == tracker then
+                Just (toMsg progress)
+
+            else
+                Nothing
+        )
 
 
 {-| There are two phases to HTTP requests. First you **send** a bunch of data,
@@ -892,17 +914,7 @@ riskyRequest :
     }
     -> Cmd msg
 riskyRequest r =
-    command <|
-        Request <|
-            { method = r.method
-            , headers = r.headers
-            , url = r.url
-            , body = r.body
-            , expect = r.expect
-            , timeout = r.timeout
-            , tracker = r.tracker
-            , allowCookiesFromOtherDomains = True
-            }
+    requestHelp r FromAllDomains
 
 
 
@@ -923,24 +935,14 @@ task :
     }
     -> Task x a
 task r =
-    Elm.Kernel.Http.toTask ()
-        resultToTask
-        { method = r.method
-        , headers = r.headers
-        , url = r.url
-        , body = r.body
-        , expect = r.resolver
-        , timeout = r.timeout
-        , tracker = Nothing
-        , allowCookiesFromOtherDomains = False
-        }
+    taskHelp r FromThisDomainOnly
 
 
 {-| Describes how to resolve an HTTP task. You can create a resolver with
 [`stringResolver`](#stringResolver) and [`bytesResolver`](#bytesResolver).
 -}
 type Resolver x a
-    = Resolver
+    = Resolver (BodyInterpretter ResponseBodyContents (Result x a))
 
 
 {-| Turn a response with a `String` body into a result.
@@ -948,7 +950,7 @@ Similar to [`expectStringResponse`](#expectStringResponse).
 -}
 stringResolver : (Response String -> Result x a) -> Resolver x a
 stringResolver =
-    Elm.Kernel.Http.expect "" identity
+    stringBodyInterpretter >> hideInterpretterInteralType >> Resolver
 
 
 {-| Turn a response with a `Bytes` body into a result.
@@ -956,7 +958,7 @@ Similar to [`expectBytesResponse`](#expectBytesResponse).
 -}
 bytesResolver : (Response Bytes -> Result x a) -> Resolver x a
 bytesResolver =
-    Elm.Kernel.Http.expect "arraybuffer" Elm.Kernel.Http.toDataView
+    bytesBodyInterpretter >> hideInterpretterInteralType >> Resolver
 
 
 {-| Just like [`riskyRequest`](#riskyRequest), but it creates a `Task`. **Use
@@ -972,17 +974,108 @@ riskyTask :
     }
     -> Task x a
 riskyTask r =
-    Elm.Kernel.Http.toTask ()
-        resultToTask
-        { method = r.method
-        , headers = r.headers
-        , url = r.url
-        , body = r.body
-        , expect = r.resolver
-        , timeout = r.timeout
-        , tracker = Nothing
-        , allowCookiesFromOtherDomains = True
+    taskHelp r FromAllDomains
+
+
+type AllowCookies
+    = FromThisDomainOnly
+    | FromAllDomains
+
+
+taskHelp :
+    { method : String
+    , headers : List Header
+    , url : String
+    , body : Body
+    , resolver : Resolver x a
+    , timeout : Maybe Float
+    }
+    -> AllowCookies
+    -> Task x a
+taskHelp r allowCookies =
+    let
+        (Resolver bodyInterpretter) =
+            r.resolver
+
+        (Body contentType bodyContents) =
+            r.body
+    in
+    RawTask.AsyncAction
+        { then_ =
+            \doneCallback ->
+                Impure.fromFunction
+                    makeRequest
+                    { tracker = Nothing
+                    , contentType = contentType
+                    , body = bodyContents
+                    , toBody = bodyInterpretter.toBody
+                    , method = r.method
+                    , url = r.url
+                    , config =
+                        { headers = r.headers
+                        , timeout = r.timeout |> Maybe.withDefault 0
+                        , responseType = bodyInterpretter.type_
+                        , allowCookiesFromOtherDomains =
+                            case allowCookies of
+                                FromThisDomainOnly ->
+                                    0
+
+                                FromAllDomains ->
+                                    1
+                        }
+                    , onCompletion =
+                        Impure.toFunction
+                            (bodyInterpretter.toValue >> RawTask.Value >> doneCallback)
+                    , onCancelation =
+                        Impure.resolve ()
+                    }
+                    |> Impure.map .cancel
         }
+        |> Platform.Scheduler.wrapTask
+
+
+requestHelp :
+    { method : String
+    , headers : List Header
+    , url : String
+    , body : Body
+    , expect : Expect msg
+    , timeout : Maybe Float
+    , tracker : Maybe String
+    }
+    -> AllowCookies
+    -> Cmd msg
+requestHelp r allowCookies =
+    let
+        (Expect bodyInterpretter) =
+            r.expect
+
+        (Body contentType bodyContents) =
+            r.body
+    in
+    command <|
+        \runtimeId ->
+            requestHelper2
+                { tracker = r.tracker |> Maybe.map (\tracker -> ( runtimeId, tracker ))
+                , contentType = contentType
+                , body = bodyContents
+                , toBody = bodyInterpretter.toBody
+                , method = r.method
+                , url = r.url
+                , config =
+                    { headers = r.headers
+                    , timeout = r.timeout |> Maybe.withDefault 0
+                    , responseType = bodyInterpretter.type_
+                    , allowCookiesFromOtherDomains =
+                        case allowCookies of
+                            FromThisDomainOnly ->
+                                0
+
+                            FromAllDomains ->
+                                1
+                    }
+                }
+                (bodyInterpretter.toValue >> Just)
 
 
 resultToTask : Result x a -> Task x a
@@ -996,128 +1089,196 @@ resultToTask result =
 
 
 
--- COMMANDS and SUBSCRIPTIONS
+-- effects
 
 
-type MyCmd msg
-    = Cancel String
-    | Request
-        { method : String
-        , headers : List Header
-        , url : String
-        , body : Body
-        , expect : Expect msg
-        , timeout : Maybe Float
-        , tracker : Maybe String
-        , allowCookiesFromOtherDomains : Bool
+requestHelper2 :
+    { tracker : Maybe ( Effect.RuntimeId, String )
+    , contentType : Maybe String
+    , body : RequestBodyContents
+    , toBody : RawBodyContents -> ResponseBodyContents
+    , method : String
+    , url : String
+    , config : KernelRequestConfiguration
+    }
+    -> (Response ResponseBodyContents -> Maybe msg)
+    -> RawTask.Task never (Maybe msg)
+requestHelper2 kernelRequest toMsg =
+    RawTask.AsyncAction
+        { then_ =
+            \doneCallback ->
+                Impure.fromFunction
+                    makeRequest
+                    { tracker = kernelRequest.tracker
+                    , contentType = kernelRequest.contentType
+                    , body = kernelRequest.body
+                    , toBody = kernelRequest.toBody
+                    , method = kernelRequest.method
+                    , url = kernelRequest.url
+                    , config = kernelRequest.config
+                    , onCompletion =
+                        Impure.toFunction
+                            (toMsg >> Ok >> RawTask.Value >> doneCallback)
+                    , onCancelation =
+                        Impure.toFunction
+                            (\() -> Nothing |> Ok |> RawTask.Value |> doneCallback)
+                    }
+                    |> Impure.map
+                        (\{} ->
+                            -- The way to cancel cmd requests is **not** to
+                            -- kill the task. Instead a canceler function is
+                            -- stored in a global lookup table and can be
+                            -- involved via the cancel Cmd. Therefore, we use a
+                            -- null TryAbortAction callback here.
+                            Impure.resolve ()
+                        )
         }
 
 
-cmdMap : (a -> b) -> MyCmd a -> MyCmd b
-cmdMap func cmd =
-    case cmd of
-        Cancel tracker ->
-            Cancel tracker
-
-        Request r ->
-            Request
-                { method = r.method
-                , headers = r.headers
-                , url = r.url
-                , body = r.body
-                , expect = Elm.Kernel.Http.mapExpect func r.expect
-                , timeout = r.timeout
-                , tracker = r.tracker
-                , allowCookiesFromOtherDomains = r.allowCookiesFromOtherDomains
-                }
-
-
-type MySub msg
-    = MySub String (Progress -> msg)
-
-
-subMap : (a -> b) -> MySub a -> MySub b
-subMap func (MySub tracker toMsg) =
-    MySub tracker (toMsg >> func)
-
-
-
--- EFFECT MANAGER
-
-
-type alias State msg =
-    { reqs : Dict String Process.Id
-    , subs : List (MySub msg)
+type alias BodyInterpretter body a =
+    { type_ : String
+    , toBody :
+        -- todo
+        RawBodyContents -> body
+    , toValue : Response body -> a
     }
 
 
-init : Task Never (State msg)
-init =
-    Task.succeed (State Dict.empty [])
+stringBodyInterpretter : (Response String -> a) -> BodyInterpretter String a
+stringBodyInterpretter toValue =
+    { type_ = ""
+    , toBody = toStringBody
+    , toValue = toValue
+    }
 
 
-type alias MyRouter msg =
-    Platform.Router msg SelfMsg
-
-
-
--- APP MESSAGES
-
-
-onEffects : MyRouter msg -> List (MyCmd msg) -> List (MySub msg) -> State msg -> Task Never (State msg)
-onEffects router cmds subs state =
-    updateReqs router cmds state.reqs
-        |> Task.andThen (\reqs -> Task.succeed (State reqs subs))
-
-
-updateReqs : MyRouter msg -> List (MyCmd msg) -> Dict String Process.Id -> Task x (Dict String Process.Id)
-updateReqs router cmds reqs =
-    case cmds of
-        [] ->
-            Task.succeed reqs
-
-        cmd :: otherCmds ->
-            case cmd of
-                Cancel tracker ->
-                    case Dict.get tracker reqs of
-                        Nothing ->
-                            updateReqs router otherCmds reqs
-
-                        Just pid ->
-                            Process.kill pid
-                                |> Task.andThen (\_ -> updateReqs router otherCmds (Dict.remove tracker reqs))
-
-                Request req ->
-                    Process.spawn (Elm.Kernel.Http.toTask router (Platform.sendToApp router) req)
-                        |> Task.andThen
-                            (\pid ->
-                                case req.tracker of
-                                    Nothing ->
-                                        updateReqs router otherCmds reqs
-
-                                    Just tracker ->
-                                        updateReqs router otherCmds (Dict.insert tracker pid reqs)
-                            )
+bytesBodyInterpretter : (Response Bytes -> a) -> BodyInterpretter Bytes a
+bytesBodyInterpretter toValue =
+    { type_ = "arraybuffer"
+    , toBody = toDataView
+    , toValue = toValue
+    }
 
 
 
--- SELF MESSAGES
+-- kernel interop
 
 
-type alias SelfMsg =
-    ( String, Progress )
+type RawBodyContents
+    = Stub_RawBodyContents
 
 
-onSelfMsg : MyRouter msg -> SelfMsg -> State msg -> Task Never (State msg)
-onSelfMsg router ( tracker, progress ) state =
-    Task.sequence (List.filterMap (maybeSend router tracker progress) state.subs)
-        |> Task.andThen (\_ -> Task.succeed state)
+type RequestBodyContents
+    = Stub_RequestBodyContents
 
 
-maybeSend : MyRouter msg -> String -> Progress -> MySub msg -> Maybe (Task x ())
-maybeSend router desiredTracker progress (MySub actualTracker toMsg) =
-    if desiredTracker == actualTracker then
-        Just (Platform.sendToApp router (toMsg progress))
+type ResponseBodyContents
+    = Stub_ResponseBodyContents
 
-    else
-        Nothing
+
+type PartContents
+    = Stub_PartContents
+
+
+type alias KernelRequest =
+    { tracker : Maybe ( Effect.RuntimeId, String )
+    , contentType : Maybe String
+    , body : RequestBodyContents
+    , toBody : RawBodyContents -> ResponseBodyContents
+    , method : String
+    , url : String
+    , config : KernelRequestConfiguration
+    , onCompletion : Impure.Function (Response ResponseBodyContents) ()
+    , onCancelation : Impure.Function () ()
+    }
+
+
+type alias KernelRequestConfiguration =
+    { timeout : Float
+    , headers : List Header
+    , responseType : String
+
+    -- 0: cookies from other domains **not** allowed.
+    -- 1: cookies from other domains allowed.
+    , allowCookiesFromOtherDomains : Int
+    }
+
+
+command : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
+command =
+    Elm.Kernel.Platform.command
+
+
+subscription : Effect.SubId -> (( String, Progress ) -> Maybe msg) -> Sub msg
+subscription =
+    Elm.Kernel.Platform.subscription
+
+
+makeRequest : Impure.Function KernelRequest { cancel : Impure.Action () }
+makeRequest =
+    Elm.Kernel.Http.makeRequest
+
+
+trackerKey : Effect.SubId
+trackerKey =
+    Elm.Kernel.Http.trackerKey
+
+
+emptyBodyContents : RequestBodyContents
+emptyBodyContents =
+    Elm.Kernel.Http.emptyBodyContents
+
+
+stringBodyContents : String -> RequestBodyContents
+stringBodyContents =
+    Elm.Kernel.Basics.fudgeType
+
+
+bytesBodyContents : Bytes -> RequestBodyContents
+bytesBodyContents =
+    Elm.Kernel.Basics.fudgeType
+
+
+fileBodyContents : File -> RequestBodyContents
+fileBodyContents =
+    Elm.Kernel.Basics.fudgeType
+
+
+multipartBodyContents : List Part -> RequestBodyContents
+multipartBodyContents =
+    Elm.Kernel.Http.toFormData
+
+
+stringPartContents : String -> PartContents
+stringPartContents =
+    Elm.Kernel.Basics.fudgeType
+
+
+filePartContents : File -> PartContents
+filePartContents =
+    Elm.Kernel.Basics.fudgeType
+
+
+bytesToBlob : String -> Bytes -> PartContents
+bytesToBlob =
+    Elm.Kernel.Http.bytesToBlob
+
+
+cancel_ : Effect.RuntimeId -> Impure.Function String ()
+cancel_ =
+    Elm.Kernel.Http.cancel
+
+
+hideInterpretterInteralType : BodyInterpretter body a -> BodyInterpretter ResponseBodyContents a
+hideInterpretterInteralType =
+    Elm.Kernel.Basics.fudgeType
+
+
+toDataView : RawBodyContents -> Bytes
+toDataView =
+    Elm.Kernel.Http.toDataView
+
+
+toStringBody : RawBodyContents -> String
+toStringBody =
+    Elm.Kernel.Basics.fudgeType

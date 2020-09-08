@@ -23,9 +23,11 @@ module File exposing
 
 -}
 
+import Basics exposing (Int)
 import Bytes exposing (Bytes)
 import Elm.Kernel.File
 import Json.Decode as Decode
+import String exposing (String)
 import Task exposing (Task)
 import Time
 

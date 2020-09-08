@@ -7,21 +7,16 @@ import List exposing (Nil_elm_builtin)
 
 */
 
-/* eslint-disable */
-
 const _String_cons = F2(function (chr, string) {
   return chr + string;
 });
 
 function _String_uncons(string) {
-  const word = string.charCodeAt(0);
-  return !isNaN(word)
-    ? __Maybe_Just(
-        word >= 0xd800 && word <= 0xdbff
-          ? __Utils_Tuple2(__Utils_chr(string[0] + string[1]), string.slice(2))
-          : __Utils_Tuple2(__Utils_chr(string[0]), string.slice(1))
-      )
-    : __Maybe_Nothing;
+  for (const firstChar of string) {
+    return __Maybe_Just(__Utils_Tuple2(__Utils_chr(firstChar), string.slice(firstChar.length)));
+  }
+
+  return __Maybe_Nothing;
 }
 
 const _String_append = F2(function (a, b) {
@@ -243,9 +238,9 @@ function _String_fromNumber(number) {
 function _String_toInt(string) {
   let total = 0;
   const code0 = string.charCodeAt(0);
-  const start = code0 == 0x2b /* + */ || code0 == 0x2d /* - */ ? 1 : 0;
-
-  for (var i = start; i < string.length; ++i) {
+  const start = code0 === 0x2b /* + */ || code0 === 0x2d /* - */ ? 1 : 0;
+  let i = start;
+  for (; i < string.length; ++i) {
     const code = string.charCodeAt(i);
     if (code < 0x30 || code > 0x39) {
       return __Maybe_Nothing;
@@ -254,7 +249,7 @@ function _String_toInt(string) {
     total = 10 * total + code - 0x30;
   }
 
-  return i == start ? __Maybe_Nothing : __Maybe_Just(code0 == 0x2d ? -total : total);
+  return i === start ? __Maybe_Nothing : __Maybe_Just(code0 === 0x2d ? -total : total);
 }
 
 // FLOAT CONVERSIONS
@@ -266,8 +261,7 @@ function _String_toFloat(s) {
   }
 
   const n = Number(s);
-  // Faster isNaN check
-  return n === n ? __Maybe_Just(n) : __Maybe_Nothing;
+  return Number.isNaN(n) ? __Maybe_Nothing : __Maybe_Just(n);
 }
 
 function _String_fromList(chars) {

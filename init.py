@@ -2,6 +2,7 @@
 
 import fileinput
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -67,6 +68,11 @@ def create_executable(path):
 def install_exe(binary):
     bin_dir = binary.parent
 
+    hash = subprocess.run(["git", "rev-parse", "HEAD"],
+                          stderr=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          check=True).stdout.decode("utf-8").strip()
+
     if bin_dir not in map(Path, os.getenv("PATH").split(":")):
         print("WARNING: {} is not in PATH. Please add it!".format(bin_dir),
               file=sys.stderr)
@@ -79,6 +85,8 @@ def install_exe(binary):
         for line in fileinput.input(elm_std_dir / "another-elm"):
             if line == "elm_std_dir = None  # REPLACE ME\n":
                 print_to_file('elm_std_dir = Path("{}")\n'.format(elm_std_dir))
+            elif line == "another_elm_version = None  # REPLACE ME\n":
+                print_to_file(f'another_elm_version = "git-{hash}"\n')
             else:
                 print_to_file(line)
 

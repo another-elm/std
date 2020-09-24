@@ -13,6 +13,9 @@ from pathlib import Path
 elm_std_dir = None  # REPLACE ME
 assert isinstance(elm_std_dir, Path)
 
+another_elm_version = None  # REPLACE ME
+assert isinstance(another_elm_version, str)
+
 stub_packages = {
     'bytes',
     'file',
@@ -104,6 +107,18 @@ def customize(packages_root, author, package):
             with open(package_root / 'custom', 'w'):
                 pass
 
+            if author == "elm" and package == "core":
+                platform_file = (package_root / "src" / "Elm" / "Kernel" /
+                                 "Platform.js")
+                with open(platform_file, 'r') as file:
+                    filedata = file.read()
+
+                filedata = filedata.replace('ANOTHER-ELM-VERSION',
+                                            another_elm_version)
+
+                with open(platform_file, 'w') as file:
+                    file.write(filedata)
+
     return any_modified
 
 
@@ -168,6 +183,10 @@ class ElmStuff(contextlib.AbstractContextManager):
 
 
 def run_elm(elm, args):
+    if "--stdlib-variant" in args:
+        print(f"another-elm {another_elm_version}")
+        return 0
+
     elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
     another_elm_home_dir = Path(elm_home_dir) / 'another'
 

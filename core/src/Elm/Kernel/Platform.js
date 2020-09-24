@@ -264,12 +264,9 @@ function _Platform_randSeed() {
 }
 
 // EXPORT ELM MODULES
-//
-// Have DEBUG and PROD versions so that we can (1) give nicer errors in debug
-// mode and (2) not pay for the bits needed for that in prod mode.
-//
 
 function _Platform_export(exports) {
+  scope._another_elm = "ANOTHER-ELM-VERSION";
   if (Object.prototype.hasOwnProperty.call(scope, "Elm")) {
     _Platform_mergeExports("Elm", scope.Elm, exports);
   } else {

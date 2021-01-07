@@ -1023,10 +1023,10 @@ taskHelp r allowCookies =
                                 FromAllDomains ->
                                     1
                         }
-                    , onCompletion =
+                    , onComplete =
                         Impure.toFunction
                             (bodyInterpretter.toValue >> RawTask.Value >> doneCallback)
-                    , onCancelation =
+                    , onCancel =
                         Impure.resolve ()
                     }
                     |> Impure.map .cancel
@@ -1074,10 +1074,10 @@ requestHelp r allowCookies =
                             FromAllDomains ->
                                 1
                     }
-                , onCompletion =
+                , onComplete =
                     Impure.toFunction
                         (bodyInterpretter.toValue >> Just >> Ok >> RawTask.Value >> doneCallback)
-                , onCancelation =
+                , onCancel =
                     Impure.toFunction
                         (\() -> Nothing |> Ok |> RawTask.Value |> doneCallback)
                 }
@@ -1160,8 +1160,8 @@ type alias KernelRequest =
     , method : String
     , url : String
     , config : KernelRequestConfiguration
-    , onCompletion : Impure.Function (Response ResponseBodyContents) ()
-    , onCancelation : Impure.Function () ()
+    , onComplete : Impure.Function (Response ResponseBodyContents) ()
+    , onCancel : Impure.Function () ()
     }
 
 

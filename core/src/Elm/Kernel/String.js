@@ -110,7 +110,7 @@ const _String_foldr = F3(function (func, state, string) {
   while (i--) {
     let char = string[i];
     const word = string.charCodeAt(i);
-    if (word >= 0xdc00 && word <= 0xdfff) {
+    if (word >= 0xdc00 && word <= 0xdfff && i > 0) {
       i--;
       char = string[i] + char;
     }

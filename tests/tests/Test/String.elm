@@ -22,6 +22,7 @@ tests =
                 , test "repeat" <| \() -> Expect.equal "hahaha" (String.repeat 3 "ha")
                 , test "indexes" <| \() -> Expect.equal [ 0, 2 ] (String.indexes "a" "aha")
                 , test "empty indexes" <| \() -> Expect.equal [] (String.indexes "" "aha")
+                , test "foldr with invalid unicde" <| \() -> Expect.equal 3 (String.foldr (\_ i -> i + 1) 0 "\u{DC00}ab")
                 ]
 
         combiningTests =

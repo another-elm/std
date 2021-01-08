@@ -1242,8 +1242,11 @@ cancel_ =
 
 
 hideInterpretterInternalType : BodyInterpretter body a -> BodyInterpretter ResponseBodyContents a
-hideInterpretterInternalType =
-    Elm.Kernel.Basics.fudgeType
+hideInterpretterInternalType { type_, toBody, toValue } =
+    { type_ = type_
+    , toBody = Elm.Kernel.Basics.fudgeType toBody
+    , toValue = Elm.Kernel.Basics.fudgeType toValue
+    }
 
 
 toDataView : RawBodyContents -> Bytes

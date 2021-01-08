@@ -56,6 +56,20 @@ function _Utils_eqHelp(x, y, depth, stack) {
     y = __Dict_toList(y);
   }
 
+  if (typeof DataView === "function" && x instanceof DataView) {
+    const length = x.byteLength;
+
+    if (y.byteLength !== length) {
+      return false;
+    }
+
+    for (let i = 0; i < length; ++i) {
+      if (x.getUint8(i) !== y.getUint8(i)) {
+        return false;
+      }
+    }
+  }
+
   /* The compiler ensures that the elm types of x and y are the same.
    * Therefore, x and y must have the same keys.
    */

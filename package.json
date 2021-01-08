@@ -4,6 +4,7 @@
 		"xo": "0.30"
 	},
 	"xo": {
+		"env": "browser",
 		"prettier": true,
 		"space": true,
 		"ignores": [
@@ -30,6 +31,7 @@
 			"F2",
 			"F3",
 			"F4",
+			"F5",
 			"A2",
 			"A3",
 			"A4"

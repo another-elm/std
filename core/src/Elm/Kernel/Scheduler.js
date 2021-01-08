@@ -1,6 +1,5 @@
 /*
 
-import Platform.Scheduler as NiceScheduler exposing (succeed, binding, rawSpawn)
 import Platform.Raw.Scheduler as RawScheduler exposing (stepper)
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Basics exposing (isDebug)
@@ -16,21 +15,19 @@ import Elm.Kernel.Utils exposing (Tuple0)
  * implementations of elm/core:Platform.Scheduler.* functions may come later in
  * the generated javascript file.
  *
- * **IMPORTANT**: these functions return `Process.Task`s and
- * `Process.ProcessId`s rather than `RawScheduler.Task`s and
- * `RawScheduler.ProcessId`s for compatability with `elm/*` package code.
+ * Any code using these is probably broken!
  */
 
-function _Scheduler_succeed(value) {
-  return __NiceScheduler_succeed(value);
+function _Scheduler_succeed() {
+  throw new Error("not implemented");
 }
 
-function _Scheduler_binding(future) {
-  return __NiceScheduler_binding(future);
+function _Scheduler_binding() {
+  throw new Error("not implemented");
 }
 
-function _Scheduler_rawSpawn(task) {
-  return __NiceScheduler_rawSpawn(task);
+function _Scheduler_rawSpawn() {
+  throw new Error("not implemented");
 }
 
 // SCHEDULER
@@ -110,7 +107,6 @@ const _Scheduler_delay = F2((time, value) => ({
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Scheduler_.*" }] */
 
-/* global __NiceScheduler_succeed, __NiceScheduler_binding, __NiceScheduler_rawSpawn */
 /* global __RawScheduler_stepper */
 /* global __Debug_crash, __Debug_runtimeCrashReason */
 /* global __Basics_isDebug */

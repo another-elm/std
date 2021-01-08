@@ -1,10 +1,9 @@
 /*
 
+import Elm.Kernel.List exposing (nilKey)
 import Elm.Kernel.Utils exposing (Tuple2)
 
 */
-
-/* eslint-disable */
 
 const _JsArray_empty = [];
 
@@ -28,8 +27,12 @@ const _JsArray_initialize = F3(function (size, offset, func) {
 
 const _JsArray_initializeFromList = F2(function (max, ls) {
   const result = new Array(max);
+  let i = 0;
+  for (; i < max; i++) {
+    if (ls.$ === __List_nilKey) {
+      break;
+    }
 
-  for (var i = 0; i < max && ls.b; i++) {
     result[i] = ls.a;
     ls = ls.b;
   }
@@ -121,11 +124,11 @@ const _JsArray_appendN = F3(function (n, dest, source) {
   const size = destLength + itemsToCopy;
   const result = new Array(size);
 
-  for (var i = 0; i < destLength; i++) {
+  for (let i = 0; i < destLength; i++) {
     result[i] = dest[i];
   }
 
-  for (var i = 0; i < itemsToCopy; i++) {
+  for (let i = 0; i < itemsToCopy; i++) {
     result[i + destLength] = source[i];
   }
 
@@ -139,4 +142,5 @@ const _JsArray_appendN = F3(function (n, dest, source) {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_JsArray_.*" }] */
 
+/* global __List_nilKey */
 /* global __Utils_Tuple2 */

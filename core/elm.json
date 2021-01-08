@@ -10,7 +10,10 @@
             "String",
             "Char",
             "Bitwise",
-            "Tuple"
+            "Tuple",
+            "Bytes",
+            "Bytes.Encode",
+            "Bytes.Decode"
         ],
         "Collections": [
             "List",
@@ -33,6 +36,14 @@
             "Task",
             "Time",
             "Random"
+        ],
+        "Network": [
+            "File",
+            "Http"
+        ],
+        "Parsing": [
+            "Parser",
+            "Parser.Advanced"
         ]
     },
     "elm-version": "0.19.0 <= v < 0.20.0",

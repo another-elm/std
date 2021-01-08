@@ -2,14 +2,14 @@
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (run, wrap, unwrap)
-import Elm.Kernel.List exposing (Cons, Nil, toArray)
+import Elm.Kernel.List exposing (iterate)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Just, Nothing)
-import Platform exposing (Task, ProcessId, initializeHelperFunctions, AsyncUpdate, SyncUpdate)
-import Platform.Scheduler as Scheduler exposing (execImpure, syncBinding)
+import Platform exposing (initializeHelperFunctions, AsyncUpdate, SyncUpdate)
+import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 
 */
 
@@ -98,7 +98,7 @@ function _Platform_outgoingPort(name, converter) {
 
   return (payload) =>
     _Platform_command((runtimeId) =>
-      __Scheduler_execImpure(() => {
+      __RawTask_execImpure(() => {
         const value = __Json_unwrap(converter(payload));
         for (const sub of runtimeId.__outgoingPortSubs) {
           sub(value);
@@ -204,7 +204,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
     }
   }
 
-  for (const tuple of __List_toArray(newSubs)) {
+  for (const tuple of __List_iterate(newSubs)) {
     const subId = tuple.a;
     const sendToApp = tuple.b;
     const listenerGroups = runtime.__subscriptionStates.get(subId.__$key).__listenerGroups;
@@ -235,44 +235,22 @@ function _Platform_invalidFlags(stringifiedError) {
 
 const _Platform_sendToApp = (runtimeId) => __Channel_rawSend(runtimeId.__messageChannel);
 
-const _Platform_wrapTask = (task) => __Platform_Task(task);
-
-const _Platform_wrapProcessId = (processId) => __Platform_ProcessId(processId);
-
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {
-  const cmdData = __List_Cons(createTask, __List_Nil);
-  if (__Basics_isDebug) {
-    return {
-      $: "Cmd",
-      a: cmdData,
-    };
-  }
-
-  return cmdData;
+  return __Platform_initializeHelperFunctions.__$createCmd(createTask);
 };
 
-// subscription : RawSub.Id -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
 const _Platform_subscription = (key) => (tagger) => {
-  const subData = __List_Cons(__Utils_Tuple2(key, tagger), __List_Nil);
-  if (__Basics_isDebug) {
-    return {
-      $: "Sub",
-      a: subData,
-    };
-  }
-
-  return subData;
+  return __Platform_initializeHelperFunctions.__$subscriptionHelper(key)(tagger);
 };
 
 // valueStore :
 //     Platform.Task Never state
-//     -> (state -> Platform.Task Never ( x, state ))
-//     -> Platform never x
+//     -> Impure.Function (state -> Platform.Task Never ( x, state )) (Platform.Task never a)
 const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
-    __Scheduler_syncBinding(() => {
+    __RawTask_syncBinding(() => {
       const tuple = A2(__Platform_initializeHelperFunctions.__$valueStoreHelper, task, stepper);
       task = tuple.b;
       return tuple.a;
@@ -286,12 +264,9 @@ function _Platform_randSeed() {
 }
 
 // EXPORT ELM MODULES
-//
-// Have DEBUG and PROD versions so that we can (1) give nicer errors in debug
-// mode and (2) not pay for the bits needed for that in prod mode.
-//
 
 function _Platform_export(exports) {
+  scope._another_elm = "ANOTHER-ELM-VERSION";
   if (Object.prototype.hasOwnProperty.call(scope, "Elm")) {
     _Platform_mergeExports("Elm", scope.Elm, exports);
   } else {
@@ -322,11 +297,11 @@ function _Platform_mergeExports(moduleName, object, exports) {
 
 /* global __Debug_crash, __Debug_runtimeCrashReason */
 /* global __Json_run, __Json_wrap, __Json_unwrap */
-/* global __List_Cons, __List_Nil, __List_toArray */
+/* global __List_iterate */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */
 /* global __Result_isOk */
 /* global __Maybe_Just, __Maybe_Nothing */
-/* global __Platform_Task, __Platform_ProcessId, __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
-/* global __Scheduler_execImpure, __Scheduler_syncBinding */
+/* global __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
+/* global __RawTask_execImpure, __RawTask_syncBinding */

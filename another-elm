@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import contextlib
 import json
 import os
 import random
@@ -7,27 +8,45 @@ import shutil
 import string
 import subprocess
 import sys
+from pathlib import Path
 
 elm_std_dir = None  # REPLACE ME
-assert elm_std_dir is not None
+assert isinstance(elm_std_dir, Path)
+
+another_elm_version = None  # REPLACE ME
+assert isinstance(another_elm_version, str)
+
+stub_packages = {
+    'bytes',
+    'file',
+    'html',
+    'http',
+    'parser',
+    'random',
+    'regex',
+    'svg',
+    'time',
+    'url',
+    'virtual-dom',
+}
 
 
 def replace_with_stub(packages_root, author, package):
-    versions_dir = os.path.join(packages_root, author, package)
+    versions_dir = packages_root / author / package
     try:
         dirs = os.listdir(versions_dir)
     except FileNotFoundError:
         return
 
     for v in dirs:
-        package_root = os.path.join(versions_dir, v)
-        src_dir = os.path.join(package_root, "src")
-        stub_file = os.path.join(package_root, "stub")
-        elm_json_path = os.path.join(package_root, "elm.json")
+        package_root = versions_dir / v
+        src_dir = package_root / "src"
+        stub_file = package_root / "stub"
+        elm_json_path = package_root / "elm.json"
 
         dummy_module = "P{}".format(''.join(
             [random.choice(string.ascii_letters) for n in range(32)]))
-        dummy_path = os.path.join(src_dir, "{}.elm".format(dummy_module))
+        dummy_path = (src_dir / dummy_module).with_suffix(".elm")
 
         shutil.rmtree(package_root)
         os.makedirs(src_dir)
@@ -48,7 +67,7 @@ a = 2
                     "name": "{}/{}".format(author, package),
                     "summary": "Encode and decode JSON values",
                     "license": "BSD-3-Clause",
-                    "version": v,
+                    "version": str(v),
                     "exposed-modules": [dummy_module],
                     "elm-version": "0.19.0 <= v < 0.20.0",
                     "dependencies": {
@@ -61,11 +80,11 @@ a = 2
 
 
 def customize(packages_root, author, package):
-    versions_dir = os.path.join(packages_root, author, package)
-    custom_package_dir = os.path.join(elm_std_dir, package)
+    versions_dir = packages_root / author / package
+    custom_package_dir = elm_std_dir / package
 
-    custom_src_dir = os.path.join(custom_package_dir, "src")
-    custom_json_file = os.path.join(custom_package_dir, "elm.json")
+    custom_src_dir = custom_package_dir / "src"
+    custom_json_file = custom_package_dir / "elm.json"
 
     try:
         dirs = os.listdir(versions_dir)
@@ -74,27 +93,102 @@ def customize(packages_root, author, package):
 
     any_modified = False
     for v in dirs:
-        package_root = os.path.join(versions_dir, v)
+        package_root = versions_dir / v
 
-        if not os.path.exists(os.path.join(package_root, 'custom')):
+        if not (package_root / 'custom').exists():
             any_modified = True
 
             shutil.rmtree(package_root)
-            os.makedirs(package_root)
+            package_root.mkdir()
 
-            shutil.copytree(custom_src_dir, os.path.join(package_root, "src"))
-            shutil.copy(custom_json_file, os.path.join(package_root,
-                                                       "elm.json"))
+            shutil.copytree(custom_src_dir, package_root / "src")
+            shutil.copy(custom_json_file, package_root / "elm.json")
 
-            with open(os.path.join(package_root, 'custom'), 'w'):
+            with open(package_root / 'custom', 'w'):
                 pass
+
+            if author == "elm" and package == "core":
+                platform_file = (package_root / "src" / "Elm" / "Kernel" /
+                                 "Platform.js")
+                with open(platform_file, 'r') as file:
+                    filedata = file.read()
+
+                filedata = filedata.replace('ANOTHER-ELM-VERSION',
+                                            another_elm_version)
+
+                with open(platform_file, 'w') as file:
+                    file.write(filedata)
 
     return any_modified
 
 
+class ElmStuff(contextlib.AbstractContextManager):
+    """Move the elm-stuff/{version}/ into a temperory directory and move
+    elm-stuff/another/{version} to elm-stuff/{version}
+
+    When the context manager exits it will move elm-stuff/{version}/ back to
+    its original location (in the another sub directory) and restore the
+    original contents of elm-stuff/{version}/.
+
+    Elm does not allow configuration of the elm-stuff directories location, so
+    we resort to this hack to get a separate directory for another-elm compiler
+    runs.
+
+    """
+    def __init__(self, version, pkg_marker):
+        self.elm_stuff = Path('elm-stuff')
+        self.workdir = self.elm_stuff / version
+        self.marker = self.workdir / ".marker"
+        another_stuff = self.elm_stuff / 'another'
+        self.tempdir = None
+        self.another_workdir = another_stuff / version
+
+        another_stuff.mkdir(exist_ok=True, parents=True)
+
+        try:
+            self.tempdir = self.workdir.rename(another_stuff / "tmp")
+        except FileNotFoundError:
+            pass
+
+        try:
+            self.another_workdir.rename(self.workdir)
+        except FileNotFoundError:
+            pass
+
+        self.__clear_if_stale(pkg_marker)
+
+    def __clear_if_stale(self, pkg_marker):
+        try:
+            stuff_mtime = self.marker.stat().st_mtime
+            pkg_mtime = pkg_marker.stat().st_mtime
+
+            if stuff_mtime < pkg_mtime:
+                self.clear()
+        except FileNotFoundError:
+            self.clear()
+
+    def __exit__(self, _0, _1, _2):
+        self.workdir.rename(self.another_workdir)
+        if self.tempdir is not None:
+            self.tempdir.rename(self.workdir)
+
+    def mark(self):
+        self.marker.touch(exist_ok=True)
+
+    def clear(self):
+        try:
+            shutil.rmtree(self.workdir)
+        except FileNotFoundError:
+            pass
+
+
 def run_elm(elm, args):
-    elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
-    another_elm_home_dir = os.path.join(elm_home_dir, 'another')
+    if "--stdlib-variant" in args:
+        print(f"another-elm {another_elm_version}")
+        return 0
+
+    elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
+    another_elm_home_dir = Path(elm_home_dir) / 'another'
 
     custom_env = os.environ.copy()
     custom_env["ELM_HOME"] = another_elm_home_dir
@@ -104,43 +198,42 @@ def run_elm(elm, args):
                                  stdout=subprocess.PIPE,
                                  check=True).stdout.decode("utf-8").strip()
 
-    packages_root = os.path.join(another_elm_home_dir, elm_version, 'packages')
+    packages_root = another_elm_home_dir / elm_version / 'packages'
+    packages_marker = packages_root / ".marker"
 
     def run_compiler(**kwargs):
         return subprocess.run([elm] + args, env=custom_env,
                               **kwargs).returncode
 
-    if not os.path.exists(packages_root):
-        try:
-            shutil.rmtree('elm-stuff')
-        except FileNotFoundError:
-            pass
+    with ElmStuff(elm_version, packages_marker) as elm_stuff:
+        run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
-    run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        assert another_elm_home_dir.is_dir()
 
-    assert os.path.exists(another_elm_home_dir)
+        for stub_package in stub_packages:
+            replace_with_stub(packages_root, 'elm', stub_package)
 
-    replace_with_stub(packages_root, 'elm', 'time')
-    replace_with_stub(packages_root, 'elm', 'random')
-    replace_with_stub(packages_root, 'elm', 'virtual-dom')
-    replace_with_stub(packages_root, 'elm', 'url')
-    replace_with_stub(packages_root, 'elm', 'html')
+        any_customized = False
+        for (author, pkg) in [('elm', 'core'), ('elm', 'json'),
+                              ('elm', 'browser'), ('elm-explorations', 'test'),
+                              ('elm-explorations', 'markdown')]:
+            if customize(packages_root, author, pkg):
+                elm_stuff.clear()
+                run_compiler(stderr=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL)
+                for author in os.scandir(packages_root):
+                    if (author.name != "elm"
+                            and author.name != "elm-explorations"
+                            and author.is_dir()):
+                        shutil.rmtree(author.path)
+                any_customized = True
 
-    for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
-                          ('elm-explorations', 'test'),
-                          ('elm-explorations', 'markdown')]:
-        if customize(packages_root, author, pkg):
-            try:
-                shutil.rmtree('elm-stuff')
-            except FileNotFoundError:
-                pass
-            run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-            for author in os.scandir(packages_root):
-                if (author.name != "elm" and author.name != "elm-explorations"
-                        and author.is_dir()):
-                    shutil.rmtree(author.path)
+        if any_customized:
+            packages_marker.touch(exist_ok=True)
 
-    return run_compiler()
+        ret = run_compiler()
+        elm_stuff.mark()
+        return ret
 
 
 if __name__ == '__main__':

@@ -146,13 +146,23 @@ function _Debug_toAnsiString(ansi, value) {
   }
 
   if (typeof DataView === "function" && value instanceof DataView) {
-    return _Debug_stringColor(ansi, "<" + value.byteLength + " bytes>");
+    const bytes = new Uint8Array(value.buffer);
+    const suffix = bytes.length > 10 ? " ..." : "";
+
+    return _Debug_stringColor(
+      ansi,
+      "<" +
+        value.byteLength +
+        " bytes: " +
+        Array.from(bytes.slice(0, 10))
+          .map((i) => i.toString(16))
+          .join(" ") +
+        suffix +
+        ">"
+    );
   }
 
-  if (
-    typeof File !== "undefined" &&
-    value instanceof File // eslint-disable-line no-undef
-  ) {
+  if (typeof File !== "undefined" && value instanceof File) {
     return _Debug_internalColor(ansi, "<" + value.name + ">");
   }
 
@@ -262,15 +272,6 @@ function _Debug_runtimeCrashReason__DEBUG(reason) {
         );
       };
 
-    case "failedUnwrap":
-      return function (fact2) {
-        throw new Error(
-          `Bug in elm runtime: trying to unwrap an new type but the js object had the following keys: ${Object.keys(
-            fact2
-          ).join(", ")}`
-        );
-      };
-
     case "EffectModule":
       return function () {
         throw new Error(
@@ -320,7 +321,7 @@ function _Debug_crash__DEBUG(identifier, fact1, fact2, fact3, fact4) {
     case 1: {
       let href = "<unknown>";
       if (typeof document !== "undefined") {
-        href = document.location.href; // eslint-disable-line no-undef
+        href = document.location.href;
       }
 
       throw new Error(

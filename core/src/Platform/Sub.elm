@@ -1,5 +1,5 @@
 module Platform.Sub exposing
-    ( Sub, none, batch
+    ( Sub(..), none, batch
     , map
     )
 
@@ -54,7 +54,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Sub (Effect.RawSub msg)
+    = Sub (Effect.Sub msg)
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -73,8 +73,9 @@ subscriptions.
 -}
 batch : List (Sub msg) -> Sub msg
 batch =
-    List.map (\(Sub sub) -> sub)
+    List.map (\(Sub (Effect.Sub sub)) -> sub)
         >> List.concat
+        >> Effect.Sub
         >> Sub
 
 
@@ -92,9 +93,10 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Sub a -> Sub msg
-map fn (Sub data) =
+map fn (Sub (Effect.Sub data)) =
     data
         |> List.map (getSubMapper fn)
+        |> Effect.Sub
         |> Sub
 
 

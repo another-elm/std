@@ -15,7 +15,7 @@ type Receiver msg
 
 
 {-| -}
-recv : (msg -> RawTask.Task a) -> Receiver msg -> RawTask.Task a
+recv : (msg -> RawTask.Task err val) -> Receiver msg -> RawTask.Task err val
 recv tagger chl =
     RawTask.AsyncAction
         { then_ =

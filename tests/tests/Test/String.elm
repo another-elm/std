@@ -22,6 +22,7 @@ tests =
                 , test "repeat" <| \() -> Expect.equal "hahaha" (String.repeat 3 "ha")
                 , test "indexes" <| \() -> Expect.equal [ 0, 2 ] (String.indexes "a" "aha")
                 , test "empty indexes" <| \() -> Expect.equal [] (String.indexes "" "aha")
+                , test "foldr with invalid unicde" <| \() -> Expect.equal 3 (String.foldr (\_ i -> i + 1) 0 "\u{DC00}ab")
                 ]
 
         combiningTests =
@@ -83,6 +84,7 @@ tests =
                 , test "filter" <| \() -> Expect.equal "mànabc" (String.filter (\c -> c /= '😣') "màn😣abc")
                 , test "toList" <| \() -> Expect.equal ['𝌆', 'a', '𝌆', 'b', '𝌆'] (String.toList "𝌆a𝌆b𝌆")
                 , test "uncons" <| \() -> Expect.equal (Just ( '😃', "bc" )) (String.uncons "😃bc")
+                , test "uncons2" <| \() -> Expect.equal (Just ( '💩', "😃bc" )) (String.uncons "💩😃bc")
                 , test "map 1" <| \() -> Expect.equal "aaa" (String.map (\_ -> 'a') "😃😃😃")
                 , test "map 2" <| \() -> Expect.equal "😃😃😃" (String.map (\_ -> '😃') "aaa")
                 , test "foldl" <| \() -> Expect.equal 3 (String.foldl (\_ c -> c + 1) 0 "😃😃😃")

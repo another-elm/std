@@ -35,6 +35,12 @@ Options:
 
 `.trim();
 
+/* Future additions:
+ *
+ * * Check we do not use Bool in kernel interop.
+ *
+ */
+
 async function* getFiles(dir) {
   const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
   for (const dirent of dirents) {
@@ -124,6 +130,13 @@ async function processElmFile(file, elmDefinitions, kernelCalls) {
     const importMatch = line.match(/^import\s+(Elm\.Kernel\.\w+)/u);
     if (importMatch !== null) {
       kernelImports.set(importMatch[1], { lineNumber: number, used: false });
+      continue;
+    }
+
+    const skippedIportMatch = line.match(/^-- skipme import\s+(Elm\.Kernel\.\w+)/u);
+    if (skippedIportMatch !== null) {
+      kernelImports.set(skippedIportMatch[1], { lineNumber: number, used: false });
+      warnings.push(`Kernel import of ${skippedIportMatch[1]} skipped at  ${file}:${number}`);
       continue;
     }
 
@@ -229,7 +242,7 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
 
     let defMatch = line.match(/^(?:var|const|let)\s*(_(\w+?)_(\w+))\s*=/u);
     if (defMatch === null) {
-      defMatch = line.match(/^function\s*(_(\w+?)_(\w+))\s*\(/u);
+      defMatch = line.match(/^function\*?\s*(_(\w+?)_(\w+))\s*\(/u);
     }
 
     if (defMatch !== null) {

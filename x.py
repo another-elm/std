@@ -20,7 +20,31 @@ def elm_make(run):
 
     if code != 0:
         print("There are issues with elm make")
-        exit(code)
+
+    return bool(code)
+
+
+def check_kernel_imports(run):
+    print("Running check-kernel-imports...")
+    code = run([
+        './tests/check-kernel-imports.js', "core", "browser", "json", "test",
+        "markdown"
+    ])
+
+    if code != 0:
+        print("There are kernel import issues")
+
+    return bool(code)
+
+
+def flake8(run):
+    print("Checking flake8...")
+    code = run(['flake8', '.'])
+
+    if code != 0:
+        print("flake8 failed")
+
+    return bool(code)
 
 
 def get_runner():
@@ -152,38 +176,38 @@ def tidy():
         print("Running xo...")
         code = run(['npx', 'xo', '--fix'])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def yapf():
         print("Running yapf...")
         code = run(['yapf', '.', '--in-place', '--recursive'])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def generate_globals():
         print("Running generate-globals...")
         code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     def elm_format():
         print("Running elm-format...")
         code = run(['elm-format', "./core/src", "--yes"])
 
-        if code != 0:
-            exit(code)
+        return bool(code)
 
     # Call generate_globals first as sometime xo only passes after
     # generate_globals runs.
-    generate_globals()
-    xo()
-    yapf()
-    elm_format()
-    elm_make(run)
-    exit(0)
+    code = True
+    code |= generate_globals()
+    code |= xo()
+    code |= yapf()
+    code |= flake8(run)
+    code |= check_kernel_imports(run)
+    code |= elm_format()
+    code |= elm_make(run)
+
+    exit(code)
 
 
 def check():
@@ -195,7 +219,8 @@ def check():
 
         if code != 0:
             print("xo failed!")
-            exit(code)
+
+        return bool(code)
 
     def yapf():
         print("Checking yapf...")
@@ -203,32 +228,22 @@ def check():
 
         if code != 0:
             print("yapf wants to make changes!")
-            exit(code)
 
-    def flake8():
-        print("Checking flake8...")
-        code = run(['flake8', '.'])
+        return bool(code)
 
-        if code != 0:
-            print("flake8 failed")
-            exit(code)
+    def elm_format():
+        print("Running elm-format validation...")
+        code = run(['elm-format', "./core/src", "--validate"])
 
-    def kernel_imports():
-        print("Running check-kernel-imports...")
-        code = run([
-            './tests/check-kernel-imports.js', "core", "browser", "json",
-            "test", "markdown"
-        ])
+        return bool(code)
 
-        if code != 0:
-            print("There are kernel import issues")
-            exit(code)
-
-    xo()
-    yapf()
-    flake8()
-    kernel_imports()
-    elm_make(run)
+    code = True
+    code |= xo()
+    code |= yapf()
+    code |= flake8(run)
+    code |= check_kernel_imports(run)
+    code |= elm_format()
+    code |= elm_make(run)
 
     exit(0)
 
@@ -237,12 +252,22 @@ parser = argparse.ArgumentParser(description='Hack on anther-elm')
 
 subparsers = parser.add_subparsers()
 
-tidy_parser = subparsers.add_parser('install',
-                                    help='install required programs')
-tidy_parser.set_defaults(func=install)
-tidy_parser = subparsers.add_parser('tidy', help='tidy files')
+install_parser = subparsers.add_parser(
+    'install',
+    help='install required programs',
+)
+install_parser.set_defaults(func=install)
+
+tidy_parser = subparsers.add_parser(
+    'tidy',
+    help='tidy files',
+)
 tidy_parser.set_defaults(func=tidy)
-check_parser = subparsers.add_parser('check', help='check files are tidy')
+
+check_parser = subparsers.add_parser(
+    'check',
+    help='check files are tidy',
+)
 check_parser.set_defaults(func=check)
 
 args = parser.parse_args()

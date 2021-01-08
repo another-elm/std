@@ -63,11 +63,8 @@ import Platform
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
-import Platform.Raw.Scheduler as RawScheduler
 import Platform.Raw.Task as RawTask
-import Platform.Scheduler as Scheduler
 import Result exposing (Result(..))
-import Task exposing (Task)
 import Time
 import Tuple
 
@@ -979,25 +976,28 @@ generate tagger generator =
             map tagger generator
 
         task =
-            seedStore (\seed -> Task.succeed (step msgGen seed))
+            seedStore (\seed -> RawTask.Value (Ok (step msgGen seed)))
     in
-    command (\_ -> Task.map Just task)
+    command (\_ -> RawTask.map (Result.map Just) task)
 
 
-seedStore : (Seed -> Task.Task Never ( a, Seed )) -> Task.Task never a
+seedStore : (Seed -> RawTask.Task Never ( a, Seed )) -> RawTask.Task never a
 seedStore =
     valueStore
-        (Scheduler.execImpure (Impure.fromFunction randSeed ())
-            |> Task.map initialSeed
+        (RawTask.execImpure (Impure.fromFunction randSeed ())
+            |> RawTask.map (Result.map initialSeed)
         )
 
 
-command : (Effect.RuntimeId -> Task.Task Never (Maybe msg)) -> Cmd msg
+command : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
 command =
     Elm.Kernel.Platform.command
 
 
-valueStore : Task.Task Never state -> (state -> Task.Task Never ( x, state )) -> Task never x
+valueStore :
+    RawTask.Task Never state
+    -> (state -> RawTask.Task Never ( x, state ))
+    -> RawTask.Task never x
 valueStore =
     Elm.Kernel.Platform.valueStore
 

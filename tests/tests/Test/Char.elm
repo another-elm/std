@@ -5,6 +5,8 @@ import Char exposing (..)
 import List
 import Test exposing (..)
 import Expect
+import FromElmTest.Fuzz
+import Fuzz
 
 
 lower =
@@ -60,13 +62,31 @@ tests =
             , test "A-Z" <| \() -> Expect.equal (upperCodes) (List.map toCode upper)
             , test "0-9" <| \() -> Expect.equal (decCodes) (List.map toCode dec)
             , test "UTF-16" <| \() -> Expect.equal 0x1D306 (Char.toCode '𝌆')
+            , test "replacement" <| \() -> Expect.equal 0xFFFD (Char.toCode '\u{FFFD}')
             ]
         , describe "fromCode"
             [ test "a-z" <| \() -> Expect.equal (lower) (List.map fromCode lowerCodes)
             , test "A-Z" <| \() -> Expect.equal (upper) (List.map fromCode upperCodes)
             , test "0-9" <| \() -> Expect.equal (dec) (List.map fromCode decCodes)
             , test "UTF-16" <| \() -> Expect.equal '𝌆' (Char.fromCode 0x1D306)
+            , test "replacement" <| \() -> Expect.equal '\u{FFFD}' (Char.fromCode 0xFFFD)
             ]
+        , describe "toCode/fromCode round trip"
+            [fuzz (Fuzz.intRange 0 0x10FFFF) "random code point" <|
+                \i ->
+                    fromCode i
+                        |> toCode
+                        |> Expect.equal i
+            , fuzz (FromElmTest.Fuzz.string) "random unicode string" <|
+                \str ->
+                    String.toList str
+                        |>List.map toCode
+                        |> List.map fromCode
+                        |> String.fromList
+                        |> Expect.equal str
+
+            ]
+
         , describe "toLocaleLower"
             [ test "a-z" <| \() -> Expect.equal (lower) (List.map toLocaleLower lower)
             , test "A-Z" <| \() -> Expect.equal (lower) (List.map toLocaleLower upper)

@@ -10,15 +10,16 @@ import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 import Platform.Raw.Impure as Impure
+import Result exposing (Result(..))
 
 
-type Task val
-    = Value val
-    | AsyncAction (Future val)
+type Task err val
+    = Value (Result err val)
+    | AsyncAction (Future err val)
 
 
-type alias Future a =
-    { then_ : (Task a -> Impure.Action ()) -> Impure.Action TryAbortAction }
+type alias Future err val =
+    { then_ : (Task err val -> Impure.Action ()) -> Impure.Action TryAbortAction }
 
 
 type alias TryAbortAction =
@@ -30,7 +31,7 @@ noopAbort =
     Impure.resolve ()
 
 
-andThen : (a -> Task b) -> Task a -> Task b
+andThen : (Result e1 a1 -> Task e2 a2) -> Task e1 a1 -> Task e2 a2
 andThen func task =
     case task of
         Value val ->
@@ -46,30 +47,43 @@ andThen func task =
 
 {-| Create a task that executes a non pure function
 -}
-execImpure : Impure.Action a -> Task a
+execImpure : Impure.Action a -> Task never a
 execImpure action =
     AsyncAction
         { then_ =
             \callback ->
                 action
-                    |> Impure.map Value
-                    |> Impure.andThen callback
+                    |> Impure.andThen (Ok >> Value >> callback)
                     |> Impure.map (\() -> noopAbort)
         }
 
 
-map : (a -> b) -> Task a -> Task b
+syncBinding : Impure.Function () (Task never a) -> Task never a
+syncBinding a =
+    execImpure a
+        |> andThen
+            (\res ->
+                case res of
+                    Ok t ->
+                        t
+
+                    Err e ->
+                        never e
+            )
+
+
+map : (Result e1 a1 -> Result e2 a2) -> Task e1 a1 -> Task e2 a2
 map func =
     andThen (\x -> Value (func x))
 
 
 {-| Create a task that sleeps for `time` milliseconds
 -}
-sleep : Float -> Task ()
+sleep : Float -> Task never ()
 sleep time =
-    AsyncAction (delay time (Value ()))
+    AsyncAction (delay time (Value (Ok ())))
 
 
-delay : Float -> Task val -> Future val
+delay : Float -> Task err val -> Future err val
 delay =
     Elm.Kernel.Scheduler.delay

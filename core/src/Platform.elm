@@ -1,7 +1,8 @@
 module Platform exposing
-    ( Program, program, worker
+    ( Program, worker
     , Task, ProcessId
     , Router, sendToApp, sendToSelf
+    , program, StepperBuilder, Runtime, RuntimeId
     )
 
 {-|
@@ -9,7 +10,7 @@ module Platform exposing
 
 # Programs
 
-@docs Program, program, worker
+@docs Program, worker
 
 
 # Platform Internals
@@ -28,6 +29,13 @@ Effect managers are dead (long live the effect managers). Conseqently you can
 look at the definitions. We keep them around for now to keep `elm diff` happy.
 
 @docs Router, sendToApp, sendToSelf
+
+
+## Non standard
+
+Do not use!
+
+@docs program, StepperBuilder, Runtime, RuntimeId
 
 -}
 
@@ -67,7 +75,7 @@ program :
     StepperBuilder model msg
     ->
         { any
-            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
+            | init : flags -> Runtime msg -> ( model, Cmd msg )
             , update : msg -> model -> ( model, Cmd msg )
             , subscriptions : model -> Sub msg
         }
@@ -185,7 +193,7 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> Maybe msg )`
 we can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-dispatchCmd : Effect.Runtime msg -> Cmd msg -> Impure.Action ()
+dispatchCmd : Runtime msg -> Cmd msg -> Impure.Action ()
 dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
     let
         runtimeId =
@@ -217,7 +225,7 @@ mainLoop :
     -> RawJsObject
     ->
         { any
-            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
+            | init : flags -> Runtime msg -> ( model, Cmd msg )
             , update : msg -> model -> ( model, Cmd msg )
             , subscriptions : model -> Sub msg
         }
@@ -265,7 +273,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         |> Impure.map assertProcessId
 
 
-updateSubListeners : Sub msg -> Effect.Runtime msg -> Impure.Action ()
+updateSubListeners : Sub msg -> Runtime msg -> Impure.Action ()
 updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
     subBag
         |> List.map
@@ -325,13 +333,13 @@ subListenerProcess =
         )
 
 
-sendToAppAction : Effect.Runtime msg -> ( msg, UpdateMetadata ) -> Impure.Action ()
+sendToAppAction : Runtime msg -> ( msg, UpdateMetadata ) -> Impure.Action ()
 sendToAppAction runtime =
     Impure.fromFunction (sendToApp2 runtime)
 
 
 resetSubscriptionsAction :
-    Effect.Runtime msg
+    Runtime msg
     -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () )
     -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
@@ -444,12 +452,20 @@ type alias MainLoopArgs a msg =
     { a
         | receiver : Channel.Receiver ( msg, UpdateMetadata )
         , encodedFlags : Json.Decode.Value
-        , runtime : Effect.Runtime msg
+        , runtime : Runtime msg
     }
 
 
 type alias StepperBuilder model appMsg =
-    Effect.Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
+    Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
+
+
+type alias Runtime appMsg =
+    Effect.Runtime appMsg
+
+
+type alias RuntimeId =
+    Effect.RuntimeId
 
 
 type alias Stepper model =
@@ -517,13 +533,13 @@ makeProgram =
 
 
 resetSubscriptions :
-    Effect.Runtime msg
+    Runtime msg
     -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToApp2 : Effect.Runtime msg -> Impure.Function ( msg, UpdateMetadata ) ()
+sendToApp2 : Runtime msg -> Impure.Function ( msg, UpdateMetadata ) ()
 sendToApp2 =
     Elm.Kernel.Platform.sendToApp
 

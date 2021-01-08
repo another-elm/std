@@ -36,6 +36,7 @@ import Dict
 import Elm.Kernel.Browser
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
+import Platform.Raw.Impure as Impure
 import Html exposing (Html)
 import Url
 import Json.Decode exposing (Decoder)
@@ -240,7 +241,7 @@ application impl =
             impl.init
                 flags
                 (Elm.Kernel.Browser.getUrl ())
-                (Elm.Kernel.Browser.getKey runtime)
+                (Elm.Kernel.Browser.getKey impl.onUrlChange runtime)
         , update = impl.update
         , subscriptions = impl.subscriptions
         }
@@ -317,55 +318,24 @@ type UrlRequest
     | External String
 
 
-
--- Kernel interop TYPES
-
-
-type alias Impl flags model msg =
-    { init : flags -> ( model, Cmd msg )
-    , update : msg -> model -> ( model, Cmd msg )
-    , subscriptions : model -> Sub msg
-    }
-
-
-type alias StepperBuilder model appMsg =
-    ImpureSendToApp appMsg -> model -> model -> UpdateMetadata -> ()
-
-
-type alias ActualProgram flags =
-    Decoder flags
-    -> DebugMetadata
-    -> RawJsObject
-    -> RawJsObject
-
-
-type alias ImpureSendToApp msg =
-    msg -> UpdateMetadata -> ()
-
-
-type alias DebugMetadata =
-    Encode.Value
-
-
-type RawJsObject
-    = RawJsObject RawJsObject
-
-
-type UpdateMetadata
-    = SyncUpdate
-    | AsyncUpdate
-
-
-
 -- Kernel interop
 
 
+elementStepperBuilder : (model -> Html msg) -> Platform.StepperBuilder model appMsg
 elementStepperBuilder =
     Elm.Kernel.Browser.elementStepperBuilder
 
 
+documentStepperBuilder : (model -> Document msg) -> Platform.StepperBuilder model appMsg
 documentStepperBuilder =
     Elm.Kernel.Browser.documentStepperBuilder
 
+applicationStepperBuilder : { init : flags -> Url.Url -> Navigation.Key -> ( model, Cmd msg )
+    , view : model -> Document msg
+    , update : msg -> model -> ( model, Cmd msg )
+    , subscriptions : model -> Sub msg
+    , onUrlRequest : UrlRequest -> msg
+    , onUrlChange : Url.Url -> msg
+    } -> Platform.StepperBuilder model appMsg
 applicationStepperBuilder =
     Elm.Kernel.Browser.applicationStepperBuilder

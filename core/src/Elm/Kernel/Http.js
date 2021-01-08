@@ -24,7 +24,7 @@ const _Http_makeRequest = (request) => {
     done(__Http_Timeout_);
   });
   xhr.addEventListener("load", function () {
-    done(_Http_toResponse(request.__$expect.__$toBody, xhr));
+    done(_Http_toResponse(request.__$toBody, xhr));
   });
 
   const cancel = () => {

@@ -123,7 +123,7 @@ const _Browser_applicationStepperBuilder = (impl) => (runtime) => args => (initi
 
 	var onUrlChange = impl.__$onUrlChange;
 	var onUrlRequest = impl.__$onUrlRequest;
-	var key = _Browser_getKey(runtime);
+	var key = _Browser_getKey(onUrlChange)(runtime);
 
 	const setup = () => {
 		_Browser_window.addEventListener('popstate', key);
@@ -172,8 +172,7 @@ function _Browser_getUrl()
 	return __Url_fromString(__VirtualDom_doc.location.href).a || __Debug_crash(1);
 }
 
-function _Browser_getKey(runtime)
-{
+const _Browser_getKey = (onUrlChange) => (runtime) => {
 	const eventNode = __Platform_browserifiedSendToApp(runtime);
 	return () => eventNode(onUrlChange(_Browser_getUrl()));
 }
@@ -186,13 +185,10 @@ var _Browser_go = F2(function(key, n)
 	}));
 });
 
-var _Browser_pushUrl = F2(function(key, url)
-{
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () => {
-		history.pushState({}, '', url);
-		key();
-	}));
-});
+const _Browser_pushUrl = key => url => {
+	history.pushState({}, '', url);
+	key();
+};
 
 var _Browser_replaceUrl = F2(function(key, url)
 {
@@ -267,6 +263,18 @@ function _Browser_rAF()
 	});
 }
 
+function _Browser_rawRaf(cb) {
+	let id = requestAnimationFrame(() => cb(Date.now()));
+
+	return function() {
+		if (id !== null) {
+			_Browser_cancelAnimationFrame(id);
+		}
+		id = null;
+		return __Utils_Tuple0;
+	};
+}
+
 
 function _Browser_now()
 {
@@ -281,18 +289,11 @@ function _Browser_now()
 // DOM STUFF
 
 
-function _Browser_withNode(id, doStuff)
-{
-	return __Scheduler_binding((callback) => () =>
-	{
-		_Browser_requestAnimationFrame(function() {
-			var node = document.getElementById(id);
-			callback(node
-				? __Task_succeed(doStuff(node))
-				: __Task_fail(__Dom_NotFound(id))
-			);
-		});
-	});
+const _Browser_getNode = id => {
+	const node = document.getElementById(id);
+	return node === null
+		 ? __Maybe_Nothing
+		 : __Maybe_Just(node);
 }
 
 
@@ -310,13 +311,16 @@ function _Browser_withWindow(doStuff)
 // FOCUS and BLUR
 
 
-var _Browser_call = F2(function(functionName, id)
-{
-	return _Browser_withNode(id, function(node) {
-		node[functionName]();
-		return __Utils_Tuple0;
-	});
-});
+
+const _Browser_blur = node => {
+	node.blur();
+	return __Utils_Tuple0;
+};
+
+const _Browser_focus = node => {
+	node.focus();
+	return __Utils_Tuple0;
+};
 
 
 
@@ -346,14 +350,7 @@ function _Browser_getScene()
 	};
 }
 
-var _Browser_setViewport = F2(function(x, y)
-{
-	return _Browser_withWindow(function()
-	{
-		_Browser_window.scroll(x, y);
-		return __Utils_Tuple0;
-	});
-});
+var _Browser_setViewport = x => y => _Browser_window.scroll(x, y);
 
 
 
@@ -380,44 +377,36 @@ function _Browser_getViewportOf(id)
 }
 
 
-var _Browser_setViewportOf = F3(function(id, x, y)
-{
-	return _Browser_withNode(id, function(node)
-	{
-		node.scrollLeft = x;
-		node.scrollTop = y;
-		return __Utils_Tuple0;
-	});
-});
+var _Browser_setViewportOf = node => x => y => {
+	node.scrollLeft = x;
+	node.scrollTop = y;
+	return __Utils_Tuple0;
+};
 
 
 
 // ELEMENT
 
 
-function _Browser_getElement(id)
-{
-	return _Browser_withNode(id, function(node)
-	{
-		var rect = node.getBoundingClientRect();
-		var x = _Browser_window.pageXOffset;
-		var y = _Browser_window.pageYOffset;
-		return {
-			__$scene: _Browser_getScene(),
-			__$viewport: {
-				__$x: x,
-				__$y: y,
-				__$width: _Browser_doc.documentElement.clientWidth,
-				__$height: _Browser_doc.documentElement.clientHeight
-			},
-			__$element: {
-				__$x: x + rect.left,
-				__$y: y + rect.top,
-				__$width: rect.width,
-				__$height: rect.height
-			}
-		};
-	});
+function _Browser_getElement(node) {
+	const rect = node.getBoundingClientRect();
+	const x = _Browser_window.pageXOffset;
+	const y = _Browser_window.pageYOffset;
+	return {
+		__$scene: _Browser_getScene(),
+		__$viewport: {
+			__$x: x,
+			__$y: y,
+			__$width: _Browser_doc.documentElement.clientWidth,
+			__$height: _Browser_doc.documentElement.clientHeight
+		},
+		__$element: {
+			__$x: x + rect.left,
+			__$y: y + rect.top,
+			__$width: rect.width,
+			__$height: rect.height
+		}
+	};
 }
 
 

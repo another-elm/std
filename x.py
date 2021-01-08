@@ -19,7 +19,27 @@ def elm_make(run):
     code = run(['elm', "make"], subdir='core')
 
     if code != 0:
-        print("There are issues with elm make")
+        print("There are issues with elm make in core")
+
+    print("Running elm make in browser...")
+
+    # FIXME(harry) make this work on mac.
+    assert run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
+    ],
+               subdir='browser/src') == 0
+
+    code = run(['another-elm', "make"], subdir='browser')
+
+    run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
+    ],
+        subdir='browser/src') == 0
+
+    if code != 0:
+        print("There are issues with elm make in browser")
 
     return bool(code)
 
@@ -198,14 +218,14 @@ def tidy():
 
     # Call generate_globals first as sometime xo only passes after
     # generate_globals runs.
-    code = True
+    code = False
+    code |= elm_make(run)
     code |= generate_globals()
     code |= xo()
     code |= yapf()
     code |= flake8(run)
     code |= check_kernel_imports(run)
     code |= elm_format()
-    code |= elm_make(run)
 
     exit(code)
 
@@ -237,15 +257,15 @@ def check():
 
         return bool(code)
 
-    code = True
+    code = False
+    code |= elm_make(run)
     code |= xo()
     code |= yapf()
     code |= flake8(run)
     code |= check_kernel_imports(run)
     code |= elm_format()
-    code |= elm_make(run)
 
-    exit(0)
+    exit(code)
 
 
 parser = argparse.ArgumentParser(description='Hack on anther-elm')

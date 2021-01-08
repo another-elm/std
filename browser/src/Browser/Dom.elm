@@ -72,6 +72,9 @@ Hockney explores the history of _perspective_ in art. Really interesting!
 
 import Elm.Kernel.Browser
 import Task exposing (Task)
+import Browser.Internal
+import Platform.Raw.Impure as Impure
+import Html exposing (Html)
 
 
 
@@ -98,7 +101,8 @@ log the failure with whatever error reporting system you use.
 -}
 focus : String -> Task Error ()
 focus =
-      Elm.Kernel.Browser.call "focus"
+    getNodeById
+        >> Task.andThen (Browser.Internal.fromFunction focusRaw)
 
 
 {-| Find a DOM node by `id` and make it lose focus. So if you wanted a node
@@ -121,7 +125,8 @@ log the failure with whatever error reporting system you use.
 -}
 blur : String -> Task Error ()
 blur =
-      Elm.Kernel.Browser.call "blur"
+    getNodeById
+        >> Task.andThen (Browser.Internal.fromFunction blurRaw)
 
 
 
@@ -150,7 +155,8 @@ viewport.
 -}
 getViewport : Task x Viewport
 getViewport =
-      Elm.Kernel.Browser.withWindow Elm.Kernel.Browser.getViewport
+    Browser.Internal.rafTask
+        |> Task.andThen (\_ -> Browser.Internal.fromFunction getViewportRaw ())
 
 
 {-| All the information about the current viewport.
@@ -217,8 +223,9 @@ API improvements!
 
 -}
 getViewportOf : String -> Task Error Viewport
-getViewportOf =
-      Elm.Kernel.Browser.getViewportOf
+getViewportOf id =
+    getNodeById id
+        |> Task.andThen (Browser.Internal.fromFunction getViewportOfRaw)
 
 
 
@@ -246,8 +253,10 @@ and want people to start at the top!
 
 -}
 setViewport : Float -> Float -> Task x ()
-setViewport =
-      Elm.Kernel.Browser.setViewport
+setViewport x y =
+    Browser.Internal.rafTask
+        |> Task.andThen (\_ -> Browser.Internal.fromFunction (setViewportRaw x) y)
+
 
 
 {-| Change the `x` and `y` offset of a DOM node&rsquo;s viewport by ID. This
@@ -282,8 +291,9 @@ somewhere!
 
 -}
 setViewportOf : String -> Float -> Float -> Task Error ()
-setViewportOf =
-      Elm.Kernel.Browser.setViewportOf
+setViewportOf id x y =
+    getNodeById id
+        |> Task.andThen (\node -> Browser.Internal.fromFunction (setViewportOfRaw node x) y)
 
 
 
@@ -354,8 +364,9 @@ element in a `<div>` that adds the spacing. Just something to be aware of!
 
 -}
 getElement : String -> Task Error Element
-getElement =
-      Elm.Kernel.Browser.getElement
+getElement id =
+    getNodeById id
+        |> Task.andThen (Browser.Internal.fromFunction getElementRaw)
 
 
 {-| A bunch of information about the position and size of an element relative
@@ -382,3 +393,54 @@ type alias Element =
         , height : Float
         }
     }
+
+
+getNodeById : String -> Task Error HtmlNode
+getNodeById id =
+    Browser.Internal.rafTask
+        |> Task.andThen
+            (\_ ->
+                Browser.Internal.fromFunction getNode id
+                    |> Task.andThen (\mNode -> case mNode of
+                        Just node -> Task.succeed node
+                        Nothing -> Task.fail (NotFound id)
+                    )
+            )
+
+type HtmlNode
+    = Stub_HtmlNode
+
+-- Kernel interop
+
+blurRaw : Impure.Function HtmlNode ()
+blurRaw =
+    Elm.Kernel.Browser.blur
+
+focusRaw : Impure.Function HtmlNode ()
+focusRaw =
+    Elm.Kernel.Browser.focus
+
+setViewportRaw : Float -> Impure.Function Float ()
+setViewportRaw =
+    Elm.Kernel.Browser.setViewport
+
+setViewportOfRaw : HtmlNode -> Float -> Impure.Function Float ()
+setViewportOfRaw =
+    Elm.Kernel.Browser.setViewportOf
+
+getViewportRaw : Impure.Function () Viewport
+getViewportRaw =
+    Elm.Kernel.Browser.getViewport
+
+getViewportOfRaw : Impure.Function node Viewport
+getViewportOfRaw =
+    Elm.Kernel.Browser.getViewportOf
+
+getElementRaw : Impure.Function node Element
+getElementRaw =
+    Elm.Kernel.Browser.getElement
+
+
+getNode : Impure.Function String (Maybe HtmlNode)
+getNode =
+    Elm.Kernel.Browser.getNode

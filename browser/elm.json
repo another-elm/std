@@ -14,14 +14,14 @@
         "Virtual Dom": [
             "VirtualDom"
         ],
-		"HTML": [
-			"Html",
-			"Html.Attributes",
-			"Html.Events"
-		],
-		"Optimize": [
-			"Html.Keyed",
-			"Html.Lazy"
+        "HTML": [
+            "Html",
+            "Html.Attributes",
+            "Html.Events"
+        ],
+        "Optimize": [
+            "Html.Keyed",
+            "Html.Lazy"
         ],
         "URL": [
             "Url",
@@ -33,7 +33,8 @@
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.0 <= v < 2.0.0",
-        "elm/json": "1.0.0 <= v < 2.0.0"
+        "elm/json": "1.0.0 <= v < 2.0.0",
+        "elm/time": "1.0.0 <= v < 2.0.0"
     },
     "test-dependencies": {}
 }

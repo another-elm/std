@@ -44,7 +44,11 @@ want!
 -}
 
 import Elm.Kernel.Browser
+import Elm.Kernel.Platform
 import Task exposing (Task)
+import Platform.Raw.Impure as Impure
+import Browser.Internal
+import Array exposing (push)
 
 
 
@@ -87,8 +91,10 @@ making a different choice.
 
 -}
 pushUrl : Key -> String -> Cmd msg
-pushUrl =
-    Elm.Kernel.Browser.pushUrl
+pushUrl key url =
+    command
+        (\_ -> Browser.Internal.fromFunction (pushUrlRaw key) url |> Task.map (\() -> Nothing))
+
 
 
 {-| Change the URL, but do not trigger a page load.
@@ -181,3 +187,15 @@ results in a page load!** It is more common to want [`reload`](#reload).
 reloadAndSkipCache : Cmd msg
 reloadAndSkipCache =
     Elm.Kernel.Browser.reload True
+
+
+-- Kernel interop
+
+pushUrlRaw : Key -> Impure.Function String ()
+pushUrlRaw =
+    Elm.Kernel.Browser.pushUrl
+
+
+command : (Platform.RuntimeId -> Task Never (Maybe msg)) -> Cmd msg
+command =
+    Elm.Kernel.Platform.command

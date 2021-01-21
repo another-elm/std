@@ -100,6 +100,12 @@ map fn (Sub (Effect.Sub data)) =
         |> Sub
 
 
-getSubMapper : (a -> msg) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe a ) -> ( Effect.SubId, Effect.HiddenConvertedSubType -> Maybe msg )
-getSubMapper fn ( id, tagger ) =
-    ( id, \hcst -> Maybe.map fn (tagger hcst) )
+getSubMapper :
+    (a -> msg)
+    -> Effect.SubPayload Effect.Hidden Effect.Hidden a
+    -> Effect.SubPayload Effect.Hidden Effect.Hidden msg
+getSubMapper fn { managerId, subId, onMessage } =
+    { managerId = managerId
+    , subId = subId
+    , onMessage = onMessage >> fn
+    }

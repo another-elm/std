@@ -57,6 +57,7 @@ import Platform.Sub as Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
+import Debug
 
 
 
@@ -275,7 +276,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
 
 updateSubListeners : Sub msg -> Runtime msg -> Impure.Action ()
 updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
-    subBag
+    Debug.todo """subBag
         |> List.map
             (Tuple.mapSecond
                 (\tagger v ->
@@ -287,7 +288,7 @@ updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
                             Impure.resolve ()
                 )
             )
-        |> resetSubscriptionsAction runtime
+        |> resetSubscriptionsAction runtime"""
 
 
 valueStoreHelper :
@@ -313,9 +314,9 @@ createCmd createTask =
     Cmd.Cmd (Effect.Cmd [ createTask ])
 
 
-subscriptionHelper : Effect.SubId -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
+subscriptionHelper : Effect.SubId () -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
 subscriptionHelper key tagger =
-    Sub.Sub (Effect.Sub [ ( key, tagger ) ])
+    Debug.todo "Sub.Sub (Effect.Sub [ ( key, tagger ) ])"
 
 
 subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
@@ -340,7 +341,7 @@ sendToAppAction runtime =
 
 resetSubscriptionsAction :
     Runtime msg
-    -> List ( Effect.SubId, Effect.HiddenConvertedSubType -> Impure.Action () )
+    -> List ( Effect.SubId (), Effect.HiddenConvertedSubType -> Impure.Action () )
     -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
@@ -443,7 +444,7 @@ type alias InitializeHelperFunctions state x msg =
         RawTask.Task Never state
         -> (state -> RawTask.Task Never ( x, state ))
         -> ( RawTask.Task Never x, RawTask.Task Never state )
-    , subscriptionHelper : Effect.SubId -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
+    , subscriptionHelper : Effect.SubId () -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
     , createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
     }
 
@@ -534,7 +535,7 @@ makeProgram =
 
 resetSubscriptions :
     Runtime msg
-    -> Impure.Function (List ( Effect.SubId, Impure.Function Effect.HiddenConvertedSubType () )) ()
+    -> Impure.Function (List ( Effect.SubId (), Impure.Function Effect.HiddenConvertedSubType () )) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 

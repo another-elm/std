@@ -590,12 +590,12 @@ every interval tagger =
         )
 
 
-setInterval : Float -> Effect.SubId
+setInterval : Float -> Effect.SubId ()
 setInterval =
     Elm.Kernel.Time.setInterval
 
 
-subscription : Effect.SubId -> (SubPayload -> Maybe msg) -> Sub msg
+subscription : Effect.SubId () -> (SubPayload -> Maybe msg) -> Sub msg
 subscription =
     Elm.Kernel.Platform.subscription
 

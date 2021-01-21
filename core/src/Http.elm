@@ -1181,7 +1181,7 @@ command =
     Elm.Kernel.Platform.command
 
 
-subscription : Effect.SubId -> (( String, Progress ) -> Maybe msg) -> Sub msg
+subscription : Effect.SubId () -> (( String, Progress ) -> Maybe msg) -> Sub msg
 subscription =
     Elm.Kernel.Platform.subscription
 
@@ -1191,7 +1191,7 @@ makeRequest =
     Elm.Kernel.Http.makeRequest
 
 
-trackerKey : Effect.SubId
+trackerKey : Effect.SubId ()
 trackerKey =
     Elm.Kernel.Http.trackerKey
 

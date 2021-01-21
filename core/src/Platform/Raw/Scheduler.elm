@@ -30,7 +30,7 @@ rawSpawn =
         (\task -> Impure.andThen (\id -> enqueue (ProcessId { id = id }) task) getGuid)
 
 
-{-| Create a task that spawns a processes.
+{-| Create a action that spawns a processes when run.
 -}
 spawn : RawTask.Task e a -> Impure.Action ProcessId
 spawn task =

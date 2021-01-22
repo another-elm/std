@@ -13,8 +13,11 @@ subscriptionManager onSubUpdate =
     let
         managerId =
             case onSubUpdate of
-                EventListener el -> registerEventSubscriptionListener el
-                RuntimeHandler -> registerRuntimeSubscriptionHandler ()
+                EventListener el ->
+                    registerEventSubscriptionListener el
+
+                RuntimeHandler ->
+                    registerRuntimeSubscriptionHandler ()
     in
     ( \subId onMsg ->
         Sub
@@ -34,9 +37,9 @@ makeSubPayload =
 
 
 registerEventSubscriptionListener :
-     { discontinued : Impure.Function EffectId ()
-        , new : subId -> Impure.Function (Impure.Function payload ()) EffectId
-        }
+    { discontinued : Impure.Function EffectId ()
+    , new : subId -> Impure.Function (Impure.Function payload ()) EffectId
+    }
     -> SubManagerId
 registerEventSubscriptionListener =
     Elm.Kernel.Platform.registerEventSubscriptionListener

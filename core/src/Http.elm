@@ -1024,6 +1024,8 @@ taskHelp r allowCookies =
                             (bodyInterpretter.toValue >> RawTask.Value >> doneCallback)
                     , onCancel =
                         Impure.resolve ()
+                    , managerId =
+                        subscriptionManager
                     }
                     |> Impure.map .cancel
         }
@@ -1076,6 +1078,8 @@ requestHelp r allowCookies =
                 , onCancel =
                     Impure.toFunction
                         (\() -> Nothing |> Ok |> RawTask.Value |> doneCallback)
+                , managerId =
+                    subscriptionManager
                 }
                 |> Impure.map
                     (\{} ->
@@ -1158,6 +1162,7 @@ type alias KernelRequest =
     , config : KernelRequestConfiguration
     , onComplete : Impure.Function (Response ResponseBodyContents) ()
     , onCancel : Impure.Function () ()
+    , managerId : Effect.SubManagerId
     }
 
 

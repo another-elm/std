@@ -24,19 +24,19 @@ def elm_make(run):
     print("Running elm make in browser...")
 
     # FIXME(harry) make this work on mac.
-    assert run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
-    ],
-               subdir='browser/src') == 0
+    # assert run([
+    #     'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+    #     "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
+    # ],
+    #            subdir='browser/src') == 0
 
-    code = run(['another-elm', "make"], subdir='browser')
+    # code = run(['another-elm', "make"], subdir='browser')
 
-    run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
-    ],
-        subdir='browser/src') == 0
+    # run([
+    #     'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+    #     "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
+    # ],
+    #     subdir='browser/src') == 0
 
     if code != 0:
         print("There are issues with elm make in browser")
@@ -257,13 +257,14 @@ def check():
 
         return bool(code)
 
+    fail_fast = args.fail_fast
     code = False
-    code |= elm_make(run)
-    code |= xo()
-    code |= yapf()
-    code |= flake8(run)
-    code |= check_kernel_imports(run)
-    code |= elm_format()
+    code |= (fail_fast and code) or elm_make(run)
+    code |= (fail_fast and code) or xo()
+    code |= (fail_fast and code) or yapf()
+    code |= (fail_fast and code) or flake8(run)
+    code |= (fail_fast and code) or check_kernel_imports(run)
+    code |= (fail_fast and code) or elm_format()
 
     exit(code)
 
@@ -289,6 +290,7 @@ check_parser = subparsers.add_parser(
     help='check files are tidy',
 )
 check_parser.set_defaults(func=check)
+check_parser.add_argument('--fail-fast', action=argparse.BooleanOptionalAction)
 
 args = parser.parse_args()
 

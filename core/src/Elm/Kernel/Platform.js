@@ -21,7 +21,6 @@ const _Platform_ports = new Map();
 
 const _Platform_runAfterLoadQueue = [];
 const _Platform_eventSubscriptionListeners = new WeakMap();
-const _Platform_runtimeSubscriptionHandlers = new WeakMap();
 
 let _Platform_guidIdCount = 0;
 let _Platform_initDone = false;
@@ -124,11 +123,6 @@ function _Platform_incomingPort(name, converter) {
   const managerId = _Platform_registerRuntimeSubscriptionHandler(subscriptionManager);
 
   _Platform_registerPort(name, (runtimeId) => {
-    let taggers = runtimeId.__runtimeSubscriptionHandlers.get(managerId);
-    if (taggers === undefined) {
-      taggers = [];
-      runtimeId.__runtimeSubscriptionHandlers.set(managerId, taggers);
-    }
     function send(incomingValue) {
       const result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
@@ -136,12 +130,15 @@ function _Platform_incomingPort(name, converter) {
         __Debug_crash(4, name, result.a);
       }
 
-      const value = result.a;
-      for (const tagger of taggers) {
+      const taggers = runtimeId.__runtimeSubscriptionHandlers.get(managerId);
 
-        _Platform_sendToApp(runtimeId)(
-          __Utils_Tuple2(tagger(__Utils_Tuple0)(value), __Platform_AsyncUpdate)
-        );
+      if (taggers !== undefined) {
+        const value = result.a;
+        for (const tagger of taggers) {
+          _Platform_sendToApp(runtimeId)(
+            __Utils_Tuple2(tagger(__Utils_Tuple0)(value), __Platform_AsyncUpdate)
+          );
+        }
       }
     }
 
@@ -200,14 +197,23 @@ const _Platform_registerEventSubscriptionListener = (onSubEffects) => {
 };
 
 // TODO(harry): what is this param?
-const _Platform_registerRuntimeSubscriptionHandler = (onSubEffects) => {
+const _Platform_registerRuntimeSubscriptionHandler = () => {
   _Platform_assertNotLoaded();
   const subManagerId = {
     __$id: _Platform_guidIdCount++,
   };
-  _Platform_runtimeSubscriptionHandlers.set(subManagerId, onSubEffects);
   return subManagerId;
 };
+
+function _Platform_mapGetOrInit(map, key, func) {
+  let value = map.get(key);
+  if (value === undefined) {
+    value = func();
+    map.set(key, value);
+  }
+
+  return value;
+}
 
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   const eventSubscriptionListeners = runtime.__eventSubscriptionListeners;
@@ -225,47 +231,37 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   for (const newSub of __List_iterate(newSubs)) {
     const eventListener = _Platform_eventSubscriptionListeners.get(newSub.__$managerId);
     if (eventListener === undefined) {
-      const runtimeHandler = _Platform_runtimeSubscriptionHandlers.get(newSub.__$managerId);
-
-      if (runtimeHandler === undefined) {
-        throw new Error("TODO(harry) add crash");
-      }
-
-      // Handle port subscriptions specially
-      let taggers = runtimeSubscriptionHandlers.get(newSub.__$managerId);
-      if (taggers === undefined) {
-        taggers = [];
-        runtimeSubscriptionHandlers.set(newSub.__$managerId, taggers);
-      }
+      // We have a subscription managed by a runtime handler.
+      const taggers = _Platform_mapGetOrInit(
+        runtimeSubscriptionHandlers,
+        newSub.__$managerId,
+        () => []
+      );
       taggers.push((subId) => (payload) => {
         if (subId === newSub.__$subId) {
           return newSub.__$onMessage(payload);
         }
       });
     } else {
-      let managerState = eventSubscriptionListeners.get(newSub.__$managerId);
-      if (managerState === undefined) {
-        managerState = new Map();
-        eventSubscriptionListeners.set(newSub.__$managerId, managerState);
-      }
-
-      const effect = managerState.get(newSub.__$subId);
-      if (effect === undefined) {
-        const taggers = [newSub.__$onMessage];
+      const managerState = _Platform_mapGetOrInit(
+        eventSubscriptionListeners,
+        newSub.__$managerId,
+        () => new Map()
+      );
+      const effect = _Platform_mapGetOrInit(managerState, newSub.__$subId, () => {
+        const taggers = [];
         const effectId = eventListener.__$new(newSub.__$subId)((payload) => {
-
           for (const tagger of taggers) {
             _Platform_sendToApp(runtime)(__Utils_Tuple2(tagger(payload), __Platform_AsyncUpdate));
           }
         });
-        managerState.set(newSub.__$subId, {
+        return {
           __taggers: taggers,
           __effectId: effectId,
           __discontinued: eventListener.__$discontinued,
-        });
-      } else {
-        effect.__taggers.push(newSub.__$onMessage);
-      }
+        };
+      });
+      effect.__taggers.push(newSub.__$onMessage);
     }
   }
 

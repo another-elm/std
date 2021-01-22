@@ -33,7 +33,13 @@ const _Http_makeRequest = (request) => {
   };
 
   if (__Maybe_isJust(request.__$tracker)) {
-    _Http_trackRequest(request.__$tracker.a.a, request.__$tracker.a.b, xhr, cancel);
+    _Http_trackRequest(
+      request.__$tracker.a.a,
+      request.__$tracker.a.b,
+      request.__$managerId,
+      xhr,
+      cancel
+    );
   }
 
   try {

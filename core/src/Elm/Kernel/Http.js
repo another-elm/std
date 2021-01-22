@@ -3,7 +3,7 @@
 import Dict exposing (empty, update)
 import Http exposing (BadUrl_, Timeout_, NetworkError_, BadStatus_, GoodStatus_, Sending, Receiving)
 import Maybe exposing (Just, Nothing, isJust)
-import Elm.Kernel.Platform exposing (sendToApp)
+import Elm.Kernel.Platform exposing (handleMessageForRuntime)
 import Elm.Kernel.List exposing (iterate)
 
 */
@@ -147,43 +147,35 @@ const _Http_bytesToBlob = F2(function (mime, bytes) {
 function _Http_trackRequest(runtime, tracker, managerId, xhr, cancel) {
   // TODO check out lengthComputable on loadstart event
 
-  let taggers = runtime.__runtimeSubscriptionHandlers.get(managerId);
-  if (taggers === undefined) {
-    taggers = [];
-    runtime.__runtimeSubscriptionHandlers.set(managerId, taggers);
-  }
-
   xhr.upload.addEventListener("progress", function (event) {
     if (xhr.__isAborted) {
       return;
     }
 
-    for (const tagger of taggers) {
-      __Platform_sendToApp(runtime)(
-        tagger(tracker)(
-          __Http_Sending({
-            __$sent: event.loaded,
-            __$size: event.total,
-          })
-        )
-      );
-    }
+    __Platform_handleMessageForRuntime(
+      runtime,
+      managerId,
+      tracker,
+      __Http_Sending({
+        __$sent: event.loaded,
+        __$size: event.total,
+      })
+    );
   });
   xhr.addEventListener("progress", function (event) {
     if (xhr.__isAborted) {
       return;
     }
 
-    for (const tagger of taggers) {
-      __Platform_sendToApp(runtime)(
-        tagger(tracker)(
-          __Http_Receiving({
-            __$received: event.loaded,
-            __$size: event.lengthComputable ? __Maybe_Just(event.total) : __Maybe_Nothing,
-          })
-        )
-      );
-    }
+    __Platform_handleMessageForRuntime(
+      runtime,
+      managerId,
+      tracker,
+      __Http_Receiving({
+        __$received: event.loaded,
+        __$size: event.lengthComputable ? __Maybe_Just(event.total) : __Maybe_Nothing,
+      })
+    );
   });
 
   _Http_registerCancel(runtime, tracker, cancel);
@@ -221,5 +213,5 @@ const _Http_cancel = (runtimeId) => (trackingId) => {
 /* global __Dict_empty, __Dict_update */
 /* global __Http_BadUrl_, __Http_Timeout_, __Http_NetworkError_, __Http_BadStatus_, __Http_GoodStatus_, __Http_Sending, __Http_Receiving */
 /* global __Maybe_Just, __Maybe_Nothing, __Maybe_isJust */
-/* global __Platform_sendToApp */
+/* global __Platform_handleMessageForRuntime */
 /* global __List_iterate */

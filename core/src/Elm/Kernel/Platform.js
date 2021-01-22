@@ -111,16 +111,7 @@ function _Platform_outgoingPort(name, converter) {
 }
 
 function _Platform_incomingPort(name, converter) {
-  // Create a dummy (empty) subscription manager. Incoming port subscriptions
-  // are fundamentally special because the data gets sent to a _specific
-  // runtime_.
-  const subscriptionManager = {
-    __$new: () => () => __Utils_Tuple0,
-    __$continued: () => __Utils_Tuple0,
-    __$discontinued: () => __Utils_Tuple0,
-  };
-
-  const managerId = _Platform_registerRuntimeSubscriptionHandler(subscriptionManager);
+  const managerId = _Platform_registerRuntimeSubscriptionHandler(__Utils_Tuple0);
 
   _Platform_registerPort(name, (runtimeId) => {
     function send(incomingValue) {
@@ -130,16 +121,7 @@ function _Platform_incomingPort(name, converter) {
         __Debug_crash(4, name, result.a);
       }
 
-      const taggers = runtimeId.__runtimeSubscriptionHandlers.get(managerId);
-
-      if (taggers !== undefined) {
-        const value = result.a;
-        for (const tagger of taggers) {
-          _Platform_sendToApp(runtimeId)(
-            __Utils_Tuple2(tagger(__Utils_Tuple0)(value), __Platform_AsyncUpdate)
-          );
-        }
-      }
+      _Platform_handleMessageForRuntime(runtimeId, managerId, __Utils_Tuple0, result.a);
     }
 
     return { send };
@@ -217,14 +199,13 @@ function _Platform_mapGetOrInit(map, key, func) {
 
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
   const eventSubscriptionListeners = runtime.__eventSubscriptionListeners;
-  const runtimeSubscriptionHandlers = runtime.__runtimeSubscriptionHandlers;
   for (const [, managerState] of eventSubscriptionListeners.entries()) {
     for (const subData of managerState.values()) {
       subData.__taggers.length = 0;
     }
   }
 
-  for (const taggers of runtimeSubscriptionHandlers.values()) {
+  for (const taggers of runtime.__runtimeSubscriptionHandlers.values()) {
     taggers.length = 0;
   }
 
@@ -233,7 +214,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
     if (eventListener === undefined) {
       // We have a subscription managed by a runtime handler.
       const taggers = _Platform_mapGetOrInit(
-        runtimeSubscriptionHandlers,
+        runtime.__runtimeSubscriptionHandlers,
         newSub.__$managerId,
         () => []
       );
@@ -288,6 +269,16 @@ function _Platform_invalidFlags(stringifiedError) {
 }
 
 const _Platform_sendToApp = (runtimeId) => __Channel_rawSend(runtimeId.__messageChannel);
+
+const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) => {
+  const taggers = runtimeId.__runtimeSubscriptionHandlers.get(managerId);
+
+  if (taggers !== undefined) {
+    for (const tagger of taggers) {
+      _Platform_sendToApp(runtimeId)(__Utils_Tuple2(tagger(subId)(value), __Platform_AsyncUpdate));
+    }
+  }
+};
 
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {

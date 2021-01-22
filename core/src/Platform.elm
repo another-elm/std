@@ -2,7 +2,7 @@ module Platform exposing
     ( Program, worker
     , Task, ProcessId
     , Router, sendToApp, sendToSelf
-    , program, StepperBuilder, Runtime, RuntimeId
+    , program, StepperBuilder, Runtime, RuntimeId, SubId
     )
 
 {-|
@@ -35,11 +35,12 @@ look at the definitions. We keep them around for now to keep `elm diff` happy.
 
 Do not use!
 
-@docs program, StepperBuilder, Runtime, RuntimeId
+@docs program, StepperBuilder, Runtime, RuntimeId, SubId
 
 -}
 
 import Basics exposing (..)
+import Debug
 import Dict exposing (Dict)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
@@ -57,7 +58,6 @@ import Platform.Sub as Sub exposing (Sub)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
-import Debug
 
 
 
@@ -276,19 +276,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
 
 updateSubListeners : Sub msg -> Runtime msg -> Impure.Action ()
 updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
-    Debug.todo """subBag
-        |> List.map
-            (Tuple.mapSecond
-                (\tagger v ->
-                    case tagger v of
-                        Just msg ->
-                            sendToAppAction runtime ( msg, AsyncUpdate )
-
-                        Nothing ->
-                            Impure.resolve ()
-                )
-            )
-        |> resetSubscriptionsAction runtime"""
+    resetSubscriptionsAction runtime subBag
 
 
 valueStoreHelper :
@@ -314,9 +302,15 @@ createCmd createTask =
     Cmd.Cmd (Effect.Cmd [ createTask ])
 
 
-subscriptionHelper : Effect.SubId () -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
-subscriptionHelper key tagger =
-    Debug.todo "Sub.Sub (Effect.Sub [ ( key, tagger ) ])"
+subscriptionHelper : Effect.SubManagerId -> Effect.Hidden -> (Effect.Hidden -> msg) -> Sub msg
+subscriptionHelper managerId subId tagger =
+    Effect.Sub
+        [ { managerId = managerId
+          , subId = subId
+          , onMessage = tagger
+          }
+        ]
+        |> Sub.Sub
 
 
 subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
@@ -341,14 +335,12 @@ sendToAppAction runtime =
 
 resetSubscriptionsAction :
     Runtime msg
-    -> List ( Effect.SubId (), Effect.HiddenConvertedSubType -> Impure.Action () )
+    -> List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)
     -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
         (resetSubscriptions runtime)
-        (updateList
-            |> List.map (Tuple.mapSecond Impure.toFunction)
-        )
+        updateList
 
 
 effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
@@ -444,7 +436,7 @@ type alias InitializeHelperFunctions state x msg =
         RawTask.Task Never state
         -> (state -> RawTask.Task Never ( x, state ))
         -> ( RawTask.Task Never x, RawTask.Task Never state )
-    , subscriptionHelper : Effect.SubId () -> (Effect.HiddenConvertedSubType -> Maybe msg) -> Sub msg
+    , subscriptionHelper : Effect.SubManagerId -> Effect.Hidden -> (Effect.Hidden -> msg) -> Sub msg
     , createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
     }
 
@@ -467,6 +459,10 @@ type alias Runtime appMsg =
 
 type alias RuntimeId =
     Effect.RuntimeId
+
+
+type alias SubId =
+    Effect.SubId Effect.Hidden
 
 
 type alias Stepper model =
@@ -535,7 +531,7 @@ makeProgram =
 
 resetSubscriptions :
     Runtime msg
-    -> Impure.Function (List ( Effect.SubId (), Impure.Function Effect.HiddenConvertedSubType () )) ()
+    -> Impure.Function (List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 

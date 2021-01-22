@@ -36,20 +36,21 @@ module Time exposing
 -}
 
 import Basics exposing (..)
+import Debug
 import Dict
-import Elm.Kernel.Platform
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
+import Platform.Raw.SubManager as SubManager
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
-import Platform.Sub exposing (Sub)
+import Platform.Sub as Sub exposing (Sub)
 import Process
 import String exposing (String)
-import Task exposing (Task)
+import Task exposing (Task, onError)
 import Tuple
 
 
@@ -576,28 +577,43 @@ being much smoother for any moving visuals.
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
     subscription
-        (setInterval interval)
-        (\payload ->
-            if payload.interval == interval then
-                payload.now
-                    |> round
-                    |> millisToPosix
-                    |> tagger
-                    |> Just
-
-            else
-                Nothing
-        )
+        interval
+        tagger
 
 
-setInterval : Float -> Effect.SubId ()
+type IntervalId
+    = IntervalId IntervalId
+
+
+setInterval : Float -> Impure.Function (Impure.Function Posix ()) Effect.EffectId
 setInterval =
     Elm.Kernel.Time.setInterval
 
 
-subscription : Effect.SubId () -> (SubPayload -> Maybe msg) -> Sub msg
-subscription =
-    Elm.Kernel.Platform.subscription
+clearInterval : Impure.Function Effect.EffectId ()
+clearInterval =
+    Elm.Kernel.Time.clearInterval
+
+
+subscriptionHelper : ( Float -> (Posix -> msg) -> Effect.Sub msg, Effect.SubManagerId )
+subscriptionHelper =
+    SubManager.subscriptionManager
+        (Effect.EventListener
+            { discontinued = clearInterval
+            , new = setInterval
+            }
+        )
+
+
+subscription : Float -> (Posix -> msg) -> Sub msg
+subscription interval tagger =
+    Tuple.first subscriptionHelper interval tagger
+        |> Sub.Sub
+
+
+subscriptionManager : Effect.SubManagerId
+subscriptionManager =
+    Tuple.second subscriptionHelper
 
 
 type alias SubPayload =

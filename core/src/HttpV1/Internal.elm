@@ -4,7 +4,6 @@ module HttpV1.Internal exposing
     )
 
 import Basics exposing (..)
-import Elm.Kernel.Http
 import Http
 import Maybe exposing (Maybe)
 import String exposing (String)

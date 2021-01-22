@@ -2,12 +2,12 @@
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (run, wrap, unwrap)
-import Elm.Kernel.List exposing (iterate)
+import Elm.Kernel.List exposing (iterate, fromArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Just, Nothing)
+import Maybe exposing (Nothing)
 import Platform exposing (initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 
@@ -20,9 +20,9 @@ import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 const _Platform_ports = new Map();
 
 const _Platform_runAfterLoadQueue = [];
+const _Platform_eventSubscriptionListeners = new WeakMap();
+const _Platform_runtimeSubscriptionHandlers = new WeakMap();
 
-// TODO(harry) could onSubUpdateFunctions be a WeakMap?
-const _Platform_onSubUpdateFunctions = new WeakMap();
 let _Platform_guidIdCount = 0;
 let _Platform_initDone = false;
 
@@ -36,7 +36,9 @@ const _Platform_initialize = F2((args, mainLoop) => {
     __$id: _Platform_guidIdCount++,
     __messageChannel: messageChannel,
     __outgoingPortSubs: [],
-    __subscriptionStates: new Map(),
+    __incomingPortSubManagers: new Map(),
+    __eventSubscriptionListeners: new Map(),
+    __runtimeSubscriptionHandlers: new Map(),
   };
 
   for (const f of _Platform_runAfterLoadQueue) {
@@ -110,9 +112,23 @@ function _Platform_outgoingPort(name, converter) {
 }
 
 function _Platform_incomingPort(name, converter) {
-  const subId = _Platform_createSubscriptionId();
+  // Create a dummy (empty) subscription manager. Incoming port subscriptions
+  // are fundamentally special because the data gets sent to a _specific
+  // runtime_.
+  const subscriptionManager = {
+    __$new: () => () => __Utils_Tuple0,
+    __$continued: () => __Utils_Tuple0,
+    __$discontinued: () => __Utils_Tuple0,
+  };
+
+  const managerId = _Platform_registerRuntimeSubscriptionHandler(subscriptionManager);
 
   _Platform_registerPort(name, (runtimeId) => {
+    let taggers = runtimeId.__runtimeSubscriptionHandlers.get(managerId);
+    if (taggers === undefined) {
+      taggers = [];
+      runtimeId.__runtimeSubscriptionHandlers.set(managerId, taggers);
+    }
     function send(incomingValue) {
       const result = A2(__Json_run, converter, __Json_wrap(incomingValue));
 
@@ -121,103 +137,145 @@ function _Platform_incomingPort(name, converter) {
       }
 
       const value = result.a;
-      A3(_Platform_subscriptionEvent, subId, runtimeId, value);
+      for (const tagger of taggers) {
+
+        _Platform_sendToApp(runtimeId)(
+          __Utils_Tuple2(tagger(__Utils_Tuple0)(value), __Platform_AsyncUpdate)
+        );
+      }
     }
 
     return { send };
   });
 
-  return (tagger) => _Platform_subscription(subId)((hcst) => __Maybe_Just(tagger(hcst)));
+  const makeSub = __Basics_isDebug
+    ? (a) => ({
+        $: "Sub",
+        a,
+      })
+    : (a) => a;
+
+  return (tagger) =>
+    makeSub(
+      makeSub(
+        __List_fromArray([
+          {
+            __$managerId: managerId,
+            __$subId: __Utils_Tuple0,
+            __$onMessage: tagger,
+          },
+        ])
+      )
+    );
 }
 
 // FUNCTIONS (to be used by kernel code)
 
-/**
- * Create a new subscription id. Such ids can be used with the subscription
- * function to create `Sub`s.
- */
-const _Platform_createSubscriptionId = () => {
-  const key = { __$id: _Platform_guidIdCount++ };
-  const group = { __$id: _Platform_guidIdCount++ };
-
-  const subId = {
-    __$key: key,
-    __$group: group,
-  };
-  _Platform_onSubUpdateFunctions.set(group, () => {});
-
-  _Platform_runAfterLoad((runtimeId) => {
-    const channel = __Channel_rawUnbounded();
-    runtimeId.__subscriptionStates.set(key, { __channel: channel, __listenerGroups: new Map() });
-    __Platform_initializeHelperFunctions.__$subListenerProcess(channel);
-  });
-
-  return subId;
-};
-
-const _Platform_subscriptionWithUpdater = (subId) => (updater) => {
-  const group = { __$id: _Platform_guidIdCount++ };
-  _Platform_onSubUpdateFunctions.set(group, updater);
-  return {
-    __$key: subId.__$key,
-    __$group: group,
-  };
-};
-
-const _Platform_subscriptionEvent = F3((subId, runtime, message) => {
-  const state = runtime.__subscriptionStates.get(subId.__$key);
-  A2(__Channel_rawSend, state.__channel, () => {
-    for (const listeners of state.__listenerGroups.values()) {
-      for (const listener of listeners) {
-        listener(message);
-      }
-    }
-
-    return __Utils_Tuple0;
-  });
+const _Platform_createSubscriptionGroup = (updater) => ({
+  __$id: _Platform_guidIdCount++,
+  __$runtimesListening: new Set(),
+  __$updater: updater,
 });
 
 const _Platform_runAfterLoad = (f) => {
+  _Platform_assertNotLoaded();
+  _Platform_runAfterLoadQueue.push(f);
+};
+
+const _Platform_assertNotLoaded = () => {
   if (_Platform_initDone) {
     __Debug_crash(12, __Debug_runtimeCrashReason("alreadyLoaded"));
-  } else {
-    _Platform_runAfterLoadQueue.push(f);
   }
 };
 
 // FUNCTIONS (to be used by elm code)
 
-function _Platform_addListenerToGroup(listenerGroups, group, sendToApp) {
-  let listeners = listenerGroups.get(group);
-  if (listeners === undefined) {
-    listeners = [];
-    listenerGroups.set(group, listeners);
-  }
+const _Platform_registerEventSubscriptionListener = (onSubEffects) => {
+  _Platform_assertNotLoaded();
+  const subManagerId = {
+    __$id: _Platform_guidIdCount++,
+  };
+  _Platform_eventSubscriptionListeners.set(subManagerId, onSubEffects);
+  return subManagerId;
+};
 
-  listeners.push(sendToApp);
-}
+// TODO(harry): what is this param?
+const _Platform_registerRuntimeSubscriptionHandler = (onSubEffects) => {
+  _Platform_assertNotLoaded();
+  const subManagerId = {
+    __$id: _Platform_guidIdCount++,
+  };
+  _Platform_runtimeSubscriptionHandlers.set(subManagerId, onSubEffects);
+  return subManagerId;
+};
 
 const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
-  for (const state of runtime.__subscriptionStates.values()) {
-    for (const listeners of state.__listenerGroups.values()) {
-      listeners.length = 0;
+  const eventSubscriptionListeners = runtime.__eventSubscriptionListeners;
+  const runtimeSubscriptionHandlers = runtime.__runtimeSubscriptionHandlers;
+  for (const [, managerState] of eventSubscriptionListeners.entries()) {
+    for (const subData of managerState.values()) {
+      subData.__taggers.length = 0;
     }
   }
 
-  for (const tuple of __List_iterate(newSubs)) {
-    const subId = tuple.a;
-    const sendToApp = tuple.b;
-    const listenerGroups = runtime.__subscriptionStates.get(subId.__$key).__listenerGroups;
-    _Platform_addListenerToGroup(listenerGroups, subId.__$group, sendToApp);
+  for (const taggers of runtimeSubscriptionHandlers.values()) {
+    taggers.length = 0;
   }
 
-  // Deletion from a Map whilst iterating is valid:
-  // https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
-  for (const state of runtime.__subscriptionStates.values()) {
-    for (const [groupId, listeners] of state.__listenerGroups.entries()) {
-      _Platform_onSubUpdateFunctions.get(groupId)(runtime, listeners.length);
-      if (listeners.length === 0) {
-        state.__listenerGroups.delete(groupId);
+  for (const newSub of __List_iterate(newSubs)) {
+    const eventListener = _Platform_eventSubscriptionListeners.get(newSub.__$managerId);
+    if (eventListener === undefined) {
+      const runtimeHandler = _Platform_runtimeSubscriptionHandlers.get(newSub.__$managerId);
+
+      if (runtimeHandler === undefined) {
+        throw new Error("TODO(harry) add crash");
+      }
+
+      // Handle port subscriptions specially
+      let taggers = runtimeSubscriptionHandlers.get(newSub.__$managerId);
+      if (taggers === undefined) {
+        taggers = [];
+        runtimeSubscriptionHandlers.set(newSub.__$managerId, taggers);
+      }
+      taggers.push((subId) => (payload) => {
+        if (subId === newSub.__$subId) {
+          return newSub.__$onMessage(payload);
+        }
+      });
+    } else {
+      let managerState = eventSubscriptionListeners.get(newSub.__$managerId);
+      if (managerState === undefined) {
+        managerState = new Map();
+        eventSubscriptionListeners.set(newSub.__$managerId, managerState);
+      }
+
+      const effect = managerState.get(newSub.__$subId);
+      if (effect === undefined) {
+        const taggers = [newSub.__$onMessage];
+        const effectId = eventListener.__$new(newSub.__$subId)((payload) => {
+
+          for (const tagger of taggers) {
+            _Platform_sendToApp(runtime)(__Utils_Tuple2(tagger(payload), __Platform_AsyncUpdate));
+          }
+        });
+        managerState.set(newSub.__$subId, {
+          __taggers: taggers,
+          __effectId: effectId,
+          __discontinued: eventListener.__$discontinued,
+        });
+      } else {
+        effect.__taggers.push(newSub.__$onMessage);
+      }
+    }
+  }
+
+  for (const [, managerState] of eventSubscriptionListeners.entries()) {
+    for (const [subId, subData] of managerState.entries()) {
+      if (subData.__taggers.length === 0) {
+        subData.__discontinued(subData.__effectId);
+        // Deletion from a Map whilst iterating is valid:
+        // https://stackoverflow.com/questions/35940216/es6-is-it-dangerous-to-delete-elements-from-set-map-during-set-map-iteration
+        managerState.delete(subId);
       }
     }
   }
@@ -297,11 +355,11 @@ function _Platform_mergeExports(moduleName, object, exports) {
 
 /* global __Debug_crash, __Debug_runtimeCrashReason */
 /* global __Json_run, __Json_wrap, __Json_unwrap */
-/* global __List_iterate */
+/* global __List_iterate, __List_fromArray */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */
 /* global __Result_isOk */
-/* global __Maybe_Just, __Maybe_Nothing */
+/* global __Maybe_Nothing */
 /* global __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
 /* global __RawTask_execImpure, __RawTask_syncBinding */

@@ -82,13 +82,15 @@ import Platform
 import Platform.Cmd exposing (Cmd)
 import Platform.Raw.Effect as Effect
 import Platform.Raw.Impure as Impure
+import Platform.Raw.SubManager as SubManager
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler
-import Platform.Sub exposing (Sub)
+import Platform.Sub as Sub exposing (Sub)
 import Process
 import Result exposing (Result(..))
 import String exposing (String)
 import Task exposing (Task)
+import Tuple
 
 
 
@@ -754,14 +756,8 @@ cancel tracker =
 track : String -> (Progress -> msg) -> Sub msg
 track tracker toMsg =
     subscription
-        trackerKey
-        (\( aTracker, progress ) ->
-            if aTracker == tracker then
-                Just (toMsg progress)
-
-            else
-                Nothing
-        )
+        tracker
+        toMsg
 
 
 {-| There are two phases to HTTP requests. First you **send** a bunch of data,
@@ -1181,19 +1177,25 @@ command =
     Elm.Kernel.Platform.command
 
 
-subscription : Effect.SubId () -> (( String, Progress ) -> Maybe msg) -> Sub msg
-subscription =
-    Elm.Kernel.Platform.subscription
-
-
 makeRequest : Impure.Function KernelRequest { cancel : Impure.Action () }
 makeRequest =
     Elm.Kernel.Http.makeRequest
 
 
-trackerKey : Effect.SubId ()
-trackerKey =
-    Elm.Kernel.Http.trackerKey
+subscriptionHelper : ( String -> (Progress -> msg) -> Effect.Sub msg, Effect.SubManagerId )
+subscriptionHelper =
+    SubManager.subscriptionManager Effect.RuntimeHandler
+
+
+subscription : String -> (Progress -> msg) -> Sub msg
+subscription interval tagger =
+    Tuple.first subscriptionHelper interval tagger
+        |> Sub.Sub
+
+
+subscriptionManager : Effect.SubManagerId
+subscriptionManager =
+    Tuple.second subscriptionHelper
 
 
 emptyBodyContents : RequestBodyContents

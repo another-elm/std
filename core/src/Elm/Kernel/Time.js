@@ -2,7 +2,6 @@
 
 import Time exposing (customZone, Name)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (createSubscriptionId, subscriptionEvent, subscriptionWithUpdater)
 import Platform.Raw.Task as RawTask exposing (execImpure)
 import Elm.Kernel.Utils exposing (Tuple0)
 
@@ -12,53 +11,18 @@ function _Time_rawNow() {
   return Date.now();
 }
 
-const _Time_key = __Platform_createSubscriptionId();
+const _Time_setInterval = (interval) => (onEffects) =>
+  setInterval(() => {
+    const now = _Time_rawNow();
+    onEffects(now);
+  }, interval - (_Time_rawNow() % interval));
 
-/**
- *
- * This function is pure as timeout will not be set until a command with the
- * right key finds its way into the update loop.
- */
-function _Time_setInterval(interval) {
-  // TODO(harry): consider overhead of the fmod call.
-  // TODO(harry): consider floating point rounding issues.
-  let timeoutHandle = null;
-  const runtimesListening = new Set();
+const _Time_clearInterval = (key) => {
+  clearInterval(key);
+  return __Utils_Tuple0;
+};
 
-  // Cancel any timeouts with no subscribers. Restart any timeouts that have
-  // subscribed-to but previously-cancelled timeouts.
-  const onSubReset = (runtimeId, n) => {
-    if (n === 0) {
-      runtimesListening.delete(runtimeId);
-    } else {
-      runtimesListening.add(runtimeId);
-    }
-
-    if (runtimesListening.size === 0) {
-      if (timeoutHandle !== null) {
-        clearTimeout(timeoutHandle);
-        timeoutHandle = null;
-      }
-    } else if (timeoutHandle === null) {
-      const now = _Time_rawNow();
-      timeoutHandle = setTimeout(() => {
-        timeoutHandle = null;
-        const now = _Time_rawNow();
-        for (const runtime of runtimesListening) {
-          A3(__Platform_subscriptionEvent, _Time_key, runtime, {
-            __$interval: interval,
-            __$now: now,
-          });
-        }
-      }, interval - (now % interval));
-    }
-
-    return __Utils_Tuple0;
-  };
-
-  return __Platform_subscriptionWithUpdater(_Time_key)(onSubReset);
-}
-
+// TODO(harry): make this an impure function rather than a task.
 function _Time_here() {
   return __RawTask_execImpure(() =>
     A2(__Time_customZone, -new Date().getTimezoneOffset(), __List_Nil)
@@ -78,6 +42,4 @@ function _Time_getZoneName() {
 
 /* global __Time_customZone, __Time_Name */
 /* global __List_Nil */
-/* global __Platform_createSubscriptionId, __Platform_subscriptionEvent, __Platform_subscriptionWithUpdater */
 /* global __RawTask_execImpure */
-/* global __Utils_Tuple0 */

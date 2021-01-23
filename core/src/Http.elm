@@ -755,9 +755,7 @@ cancel tracker =
 -}
 track : String -> (Progress -> msg) -> Sub msg
 track tracker toMsg =
-    subscription
-        tracker
-        toMsg
+    subscription tracker (toMsg >> Just)
 
 
 {-| There are two phases to HTTP requests. First you **send** a bunch of data,
@@ -1187,12 +1185,12 @@ makeRequest =
     Elm.Kernel.Http.makeRequest
 
 
-subscriptionHelper : ( String -> (Progress -> msg) -> Sub msg, Effect.SubManagerId )
+subscriptionHelper : ( String -> (Progress -> Maybe msg) -> Sub msg, Effect.SubManagerId )
 subscriptionHelper =
     SubManager.subscriptionManager Effect.RuntimeHandler (\s -> s)
 
 
-subscription : String -> (Progress -> msg) -> Sub msg
+subscription : String -> (Progress -> Maybe msg) -> Sub msg
 subscription =
     Tuple.first subscriptionHelper
 

@@ -573,13 +573,7 @@ being much smoother for any moving visuals.
 -}
 every : Float -> (Posix -> msg) -> Sub msg
 every interval tagger =
-    subscription
-        interval
-        tagger
-
-
-type IntervalId
-    = IntervalId IntervalId
+    subscription interval (tagger >> Just)
 
 
 setInterval : Float -> Impure.Function (Impure.Function Posix ()) Effect.EffectId
@@ -592,7 +586,7 @@ clearInterval =
     Elm.Kernel.Time.clearInterval
 
 
-subscription : Float -> (Posix -> msg) -> Sub msg
+subscription : Float -> (Posix -> Maybe msg) -> Sub msg
 subscription =
     Tuple.first
         (SubManager.subscriptionManager
@@ -603,6 +597,8 @@ subscription =
             )
             String.fromFloat
         )
+
+
 
 -- FOR PACKAGE AUTHORS
 

@@ -24,7 +24,7 @@ type alias SubPayload effectData payload msg =
     { managerId : SubManagerId
     , subId : String
     , effectData : effectData
-    , onMessage : payload -> msg
+    , onMessage : payload -> Maybe msg
     }
 
 

@@ -7,7 +7,7 @@ import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Nothing)
+import Maybe exposing (Nothing, Just)
 import Platform exposing (initializeHelperFunctions, AsyncUpdate, SyncUpdate)
 import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
 
@@ -141,7 +141,7 @@ function _Platform_incomingPort(name, converter) {
           {
             __$managerId: managerId,
             __$subId: __Utils_Tuple0,
-            __$onMessage: tagger,
+            __$onMessage: (x) => __Maybe_Just(tagger(x)),
           },
         ])
       )
@@ -233,7 +233,10 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
         const taggers = [];
         const effectId = eventListener.__$new(newSub.__$effectData)((payload) => {
           for (const tagger of taggers) {
-            _Platform_sendToApp(runtime)(__Utils_Tuple2(tagger(payload), __Platform_AsyncUpdate));
+            const mMessage = tagger(payload);
+            if (mMessage !== __Maybe_Nothing) {
+              _Platform_sendToApp(runtime)(__Utils_Tuple2(mMessage.a, __Platform_AsyncUpdate));
+            }
           }
         });
         return {
@@ -275,7 +278,10 @@ const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) =
 
   if (taggers !== undefined) {
     for (const tagger of taggers) {
-      _Platform_sendToApp(runtimeId)(__Utils_Tuple2(tagger(subId)(value), __Platform_AsyncUpdate));
+      const mMessage = tagger(subId)(value);
+      if (mMessage !== __Maybe_Nothing) {
+        _Platform_sendToApp(runtimeId)(__Utils_Tuple2(mMessage.a, __Platform_AsyncUpdate));
+      }
     }
   }
 };
@@ -343,6 +349,6 @@ function _Platform_mergeExports(moduleName, object, exports) {
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */
 /* global __Result_isOk */
-/* global __Maybe_Nothing */
+/* global __Maybe_Nothing, __Maybe_Just */
 /* global __Platform_initializeHelperFunctions, __Platform_AsyncUpdate, __Platform_SyncUpdate */
 /* global __RawTask_execImpure, __RawTask_syncBinding */

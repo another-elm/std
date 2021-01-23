@@ -111,5 +111,5 @@ getSubMapper fn { managerId, subId, effectData, onMessage } =
     { managerId = managerId
     , subId = subId
     , effectData = effectData
-    , onMessage = onMessage >> fn
+    , onMessage = onMessage >> Maybe.map fn
     }

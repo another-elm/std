@@ -1,9 +1,8 @@
 module Platform.Raw.SubManager exposing (subscriptionManager)
 
--- import Elm.Kernel.Basics
--- import Elm.Kernel.Platform
 
-import Debug
+import Elm.Kernel.Basics
+import Elm.Kernel.Platform
 import Platform.Raw.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
 import Platform.Raw.Impure as Impure
 import String exposing (String)

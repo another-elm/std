@@ -53,7 +53,10 @@ Tutorial](https://guide.elm-lang.org/architecture/) and see how they fit
 into a real application!
 
 -}
-type Sub msg
+type
+    Sub msg
+    -- This **must** be a type (not a type alias) and defined in `Platform.Sub`
+    -- otherwise the elm compiler will reject port declarations.
     = Sub (Effect.EffectSub msg)
 
 

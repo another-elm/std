@@ -1,11 +1,11 @@
 module Platform.Raw.Effect exposing
     ( Cmd(..)
     , EffectId
+    , EffectSub(..)
     , Hidden
     , HiddenConvertedSubType
     , Runtime
     , RuntimeId
-    , EffectSub(..)
     , SubManagerId
     , SubPayload
     , SubscriptionManager(..)

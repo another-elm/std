@@ -29,7 +29,7 @@ function _VirtualDom_appendChild(parent, child)
 
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
-	// NOTE: this function needs __Platform_export available to work
+	// NOTE: this function needs Elm.Kernel.Platform.export available to work
 
 	/**__PROD/
 	var node = args['node'];

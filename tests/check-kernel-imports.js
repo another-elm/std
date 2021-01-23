@@ -258,7 +258,7 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       } else if (defName.endsWith("__PROD")) {
         defName = defName.slice(0, defName.length - "__PROD".length);
       }
-      // Todo(Harry): check __DEBUG and __PROD match.
+      // TODO(Harry): check __DEBUG and __PROD match.
 
       kernelDefinitions.add(`Elm.Kernel.${moduleName}.${defName}`);
     }
@@ -271,9 +271,6 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       }
 
       const isComment = line.slice(0, index + kernelCallMatch.index).includes("//");
-      if (isComment) {
-        break;
-      }
 
       const calledModuleName = kernelCallMatch[1];
       const kernelCall = kernelCallMatch[0];
@@ -282,14 +279,18 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
         !(calledModuleName[0] >= "0" && calledModuleName[0] <= "9")
       ) {
         if (kernelCall.startsWith("__")) {
-          // External kernel call
-          const importFacts = imports.get(kernelCall);
-          if (importFacts === undefined) {
-            errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+          if (isComment) {
+            errors.push(`Kernel call like syntax ${kernelCall} in comment at ${file}:${number}.`);
           } else {
-            importFacts.used = true;
+            // External kernel call
+            const importFacts = imports.get(kernelCall);
+            if (importFacts === undefined) {
+              errors.push(`Kernel call ${kernelCall} at ${file}:${number} missing import`);
+            } else {
+              importFacts.used = true;
+            }
           }
-        } else if (calledModuleName !== moduleName) {
+        } else if (calledModuleName !== moduleName && !isComment) {
           errors.push(
             `Non-local kernel call ${kernelCall} at ${file}:${number} must start with a double underscore`
           );

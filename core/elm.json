@@ -47,7 +47,9 @@
             "Parser.Advanced"
         ],
         "NonStandard": [
-            "Platform.Raw.Impure"
+            "Platform.Raw.Impure",
+            "Platform.Raw.Effect",
+            "Platform.Raw.SubManager"
         ]
     },
     "elm-version": "0.19.0 <= v < 0.20.0",

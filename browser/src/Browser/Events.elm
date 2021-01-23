@@ -37,13 +37,12 @@ If there is something else you need, use [ports] to do it in JavaScript!
 
 -}
 
--- import Browser.AnimationManager as AM
-import Dict
 import Elm.Kernel.Browser
 import Json.Decode as Decode
-import Process
-import Task exposing (Task)
 import Time
+import Platform.Raw.SubManager as SubManager
+import Platform.Raw.Impure as Impure
+import Platform.Raw.Effect as Effect
 
 
 
@@ -61,8 +60,8 @@ sync up with the browsers natural refresh rate. This hooks into JavaScript's
 
 -}
 onAnimationFrame : (Time.Posix -> msg) -> Sub msg
-onAnimationFrame =
-  Debug.todo "AM.onAnimationFrame"
+onAnimationFrame tagger =
+  animationFrameSubscription (\{now} -> now |> Time.millisToPosix |> tagger |> Just )
 
 
 {-| Just like `onAnimationFrame`, except message is the time in milliseconds
@@ -70,8 +69,8 @@ since the previous frame. So you should get a sequence of values all around
 `1000 / 60` which is nice for stepping animations by a time delta.
 -}
 onAnimationFrameDelta : (Float -> msg) -> Sub msg
-onAnimationFrameDelta =
-  Debug.todo "AM.onAnimationFrameDelta"
+onAnimationFrameDelta tagger =
+  animationFrameSubscription (\{delta} ->  delta |> tagger |> Just )
 
 
 
@@ -223,7 +222,7 @@ different tab or window. When the user looks away, you may want to:
 onVisibilityChange : (Visibility -> msg) -> Sub msg
 onVisibilityChange func =
   let
-    info = Elm.Kernel.Browser.visibilityInfo ()
+    info = visibilityInfo ()
   in
   on Document info.change <|
     Decode.map (withHidden func) <|
@@ -254,104 +253,106 @@ type Node
 
 on : Node -> String -> Decode.Decoder msg -> Sub msg
 on node name decoder =
-  Debug.todo "subscription (MySub node name decoder)"
-
-
-type MySub msg
-  = MySub Node String (Decode.Decoder msg)
-
-
-subMap : (a -> b) -> MySub a -> MySub b
-subMap func (MySub node name decoder) =
-  MySub node name (Decode.map func decoder)
+  subscription (node, name) (decodeEvent decoder)
 
 
 
--- EFFECT MANAGER
+subscription : (Node, String) -> (RawEvent -> Maybe msg) -> Sub msg
+subscription =
+  Tuple.first
+    (SubManager.subscriptionManager
+      (Effect.EventListener
+        { discontinued = rawOff
+        , new = \(node, name) ->
+          let
+            actualNode =
+              case node of
+                Document -> doc
+                Window -> window
+          in
+          rawOn actualNode name
+        }
+      )
+      (\(node, name) ->
+        (case node of
+          Document -> "Document"
+          Window -> "Window"
+        )
+          ++ "::" ++ name
+      )
+    )
 
 
-type alias State msg =
-  { subs : List ( String, MySub msg )
-  , pids : Dict.Dict String Process.Id
+type alias AnimationFramePayload =
+  { now: Int
+  , delta: Float
   }
 
 
-init : Task Never (State msg)
-init =
-  Task.succeed (State [] Dict.empty)
+animationFrameSubscription : (AnimationFramePayload -> Maybe msg) -> Sub msg
+animationFrameSubscription =
+  Tuple.first
+    (SubManager.subscriptionManager
+      (Effect.EventListener
+        { new = \() -> animationFrameOn
+        , discontinued = animationFrameOff
+        }
+      )
+      (\() -> "raf")
+    )
+    ()
 
 
-type alias Event =
-  { key : String
-  , event : Decode.Value
+type HtmlNode
+  = Stub_HtmlNode
+
+
+type RawEvent
+  = RawEvent RawEvent
+
+
+type alias  VisibilityInfo =
+  { hidden : String
+  , change : String
   }
 
 
--- onSelfMsg : Platform.Router msg Event -> Event -> State msg -> Task Never (State msg)
--- onSelfMsg router { key, event } state =
---   let
---     toMessage ( subKey, MySub node name decoder ) =
---       if subKey == key then
---         Elm.Kernel.Browser.decodeEvent decoder event
---       else
---         Nothing
-
---     messages = List.filterMap toMessage state.subs
---   in
---   Task.sequence (List.map (Platform.sendToApp router) messages)
---     |> Task.andThen (\_ -> Task.succeed state)
+{-| TODO(harry): make this an impure function.
+-}
+visibilityInfo : () -> VisibilityInfo
+visibilityInfo =
+  Elm.Kernel.Browser.visibilityInfo
 
 
--- onEffects : Platform.Router msg Event -> List (MySub msg) -> State msg -> Task Never (State msg)
--- onEffects router subs state =
---   let
---     newSubs = List.map addKey subs
-
---     stepLeft _ pid (deads, lives, news) =
---       (pid :: deads, lives, news)
-
---     stepBoth key pid _ (deads, lives, news) =
---       (deads, Dict.insert key pid lives, news)
-
---     stepRight key sub (deads, lives, news) =
---       (deads, lives, spawn router key sub :: news)
-
---     (deadPids, livePids, makeNewPids) =
---       Dict.merge stepLeft stepBoth stepRight state.pids (Dict.fromList newSubs) ([], Dict.empty, [])
---   in
---   Task.sequence (List.map Process.kill deadPids)
---     |> Task.andThen (\_ -> Task.sequence makeNewPids)
---     |> Task.andThen (\pids -> Task.succeed (State newSubs (Dict.union livePids (Dict.fromList pids))))
+decodeEvent : Decode.Decoder msg -> RawEvent -> Maybe msg
+decodeEvent =
+  Elm.Kernel.Browser.decodeEvent
 
 
-
--- TO KEY
-
-
-addKey : MySub msg -> ( String, MySub msg )
-addKey ((MySub node name _) as sub) =
-  (nodeToKey node ++ name, sub)
+rawOn : HtmlNode -> String -> Impure.Function (Impure.Function RawEvent ()) Effect.EffectId
+rawOn =
+  Elm.Kernel.Browser.on
 
 
-nodeToKey : Node -> String
-nodeToKey node =
-  case node of
-    Document -> "d_"
-    Window   -> "w_"
+rawOff : Impure.Function Effect.EffectId ()
+rawOff =
+  Elm.Kernel.Browser.decodeEvent
 
 
+doc : HtmlNode
+doc =
+  Elm.Kernel.Browser.doc
 
--- SPAWN
+
+window : HtmlNode
+window =
+  Elm.Kernel.Browser.window
+
+animationFrameOn : Impure.Function (Impure.Function AnimationFramePayload ()) Effect.EffectId
+animationFrameOn =
+  Elm.Kernel.Browser.animationFrameOn
 
 
--- spawn : Platform.Router msg Event -> String -> MySub msg -> Task Never ( String, Process.Id )
--- spawn router key (MySub node name _) =
---   let
---     actualNode =
---       case node of
---         Document -> Elm.Kernel.Browser.doc
---         Window -> Elm.Kernel.Browser.window
---   in
---   Task.map (\value -> ( key, value )) <|
---     Elm.Kernel.Browser.on actualNode name <|
---       \event -> Platform.sendToSelf router (Event key event)
+animationFrameOff : Impure.Function Effect.EffectId ()
+animationFrameOff =
+  Elm.Kernel.Browser.animationFrameOff

@@ -72,16 +72,6 @@ var _Browser_documentStepperBuilder = (view) => (runtime) => args => (initialMod
 // ANIMATION
 
 
-var _Browser_cancelAnimationFrame =
-	typeof cancelAnimationFrame !== 'undefined'
-		? cancelAnimationFrame
-		: function(id) { clearTimeout(id); };
-
-var _Browser_requestAnimationFrame =
-	typeof requestAnimationFrame !== 'undefined'
-		? requestAnimationFrame
-		: function(callback) { return setTimeout(callback, 1000 / 60); };
-
 
 function _Browser_makeAnimator(model, draw)
 {
@@ -93,7 +83,7 @@ function _Browser_makeAnimator(model, draw)
 	{
 		state = state === __4_EXTRA_REQUEST
 			? __4_NO_REQUEST
-			: ( _Browser_requestAnimationFrame(updateIfNeeded), draw(model), __4_EXTRA_REQUEST );
+			: ( requestAnimationFrame(updateIfNeeded), draw(model), __4_EXTRA_REQUEST );
 	}
 
 	return (nextModel) => (isSync) =>	() => {
@@ -103,7 +93,7 @@ function _Browser_makeAnimator(model, draw)
 			? ( draw(model),
 				state === __4_PENDING_REQUEST && (state = __4_EXTRA_REQUEST)
 				)
-			: ( state === __4_NO_REQUEST && _Browser_requestAnimationFrame(updateIfNeeded),
+			: ( state === __4_NO_REQUEST && requestAnimationFrame(updateIfNeeded),
 				state = __4_PENDING_REQUEST
 				);
 	};
@@ -207,15 +197,21 @@ var _Browser_fakeNode = { addEventListener: function() {}, removeEventListener: 
 var _Browser_doc = typeof document !== 'undefined' ? document : _Browser_fakeNode;
 var _Browser_window = typeof window !== 'undefined' ? window : _Browser_fakeNode;
 
-var _Browser_on = F3(function(node, eventName, sendToSelf)
+var _Browser_on = F3(function(node, eventName, onEvent)
 {
-	return __Process_spawn(__Scheduler_binding(() => () =>
-	{
-		function handler(event)	{ rawSpawn(sendToSelf(event)); }
-		node.addEventListener(eventName, handler, __VirtualDom_passiveSupported && { passive: true });
-		return function() { node.removeEventListener(eventName, handler); };
-	}));
+	function handler(event)	{ onEvent(event); }
+	node.addEventListener(eventName, handler, __VirtualDom_passiveSupported && { passive: true });
+	return {
+		__eventName: eventName,
+		__node: node,
+		__handler: handler,
+	};
 });
+
+var _Browser_off = (effectId) => {
+  effectId.__node.removeEventListener(effectId.__eventName, effectId.__handler);
+  return __Utils_Tuple0;
+};
 
 var _Browser_decodeEvent = F2(function(decoder, event)
 {
@@ -249,41 +245,39 @@ function _Browser_visibilityInfo()
 // ANIMATION FRAMES
 
 
-function _Browser_rAF()
-{
-	return __Scheduler_binding((callback) => () =>
-	{
-		var id = _Browser_requestAnimationFrame(function() {
-			callback(__Task_succeed(Date.now()));
-		});
-
-		return function() {
-			_Browser_cancelAnimationFrame(id);
-		};
-	});
-}
-
 function _Browser_rawRaf(cb) {
 	let id = requestAnimationFrame(() => cb(Date.now()));
 
 	return function() {
 		if (id !== null) {
-			_Browser_cancelAnimationFrame(id);
+			cancelAnimationFrame(id);
 		}
 		id = null;
 		return __Utils_Tuple0;
 	};
 }
 
+function _Browser_animationFrameOn(cb) {
+	let time = Date.now();
+	const onFrame = () => {
+		id = requestAnimationFrame(onFrame);
+		const oldTime = time;
+		time = Date.now();
+		const delta = time - oldTime;
 
-function _Browser_now()
-{
-	return __Scheduler_binding((callback) => () =>
-	{
-		callback(__Task_succeed(Date.now()));
-	});
+		cb({
+			__$now: time,
+			__$delta: delta,
+		});
+	};
+	let id = requestAnimationFrame(onFrame);
+
+	return id;
 }
 
+function _Browser_animationFrameOff(cb) {
+	cancelAnimationFrame(id);
+}
 
 
 // DOM STUFF
@@ -296,16 +290,6 @@ const _Browser_getNode = id => {
 		 : __Maybe_Just(node);
 }
 
-
-function _Browser_withWindow(doStuff)
-{
-	return __Scheduler_binding((callback) => () =>
-	{
-		_Browser_requestAnimationFrame(function() {
-			callback(__Task_succeed(doStuff()));
-		});
-	});
-}
 
 
 // FOCUS and BLUR

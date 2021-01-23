@@ -74,7 +74,6 @@ import Elm.Kernel.Browser
 import Task exposing (Task)
 import Browser.Internal
 import Platform.Raw.Impure as Impure
-import Html exposing (Html)
 
 
 

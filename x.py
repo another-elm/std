@@ -23,20 +23,20 @@ def elm_make(run):
 
     print("Running elm make in browser...")
 
-    # FIXME(harry) make this work on mac.
-    # assert run([
-    #     'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-    #     "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
-    # ],
-    #            subdir='browser/src') == 0
+    # TODO(harry) make this work on mac.
+    assert run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
+    ],
+               subdir='browser/src') == 0
 
-    # code = run(['another-elm', "make"], subdir='browser')
+    code = run(['another-elm', "make"], subdir='browser')
 
-    # run([
-    #     'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-    #     "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
-    # ],
-    #     subdir='browser/src') == 0
+    run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
+    ],
+        subdir='browser/src') == 0
 
     if code != 0:
         print("There are issues with elm make in browser")

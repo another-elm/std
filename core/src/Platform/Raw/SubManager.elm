@@ -2,16 +2,18 @@ module Platform.Raw.SubManager exposing (subscriptionManager)
 
 
 import Elm.Kernel.Basics
+import Basics exposing (..)
 import Elm.Kernel.Platform
 import Platform.Raw.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
 import Platform.Raw.Impure as Impure
 import String exposing (String)
+import Platform.Sub exposing (Sub(..))
 
 
 subscriptionManager :
     SubscriptionManager effectData payload
     -> (effectData -> String)
-    -> ( effectData -> (payload -> msg) -> EffectSub msg, SubManagerId )
+    -> ( effectData -> (payload -> msg) -> Sub msg, SubManagerId )
 subscriptionManager onSubUpdate serialize =
     let
         managerId =
@@ -23,7 +25,6 @@ subscriptionManager onSubUpdate serialize =
                     registerRuntimeSubscriptionHandler ()
     in
     ( \effectData onMsg ->
-        EffectSub
             [ makeSubPayload
                 { managerId = managerId
                 , subId = serialize effectData
@@ -31,6 +32,8 @@ subscriptionManager onSubUpdate serialize =
                 , onMessage = onMsg
                 }
             ]
+            |> EffectSub
+            |> Sub
     , managerId
     )
 

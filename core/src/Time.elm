@@ -36,8 +36,6 @@ module Time exposing
 -}
 
 import Basics exposing (..)
-import Debug
-import Dict
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
@@ -47,10 +45,9 @@ import Platform.Raw.Impure as Impure
 import Platform.Raw.SubManager as SubManager
 import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
-import Platform.Sub as Sub exposing (Sub)
-import Process
+import Platform.Sub exposing (Sub)
 import String exposing (String)
-import Task exposing (Task, onError)
+import Task exposing (Task)
 import Tuple
 
 
@@ -595,23 +592,17 @@ clearInterval =
     Elm.Kernel.Time.clearInterval
 
 
-subscriptionHelper : ( Float -> (Posix -> msg) -> Effect.EffectSub msg, Effect.SubManagerId )
-subscriptionHelper =
-    SubManager.subscriptionManager
-        (Effect.EventListener
-            { discontinued = clearInterval
-            , new = setInterval
-            }
-        )
-        String.fromFloat
-
-
 subscription : Float -> (Posix -> msg) -> Sub msg
-subscription interval tagger =
-    Tuple.first subscriptionHelper interval tagger
-        |> Sub.Sub
-
-
+subscription =
+    Tuple.first
+        (SubManager.subscriptionManager
+            (Effect.EventListener
+                { discontinued = clearInterval
+                , new = setInterval
+                }
+            )
+            String.fromFloat
+        )
 
 -- FOR PACKAGE AUTHORS
 

@@ -1187,15 +1187,14 @@ makeRequest =
     Elm.Kernel.Http.makeRequest
 
 
-subscriptionHelper : ( String -> (Progress -> msg) -> Effect.EffectSub msg, Effect.SubManagerId )
+subscriptionHelper : ( String -> (Progress -> msg) -> Sub msg, Effect.SubManagerId )
 subscriptionHelper =
     SubManager.subscriptionManager Effect.RuntimeHandler (\s -> s)
 
 
 subscription : String -> (Progress -> msg) -> Sub msg
-subscription interval tagger =
-    Tuple.first subscriptionHelper interval tagger
-        |> Sub.Sub
+subscription =
+    Tuple.first subscriptionHelper
 
 
 subscriptionManager : Effect.SubManagerId

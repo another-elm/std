@@ -90,8 +90,7 @@ making a different choice.
 -}
 pushUrl : Key -> String -> Cmd msg
 pushUrl key url =
-    command
-        (\_ -> Browser.Internal.fromFunction (pushUrlRaw key) url |> Task.map (\() -> Nothing))
+    functionToCommand (pushUrlRaw key) url
 
 
 
@@ -111,8 +110,8 @@ suggests techniques for people changing the URL based on scroll position.
 
 -}
 replaceUrl : Key -> String -> Cmd msg
-replaceUrl =
-    Elm.Kernel.Browser.replaceUrl
+replaceUrl key url =
+    functionToCommand (replaceUrlRaw key) url
 
 
 {-| Go back some number of pages. So `back 1` goes back one page, and `back 2`
@@ -126,7 +125,8 @@ other website!
 -}
 back : Key -> Int -> Cmd msg
 back key n =
-    Elm.Kernel.Browser.go key -n
+    functionToCommand (goRaw key) -n
+
 
 
 {-| Go forward some number of pages. So `forward 1` goes forward one page, and
@@ -140,8 +140,8 @@ whatever website they visited next!
 
 -}
 forward : Key -> Int -> Cmd msg
-forward =
-    Elm.Kernel.Browser.go
+forward key n =
+    functionToCommand (goRaw key) n
 
 
 
@@ -165,8 +165,9 @@ handy!
 
 -}
 load : String -> Cmd msg
-load =
-    Elm.Kernel.Browser.load
+load url =
+    functionToCommand loadRaw url
+
 
 
 {-| Reload the current page. **This always results in a page load!**
@@ -176,7 +177,7 @@ if you want to be sure that you are not loading any cached resources.
 -}
 reload : Cmd msg
 reload =
-    Elm.Kernel.Browser.reload False
+    functionToCommand reloadRaw False
 
 
 {-| Reload the current page without using the browser cache. **This always
@@ -184,7 +185,16 @@ results in a page load!** It is more common to want [`reload`](#reload).
 -}
 reloadAndSkipCache : Cmd msg
 reloadAndSkipCache =
-    Elm.Kernel.Browser.reload True
+    functionToCommand reloadRaw True
+
+
+functionToCommand : Impure.Function a () -> a -> Cmd msg
+functionToCommand func arg =
+    command
+        (\_ ->
+            Browser.Internal.fromFunction func arg
+                |> Task.map (\() -> Nothing)
+        )
 
 
 -- Kernel interop
@@ -192,6 +202,26 @@ reloadAndSkipCache =
 pushUrlRaw : Key -> Impure.Function String ()
 pushUrlRaw =
     Elm.Kernel.Browser.pushUrl
+
+
+replaceUrlRaw : Key -> Impure.Function String ()
+replaceUrlRaw =
+    Elm.Kernel.Browser.replaceUrl
+
+
+goRaw : Key -> Impure.Function Int ()
+goRaw =
+    Elm.Kernel.Browser.go
+
+
+loadRaw : Impure.Function String ()
+loadRaw =
+    Elm.Kernel.Browser.load
+
+
+reloadRaw : Impure.Function Bool ()
+reloadRaw =
+    Elm.Kernel.Browser.reload
 
 
 command : (Platform.RuntimeId -> Task Never (Maybe msg)) -> Cmd msg

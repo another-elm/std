@@ -6,8 +6,7 @@ import Browser.Dom as Dom exposing (NotFound)
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (runHelp)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (initialize, browserifiedSendToApp)
-import Elm.Kernel.Scheduler exposing (binding)
+import Elm.Kernel.Platform exposing (initialize, browserifiedSendToApp)Fb
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp, virtualize)
 import Json.Decode as Json exposing (map)
@@ -167,26 +166,25 @@ const _Browser_getKey = (onUrlChange) => (runtime) => {
 	return () => eventNode(onUrlChange(_Browser_getUrl()));
 }
 
-var _Browser_go = F2(function(key, n)
-{
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () => {
-		n && history.go(n);
-		key();
-	}));
-});
+const _Browser_go = key => n => {
+	if (n !== 0) {
+		history.go(n);
+	}
+	key();
+	return __Utils_Tuple0;
+};
 
 const _Browser_pushUrl = key => url => {
 	history.pushState({}, '', url);
 	key();
+	return __Utils_Tuple0;
 };
 
-var _Browser_replaceUrl = F2(function(key, url)
-{
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding(() => () =>  {
-		history.replaceState({}, '', url);
-		key();
-	}));
-});
+const _Browser_replaceUrl = key => url => {
+	history.replaceState({}, '', url);
+	key();
+	return __Utils_Tuple0;
+};
 
 
 
@@ -400,25 +398,18 @@ function _Browser_getElement(node) {
 
 function _Browser_reload(skipCache)
 {
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding((callback) => () =>
-	{
-		__VirtualDom_doc.location.reload(skipCache);
-	}));
+	__VirtualDom_doc.location.reload(skipCache);
 }
 
-function _Browser_load(url)
-{
-	return A2(__Task_perform, __Basics_never, __Scheduler_binding((callback) => () =>
+function _Browser_load(url) {
+	try
 	{
-		try
-		{
-			_Browser_window.location = url;
-		}
-		catch(err)
-		{
-			// Only Firefox can throw a NS_ERROR_MALFORMED_URI exception here.
-			// Other browsers reload the page, so let's be consistent about that.
-			__VirtualDom_doc.location.reload(false);
-		}
-	}));
+		_Browser_window.location = url;
+	}
+	catch(err)
+	{
+		// Only Firefox can throw a NS_ERROR_MALFORMED_URI exception here.
+		// Other browsers reload the page, so let's be consistent about that.
+		__VirtualDom_doc.location.reload(false);
+	}
 }

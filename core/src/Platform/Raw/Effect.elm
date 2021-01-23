@@ -5,8 +5,7 @@ module Platform.Raw.Effect exposing
     , HiddenConvertedSubType
     , Runtime
     , RuntimeId
-    , Sub(..)
-    , SubId
+    , EffectSub(..)
     , SubManagerId
     , SubPayload
     , SubscriptionManager(..)
@@ -18,25 +17,23 @@ import Elm.Kernel.Basics
 import Maybe exposing (Maybe)
 import Platform.Raw.Impure as Impure
 import Platform.Raw.Task as RawTask
+import String exposing (String)
 
 
-type alias SubPayload comparableSubId payload msg =
+type alias SubPayload effectData payload msg =
     { managerId : SubManagerId
-    , subId : comparableSubId
+    , subId : String
+    , effectData : effectData
     , onMessage : payload -> msg
     }
 
 
-type Sub msg
-    = Sub (List (SubPayload Hidden Hidden msg))
+type EffectSub msg
+    = EffectSub (List (SubPayload Hidden Hidden msg))
 
 
 type Cmd msg
     = Cmd (List (RuntimeId -> RawTask.Task Never (Maybe msg)))
-
-
-type SubId subId
-    = SubId (SubId subId)
 
 
 type SubManagerId
@@ -47,10 +44,10 @@ type EffectId
     = EffectId EffectId
 
 
-type SubscriptionManager subId payload
+type SubscriptionManager effectData payload
     = EventListener
         { discontinued : Impure.Function EffectId ()
-        , new : subId -> Impure.Function (Impure.Function payload ()) EffectId
+        , new : effectData -> Impure.Function (Impure.Function payload ()) EffectId
         }
     | RuntimeHandler
 

@@ -231,7 +231,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
       );
       const effect = _Platform_mapGetOrInit(managerState, newSub.__$subId, () => {
         const taggers = [];
-        const effectId = eventListener.__$new(newSub.__$subId)((payload) => {
+        const effectId = eventListener.__$new(newSub.__$effectData)((payload) => {
           for (const tagger of taggers) {
             _Platform_sendToApp(runtime)(__Utils_Tuple2(tagger(payload), __Platform_AsyncUpdate));
           }
@@ -283,10 +283,6 @@ const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) =
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {
   return __Platform_initializeHelperFunctions.__$createCmd(createTask);
-};
-
-const _Platform_subscription = (key) => (tagger) => {
-  return __Platform_initializeHelperFunctions.__$subscriptionHelper(key)(tagger);
 };
 
 // valueStore :

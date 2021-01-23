@@ -54,7 +54,7 @@ into a real application!
 
 -}
 type Sub msg
-    = Sub (Effect.Sub msg)
+    = Sub (Effect.EffectSub msg)
 
 
 {-| Tell the runtime that there are no subscriptions.
@@ -73,9 +73,9 @@ subscriptions.
 -}
 batch : List (Sub msg) -> Sub msg
 batch =
-    List.map (\(Sub (Effect.Sub sub)) -> sub)
+    List.map (\(Sub (Effect.EffectSub sub)) -> sub)
         >> List.concat
-        >> Effect.Sub
+        >> Effect.EffectSub
         >> Sub
 
 
@@ -93,10 +93,10 @@ section on [structure] in the guide before reaching for this!
 
 -}
 map : (a -> msg) -> Sub a -> Sub msg
-map fn (Sub (Effect.Sub data)) =
+map fn (Sub (Effect.EffectSub data)) =
     data
         |> List.map (getSubMapper fn)
-        |> Effect.Sub
+        |> Effect.EffectSub
         |> Sub
 
 
@@ -104,8 +104,9 @@ getSubMapper :
     (a -> msg)
     -> Effect.SubPayload Effect.Hidden Effect.Hidden a
     -> Effect.SubPayload Effect.Hidden Effect.Hidden msg
-getSubMapper fn { managerId, subId, onMessage } =
+getSubMapper fn { managerId, subId, effectData, onMessage } =
     { managerId = managerId
     , subId = subId
+    , effectData = effectData
     , onMessage = onMessage >> fn
     }

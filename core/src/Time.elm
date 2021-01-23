@@ -595,7 +595,7 @@ clearInterval =
     Elm.Kernel.Time.clearInterval
 
 
-subscriptionHelper : ( Float -> (Posix -> msg) -> Effect.Sub msg, Effect.SubManagerId )
+subscriptionHelper : ( Float -> (Posix -> msg) -> Effect.EffectSub msg, Effect.SubManagerId )
 subscriptionHelper =
     SubManager.subscriptionManager
         (Effect.EventListener
@@ -603,23 +603,13 @@ subscriptionHelper =
             , new = setInterval
             }
         )
+        String.fromFloat
 
 
 subscription : Float -> (Posix -> msg) -> Sub msg
 subscription interval tagger =
     Tuple.first subscriptionHelper interval tagger
         |> Sub.Sub
-
-
-subscriptionManager : Effect.SubManagerId
-subscriptionManager =
-    Tuple.second subscriptionHelper
-
-
-type alias SubPayload =
-    { interval : Float
-    , now : Float
-    }
 
 
 

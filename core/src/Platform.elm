@@ -2,7 +2,7 @@ module Platform exposing
     ( Program, worker
     , Task, ProcessId
     , Router, sendToApp, sendToSelf
-    , program, StepperBuilder, Runtime, RuntimeId, SubId
+    , program, StepperBuilder, Runtime, RuntimeId
     )
 
 {-|
@@ -40,8 +40,6 @@ Do not use!
 -}
 
 import Basics exposing (..)
-import Debug
-import Dict exposing (Dict)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Json.Decode exposing (Decoder)
@@ -275,7 +273,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
 
 
 updateSubListeners : Sub msg -> Runtime msg -> Impure.Action ()
-updateSubListeners (Sub.Sub (Effect.Sub subBag)) runtime =
+updateSubListeners (Sub.Sub (Effect.EffectSub subBag)) runtime =
     resetSubscriptionsAction runtime subBag
 
 
@@ -300,17 +298,6 @@ valueStoreHelper oldTask stepper =
 createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
 createCmd createTask =
     Cmd.Cmd (Effect.Cmd [ createTask ])
-
-
-subscriptionHelper : Effect.SubManagerId -> Effect.Hidden -> (Effect.Hidden -> msg) -> Sub msg
-subscriptionHelper managerId subId tagger =
-    Effect.Sub
-        [ { managerId = managerId
-          , subId = subId
-          , onMessage = tagger
-          }
-        ]
-        |> Sub.Sub
 
 
 subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
@@ -436,7 +423,6 @@ type alias InitializeHelperFunctions state x msg =
         RawTask.Task Never state
         -> (state -> RawTask.Task Never ( x, state ))
         -> ( RawTask.Task Never x, RawTask.Task Never state )
-    , subscriptionHelper : Effect.SubManagerId -> Effect.Hidden -> (Effect.Hidden -> msg) -> Sub msg
     , createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
     }
 
@@ -459,10 +445,6 @@ type alias Runtime appMsg =
 
 type alias RuntimeId =
     Effect.RuntimeId
-
-
-type alias SubId =
-    Effect.SubId Effect.Hidden
 
 
 type alias Stepper model =
@@ -507,7 +489,6 @@ initializeHelperFunctions : InitializeHelperFunctions state x msg
 initializeHelperFunctions =
     { subListenerProcess = subListenerProcess
     , valueStoreHelper = valueStoreHelper
-    , subscriptionHelper = subscriptionHelper
     , createCmd = createCmd
     }
 

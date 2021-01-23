@@ -1,15 +1,19 @@
 module Platform.Raw.SubManager exposing (subscriptionManager)
 
-import Elm.Kernel.Basics
-import Elm.Kernel.Platform
-import Platform.Raw.Effect exposing (..)
+-- import Elm.Kernel.Basics
+-- import Elm.Kernel.Platform
+
+import Debug
+import Platform.Raw.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
 import Platform.Raw.Impure as Impure
+import String exposing (String)
 
 
 subscriptionManager :
-    SubscriptionManager subId payload
-    -> ( subId -> (payload -> msg) -> Sub msg, SubManagerId )
-subscriptionManager onSubUpdate =
+    SubscriptionManager effectData payload
+    -> (effectData -> String)
+    -> ( effectData -> (payload -> msg) -> EffectSub msg, SubManagerId )
+subscriptionManager onSubUpdate serialize =
     let
         managerId =
             case onSubUpdate of
@@ -19,11 +23,12 @@ subscriptionManager onSubUpdate =
                 RuntimeHandler ->
                     registerRuntimeSubscriptionHandler ()
     in
-    ( \subId onMsg ->
-        Sub
+    ( \effectData onMsg ->
+        EffectSub
             [ makeSubPayload
                 { managerId = managerId
-                , subId = subId
+                , subId = serialize effectData
+                , effectData = effectData
                 , onMessage = onMsg
                 }
             ]
@@ -31,7 +36,7 @@ subscriptionManager onSubUpdate =
     )
 
 
-makeSubPayload : SubPayload subId payload msg -> SubPayload Hidden Hidden msg
+makeSubPayload : SubPayload effectData payload msg -> SubPayload Hidden Hidden msg
 makeSubPayload =
     Elm.Kernel.Basics.fudgeType
 

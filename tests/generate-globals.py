@@ -32,6 +32,25 @@ import_re = (r"import\s+((?:[.\w]+\.)?(\w+))\s+(?:as (\w+)\s+)?"
              r"exposing\s+\((\w+(?:,\s+\w+)*)\)")
 
 
+def globalsFromImportMatch(module_name, import_match):
+    # Use alias if it is there, otherwise use last part of
+    # import.
+    moduleAlias = import_match[3]
+    if moduleAlias is None:
+        moduleAlias = import_match[2]
+
+    vars = map(
+        lambda defName: "__{}_{}".format(moduleAlias, defName),
+        filter(
+            lambda defName:
+            not (module_name == "Browser" and moduleAlias == "VirtualDom" and
+                 defName == "divertHrefToApp"),
+            map(lambda defName: defName.strip(), import_match[4].split(","))),
+    )
+
+    return "/* global {} */".format(", ".join(vars))
+
+
 def processFile(file):
     globals = []
 
@@ -46,22 +65,11 @@ def processFile(file):
             else:
                 print(line, end='')
                 last_line_empty = line.strip() == ''
-                importMatch = re.search(import_re, line)
+                import_match = re.search(import_re, line)
 
-                if importMatch is not None:
-                    # Use alias if it is there, otherwise use last part of
-                    # import.
-                    moduleAlias = importMatch[3]
-                    if moduleAlias is None:
-                        moduleAlias = importMatch[2]
-
-                    vars = map(
-                        lambda defName: "__{}_{}".format(
-                            moduleAlias, defName.strip()),
-                        importMatch[4].split(","),
-                    )
-
-                    globals.append("/* global {} */".format(", ".join(vars)))
+                if import_match is not None:
+                    globals.append(
+                        globalsFromImportMatch(module_name, import_match))
 
     unused_var_config = '{{ "varsIgnorePattern": "_{}_.*" }}'.format(
         module_name)

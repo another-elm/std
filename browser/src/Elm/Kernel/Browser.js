@@ -1,32 +1,29 @@
 /*
 
-import Basics exposing (never)
 import Browser exposing (Internal, External)
-import Browser.Dom as Dom exposing (NotFound)
+import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash)
 import Elm.Kernel.Json exposing (runHelp)
 import Elm.Kernel.List exposing (Nil)
-import Elm.Kernel.Platform exposing (initialize, browserifiedSendToApp)Fb
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
-import Elm.Kernel.VirtualDom exposing (appendChild, applyPatches, diff, doc, node, passiveSupported, render, divertHrefToApp, virtualize)
-import Json.Decode as Json exposing (map)
+import Elm.Kernel.Platform exposing (browserifiedSendToApp)
+import Elm.Kernel.Utils exposing (Tuple0)
+import Elm.Kernel.VirtualDom exposing (applyPatches, diff, doc, node, passiveSupported, divertHrefToApp, virtualize)
 import Maybe exposing (Just, Nothing)
 import Result exposing (isOk)
-import Task exposing (perform, succeed, fail)
-import Process exposing (spawn)
 import Url exposing (fromString)
 
 */
 
+/* global __4_PENDING_REQUEST, __4_EXTRA_REQUEST, __4_NO_REQUEST, __4_PENDING_REQUEST */
+
 // ELEMENT
 
 const _Browser_elementStepperBuilder = (view) => (runtime) => (args) => (initialModel) => () => {
-  /* *__PROD/
-	var domNode = args['node'];
-	// */
-  /* *__DEBUG/
-	var domNode = args && args['node'] ? args['node'] : __Debug_crash(0);
-	// */
+  if (__Basics_isDebug && !(args && args.node)) {
+    __Debug_crash(0);
+  }
+
+  let domNode = args.node;
   let currNode = __VirtualDom_virtualize(domNode);
   const eventNode = __Platform_browserifiedSendToApp(runtime);
 
@@ -40,19 +37,17 @@ const _Browser_elementStepperBuilder = (view) => (runtime) => (args) => (initial
 
 // DOCUMENT
 
-const _Browser_documentStepperBuilder = (view) => (runtime) => (args) => (initialModel) => () => {
+const _Browser_documentStepperBuilder = (view) => (runtime) => () => (initialModel) => () => {
   const eventNode = __Platform_browserifiedSendToApp(runtime);
   let title = __VirtualDom_doc.title;
   let bodyNode = __VirtualDom_doc.body;
   let currNode = __VirtualDom_virtualize(bodyNode);
   return _Browser_makeAnimator(initialModel, function (model) {
-    __VirtualDom_divertHrefToApp = divertHrefToApp;
     const doc = view(model);
     const nextNode = __VirtualDom_node("body")(__List_Nil)(doc.__$body);
     const patches = __VirtualDom_diff(currNode, nextNode);
     bodyNode = __VirtualDom_applyPatches(bodyNode, currNode, patches, eventNode);
     currNode = nextNode;
-    __VirtualDom_divertHrefToApp = 0;
     if (title !== doc.__$title) {
       __VirtualDom_doc.title = doc.__$title;
       title = doc.__$title;
@@ -77,16 +72,22 @@ function _Browser_makeAnimator(model, draw) {
   return (nextModel) => (isSync) => () => {
     model = nextModel;
 
-    isSync
-      ? (draw(model), state === __4_PENDING_REQUEST && (state = __4_EXTRA_REQUEST))
-      : (state === __4_NO_REQUEST && requestAnimationFrame(updateIfNeeded),
-        (state = __4_PENDING_REQUEST));
+    if (isSync) {
+      draw(model);
+      if (state === __4_PENDING_REQUEST) {
+        state = __4_EXTRA_REQUEST;
+      }
+    } else if (state === __4_NO_REQUEST) {
+      requestAnimationFrame(updateIfNeeded);
+      state = __4_PENDING_REQUEST;
+    }
   };
 }
 
 // APPLICATION
 
-const _Browser_appStepperBuilder = (impl) => (runtime) => (args) => (initialModel) => () => {
+// eslint-disable-next-line unicorn/prevent-abbreviations
+const _Browser_applicationStepperBuilder = (impl) => (runtime) => () => (initialModel) => () => {
   const eventNode = __Platform_browserifiedSendToApp(runtime);
   let title = __VirtualDom_doc.title;
   let bodyNode = __VirtualDom_doc.body;
@@ -131,13 +132,13 @@ const _Browser_appStepperBuilder = (impl) => (runtime) => (args) => (initialMode
 
   const divertHrefToApp = setup();
   return _Browser_makeAnimator(initialModel, function (model) {
-    __VirtualDom_divertHrefToApp = divertHrefToApp;
+    __VirtualDom_divertHrefToApp = divertHrefToApp; // eslint-disable-line no-undef
     const doc = impl.view(model);
     const nextNode = __VirtualDom_node("body")(__List_Nil)(doc.__$body);
     const patches = __VirtualDom_diff(currNode, nextNode);
     bodyNode = __VirtualDom_applyPatches(bodyNode, currNode, patches, eventNode);
     currNode = nextNode;
-    __VirtualDom_divertHrefToApp = 0;
+    __VirtualDom_divertHrefToApp = 0; // eslint-disable-line no-undef
     if (title !== doc.__$title) {
       __VirtualDom_doc.title = doc.__$title;
       title = doc.__$title;
@@ -178,8 +179,8 @@ const _Browser_replaceUrl = (key) => (url) => {
 // GLOBAL EVENTS
 
 const _Browser_fakeNode = { addEventListener() {}, removeEventListener() {} };
-const _Browser_doc = typeof document !== "undefined" ? document : _Browser_fakeNode;
-var _Browser_window = typeof window !== "undefined" ? window : _Browser_fakeNode;
+const _Browser_doc = typeof document === "undefined" ? _Browser_fakeNode : document;
+const _Browser_window = typeof window === "undefined" ? _Browser_fakeNode : window;
 
 const _Browser_on = F3(function (node, eventName, onEvent) {
   function handler(event) {
@@ -206,6 +207,8 @@ const _Browser_decodeEvent = F2(function (decoder, event) {
 
 // PAGE VISIBILITY
 
+// TODO(harry): remove compat shim and inline into elm.
+/* eslint-disable no-negated-condition */
 function _Browser_visibilityInfo() {
   return typeof __VirtualDom_doc.hidden !== "undefined"
     ? { __$hidden: "hidden", __$change: "visibilitychange" }
@@ -217,6 +220,7 @@ function _Browser_visibilityInfo() {
     ? { __$hidden: "webkitHidden", __$change: "webkitvisibilitychange" }
     : { __$hidden: "hidden", __$change: "visibilitychange" };
 }
+/* eslint-enable no-negated-condition */
 
 // ANIMATION FRAMES
 
@@ -252,13 +256,14 @@ function _Browser_animationFrameOn(cb) {
   return id;
 }
 
-function _Browser_animationFrameOff(cb) {
+function _Browser_animationFrameOff(id) {
   cancelAnimationFrame(id);
 }
 
 // DOM STUFF
 
 const _Browser_getNode = (id) => {
+  // eslint-disable-next-line unicorn/prefer-query-selector
   const node = document.getElementById(id);
   return node === null ? __Maybe_Nothing : __Maybe_Just(node);
 };
@@ -314,22 +319,20 @@ const _Browser_setViewport = (x) => (y) => _Browser_window.scroll(x, y);
 
 // ELEMENT VIEWPORT
 
-function _Browser_getViewportOf(id) {
-  return _Browser_withNode(id, function (node) {
-    return {
-      __$scene: {
-        __$width: node.scrollWidth,
-        __$height: node.scrollHeight,
-      },
-      __$viewport: {
-        __$x: node.scrollLeft,
-        __$y: node.scrollTop,
-        __$width: node.clientWidth,
-        __$height: node.clientHeight,
-      },
-    };
-  });
-}
+const _Browser_getViewportOf = (node) => {
+  return {
+    __$scene: {
+      __$width: node.scrollWidth,
+      __$height: node.scrollHeight,
+    },
+    __$viewport: {
+      __$x: node.scrollLeft,
+      __$y: node.scrollTop,
+      __$width: node.clientWidth,
+      __$height: node.clientHeight,
+    },
+  };
+};
 
 const _Browser_setViewportOf = (node) => (x) => (y) => {
   node.scrollLeft = x;
@@ -383,18 +386,14 @@ function _Browser_load(url) {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Browser_.*" }] */
 
-/* global __Basics_never */
 /* global __Browser_Internal, __Browser_External */
-/* global __Dom_NotFound */
+/* global __Basics_isDebug */
 /* global __Debug_crash */
 /* global __Json_runHelp */
 /* global __List_Nil */
-/* global __Platform_initialize, __Platform_browserifiedSendToApp */
-/* global __Utils_Tuple0, __Utils_Tuple2 */
-/* global __VirtualDom_appendChild, __VirtualDom_applyPatches, __VirtualDom_diff, __VirtualDom_doc, __VirtualDom_node, __VirtualDom_passiveSupported, __VirtualDom_render, __VirtualDom_divertHrefToApp, __VirtualDom_virtualize */
-/* global __Json_map */
+/* global __Platform_browserifiedSendToApp */
+/* global __Utils_Tuple0 */
+/* global __VirtualDom_applyPatches, __VirtualDom_diff, __VirtualDom_doc, __VirtualDom_node, __VirtualDom_passiveSupported, __VirtualDom_virtualize */
 /* global __Maybe_Just, __Maybe_Nothing */
 /* global __Result_isOk */
-/* global __Task_perform, __Task_succeed, __Task_fail */
-/* global __Process_spawn */
 /* global __Url_fromString */

@@ -27,6 +27,7 @@ function _VirtualDom_appendChild(parent, child)
 	parent.appendChild(child);
 }
 
+// For `main : Html msg`
 var _VirtualDom_init = F4(function(virtualNode, flagDecoder, debugMetadata, args)
 {
 	// NOTE: this function needs Elm.Kernel.Platform.export available to work

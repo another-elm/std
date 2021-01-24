@@ -206,7 +206,10 @@ def tidy():
 
     def generate_globals():
         print("Running generate-globals...")
-        code = run(['./tests/generate-globals.py', "./core/src/**/*.js"])
+        code = run([
+            './tests/generate-globals.py', "./core/src/**/*.js",
+            "./browser/src/**/*.js"
+        ])
 
         return bool(code)
 

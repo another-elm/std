@@ -9,7 +9,6 @@
 		"prettier": true,
 		"space": true,
 		"ignores": [
-			"browser/**",
 			"markdown/**",
 			"json/**",
 			"test/**"

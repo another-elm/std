@@ -14,7 +14,7 @@ import Elm.Kernel.List exposing (toArray)
 
 // LOG
 
-const _Debug_log__PROD = F2(function (tag, value) {
+const _Debug_log__PROD = F2((tag, value) => {
   return value;
 });
 

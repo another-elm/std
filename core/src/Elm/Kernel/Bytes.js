@@ -25,48 +25,48 @@ const _Bytes_newMutableBytesWith = (width) => (initialiser) => {
 
 // SIGNED INTEGERS
 
-const _Bytes_write_i8 = F3(function (mb, i, n) {
+const _Bytes_write_i8 = F3((mb, i, n) => {
   mb.setInt8(i, n);
   return i + 1;
 });
-const _Bytes_write_i16 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_i16 = F4((mb, i, n, isLE) => {
   mb.setInt16(i, n, isLE);
   return i + 2;
 });
-const _Bytes_write_i32 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_i32 = F4((mb, i, n, isLE) => {
   mb.setInt32(i, n, isLE);
   return i + 4;
 });
 
 // UNSIGNED INTEGERS
 
-const _Bytes_write_u8 = F3(function (mb, i, n) {
+const _Bytes_write_u8 = F3((mb, i, n) => {
   mb.setUint8(i, n);
   return i + 1;
 });
-const _Bytes_write_u16 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_u16 = F4((mb, i, n, isLE) => {
   mb.setUint16(i, n, isLE);
   return i + 2;
 });
-const _Bytes_write_u32 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_u32 = F4((mb, i, n, isLE) => {
   mb.setUint32(i, n, isLE);
   return i + 4;
 });
 
 // FLOATS
 
-const _Bytes_write_f32 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_f32 = F4((mb, i, n, isLE) => {
   mb.setFloat32(i, n, isLE);
   return i + 4;
 });
-const _Bytes_write_f64 = F4(function (mb, i, n, isLE) {
+const _Bytes_write_f64 = F4((mb, i, n, isLE) => {
   mb.setFloat64(i, n, isLE);
   return i + 8;
 });
 
 // BYTES
 
-const _Bytes_write_bytes = F3(function (mb, offset, bytes) {
+const _Bytes_write_bytes = F3((mb, offset, bytes) => {
   // TODO(harry) consider aligning `offset + i` to a multiple of 4 here.
   let i = 0;
   const length = bytes.byteLength;
@@ -88,7 +88,7 @@ function _Bytes_getStringWidth(string) {
   return new TextEncoder().encode(string).length;
 }
 
-const _Bytes_write_string = F3(function (mb, offset, string) {
+const _Bytes_write_string = F3((mb, offset, string) => {
   // TODO(harry): consider using encodeInto if it is available.
   const src = new TextEncoder().encode(string);
   const length = src.length;
@@ -99,47 +99,47 @@ const _Bytes_write_string = F3(function (mb, offset, string) {
 
 // DECODER
 
-const _Bytes_decode = F2(function (decoder, bytes) {
+const _Bytes_decode = F2((decoder, bytes) => {
   try {
     return __Maybe_Just(A2(decoder, bytes, 0).b);
-  } catch (error) {
+  } catch {
     return __Maybe_Nothing;
   }
 });
 
-const _Bytes_read_i8 = F2(function (bytes, offset) {
+const _Bytes_read_i8 = F2((bytes, offset) => {
   return __Utils_Tuple2(offset + 1, bytes.getInt8(offset));
 });
-const _Bytes_read_i16 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_i16 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 2, bytes.getInt16(offset, isLE));
 });
-const _Bytes_read_i32 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_i32 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 4, bytes.getInt32(offset, isLE));
 });
-const _Bytes_read_u8 = F2(function (bytes, offset) {
+const _Bytes_read_u8 = F2((bytes, offset) => {
   return __Utils_Tuple2(offset + 1, bytes.getUint8(offset));
 });
-const _Bytes_read_u16 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_u16 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 2, bytes.getUint16(offset, isLE));
 });
-const _Bytes_read_u32 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_u32 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 4, bytes.getUint32(offset, isLE));
 });
-const _Bytes_read_f32 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_f32 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 4, bytes.getFloat32(offset, isLE));
 });
-const _Bytes_read_f64 = F3(function (isLE, bytes, offset) {
+const _Bytes_read_f64 = F3((isLE, bytes, offset) => {
   return __Utils_Tuple2(offset + 8, bytes.getFloat64(offset, isLE));
 });
 
-const _Bytes_read_bytes = F3(function (length, bytes, offset) {
+const _Bytes_read_bytes = F3((length, bytes, offset) => {
   return __Utils_Tuple2(
     offset + length,
     new DataView(bytes.buffer, bytes.byteOffset + offset, length)
   );
 });
 
-const _Bytes_read_string = F3(function (length, bytes, offset) {
+const _Bytes_read_string = F3((length, bytes, offset) => {
   const end = offset + length;
   const decoder = new TextDecoder("utf8", { fatal: true });
   const sliceView = new DataView(bytes.buffer, bytes.byteOffset + offset, length);
@@ -147,7 +147,7 @@ const _Bytes_read_string = F3(function (length, bytes, offset) {
   return __Utils_Tuple2(end, decoder.decode(sliceView));
 });
 
-const _Bytes_decodeFailure = F2(function () {
+const _Bytes_decodeFailure = F2(() => {
   throw 0; // eslint-disable-line no-throw-literal
 });
 

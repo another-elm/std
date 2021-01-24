@@ -16,13 +16,13 @@ const _Http_makeRequest = (request) => {
   }
 
   const xhr = new XMLHttpRequest();
-  xhr.addEventListener("error", function () {
+  xhr.addEventListener("error", () => {
     done(__Http_NetworkError_);
   });
-  xhr.addEventListener("timeout", function () {
+  xhr.addEventListener("timeout", () => {
     done(__Http_Timeout_);
   });
-  xhr.addEventListener("load", function () {
+  xhr.addEventListener("load", () => {
     done(_Http_toResponse(request.__$toBody, xhr));
   });
 
@@ -44,7 +44,7 @@ const _Http_makeRequest = (request) => {
 
   try {
     xhr.open(request.__$method, request.__$url, true);
-  } catch (error) {
+  } catch {
     return done(__Http_BadUrl_(request.__$url));
   }
 
@@ -138,7 +138,7 @@ function _Http_multipartBodyContents(parts) {
   return formData;
 }
 
-const _Http_bytesToBlob = F2(function (mime, bytes) {
+const _Http_bytesToBlob = F2((mime, bytes) => {
   return new Blob([bytes], { type: mime });
 });
 
@@ -147,7 +147,7 @@ const _Http_bytesToBlob = F2(function (mime, bytes) {
 function _Http_trackRequest(runtime, tracker, managerId, xhr, cancel) {
   // TODO check out lengthComputable on loadstart event
 
-  xhr.upload.addEventListener("progress", function (event) {
+  xhr.upload.addEventListener("progress", (event) => {
     if (xhr.__isAborted) {
       return;
     }
@@ -162,7 +162,7 @@ function _Http_trackRequest(runtime, tracker, managerId, xhr, cancel) {
       })
     );
   });
-  xhr.addEventListener("progress", function (event) {
+  xhr.addEventListener("progress", (event) => {
     if (xhr.__isAborted) {
       return;
     }

@@ -6,7 +6,7 @@ import Elm.Kernel.Utils exposing (chr, Tuple2, Tuple3)
 
 // STRINGS
 
-const _Parser_isSubString = F5(function (smallString, offset, row, col, bigString) {
+const _Parser_isSubString = F5((smallString, offset, row, col, bigString) => {
   const smallLength = smallString.length;
   let isGood = offset + smallLength <= bigString.length;
 
@@ -24,7 +24,7 @@ const _Parser_isSubString = F5(function (smallString, offset, row, col, bigStrin
 
 // CHARS
 
-const _Parser_isSubChar = F3(function (predicate, offset, string) {
+const _Parser_isSubChar = F3((predicate, offset, string) => {
   return string.length <= offset
     ? -1
     : (string.charCodeAt(offset) & 0xf800) === 0xd800
@@ -38,13 +38,13 @@ const _Parser_isSubChar = F3(function (predicate, offset, string) {
     : -1;
 });
 
-const _Parser_isAsciiCode = F3(function (code, offset, string) {
+const _Parser_isAsciiCode = F3((code, offset, string) => {
   return string.charCodeAt(offset) === code;
 });
 
 // NUMBERS
 
-const _Parser_chompBase10 = F2(function (offset, string) {
+const _Parser_chompBase10 = F2((offset, string) => {
   for (; offset < string.length; offset++) {
     const code = string.charCodeAt(offset);
     if (code < 0x30 || code > 0x39) {
@@ -55,7 +55,7 @@ const _Parser_chompBase10 = F2(function (offset, string) {
   return offset;
 });
 
-const _Parser_consumeBase = F3(function (base, offset, string) {
+const _Parser_consumeBase = F3((base, offset, string) => {
   let total = 0;
   for (; offset < string.length; offset++) {
     const digit = string.charCodeAt(offset) - 0x30;
@@ -66,7 +66,7 @@ const _Parser_consumeBase = F3(function (base, offset, string) {
   return __Utils_Tuple2(offset, total);
 });
 
-const _Parser_consumeBase16 = F2(function (offset, string) {
+const _Parser_consumeBase16 = F2((offset, string) => {
   let total = 0;
   for (; offset < string.length; offset++) {
     const code = string.charCodeAt(offset);
@@ -86,7 +86,7 @@ const _Parser_consumeBase16 = F2(function (offset, string) {
 
 // FIND STRING
 
-const _Parser_findSubString = F5(function (smallString, offset, row, col, bigString) {
+const _Parser_findSubString = F5((smallString, offset, row, col, bigString) => {
   const newOffset = bigString.indexOf(smallString, offset);
   const target = newOffset < 0 ? bigString.length : newOffset + smallString.length;
 

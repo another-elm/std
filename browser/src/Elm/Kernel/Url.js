@@ -11,7 +11,7 @@ function _Url_percentEncode(string) {
 function _Url_percentDecode(string) {
   try {
     return __Maybe_Just(decodeURIComponent(string));
-  } catch (error) {
+  } catch {
     return __Maybe_Nothing;
   }
 }

@@ -15,7 +15,7 @@ function _JsArray_length(array) {
   return array.length;
 }
 
-const _JsArray_initialize = F3(function (size, offset, func) {
+const _JsArray_initialize = F3((size, offset, func) => {
   const result = new Array(size);
 
   for (let i = 0; i < size; i++) {
@@ -25,7 +25,7 @@ const _JsArray_initialize = F3(function (size, offset, func) {
   return result;
 });
 
-const _JsArray_initializeFromList = F2(function (max, ls) {
+const _JsArray_initializeFromList = F2((max, ls) => {
   const result = new Array(max);
   let i = 0;
   for (; i < max; i++) {
@@ -41,11 +41,11 @@ const _JsArray_initializeFromList = F2(function (max, ls) {
   return __Utils_Tuple2(result, ls);
 });
 
-const _JsArray_unsafeGet = F2(function (index, array) {
+const _JsArray_unsafeGet = F2((index, array) => {
   return array[index];
 });
 
-const _JsArray_unsafeSet = F3(function (index, value, array) {
+const _JsArray_unsafeSet = F3((index, value, array) => {
   const length = array.length;
   const result = new Array(length);
 
@@ -57,7 +57,7 @@ const _JsArray_unsafeSet = F3(function (index, value, array) {
   return result;
 });
 
-const _JsArray_push = F2(function (value, array) {
+const _JsArray_push = F2((value, array) => {
   const length = array.length;
   const result = new Array(length + 1);
 
@@ -69,7 +69,7 @@ const _JsArray_push = F2(function (value, array) {
   return result;
 });
 
-const _JsArray_foldl = F3(function (func, acc, array) {
+const _JsArray_foldl = F3((func, acc, array) => {
   const length = array.length;
 
   for (let i = 0; i < length; i++) {
@@ -79,7 +79,7 @@ const _JsArray_foldl = F3(function (func, acc, array) {
   return acc;
 });
 
-const _JsArray_foldr = F3(function (func, acc, array) {
+const _JsArray_foldr = F3((func, acc, array) => {
   for (let i = array.length - 1; i >= 0; i--) {
     acc = A2(func, array[i], acc);
   }
@@ -87,7 +87,7 @@ const _JsArray_foldr = F3(function (func, acc, array) {
   return acc;
 });
 
-const _JsArray_map = F2(function (func, array) {
+const _JsArray_map = F2((func, array) => {
   const length = array.length;
   const result = new Array(length);
 
@@ -98,7 +98,7 @@ const _JsArray_map = F2(function (func, array) {
   return result;
 });
 
-const _JsArray_indexedMap = F3(function (func, offset, array) {
+const _JsArray_indexedMap = F3((func, offset, array) => {
   const length = array.length;
   const result = new Array(length);
 
@@ -109,11 +109,11 @@ const _JsArray_indexedMap = F3(function (func, offset, array) {
   return result;
 });
 
-const _JsArray_slice = F3(function (from, to, array) {
+const _JsArray_slice = F3((from, to, array) => {
   return array.slice(from, to);
 });
 
-const _JsArray_appendN = F3(function (n, dest, source) {
+const _JsArray_appendN = F3((n, dest, source) => {
   const destLength = dest.length;
   let itemsToCopy = n - destLength;
 

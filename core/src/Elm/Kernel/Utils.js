@@ -83,7 +83,7 @@ function _Utils_eqHelp(x, y, depth, stack) {
 }
 
 const _Utils_equal = F2(_Utils_eq);
-const _Utils_notEqual = F2(function (a, b) {
+const _Utils_notEqual = F2((a, b) => {
   return !_Utils_eq(a, b);
 });
 

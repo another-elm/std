@@ -27,7 +27,7 @@ const _Browser_elementStepperBuilder = (view) => (runtime) => (args) => (initial
   let currNode = __VirtualDom_virtualize(domNode);
   const eventNode = __Platform_browserifiedSendToApp(runtime);
 
-  return _Browser_makeAnimator(initialModel, function (model) {
+  return _Browser_makeAnimator(initialModel, (model) => {
     const nextNode = view(model);
     const patches = __VirtualDom_diff(currNode, nextNode);
     domNode = __VirtualDom_applyPatches(domNode, currNode, patches, eventNode);
@@ -42,7 +42,7 @@ const _Browser_documentStepperBuilder = (view) => (runtime) => () => (initialMod
   let title = __VirtualDom_doc.title;
   let bodyNode = __VirtualDom_doc.body;
   let currNode = __VirtualDom_virtualize(bodyNode);
-  return _Browser_makeAnimator(initialModel, function (model) {
+  return _Browser_makeAnimator(initialModel, (model) => {
     const doc = view(model);
     const nextNode = __VirtualDom_node("body")(__List_Nil)(doc.__$body);
     const patches = __VirtualDom_diff(currNode, nextNode);
@@ -103,7 +103,7 @@ const _Browser_applicationStepperBuilder = (impl) => (runtime) => () => (initial
       _Browser_window.addEventListener("hashchange", key);
     }
 
-    return F2(function (domNode, event) {
+    return F2((domNode, event) => {
       if (
         !event.ctrlKey &&
         !event.metaKey &&
@@ -131,7 +131,7 @@ const _Browser_applicationStepperBuilder = (impl) => (runtime) => () => (initial
   };
 
   const divertHrefToApp = setup();
-  return _Browser_makeAnimator(initialModel, function (model) {
+  return _Browser_makeAnimator(initialModel, (model) => {
     __VirtualDom_divertHrefToApp = divertHrefToApp; // eslint-disable-line no-undef
     const doc = impl.view(model);
     const nextNode = __VirtualDom_node("body")(__List_Nil)(doc.__$body);
@@ -182,7 +182,7 @@ const _Browser_fakeNode = { addEventListener() {}, removeEventListener() {} };
 const _Browser_doc = typeof document === "undefined" ? _Browser_fakeNode : document;
 const _Browser_window = typeof window === "undefined" ? _Browser_fakeNode : window;
 
-const _Browser_on = F3(function (node, eventName, onEvent) {
+const _Browser_on = F3((node, eventName, onEvent) => {
   function handler(event) {
     onEvent(event);
   }
@@ -200,7 +200,7 @@ const _Browser_off = (effectId) => {
   return __Utils_Tuple0;
 };
 
-const _Browser_decodeEvent = F2(function (decoder, event) {
+const _Browser_decodeEvent = F2((decoder, event) => {
   const result = __Json_runHelp(decoder, event);
   return __Result_isOk(result) ? __Maybe_Just(result.a) : __Maybe_Nothing;
 });
@@ -372,7 +372,7 @@ function _Browser_reload(skipCache) {
 function _Browser_load(url) {
   try {
     _Browser_window.location = url;
-  } catch (error) {
+  } catch {
     // Only Firefox can throw a NS_ERROR_MALFORMED_URI exception here.
     // Other browsers reload the page, so let's be consistent about that.
     __VirtualDom_doc.location.reload(false);

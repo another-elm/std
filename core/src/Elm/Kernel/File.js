@@ -12,7 +12,7 @@ import Time exposing (millisToPosix)
 
 // DECODER
 
-const _File_decoder = __Json_decodePrim(function (value) {
+const _File_decoder = __Json_decodePrim((value) => {
   // NOTE: checks if `File` exists in case this is run on node
   return typeof File !== "undefined" && value instanceof File
     ? __Result_Ok(value)
@@ -153,9 +153,9 @@ function _File_uploadOneOrMore(mimes) {
 // CONTENT
 
 function _File_toString(blob) {
-  return __Scheduler_binding(function (callback) {
+  return __Scheduler_binding((callback) => {
     const reader = new FileReader();
-    reader.addEventListener("loadend", function () {
+    reader.addEventListener("loadend", () => {
       callback(__Scheduler_succeed(reader.result));
     });
     reader.readAsText(blob);
@@ -166,9 +166,9 @@ function _File_toString(blob) {
 }
 
 function _File_toBytes(blob) {
-  return __Scheduler_binding(function (callback) {
+  return __Scheduler_binding((callback) => {
     const reader = new FileReader();
-    reader.addEventListener("loadend", function () {
+    reader.addEventListener("loadend", () => {
       callback(__Scheduler_succeed(new DataView(reader.result)));
     });
     reader.readAsArrayBuffer(blob);
@@ -179,9 +179,9 @@ function _File_toBytes(blob) {
 }
 
 function _File_toUrl(blob) {
-  return __Scheduler_binding(function (callback) {
+  return __Scheduler_binding((callback) => {
     const reader = new FileReader();
-    reader.addEventListener("loadend", function () {
+    reader.addEventListener("loadend", () => {
       callback(__Scheduler_succeed(reader.result));
     });
     reader.readAsDataURL(blob);

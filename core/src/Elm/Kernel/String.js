@@ -7,11 +7,12 @@ import List exposing (Nil_elm_builtin)
 
 */
 
-const _String_cons = F2(function (chr, string) {
+const _String_cons = F2((chr, string) => {
   return chr + string;
 });
 
 function _String_uncons(string) {
+  // eslint-disable-next-line no-unreachable-loop
   for (const firstChar of string) {
     return __Maybe_Just(__Utils_Tuple2(__Utils_chr(firstChar), string.slice(firstChar.length)));
   }
@@ -19,7 +20,7 @@ function _String_uncons(string) {
   return __Maybe_Nothing;
 }
 
-const _String_append = F2(function (a, b) {
+const _String_append = F2((a, b) => {
   return a + b;
 });
 
@@ -27,7 +28,7 @@ function _String_length(string) {
   return string.length;
 }
 
-const _String_map = F2(function (func, string) {
+const _String_map = F2((func, string) => {
   const length = string.length;
   const array = new Array(length);
   let i = 0;
@@ -46,7 +47,7 @@ const _String_map = F2(function (func, string) {
   return array.join("");
 });
 
-const _String_filter = F2(function (isGood, string) {
+const _String_filter = F2((isGood, string) => {
   const array = [];
   const length = string.length;
   let i = 0;
@@ -87,7 +88,7 @@ function _String_reverse(string) {
   return array.join("");
 }
 
-const _String_foldl = F3(function (func, state, string) {
+const _String_foldl = F3((func, state, string) => {
   const length = string.length;
   let i = 0;
   while (i < length) {
@@ -105,7 +106,7 @@ const _String_foldl = F3(function (func, state, string) {
   return state;
 });
 
-const _String_foldr = F3(function (func, state, string) {
+const _String_foldr = F3((func, state, string) => {
   let i = string.length;
   while (i--) {
     let char = string[i];
@@ -121,15 +122,15 @@ const _String_foldr = F3(function (func, state, string) {
   return state;
 });
 
-const _String_split = F2(function (sep, string) {
+const _String_split = F2((sep, string) => {
   return string.split(sep);
 });
 
-const _String_join = F2(function (sep, strs) {
+const _String_join = F2((sep, strs) => {
   return strs.join(sep);
 });
 
-const _String_slice = F3(function (start, end, string) {
+const _String_slice = F3((start, end, string) => {
   return string.slice(start, end);
 });
 
@@ -161,7 +162,7 @@ function _String_toLower(string) {
   return string.toLowerCase();
 }
 
-const _String_any = F2(function (isGood, string) {
+const _String_any = F2((isGood, string) => {
   let i = string.length;
   while (i--) {
     let char = string[i];
@@ -179,7 +180,7 @@ const _String_any = F2(function (isGood, string) {
   return false;
 });
 
-const _String_all = F2(function (isGood, string) {
+const _String_all = F2((isGood, string) => {
   let i = string.length;
   while (i--) {
     let char = string[i];
@@ -197,19 +198,19 @@ const _String_all = F2(function (isGood, string) {
   return true;
 });
 
-const _String_contains = F2(function (sub, string) {
+const _String_contains = F2((sub, string) => {
   return string.includes(sub);
 });
 
-const _String_startsWith = F2(function (sub, string) {
+const _String_startsWith = F2((sub, string) => {
   return string.indexOf(sub) === 0;
 });
 
-const _String_endsWith = F2(function (sub, string) {
+const _String_endsWith = F2((sub, string) => {
   return string.length >= sub.length && string.lastIndexOf(sub) === string.length - sub.length;
 });
 
-const _String_indexes = F2(function (sub, string) {
+const _String_indexes = F2((sub, string) => {
   const subLength = sub.length;
 
   if (subLength < 1) {

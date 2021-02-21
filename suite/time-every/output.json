@@ -1,0 +1,27 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "1"
+        ],
+        [
+            "command",
+            "write",
+            "1"
+        ],
+        [
+            "command",
+            "write",
+            "1"
+        ],
+        [
+            "command",
+            "write",
+            "2"
+        ]
+    ],
+    "skip-run-if": {
+        "platform": ["macos"]
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "first"
+        ],
+        [
+            "command",
+            "write",
+            "second"
+        ]
+    ]
+}

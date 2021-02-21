@@ -1,0 +1,14 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "got zone"
+        ],
+        [
+            "command",
+            "write",
+            "got tick"
+        ]
+    ]
+}

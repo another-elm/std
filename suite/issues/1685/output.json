@@ -1,0 +1,16 @@
+{
+    "ports": [
+        [
+            "command",
+            "echo",
+            {
+                "arguments": 3,
+                "default": 1,
+                "interface": 2,
+                "prototype": 5,
+                "static": 0,
+                "this": 4
+            }
+        ]
+    ]
+}

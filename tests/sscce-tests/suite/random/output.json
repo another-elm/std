@@ -1,0 +1,14 @@
+{
+  "ports": [
+    ["command", "write", "347"],
+    ["command", "write", "748"],
+    ["command", "write", "339"],
+    ["command", "write", "292"],
+    ["command", "write", "56"],
+    ["command", "write", "708"],
+    ["command", "write", "476"],
+    ["command", "write", "157"],
+    ["command", "write", "411"],
+    ["command", "write", "377"]
+  ]
+}

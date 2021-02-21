@@ -1,0 +1,14 @@
+cut-body-after = "---"
+delete-merged-branches = true
+
+status = [
+  "Torture (macos-latest)",
+  "Torture (ubuntu-latest)",
+  "Torture (windows-latest)",
+  "Test (macos-latest, stable)",
+  "Test (macos-latest, beta)",
+  "Test (ubuntu-latest, stable)",
+  "Test (ubuntu-latest, beta)",
+  "Test (windows-latest, stable)",
+  "Test (windows-latest, beta)"
+]

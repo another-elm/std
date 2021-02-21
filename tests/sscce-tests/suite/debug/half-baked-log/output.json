@@ -1,0 +1,11 @@
+{
+    "ports": [],
+    "run-fails-if": {
+        "stdlib-variant": ["another"]
+    },
+    "compile-fails-if": {
+        "opt-level": [
+            "optimize"
+        ]
+    }
+}

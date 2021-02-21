@@ -1,0 +1,18 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "{\"hello\":\"world\"}"
+        ]
+    ],
+    "network": [
+        {
+            "request": {
+                "method": "get",
+                "url": "/some/json/endpoint"
+            },
+            "response": "{ \"hello\": \"world\"    }"
+        }
+    ]
+}

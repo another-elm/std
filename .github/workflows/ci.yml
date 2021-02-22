@@ -38,8 +38,10 @@ jobs:
           elm-format: '0.8.5'
           elm-json: '0.2.10'
 
-      - name: Add local bin dir to PATH.
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Create local bin dir and add it to PATH.
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - run: ./x.py install
       - run: ./init.py

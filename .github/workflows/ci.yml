@@ -40,5 +40,6 @@ jobs:
 
       - run: ./x.py install
       - run: ./init.py
+      - run: echo $PATH
       - run: ./x.py check
       - run: ./x.py test

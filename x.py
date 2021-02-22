@@ -318,8 +318,7 @@ def test():
         print("Running sscce tests")
         code = run([
             'cargo', 'run', '--', '--suites', 'suite', '--config',
-            'config.json', '--elm-compilers',
-            'another-elm'
+            'config.json', '--elm-compilers', 'another-elm'
         ],
                    subdir="tests/sscce-tests")
 

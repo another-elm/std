@@ -97,7 +97,7 @@ function _Platform_outgoingPort(name, converter) {
       }
 
       subs = subs.filter((sub) => sub !== callback);
-      if (subs.length == 0) {
+      if (subs.length === 0) {
         runtimeId.__outgoingPortSubs.delete(name);
       } else {
         runtimeId.__outgoingPortSubs.set(name, subs);

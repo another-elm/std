@@ -43,5 +43,8 @@ jobs:
 
       - run: ./x.py install
       - run: ./init.py
+
+      - run: echo $PATH; which another-elm; ls -lh ~/.local/bin
+
       - run: ./x.py check
       - run: ./x.py test

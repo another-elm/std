@@ -1,4 +1,0 @@
-language: elm
-
-script:
-  - ./init.py && cd tests && elm-test --compiler ../another-elm

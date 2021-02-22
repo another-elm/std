@@ -7,7 +7,8 @@ import subprocess
 YAPF_VERSION = '0.30.'
 FLAKE8_VERSION = '3.8.'
 ELM_VERSION = '0.19.1'
-ELM_FORMAT_VERSION = '0.8.3'
+ELM_FORMAT_VERSION = '0.8.'
+ELM_TEST_RS_VERSION = '1.'
 
 
 def remove_prefix(text, prefix):
@@ -97,6 +98,24 @@ def install():
 
         if code != 0:
             exit(code)
+
+    def elm_test_rs():
+        print("Checkinf for elm-test-rs...")
+        output = subprocess.run(['elm-test-rs', '--version'],
+                                stdout=subprocess.PIPE,
+                                encoding='utf8')
+
+        if output.returncode != 0:
+            print("** Please install elm-test-rs")
+            print("** https://github.com/mpizenberg/elm-test-rs#install")
+            exit(output.returncode)
+
+        elm_test_rs_version = remove_prefix(output.stdout,
+                                            "elm-test-rs").strip()
+        if not elm_test_rs_version.startswith(ELM_TEST_RS_VERSION):
+            print("** elm-test-rs version {}x required, found: {}".format(
+                ELM_TEST_RS_VERSION, elm_test_rs_version))
+            exit(1)
 
     def yapf():
         print("Checking for yapf")
@@ -272,6 +291,52 @@ def check():
     exit(code)
 
 
+def test():
+    run = get_runner()
+
+    def elm_test():
+        print("Running unit tests with elm-test")
+        code = run(['npx', 'elm-test', '--compiler', 'another-elm'],
+                   subdir="tests")
+
+        if code != 0:
+            print("elm-test failed!")
+
+        return bool(code)
+
+    def elm_test_rs():
+        print("Running unit tests with elm-test-ts")
+        code = run(['elm-test-rs', '--compiler', 'another-elm'],
+                   subdir="tests")
+
+        if code != 0:
+            print("elm-test-rs failed!")
+
+        return bool(code)
+
+    def sscce_tests():
+        print("Running sscce tests")
+        code = run([
+            'cargo', 'run', '--', '--suites', 'suite', '--config',
+            'config.json', '--elm-compilers',
+            'another-elm'
+        ],
+                   subdir="tests/sscce-tests")
+
+        if code != 0:
+            print("Running sscce tests failed!")
+
+        return bool(code)
+
+    fail_fast = args.fail_fast
+    code = False
+    code |= (fail_fast and code) or elm_test()
+    code |= (fail_fast and code) or elm_test_rs()
+    code |= (fail_fast and code) or sscce_tests()
+
+    exit(code)
+
+
 parser = argparse.ArgumentParser(description='Hack on anther-elm')
 
 subparsers = parser.add_subparsers()
@@ -294,6 +359,13 @@ check_parser = subparsers.add_parser(
 )
 check_parser.set_defaults(func=check)
 check_parser.add_argument('--fail-fast', action=argparse.BooleanOptionalAction)
+
+test_parser = subparsers.add_parser(
+    'test',
+    help='Run all tests',
+)
+test_parser.set_defaults(func=test)
+test_parser.add_argument('--fail-fast', action=argparse.BooleanOptionalAction)
 
 args = parser.parse_args()
 

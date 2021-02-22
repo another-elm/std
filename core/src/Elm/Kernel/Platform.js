@@ -34,7 +34,7 @@ const _Platform_initialize = F2((args, mainLoop) => {
   const runtimeId = {
     __$id: _Platform_guidIdCount++,
     __messageChannel: messageChannel,
-    __outgoingPortSubs: [],
+    __outgoingPortSubs: new Map(),
     __incomingPortSubManagers: new Map(),
     __eventSubscriptionListeners: new Map(),
     __runtimeSubscriptionHandlers: new Map(),
@@ -87,11 +87,21 @@ function _Platform_registerPort(name, portInit) {
 function _Platform_outgoingPort(name, converter) {
   _Platform_registerPort(name, (runtimeId) => {
     const subscribe = (callback) => {
-      runtimeId.__outgoingPortSubs.push(callback);
+      _Platform_mapGetOrInit(runtimeId.__outgoingPortSubs, name, () => []).push(callback);
     };
 
     const unsubscribe = (callback) => {
-      runtimeId.__outgoingPortSubs = runtimeId.__outgoingPortSubs.filter((sub) => sub !== callback);
+      let subs = runtimeId.__outgoingPortSubs.get();
+      if (subs === undefined) {
+        return;
+      }
+
+      subs = subs.filter((sub) => sub !== callback);
+      if (subs.length == 0) {
+        runtimeId.__outgoingPortSubs.delete(name);
+      } else {
+        runtimeId.__outgoingPortSubs.set(name, subs);
+      }
     };
 
     return { subscribe, unsubscribe };
@@ -101,8 +111,11 @@ function _Platform_outgoingPort(name, converter) {
     _Platform_command((runtimeId) =>
       __RawTask_execImpure(() => {
         const value = __Json_unwrap(converter(payload));
-        for (const sub of runtimeId.__outgoingPortSubs) {
-          sub(value);
+        const subs = runtimeId.__outgoingPortSubs.get(name);
+        if (subs !== undefined) {
+          for (const sub of subs) {
+            sub(value);
+          }
         }
 
         return __Maybe_Nothing;

@@ -39,5 +39,6 @@ jobs:
           elm-json: '0.2.10'
 
       - run: ./x.py install
+      - run: ./init.py
       - run: ./x.py check
       - run: ./x.py test

@@ -168,12 +168,18 @@ class ElmStuff(contextlib.AbstractContextManager):
             self.clear()
 
     def __exit__(self, _0, _1, _2):
-        self.workdir.rename(self.another_workdir)
+        try:
+            self.workdir.rename(self.another_workdir)
+        except FileNotFoundError:
+            pass
         if self.tempdir is not None:
             self.tempdir.rename(self.workdir)
 
     def mark(self):
-        self.marker.touch(exist_ok=True)
+        try:
+            self.marker.touch(exist_ok=True)
+        except FileNotFoundError:
+            self.clear()
 
     def clear(self):
         try:
@@ -208,7 +214,7 @@ def run_elm(elm, args):
     with ElmStuff(elm_version, packages_marker) as elm_stuff:
         run_compiler(stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
-        assert another_elm_home_dir.is_dir()
+        another_elm_home_dir.mkdir(exist_ok=True, parents=True)
 
         for stub_package in stub_packages:
             replace_with_stub(packages_root, 'elm', stub_package)

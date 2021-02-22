@@ -91,7 +91,7 @@ def install_exe(binary):
                 print_to_file(line)
 
 
-def main():
+def update_packages():
     elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
     another_elm_home_dir = os.path.join(elm_home_dir, 'another')
 
@@ -103,7 +103,7 @@ def main():
         """.strip(),
               file=sys.stderr)
 
-        return 0
+        return
 
     some_packages_reset = False
     for elm_version in elm_versions:
@@ -121,6 +121,10 @@ def main():
         Warning: nothing reset as source is no newer than linked packages.
         """.strip(),
               file=sys.stderr)
+
+
+def main():
+    update_packages()
 
     install_exe(binary_path)
 

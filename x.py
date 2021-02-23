@@ -199,6 +199,7 @@ def install():
             exit(1)
 
     xo()
+    elm_test_rs()
     yapf()
     flake8()
     git()

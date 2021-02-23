@@ -43,6 +43,13 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Install elm-test-rs
+        run: |
+          cd "$HOME/.local/bin"
+          wget https://github.com/mpizenberg/elm-test-rs/releases/download/v1.0.0-beta/elm-test-rs_linux.tar.gz
+          tar -xvf elm-test-rs_linux.tar.gz
+          rm elm-test-rs_linux.tar.gz
+
       - run: ./x.py install
       - run: ./init.py
 

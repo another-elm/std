@@ -1,12 +1,12 @@
-module Platform.Raw.SubManager exposing (subscriptionManager)
+module Platform.Unstable.SubManager exposing (subscriptionManager)
 
 import Basics exposing (..)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Maybe exposing (Maybe)
-import Platform.Raw.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
-import Platform.Raw.Impure as Impure
 import Platform.Sub exposing (Sub(..))
+import Platform.Unstable.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
+import Platform.Unstable.Impure as Impure
 import String exposing (String)
 
 

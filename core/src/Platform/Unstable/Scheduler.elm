@@ -1,4 +1,4 @@
-module Platform.Raw.Scheduler exposing (ProcessId, UniqueId, batch, getGuid, kill, rawSpawn, spawn)
+module Platform.Unstable.Scheduler exposing (ProcessId, UniqueId, batch, getGuid, kill, rawSpawn, spawn)
 
 {-| This module contains the low level logic for processes. A process is a
 unique id used to execute tasks.
@@ -9,8 +9,8 @@ import Debug
 import Elm.Kernel.Scheduler
 import List
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
 
 

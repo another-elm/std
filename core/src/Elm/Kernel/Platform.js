@@ -9,7 +9,7 @@ import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
 import Maybe exposing (Nothing, Just)
 import Platform exposing (initializeHelperFunctions, AsyncUpdate, SyncUpdate)
-import Platform.Raw.Task as RawTask exposing (execImpure, syncBinding)
+import Platform.Unstable.Task as RawTask exposing (execImpure, syncBinding)
 
 */
 

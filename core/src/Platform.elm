@@ -47,12 +47,12 @@ import Json.Encode as Encode
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform.Cmd as Cmd exposing (Cmd)
-import Platform.Raw.Channel as Channel
-import Platform.Raw.Effect as Effect
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Task as RawTask exposing (andThen)
 import Platform.Sub as Sub exposing (Sub)
+import Platform.Unstable.Channel as Channel
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Scheduler as RawScheduler
+import Platform.Unstable.Task as RawTask exposing (andThen)
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple

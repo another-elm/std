@@ -61,12 +61,10 @@ import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
-import Platform.Raw.Effect as Effect
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
-import Time
-import Tuple
 
 
 

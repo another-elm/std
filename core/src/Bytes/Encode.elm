@@ -39,15 +39,12 @@ module Bytes.Encode exposing
 
 import Basics exposing (..)
 import Bytes exposing (Bytes, Endianness(..))
-import Char exposing (Char)
-import Elm.Kernel.Basics
 import Elm.Kernel.Bytes
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Impure as Impure
+import Platform.Unstable.Impure as Impure
 import Result exposing (Result(..))
 import String exposing (String)
-import Tuple
 
 
 

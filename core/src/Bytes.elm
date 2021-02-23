@@ -18,15 +18,13 @@ module Bytes exposing
 -}
 
 import Basics exposing (..)
-import Char exposing (Char)
 import Elm.Kernel.Bytes
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
-import String exposing (String)
 import Task exposing (Task)
 import Tuple
 

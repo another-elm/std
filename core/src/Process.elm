@@ -45,10 +45,10 @@ longer. That’s kind of what Elm is all about.
 
 import Basics exposing ((>>), Float)
 import Platform
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Scheduler as RawScheduler
+import Platform.Unstable.Task as RawTask
 import Task exposing (Task)
 
 

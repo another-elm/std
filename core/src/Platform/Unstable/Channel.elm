@@ -1,12 +1,12 @@
-module Platform.Raw.Channel exposing (Receiver, recv)
+module Platform.Unstable.Channel exposing (Receiver, recv)
 
 import Basics exposing (..)
 import Debug
 import Elm.Kernel.Channel
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Scheduler as RawScheduler
+import Platform.Unstable.Task as RawTask
 import Tuple
 
 

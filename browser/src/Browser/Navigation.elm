@@ -46,7 +46,7 @@ want!
 import Elm.Kernel.Browser
 import Elm.Kernel.Platform
 import Task exposing (Task)
-import Platform.Raw.Impure as Impure
+import Platform.Unstable.Impure as Impure
 import Browser.Internal
 
 

@@ -40,9 +40,9 @@ If there is something else you need, use [ports] to do it in JavaScript!
 import Elm.Kernel.Browser
 import Json.Decode as Decode
 import Time
-import Platform.Raw.SubManager as SubManager
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Effect as Effect
+import Platform.Unstable.SubManager as SubManager
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Effect as Effect
 
 
 

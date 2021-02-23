@@ -36,7 +36,7 @@ import Dict
 import Elm.Kernel.Browser
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
-import Platform.Raw.Impure as Impure
+import Platform.Unstable.Impure as Impure
 import Html exposing (Html)
 import Url
 import Json.Decode exposing (Decoder)

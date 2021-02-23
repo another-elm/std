@@ -30,15 +30,15 @@ HTTP requests or writing to a database.
 
 -}
 
-import Basics exposing ((<<), (>>), (|>), Never, never)
+import Basics exposing ((<<), (>>), (|>), Never)
 import Elm.Kernel.Platform
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
 import Platform.Cmd exposing (Cmd)
-import Platform.Raw.Effect as Effect
-import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
 
 

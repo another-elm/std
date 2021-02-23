@@ -1,4 +1,4 @@
-module Platform.Raw.Impure exposing
+module Platform.Unstable.Impure exposing
     ( Action, resolve, andThen, map
     , Function, fromFunction, toFunction
     )
@@ -15,9 +15,9 @@ _exactly_ what they are for. Well, two reasons:
     updating the listeners for a subscription effect, this is not acceptable.
 
 2.  We need to use impure functions to run Tasks. The
-    `Platform.Raw.Scheduler.enqueue` function takes a Task, adds it to the
+    `Platform.Unstable.Scheduler.enqueue` function takes a Task, adds it to the
     scheduler queue and, if the scheduler is not currently stepping tasks (i.e.
-    this is not a reentrant call to `Platform.Raw.Scheduler.enqueue`), starts
+    this is not a reentrant call to `Platform.Unstable.Scheduler.enqueue`), starts
     stepping. This function is impure. However, if we represented it as a Task
     we would have an infinite loop! Instead we represent `enqueue` as an elm
     function returning an action.

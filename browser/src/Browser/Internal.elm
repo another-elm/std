@@ -1,6 +1,6 @@
 module Browser.Internal exposing (..)
 
-import Platform.Raw.Impure as Impure
+import Platform.Unstable.Impure as Impure
 import Time
 import Elm.Kernel.Basics
 import Elm.Kernel.Browser

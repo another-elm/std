@@ -29,7 +29,7 @@ module Platform.Sub exposing
 import Basics exposing (..)
 import List
 import Maybe exposing (Maybe)
-import Platform.Raw.Effect as Effect
+import Platform.Unstable.Effect as Effect
 
 
 

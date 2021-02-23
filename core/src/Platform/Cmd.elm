@@ -27,12 +27,11 @@ module Platform.Cmd exposing
 -}
 
 import Basics exposing (..)
-import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import List
 import Maybe exposing (Maybe)
-import Platform.Raw.Effect as Effect
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result)
 
 

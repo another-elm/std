@@ -40,12 +40,12 @@ import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
 import Platform
-import Platform.Raw.Effect as Effect
-import Platform.Raw.Impure as Impure
-import Platform.Raw.SubManager as SubManager
-import Platform.Raw.Task as RawTask
 import Platform.Scheduler as Scheduler
 import Platform.Sub exposing (Sub)
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.SubManager as SubManager
+import Platform.Unstable.Task as RawTask
 import String exposing (String)
 import Task exposing (Task)
 import Tuple

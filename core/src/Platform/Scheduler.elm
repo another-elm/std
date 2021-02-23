@@ -45,8 +45,8 @@ to some kernel code magic to wrap and unwrap `Task`s and `Process`s.
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Platform
-import Platform.Raw.Scheduler as RawScheduler
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Scheduler as RawScheduler
+import Platform.Unstable.Task as RawTask
 
 
 wrapTask : RawTask.Task e o -> Platform.Task e o

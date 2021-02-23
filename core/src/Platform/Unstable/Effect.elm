@@ -1,4 +1,4 @@
-module Platform.Raw.Effect exposing
+module Platform.Unstable.Effect exposing
     ( Cmd(..)
     , EffectId
     , EffectSub(..)
@@ -15,8 +15,8 @@ module Platform.Raw.Effect exposing
 import Basics exposing (Never)
 import Elm.Kernel.Basics
 import Maybe exposing (Maybe)
-import Platform.Raw.Impure as Impure
-import Platform.Raw.Task as RawTask
+import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Task as RawTask
 import String exposing (String)
 
 

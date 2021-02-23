@@ -1,4 +1,4 @@
-module Platform.Raw.Task exposing (Future, Task(..), TryAbortAction, andThen, execImpure, map, noopAbort, sleep)
+module Platform.Unstable.Task exposing (Future, Task(..), TryAbortAction, andThen, execImpure, map, noopAbort, sleep)
 
 {-| This module contains the low level logic for tasks. A
 `Task` is a sequence of actions (either syncronous or asyncronous) that will be
@@ -9,7 +9,7 @@ import Basics exposing (..)
 import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
-import Platform.Raw.Impure as Impure
+import Platform.Unstable.Impure as Impure
 import Result exposing (Result(..))
 
 

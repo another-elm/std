@@ -14,29 +14,28 @@ def is_update_needed(package_root, relevant_custom_paths):
     last_updated_time = None
 
     try:
-        last_updated_time = os.path.getmtime(
-            os.path.join(package_root, 'custom'))
+        last_updated_time = (package_root / 'custom').stat().st_mtime
     except (FileNotFoundError, ValueError):
         return True
 
     for relevant_custom_path in relevant_custom_paths:
-        if os.path.getmtime(relevant_custom_path) > last_updated_time:
+        if relevant_custom_path.stat().st_mtime > last_updated_time:
             return True
         for dirpath, _, files in os.walk(relevant_custom_path):
-            if os.path.getmtime(dirpath) > last_updated_time:
+            dirpath = Path(dirpath)
+            if dirpath.stat().st_mtime > last_updated_time:
                 return True
             for file in files:
-                if os.path.getmtime(os.path.join(dirpath,
-                                                 file)) > last_updated_time:
+                if (dirpath / file).stat().st_mtime > last_updated_time:
                     return True
 
 
 def reset_package(packages_root, author, package):
-    versions_dir = os.path.join(packages_root, author, package)
-    custom_package_dir = os.path.join(elm_std_dir, package)
+    versions_dir = packages_root / author / package
+    custom_package_dir = elm_std_dir / package
 
-    custom_src_dir = os.path.join(custom_package_dir, "src")
-    custom_json_file = os.path.join(custom_package_dir, "elm.json")
+    custom_src_dir = custom_package_dir / "src"
+    custom_json_file = custom_package_dir / "elm.json"
 
     try:
         dirs = os.listdir(versions_dir)
@@ -45,13 +44,13 @@ def reset_package(packages_root, author, package):
 
     any_modified = False
     for v in dirs:
-        package_root = os.path.join(versions_dir, v)
+        package_root = versions_dir / v
 
         if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
             any_modified = True
 
             try:
-                os.remove(os.path.join(package_root, 'custom'))
+                os.remove(package_root / 'custom')
             except FileNotFoundError:
                 pass
 
@@ -92,8 +91,8 @@ def install_exe(binary):
 
 
 def update_packages():
-    elm_home_dir = os.getenv('ELM_HOME', default=os.path.expanduser('~/.elm'))
-    another_elm_home_dir = os.path.join(elm_home_dir, 'another')
+    elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
+    another_elm_home_dir = elm_home_dir / 'another'
 
     try:
         elm_versions = os.listdir(another_elm_home_dir)
@@ -107,8 +106,7 @@ def update_packages():
 
     some_packages_reset = False
     for elm_version in elm_versions:
-        packages_root = os.path.join(another_elm_home_dir, elm_version,
-                                     'packages')
+        packages_root = another_elm_home_dir / elm_version / 'packages'
 
         for (author, pkg) in [('elm', 'core'), ('elm', 'json'),
                               ('elm', 'browser'), ('elm-explorations', 'test'),

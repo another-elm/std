@@ -1,7 +1,7 @@
 module Platform.Unstable.Effect exposing
     ( Runtime, RuntimeId, getId
     , Cmd(..)
-    , EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..)
+    , EffectId, EffectSub(..), SubManagerId, SubPayload, OpaqueSubPayload, SubscriptionManager(..)
     , RawJsObject, Stepper, StepperBuilder, UpdateMetadata(..)
     )
 
@@ -12,7 +12,7 @@ modules.
 
 @docs Cmd
 
-@docs EffectId, EffectSub, Hidden, SubManagerId, SubPayload, SubscriptionManager
+@docs EffectId, EffectSub, SubManagerId, SubPayload, OpaqueSubPayload, SubscriptionManager
 
 @docs RawJsObject, Stepper, StepperBuilder, UpdateMetadata
 
@@ -40,6 +40,10 @@ type alias SubPayload effectData payload msg =
     }
 
 
+type alias OpaqueSubPayload msg =
+    SubPayload Hidden Hidden msg
+
+
 {-| The inner type of a `Sub`
 
 This would be a `Sub` but the elm compiler gets the abdabs if
@@ -60,6 +64,11 @@ type Cmd msg
     = Cmd (List (RuntimeId -> RawTask.Task Never (Maybe msg)))
 
 
+{-| An opaque reference to an Subscription Manager.
+
+TODO(harry): gibe example
+
+-}
 type SubManagerId
     = SubManagerId SubManagerId
 
@@ -87,10 +96,6 @@ type SubscriptionManager effectData payload
     | RuntimeHandler
 
 
-type Hidden
-    = Hidden Hidden
-
-
 type RuntimeId
     = RuntimeId RuntimeId
 
@@ -115,6 +120,10 @@ TODO(harry) understand this by reading source of VirtualDom
 type UpdateMetadata
     = SyncUpdate
     | AsyncUpdate
+
+
+type Hidden
+    = Hidden Hidden
 
 
 type alias Stepper model =

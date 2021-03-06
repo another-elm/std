@@ -5,7 +5,15 @@ import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Maybe exposing (Maybe)
 import Platform.Sub exposing (Sub(..))
-import Platform.Unstable.Effect exposing (EffectId, EffectSub(..), Hidden, SubManagerId, SubPayload, SubscriptionManager(..))
+import Platform.Unstable.Effect
+    exposing
+        ( EffectId
+        , EffectSub(..)
+        , OpaqueSubPayload
+        , SubManagerId
+        , SubPayload
+        , SubscriptionManager(..)
+        )
 import Platform.Unstable.Impure as Impure
 import String exposing (String)
 
@@ -38,7 +46,7 @@ subscriptionManager onSubUpdate serialize =
     )
 
 
-makeSubPayload : SubPayload effectData payload msg -> SubPayload Hidden Hidden msg
+makeSubPayload : SubPayload effectData payload msg -> OpaqueSubPayload msg
 makeSubPayload =
     Elm.Kernel.Basics.fudgeType
 

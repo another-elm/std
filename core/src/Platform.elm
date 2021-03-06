@@ -314,7 +314,7 @@ sendToAppAction runtime =
 
 resetSubscriptionsAction :
     Effect.Runtime msg
-    -> List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)
+    -> List (Effect.OpaqueSubPayload msg)
     -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
     Impure.fromFunction
@@ -474,7 +474,7 @@ makeProgram =
 
 resetSubscriptions :
     Effect.Runtime msg
-    -> Impure.Function (List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)) ()
+    -> Impure.Function (List (Effect.OpaqueSubPayload msg)) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 

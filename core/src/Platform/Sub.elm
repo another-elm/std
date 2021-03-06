@@ -28,7 +28,7 @@ module Platform.Sub exposing
 
 import Basics exposing (..)
 import List
-import Maybe exposing (Maybe)
+import Maybe
 import Platform.Unstable.Effect as Effect
 
 
@@ -105,8 +105,8 @@ map fn (Sub (Effect.EffectSub data)) =
 
 getSubMapper :
     (a -> msg)
-    -> Effect.SubPayload Effect.Hidden Effect.Hidden a
-    -> Effect.SubPayload Effect.Hidden Effect.Hidden msg
+    -> Effect.OpaqueSubPayload a
+    -> Effect.OpaqueSubPayload msg
 getSubMapper fn { managerId, subId, effectData, onMessage } =
     { managerId = managerId
     , subId = subId

@@ -13,6 +13,9 @@ from pathlib import Path
 another_elm_version = None  # REPLACE ME
 assert isinstance(another_elm_version, str)
 
+random_suffix = None  # REPLACE ME
+assert isinstance(random_suffix, str)
+
 xdg_data_home = os.environ.get(
     "XDG_DATA_HOME",
     Path.home() / ".local" / "share",
@@ -197,6 +200,23 @@ def run_elm(elm, args):
     if "--stdlib-variant" in args:
         print(f"another-elm {another_elm_version}")
         return 0
+
+    suffix_opt = "--print-random-suffix"
+    if suffix_opt in args:
+        arg_index = args.index(suffix_opt)
+        if arg_index > 0 and args[arg_index - 1] == "-Z":
+            print(random_suffix)
+            return 0
+        else:
+            print(
+                "--print-random-suffix in an unstable option.",
+                file=sys.stderr,
+            )
+            print(
+                f"Please opt in to unstable features with -Z {suffix_opt}",
+                file=sys.stderr,
+            )
+            return 1
 
     elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
     another_elm_home_dir = Path(elm_home_dir) / 'another'

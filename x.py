@@ -15,29 +15,54 @@ def remove_prefix(text, prefix):
     return text[text.startswith(prefix) and len(prefix):]
 
 
-def elm_make(run):
+def elm_make_core(run):
     print("Running elm make in core...")
     code = run(['elm', "make"], subdir='core')
 
     if code != 0:
         print("There are issues with elm make in core")
 
+    return code
+
+
+def elm_make_browser(run):
     print("Running elm make in browser...")
 
-    # TODO(harry) make this work on mac.
+    tmp = subprocess.run(['another-elm', '-Z', '--print-random-suffix'],
+                         capture_output=True)
+
+    if tmp.returncode != 0:
+        print("Cannot get random suffix")
+        return 1
+
+    random_suffix = tmp.stdout.decode().strip()
+
+    # TODO(harry) make these work on mac.
     assert run([
         'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/^import Elm.Kernel./-- UNDO import Elm.Kernel./g", '{}', ';'
+        "s/^import Elm\\.Kernel\\./-- UNDO import Elm.Kernel./g", '{}', ';'
+    ],
+               subdir='browser/src') == 0
+    assert run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        f"s/Platform\\.Unstable\\./Platform.Unstable{random_suffix}./g", '{}',
+        ';'
     ],
                subdir='browser/src') == 0
 
     code = run(['another-elm', "make"], subdir='browser')
 
-    run([
+    assert run([
         'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/-- UNDO import Elm.Kernel./import Elm.Kernel./g", '{}', ';'
+        "s/-- UNDO import Elm\\.Kernel\\./import Elm.Kernel./g", '{}', ';'
     ],
-        subdir='browser/src') == 0
+               subdir='browser/src') == 0
+    assert run([
+        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
+        f"s/Platform\\.Unstable{random_suffix}\\./Platform.Unstable./g", '{}',
+        ';'
+    ],
+               subdir='browser/src') == 0
 
     if code != 0:
         print("There are issues with elm make in browser")
@@ -242,7 +267,8 @@ def tidy():
     # Call generate_globals first as sometime xo only passes after
     # generate_globals runs.
     code = False
-    code |= elm_make(run)
+    code |= elm_make_core(run)
+    code |= elm_make_browser(run)
     code |= generate_globals()
     code |= xo()
     code |= yapf()
@@ -282,7 +308,8 @@ def check():
 
     fail_fast = args.fail_fast
     code = False
-    code |= (fail_fast and code) or elm_make(run)
+    code |= (fail_fast and code) or elm_make_core(run)
+    code |= (fail_fast and code) or elm_make_browser(run)
     code |= (fail_fast and code) or xo()
     code |= (fail_fast and code) or yapf()
     code |= (fail_fast and code) or flake8(run)
@@ -327,6 +354,8 @@ def test():
             print("Running sscce tests failed!")
 
         return bool(code)
+
+    run(["./init.py"])
 
     fail_fast = args.fail_fast
     code = False

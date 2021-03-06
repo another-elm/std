@@ -2,26 +2,32 @@
 
 import fileinput
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 elm_std_dir = Path(__file__).resolve().parent
 binary_path = Path.home() / ".local" / "bin" / "another-elm"
+xdg_data_home = os.environ.get(
+    "XDG_DATA_HOME",
+    Path.home() / ".local" / "share",
+)
+customised_dir = xdg_data_home / "another-elm" / "packages"
 
 
-def is_update_needed(package_root, relevant_custom_paths):
+def is_update_needed(custom_dir, relevant_local_paths):
     last_updated_time = None
 
     try:
-        last_updated_time = (package_root / 'custom').stat().st_mtime
+        last_updated_time = (custom_dir / 'custom').stat().st_mtime
     except (FileNotFoundError, ValueError):
         return True
 
-    for relevant_custom_path in relevant_custom_paths:
-        if relevant_custom_path.stat().st_mtime > last_updated_time:
+    for relevant_local_path in relevant_local_paths:
+        if relevant_local_path.stat().st_mtime > last_updated_time:
             return True
-        for dirpath, _, files in os.walk(relevant_custom_path):
+        for dirpath, _, files in os.walk(relevant_local_path):
             dirpath = Path(dirpath)
             if dirpath.stat().st_mtime > last_updated_time:
                 return True
@@ -31,26 +37,40 @@ def is_update_needed(package_root, relevant_custom_paths):
 
 
 def reset_package(packages_root, author, package):
-    versions_dir = packages_root / author / package
-    custom_package_dir = elm_std_dir / package
+    local_package_dir = elm_std_dir / package
+    local_src_dir = local_package_dir / "src"
+    local_json_file = local_package_dir / "elm.json"
 
+    custom_package_dir = customised_dir / author / package
     custom_src_dir = custom_package_dir / "src"
     custom_json_file = custom_package_dir / "elm.json"
 
-    try:
-        dirs = os.listdir(versions_dir)
-    except FileNotFoundError:
-        dirs = []
-
     any_modified = False
-    for v in dirs:
-        package_root = versions_dir / v
 
-        if is_update_needed(package_root, [custom_src_dir, custom_json_file]):
-            any_modified = True
+    if is_update_needed(custom_package_dir, [local_src_dir, local_json_file]):
+        any_modified = True
+
+        try:
+            shutil.rmtree(custom_package_dir)
+        except FileNotFoundError:
+            pass
+        custom_package_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(local_src_dir, custom_src_dir)
+        shutil.copy(local_json_file, custom_json_file)
+        with open(custom_package_dir / 'custom', 'w'):
+            pass
+
+        versions_dir = packages_root / author / package
+        try:
+            dirs = os.listdir(versions_dir)
+        except FileNotFoundError:
+            dirs = []
+
+        for v in dirs:
+            package_root = versions_dir / v
 
             try:
-                os.remove(package_root / 'custom')
+                (package_root / 'custom').unlink()
             except FileNotFoundError:
                 pass
 
@@ -82,9 +102,7 @@ def install_exe(binary):
             print(s, file=f, end='')
 
         for line in fileinput.input(elm_std_dir / "another-elm"):
-            if line == "elm_std_dir = None  # REPLACE ME\n":
-                print_to_file('elm_std_dir = Path("{}")\n'.format(elm_std_dir))
-            elif line == "another_elm_version = None  # REPLACE ME\n":
+            if line == "another_elm_version = None  # REPLACE ME\n":
                 print_to_file(f'another_elm_version = "git-{hash}"\n')
             else:
                 print_to_file(line)
@@ -124,10 +142,11 @@ def update_packages():
 def main():
     update_packages()
 
+    exists = binary_path.exists()
     install_exe(binary_path)
 
     print("Success!", end=' ')
-    if binary_path.exists():
+    if exists:
         print('Reinstalled another-elm to "{}" and reset std packages.'.format(
             binary_path))
     else:

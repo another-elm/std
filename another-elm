@@ -10,11 +10,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-elm_std_dir = None  # REPLACE ME
-assert isinstance(elm_std_dir, Path)
-
 another_elm_version = None  # REPLACE ME
 assert isinstance(another_elm_version, str)
+
+xdg_data_home = os.environ.get(
+    "XDG_DATA_HOME",
+    Path.home() / ".local" / "share",
+)
+customised_dir = xdg_data_home / "another-elm" / "packages"
 
 stub_packages = {
     'bytes',
@@ -81,7 +84,7 @@ a = 2
 
 def customize(packages_root, author, package):
     versions_dir = packages_root / author / package
-    custom_package_dir = elm_std_dir / package
+    custom_package_dir = customised_dir / author / package
 
     custom_src_dir = custom_package_dir / "src"
     custom_json_file = custom_package_dir / "elm.json"
@@ -113,8 +116,10 @@ def customize(packages_root, author, package):
                 with open(platform_file, 'r') as file:
                     filedata = file.read()
 
-                filedata = filedata.replace('ANOTHER-ELM-VERSION',
-                                            another_elm_version)
+                filedata = filedata.replace(
+                    'ANOTHER-ELM-VERSION',
+                    another_elm_version,
+                )
 
                 with open(platform_file, 'w') as file:
                     file.write(filedata)

@@ -239,6 +239,7 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
         }
       });
     } else {
+      // We have a subscription managed by an event listener.
       const managerState = _Platform_mapGetOrInit(
         eventSubscriptionListeners,
         newSub.__$managerId,

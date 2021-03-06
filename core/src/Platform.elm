@@ -184,19 +184,6 @@ sendToSelf (Router router) =
 -- HELPERS --
 
 
-{-| Multiple channels at play here and type fudging means the compiler cannot
-always help us if we get confused so be careful!
-
-The channel who's sender we return is a runtime specific channel, kernel code
-will send Sub's to this channel.
-
-Each command is a `Platform.Task Never (Maybe msg)`. If the Task resolves with
-`Just something` we must send that `something` to the app.
-
-Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> Maybe msg )`
-we can collect these id's and functions and pass them to `resetSubscriptions`.
-
--}
 dispatchCmd : Effect.Runtime msg -> Cmd msg -> Impure.Action ()
 dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
     let

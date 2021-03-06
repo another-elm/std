@@ -336,7 +336,7 @@ rawOn =
 
 rawOff : Impure.Function Effect.EffectId ()
 rawOff =
-  Elm.Kernel.Browser.decodeEvent
+  Elm.Kernel.Browser.off
 
 
 doc : HtmlNode

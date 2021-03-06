@@ -13,6 +13,16 @@ import Platform.Unstable.Impure as Impure
 import Result exposing (Result(..))
 
 
+{-| AsyncUpdate is default I think
+
+TODO(harry) understand this by reading source of VirtualDom
+
+-}
+type UpdateMetadata2
+    = SyncUpdate
+    | AsyncUpdate
+
+
 type Task err val
     = Value (Result err val)
     | AsyncAction (Future err val)

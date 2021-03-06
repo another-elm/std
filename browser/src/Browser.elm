@@ -37,6 +37,7 @@ import Elm.Kernel.Browser
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
 import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Effect as Effect
 import Html exposing (Html)
 import Url
 import Json.Decode exposing (Decoder)
@@ -321,12 +322,12 @@ type UrlRequest
 -- Kernel interop
 
 
-elementStepperBuilder : (model -> Html msg) -> Platform.StepperBuilder model appMsg
+elementStepperBuilder : (model -> Html msg) -> Effect.StepperBuilder model appMsg
 elementStepperBuilder =
     Elm.Kernel.Browser.elementStepperBuilder
 
 
-documentStepperBuilder : (model -> Document msg) -> Platform.StepperBuilder model appMsg
+documentStepperBuilder : (model -> Document msg) -> Effect.StepperBuilder model appMsg
 documentStepperBuilder =
     Elm.Kernel.Browser.documentStepperBuilder
 
@@ -336,6 +337,6 @@ applicationStepperBuilder : { init : flags -> Url.Url -> Navigation.Key -> ( mod
     , subscriptions : model -> Sub msg
     , onUrlRequest : UrlRequest -> msg
     , onUrlChange : Url.Url -> msg
-    } -> Platform.StepperBuilder model appMsg
+    } -> Effect.StepperBuilder model appMsg
 applicationStepperBuilder =
     Elm.Kernel.Browser.applicationStepperBuilder

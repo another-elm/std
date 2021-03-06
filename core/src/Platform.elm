@@ -2,7 +2,7 @@ module Platform exposing
     ( Program, worker
     , Task, ProcessId
     , Router, sendToApp, sendToSelf
-    , program, StepperBuilder, Runtime, RuntimeId
+    , program
     )
 
 {-|
@@ -35,7 +35,7 @@ look at the definitions. We keep them around for now to keep `elm diff` happy.
 
 Do not use!
 
-@docs program, StepperBuilder, Runtime, RuntimeId, SubId
+@docs program
 
 -}
 
@@ -52,7 +52,7 @@ import Platform.Unstable.Channel as Channel
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Impure as Impure
 import Platform.Unstable.Scheduler as RawScheduler
-import Platform.Unstable.Task as RawTask exposing (andThen)
+import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
 import String exposing (String)
 import Tuple
@@ -69,12 +69,17 @@ type Program flags model msg
     = Program
 
 
-{-| -}
+{-| Technically stable, but please don't use.
+
+Hopefully, all the components need to actually use `program` _are_ unstable so
+there is no way to use this function.
+
+-}
 program :
-    StepperBuilder model msg
+    Effect.StepperBuilder model msg
     ->
         { any
-            | init : flags -> Runtime msg -> ( model, Cmd msg )
+            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
             , update : msg -> model -> ( model, Cmd msg )
             , subscriptions : model -> Sub msg
         }
@@ -192,7 +197,7 @@ Each sub is a tuple `( RawSub.Id, RawSub.HiddenConvertedSubType -> Maybe msg )`
 we can collect these id's and functions and pass them to `resetSubscriptions`.
 
 -}
-dispatchCmd : Runtime msg -> Cmd msg -> Impure.Action ()
+dispatchCmd : Effect.Runtime msg -> Cmd msg -> Impure.Action ()
 dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
     let
         runtimeId =
@@ -204,7 +209,7 @@ dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
                     (\maybeMsg ->
                         case maybeMsg of
                             Just msg ->
-                                RawTask.execImpure (sendToAppAction runtime ( msg, AsyncUpdate ))
+                                RawTask.execImpure (sendToAppAction runtime ( msg, Effect.AsyncUpdate ))
 
                             Nothing ->
                                 RawTask.Value (Ok ())
@@ -219,12 +224,12 @@ dispatchCmd runtime (Cmd.Cmd (Effect.Cmd cmds)) =
 
 
 mainLoop :
-    StepperBuilder model msg
+    Effect.StepperBuilder model msg
     -> Decoder flags
-    -> RawJsObject
+    -> Effect.RawJsObject
     ->
         { any
-            | init : flags -> Runtime msg -> ( model, Cmd msg )
+            | init : flags -> Effect.Runtime msg -> ( model, Cmd msg )
             , update : msg -> model -> ( model, Cmd msg )
             , subscriptions : model -> Sub msg
         }
@@ -245,7 +250,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         ( initialModel, initialCmd ) =
             impl.init flags runtime
 
-        receiveMsg : Stepper model -> model -> ( msg, UpdateMetadata ) -> Impure.Action model
+        receiveMsg : Effect.Stepper model -> model -> ( msg, Effect.UpdateMetadata ) -> Impure.Action model
         receiveMsg stepper oldModel ( message, meta ) =
             let
                 ( newModel, newCmd ) =
@@ -272,7 +277,7 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
         |> Impure.map assertProcessId
 
 
-updateSubListeners : Sub msg -> Runtime msg -> Impure.Action ()
+updateSubListeners : Sub msg -> Effect.Runtime msg -> Impure.Action ()
 updateSubListeners (Sub.Sub (Effect.EffectSub subBag)) runtime =
     resetSubscriptionsAction runtime subBag
 
@@ -315,13 +320,13 @@ subListenerProcess =
         )
 
 
-sendToAppAction : Runtime msg -> ( msg, UpdateMetadata ) -> Impure.Action ()
+sendToAppAction : Effect.Runtime msg -> ( msg, Effect.UpdateMetadata ) -> Impure.Action ()
 sendToAppAction runtime =
     Impure.fromFunction (sendToApp2 runtime)
 
 
 resetSubscriptionsAction :
-    Runtime msg
+    Effect.Runtime msg
     -> List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)
     -> Impure.Action ()
 resetSubscriptionsAction runtime updateList =
@@ -330,7 +335,7 @@ resetSubscriptionsAction runtime updateList =
         updateList
 
 
-effectsStepperBuilder : (model -> Sub msg) -> StepperBuilder model msg
+effectsStepperBuilder : (model -> Sub msg) -> Effect.StepperBuilder model msg
 effectsStepperBuilder subscriptions runtime _ initialModel =
     let
         stepper model _ =
@@ -339,7 +344,7 @@ effectsStepperBuilder subscriptions runtime _ initialModel =
                 |> RawScheduler.spawn
                 |> Impure.map assertProcessId
     in
-    stepper initialModel AsyncUpdate
+    stepper initialModel Effect.AsyncUpdate
         |> Impure.map (\() -> stepper)
 
 
@@ -387,9 +392,9 @@ assertResultIsOk res =
 
 
 combineStepperBuilders :
-    StepperBuilder model msg
-    -> StepperBuilder model msg
-    -> StepperBuilder model msg
+    Effect.StepperBuilder model msg
+    -> Effect.StepperBuilder model msg
+    -> Effect.StepperBuilder model msg
 combineStepperBuilders firstBuilder secondBuilder runtime args initialModel =
     firstBuilder runtime args initialModel
         |> Impure.andThen
@@ -405,7 +410,7 @@ combineStepperBuilders firstBuilder secondBuilder runtime args initialModel =
 
 {-| Do nothing with initial model and do nothing with subsequent models.
 -}
-nullStepperBuilder : StepperBuilder model msg
+nullStepperBuilder : Effect.StepperBuilder model msg
 nullStepperBuilder _ _ _ =
     Impure.resolve (\_ _ -> Impure.resolve ())
 
@@ -429,26 +434,10 @@ type alias InitializeHelperFunctions state x msg =
 
 type alias MainLoopArgs a msg =
     { a
-        | receiver : Channel.Receiver ( msg, UpdateMetadata )
+        | receiver : Channel.Receiver ( msg, Effect.UpdateMetadata )
         , encodedFlags : Json.Decode.Value
-        , runtime : Runtime msg
+        , runtime : Effect.Runtime msg
     }
-
-
-type alias StepperBuilder model appMsg =
-    Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
-
-
-type alias Runtime appMsg =
-    Effect.Runtime appMsg
-
-
-type alias RuntimeId =
-    Effect.RuntimeId
-
-
-type alias Stepper model =
-    model -> UpdateMetadata -> Impure.Action ()
 
 
 {-| This is the actual type of a Program. This is the value that will be called
@@ -457,26 +446,12 @@ by javascript so it **must** be this type.
 type alias ActualProgram flags =
     Decoder flags
     -> DebugMetadata
-    -> RawJsObject
-    -> RawJsObject
+    -> Effect.RawJsObject
+    -> Effect.RawJsObject
 
 
 type alias DebugMetadata =
     Encode.Value
-
-
-type RawJsObject
-    = RawJsObject RawJsObject
-
-
-{-| AsyncUpdate is default I think
-
-TODO(harry) understand this by reading source of VirtualDom
-
--}
-type UpdateMetadata
-    = SyncUpdate
-    | AsyncUpdate
 
 
 
@@ -498,9 +473,9 @@ initializeHelperFunctions =
 
 
 initialize :
-    RawJsObject
+    Effect.RawJsObject
     -> Impure.Function (MainLoopArgs any msg) ()
-    -> RawJsObject
+    -> Effect.RawJsObject
 initialize =
     Elm.Kernel.Platform.initialize
 
@@ -511,13 +486,13 @@ makeProgram =
 
 
 resetSubscriptions :
-    Runtime msg
+    Effect.Runtime msg
     -> Impure.Function (List (Effect.SubPayload Effect.Hidden Effect.Hidden msg)) ()
 resetSubscriptions =
     Elm.Kernel.Platform.resetSubscriptions
 
 
-sendToApp2 : Runtime msg -> Impure.Function ( msg, UpdateMetadata ) ()
+sendToApp2 : Effect.Runtime msg -> Impure.Function ( msg, Effect.UpdateMetadata ) ()
 sendToApp2 =
     Elm.Kernel.Platform.sendToApp
 

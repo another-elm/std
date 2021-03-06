@@ -129,12 +129,7 @@ def update_packages(random):
     try:
         elm_versions = os.listdir(another_elm_home)
     except FileNotFoundError:
-        print("""
-        Warning: nothing reset as elm home is empty (just run `another-elm`).
-        """.strip(),
-              file=sys.stderr)
-
-        return
+        elm_versions = []
 
     packages_roots = list(
         map(lambda elm_version: another_elm_home / elm_version / 'packages',

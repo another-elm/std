@@ -47,6 +47,7 @@ import Elm.Kernel.Browser
 import Elm.Kernel.Platform
 import Task exposing (Task)
 import Platform.Unstable.Impure as Impure
+import Platform.Unstable.Effect as Effect
 import Browser.Internal
 
 
@@ -224,6 +225,6 @@ reloadRaw =
     Elm.Kernel.Browser.reload
 
 
-command : (Platform.RuntimeId -> Task Never (Maybe msg)) -> Cmd msg
+command : (Effect.RuntimeId -> Task Never (Maybe msg)) -> Cmd msg
 command =
     Elm.Kernel.Platform.command

@@ -4,11 +4,15 @@ module Platform.Unstable.Effect exposing
     , EffectSub(..)
     , Hidden
     , HiddenConvertedSubType
+    , RawJsObject
     , Runtime
     , RuntimeId
+    , Stepper
+    , StepperBuilder
     , SubManagerId
     , SubPayload
     , SubscriptionManager(..)
+    , UpdateMetadata(..)
     , getId
     )
 
@@ -66,6 +70,28 @@ type RuntimeId
 
 type Runtime msg
     = Runtime (Runtime msg)
+
+
+type RawJsObject
+    = RawJsObject RawJsObject
+
+
+type alias StepperBuilder model appMsg =
+    Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
+
+
+{-| AsyncUpdate is default I think
+
+TODO(harry) understand this by reading source of VirtualDom
+
+-}
+type UpdateMetadata
+    = SyncUpdate
+    | AsyncUpdate
+
+
+type alias Stepper model =
+    model -> UpdateMetadata -> Impure.Action ()
 
 
 getId : Runtime msg -> RuntimeId

@@ -28,41 +28,7 @@ def elm_make_core(run):
 def elm_make_browser(run):
     print("Running elm make in browser...")
 
-    tmp = subprocess.run(['another-elm', '-Z', '--print-random-suffix'],
-                         capture_output=True)
-
-    if tmp.returncode != 0:
-        print("Cannot get random suffix")
-        return 1
-
-    random_suffix = tmp.stdout.decode().strip()
-
-    # TODO(harry) make these work on mac.
-    assert run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/^import Elm\\.Kernel\\./-- UNDO import Elm.Kernel./g", '{}', ';'
-    ],
-               subdir='browser/src') == 0
-    assert run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        f"s/Platform\\.Unstable\\./Platform.Unstable{random_suffix}./g", '{}',
-        ';'
-    ],
-               subdir='browser/src') == 0
-
-    code = run(['another-elm', "make"], subdir='browser')
-
-    assert run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        "s/-- UNDO import Elm\\.Kernel\\./import Elm.Kernel./g", '{}', ';'
-    ],
-               subdir='browser/src') == 0
-    assert run([
-        'find', './', '-type', 'f', '-exec', 'sed', '-i', '-e',
-        f"s/Platform\\.Unstable{random_suffix}\\./Platform.Unstable./g", '{}',
-        ';'
-    ],
-               subdir='browser/src') == 0
+    code = run(['./make.sh'], subdir='browser')
 
     if code != 0:
         print("There are issues with elm make in browser")

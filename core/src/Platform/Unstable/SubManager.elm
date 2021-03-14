@@ -29,7 +29,6 @@ import String exposing (String)
 TODO(harry): is this function pure?
 
 -}
-
 subscriptionManager :
     SubscriptionManager effectData payload
     -> (effectData -> String)

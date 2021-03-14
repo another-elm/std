@@ -26,7 +26,7 @@ import Platform.Unstable.Task as RawTask
 import String exposing (String)
 
 
-{-| A `Sub` is conceptually a bunch of `SubPayloads` bundled together. Each
+{-| A `Sub` is conceptually a bunch of `SubPayload`s bundled together. Each
 payload links to some Subscription Manager and a particular event that the
 Subscription Manager is listening out for. The `SubPayload` also contains about
 what the Subscription Manager should do (i.e. which `Msg` to send to an elm app
@@ -40,6 +40,9 @@ type alias SubPayload effectData payload msg =
     }
 
 
+{-| Like a `SubPayload` but with some of the type variables fudged into stub
+types so that they are hidden from the type signature.
+-}
 type alias OpaqueSubPayload msg =
     SubPayload Hidden Hidden msg
 
@@ -96,18 +99,49 @@ type SubscriptionManager effectData payload
     | RuntimeHandler
 
 
-type RuntimeId
-    = RuntimeId RuntimeId
+{-| Reference to this app's runtime.
 
+Kernel code can use this to work with effects.
 
+-}
 type Runtime msg
     = Runtime (Runtime msg)
 
 
+{-| A slightly more limited version of `Runtime`.
+
+Uses in contexts where we do not know the `msg` type of the app.
+
+-}
+type RuntimeId
+    = RuntimeId RuntimeId
+
+
+{-| Actually a js object.
+
+Can only be meaningfully used by kernel code.
+
+-}
 type RawJsObject
     = RawJsObject RawJsObject
 
 
+{-| The functions used by the elm runtime to do any thing impure based on the
+current model.
+
+For example render the view to the DOM.
+
+-}
+type alias Stepper model =
+    model -> UpdateMetadata -> Impure.Action ()
+
+
+{-| A function the "builds" a stepper.
+
+Uses a `Runtime`, whatever object the user passes to `Elm.Main.init`, and
+the first model (the one returned by `init`) to create a stepper.
+
+-}
 type alias StepperBuilder model appMsg =
     Runtime appMsg -> RawJsObject -> model -> Impure.Action (Stepper model)
 
@@ -124,10 +158,6 @@ type UpdateMetadata
 
 type Hidden
     = Hidden Hidden
-
-
-type alias Stepper model =
-    model -> UpdateMetadata -> Impure.Action ()
 
 
 {-| Convert a `Runtime` into a `RuntimeId`.

@@ -1,5 +1,11 @@
 module Platform.Unstable.SubManager exposing (subscriptionManager)
 
+{-| Create subscription managers.
+
+@docs subscriptionManager
+
+-}
+
 import Basics exposing (..)
 import Elm.Kernel.Basics
 import Elm.Kernel.Platform
@@ -17,6 +23,12 @@ import Platform.Unstable.Effect
 import Platform.Unstable.Impure as Impure
 import String exposing (String)
 
+
+{-| Create a new subscription manager (and start it?).
+
+TODO(harry): is this function pure?
+
+-}
 
 subscriptionManager :
     SubscriptionManager effectData payload

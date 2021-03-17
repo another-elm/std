@@ -13,7 +13,6 @@
 		"space": true,
 		"ignores": [
 			"markdown/**",
-			"json/**",
 			"tests/sscce-tests/**",
 			"test/**"
 		],

@@ -5,7 +5,7 @@ import Elm.Kernel.Json exposing (run, wrap, unwrap)
 import Elm.Kernel.List exposing (iterate, fromArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
-import Elm.Kernel.Basics exposing (isDebug)
+import Elm.Kernel.Basics exposing (isDebug, unwrapMaybe)
 import Result exposing (isOk)
 import Maybe exposing (Nothing, Just)
 import Platform exposing (initializeHelperFunctions)
@@ -249,9 +249,9 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
         const taggers = [];
         const effectId = eventListener.__$new(newSub.__$effectData)((payload) => {
           for (const tagger of taggers) {
-            const mMessage = tagger(payload);
-            if (mMessage !== __Maybe_Nothing) {
-              _Platform_sendToApp(runtime)(__Utils_Tuple2(mMessage.a, __Effect_AsyncUpdate));
+            const mMessage = __Basics_unwrapMaybe(tagger(payload));
+            if (mMessage !== null) {
+              _Platform_sendToApp(runtime)(__Utils_Tuple2(mMessage, __Effect_AsyncUpdate));
             }
           }
         });
@@ -294,9 +294,9 @@ const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) =
 
   if (taggers !== undefined) {
     for (const tagger of taggers) {
-      const mMessage = tagger(subId)(value);
-      if (mMessage !== __Maybe_Nothing) {
-        _Platform_sendToApp(runtimeId)(__Utils_Tuple2(mMessage.a, __Effect_AsyncUpdate));
+      const mMessage = __Basics_unwrapMaybe(tagger(subId)(value));
+      if (mMessage !== null) {
+        _Platform_sendToApp(runtimeId)(__Utils_Tuple2(mMessage, __Effect_AsyncUpdate));
       }
     }
   }
@@ -367,7 +367,7 @@ const _Platform_markSyncUpdateAsUsed = __Effect2_SyncUpdate;
 /* global __List_iterate, __List_fromArray */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
-/* global __Basics_isDebug */
+/* global __Basics_isDebug, __Basics_unwrapMaybe */
 /* global __Result_isOk */
 /* global __Maybe_Nothing, __Maybe_Just */
 /* global __Platform_initializeHelperFunctions */

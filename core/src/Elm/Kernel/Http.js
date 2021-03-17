@@ -2,7 +2,8 @@
 
 import Dict exposing (empty, update)
 import Http exposing (BadUrl_, Timeout_, NetworkError_, BadStatus_, GoodStatus_, Sending, Receiving)
-import Maybe exposing (Just, Nothing, isJust)
+import Maybe exposing (Just, Nothing)
+import Elm.Kernel.Basics exposing (unwrapMaybe)
 import Elm.Kernel.Platform exposing (handleMessageForRuntime)
 import Elm.Kernel.List exposing (iterate)
 
@@ -32,14 +33,9 @@ const _Http_makeRequest = (request) => {
     request.__$onCancel();
   };
 
-  if (__Maybe_isJust(request.__$tracker)) {
-    _Http_trackRequest(
-      request.__$tracker.a.a,
-      request.__$tracker.a.b,
-      request.__$managerId,
-      xhr,
-      cancel
-    );
+  const tracker = __Basics_unwrapMaybe(request.__$tracker);
+  if (tracker !== null) {
+    _Http_trackRequest(tracker.a, tracker.b, request.__$managerId, xhr, cancel);
   }
 
   try {
@@ -48,8 +44,9 @@ const _Http_makeRequest = (request) => {
     return done(__Http_BadUrl_(request.__$url));
   }
 
-  if (__Maybe_isJust(request.__$contentType)) {
-    xhr.setRequestHeader("Content-Type", request.__$contentType.a);
+  const contentType = __Basics_unwrapMaybe(request.__$contentType);
+  if (contentType !== null) {
+    xhr.setRequestHeader("Content-Type", contentType);
   }
 
   _Http_configureRequest(xhr, request.__$config);
@@ -110,7 +107,10 @@ function _Http_parseHeaders(rawHeaders) {
       headers = A3(
         __Dict_update,
         key,
-        (oldValue) => __Maybe_Just(__Maybe_isJust(oldValue) ? oldValue.a + ", " + value : value),
+        (mOldValue) => {
+          const oldValue = __Basics_unwrapMaybe(mOldValue);
+          __Maybe_Just(oldValue === null ? value : oldValue + ", " + value);
+        },
         headers
       );
     }
@@ -212,6 +212,7 @@ const _Http_cancel = (runtimeId) => (trackingId) => {
 
 /* global __Dict_empty, __Dict_update */
 /* global __Http_BadUrl_, __Http_Timeout_, __Http_NetworkError_, __Http_BadStatus_, __Http_GoodStatus_, __Http_Sending, __Http_Receiving */
-/* global __Maybe_Just, __Maybe_Nothing, __Maybe_isJust */
+/* global __Maybe_Just, __Maybe_Nothing */
+/* global __Basics_unwrapMaybe */
 /* global __Platform_handleMessageForRuntime */
 /* global __List_iterate */

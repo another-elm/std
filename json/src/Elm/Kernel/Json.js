@@ -3,12 +3,19 @@
 import Array exposing (initialize)
 import Elm.Kernel.List exposing (Cons, Nil, fromArray)
 import Elm.Kernel.Utils exposing (Tuple2)
-import Json.Decode as Json exposing (Field, Index, OneOf, Failure, errorToString)
+import Elm.Kernel.Basics exposing (isDebug)
+import Json.Decode as Json exposing (Field, Index, OneOf, Failure)
 import List exposing (reverse)
-import Maybe exposing (Just, Nothing)
 import Result exposing (Ok, Err, isOk)
 
 */
+
+/* global
+   __0_JSON,
+   __1_PRIM,  __1_NULL,      __1_LIST, __1_ARRAY,    __1_FIELD,
+   __1_INDEX, __1_KEY_VALUE, __1_MAP,  __1_AND_THEN, __1_ONE_OF,
+   __1_FAIL,  __1_SUCCEED
+ */
 
 // CORE DECODERS
 
@@ -168,6 +175,7 @@ const _Json_run = F2((decoder, value) => {
 });
 
 function _Json_runHelp(decoder, value) {
+  // eslint-disable-next-line default-case
   switch (decoder.$) {
     case __1_PRIM:
       return decoder.__decoder(value);
@@ -197,7 +205,7 @@ function _Json_runHelp(decoder, value) {
         return _Json_expecting("an OBJECT with a field named `" + field + "`", value);
       }
 
-      var result = _Json_runHelp(decoder.__decoder, value[field]);
+      const result = _Json_runHelp(decoder.__decoder, value[field]);
       return __Result_isOk(result) ? result : __Result_Err(A2(__Json_Field, field, result.a));
     }
 
@@ -214,7 +222,7 @@ function _Json_runHelp(decoder, value) {
         );
       }
 
-      var result = _Json_runHelp(decoder.__decoder, value[index]);
+      const result = _Json_runHelp(decoder.__decoder, value[index]);
       return __Result_isOk(result) ? result : __Result_Err(A2(__Json_Index, index, result.a));
     }
 
@@ -225,15 +233,13 @@ function _Json_runHelp(decoder, value) {
 
       let keyValuePairs = __List_Nil;
       // TODO test perf of Object.keys and switch when support is good enough
-      for (const key in value) {
-        if (value.hasOwnProperty(key)) {
-          var result = _Json_runHelp(decoder.__decoder, value[key]);
-          if (!__Result_isOk(result)) {
-            return __Result_Err(A2(__Json_Field, key, result.a));
-          }
-
-          keyValuePairs = __List_Cons(__Utils_Tuple2(key, result.a), keyValuePairs);
+      for (const key of Object.keys(value)) {
+        const result = _Json_runHelp(decoder.__decoder, value[key]);
+        if (!__Result_isOk(result)) {
+          return __Result_Err(A2(__Json_Field, key, result.a));
         }
+
+        keyValuePairs = __List_Cons(__Utils_Tuple2(key, result.a), keyValuePairs);
       }
 
       return __Result_Ok(__List_reverse(keyValuePairs));
@@ -243,7 +249,7 @@ function _Json_runHelp(decoder, value) {
       let answer = decoder.__func;
       const decoders = decoder.__decoders;
       for (const decoder_ of decoders) {
-        var result = _Json_runHelp(decoder_, value);
+        const result = _Json_runHelp(decoder_, value);
         if (!__Result_isOk(result)) {
           return result;
         }
@@ -255,8 +261,8 @@ function _Json_runHelp(decoder, value) {
     }
 
     case __1_AND_THEN: {
-      var result = _Json_runHelp(decoder.__decoder, value);
-      return !__Result_isOk(result) ? result : _Json_runHelp(decoder.__callback(result.a), value);
+      const result = _Json_runHelp(decoder.__decoder, value);
+      return __Result_isOk(result) ? _Json_runHelp(decoder.__callback(result.a), value) : result;
     }
 
     case __1_ONE_OF: {
@@ -266,7 +272,7 @@ function _Json_runHelp(decoder, value) {
         temporary.b;
         temporary = temporary.b // WHILE_CONS
       ) {
-        var result = _Json_runHelp(temporary.a, value);
+        const result = _Json_runHelp(temporary.a, value);
         if (__Result_isOk(result)) {
           return result;
         }
@@ -325,6 +331,7 @@ function _Json_equality(x, y) {
     return false;
   }
 
+  // eslint-disable-next-line default-case
   switch (x.$) {
     case __1_SUCCEED:
     case __1_FAIL:
@@ -379,19 +386,19 @@ const _Json_encode = F2((indentLevel, value) => {
   return String(JSON.stringify(_Json_unwrap(value), null, indentLevel));
 });
 
-function _Json_wrap__DEBUG(value) {
-  return { $: __0_JSON, a: value };
-}
+function _Json_wrap(value) {
+  if (__Basics_isDebug) {
+    return { $: __0_JSON, a: value };
+  }
 
-function _Json_unwrap__DEBUG(value) {
-  return value.a;
-}
-
-function _Json_wrap__PROD(value) {
   return value;
 }
 
-function _Json_unwrap__PROD(value) {
+function _Json_unwrap(value) {
+  if (__Basics_isDebug) {
+    return value.a;
+  }
+
   return value;
 }
 
@@ -427,7 +434,7 @@ const _Json_encodeNull = _Json_wrap(null);
 /* global __Array_initialize */
 /* global __List_Cons, __List_Nil, __List_fromArray */
 /* global __Utils_Tuple2 */
-/* global __Json_Field, __Json_Index, __Json_OneOf, __Json_Failure, __Json_errorToString */
+/* global __Basics_isDebug */
+/* global __Json_Field, __Json_Index, __Json_OneOf, __Json_Failure */
 /* global __List_reverse */
-/* global __Maybe_Just, __Maybe_Nothing */
 /* global __Result_Ok, __Result_Err, __Result_isOk */

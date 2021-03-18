@@ -31,9 +31,7 @@ function _Json_decodePrim(decoder) {
 }
 
 const _Json_decodeInt = _Json_decodePrim((value) => {
-  return Number.isInteger(value)
-    ? __Result_Ok(value)
-    : _Json_expecting("an INT", value);
+  return Number.isInteger(value) ? __Result_Ok(value) : _Json_expecting("an INT", value);
 });
 
 const _Json_decodeBool = _Json_decodePrim((value) => {
@@ -50,10 +48,13 @@ const _Json_decodeValue = _Json_decodePrim((value) => {
 
 const _Json_decodeString = _Json_decodePrim((value) => {
   if (typeof value === "string") {
-	  return __Result_Ok(value);
-  } else if (value instanceof String) {
+    return __Result_Ok(value);
+  }
+
+  if (value instanceof String) {
     return __Result_Ok(String(value));
   }
+
   return _Json_expecting("a STRING", value);
 });
 
@@ -174,31 +175,34 @@ function _Json_runHelp(decoder, value) {
     case __1_NULL:
       return value === null ? __Result_Ok(decoder.__value) : _Json_expecting("null", value);
 
-    case __1_LIST:
+    case __1_LIST: {
       if (!_Json_isArray(value)) {
         return _Json_expecting("a LIST", value);
       }
 
       return _Json_runArrayDecoder(decoder.__decoder, value, __List_fromArray);
+    }
 
-    case __1_ARRAY:
+    case __1_ARRAY: {
       if (!_Json_isArray(value)) {
         return _Json_expecting("an ARRAY", value);
       }
 
       return _Json_runArrayDecoder(decoder.__decoder, value, _Json_toElmArray);
+    }
 
-    case __1_FIELD:
-      var field = decoder.__field;
+    case __1_FIELD: {
+      const field = decoder.__field;
       if (typeof value !== "object" || value === null || !(field in value)) {
         return _Json_expecting("an OBJECT with a field named `" + field + "`", value);
       }
 
       var result = _Json_runHelp(decoder.__decoder, value[field]);
       return __Result_isOk(result) ? result : __Result_Err(A2(__Json_Field, field, result.a));
+    }
 
-    case __1_INDEX:
-      var index = decoder.__index;
+    case __1_INDEX: {
+      const index = decoder.__index;
       if (!_Json_isArray(value)) {
         return _Json_expecting("an ARRAY", value);
       }
@@ -212,13 +216,14 @@ function _Json_runHelp(decoder, value) {
 
       var result = _Json_runHelp(decoder.__decoder, value[index]);
       return __Result_isOk(result) ? result : __Result_Err(A2(__Json_Index, index, result.a));
+    }
 
-    case __1_KEY_VALUE:
+    case __1_KEY_VALUE: {
       if (typeof value !== "object" || value === null || _Json_isArray(value)) {
         return _Json_expecting("an OBJECT", value);
       }
 
-      var keyValuePairs = __List_Nil;
+      let keyValuePairs = __List_Nil;
       // TODO test perf of Object.keys and switch when support is good enough
       for (const key in value) {
         if (value.hasOwnProperty(key)) {
@@ -232,10 +237,11 @@ function _Json_runHelp(decoder, value) {
       }
 
       return __Result_Ok(__List_reverse(keyValuePairs));
+    }
 
-    case __1_MAP:
-      var answer = decoder.__func;
-      var decoders = decoder.__decoders;
+    case __1_MAP: {
+      let answer = decoder.__func;
+      const decoders = decoder.__decoders;
       for (const decoder_ of decoders) {
         var result = _Json_runHelp(decoder_, value);
         if (!__Result_isOk(result)) {
@@ -246,13 +252,15 @@ function _Json_runHelp(decoder, value) {
       }
 
       return __Result_Ok(answer);
+    }
 
-    case __1_AND_THEN:
+    case __1_AND_THEN: {
       var result = _Json_runHelp(decoder.__decoder, value);
       return !__Result_isOk(result) ? result : _Json_runHelp(decoder.__callback(result.a), value);
+    }
 
-    case __1_ONE_OF:
-      var errors = __List_Nil;
+    case __1_ONE_OF: {
+      let errors = __List_Nil;
       for (
         let temporary = decoder.__decoders;
         temporary.b;
@@ -267,6 +275,7 @@ function _Json_runHelp(decoder, value) {
       }
 
       return __Result_Err(__Json_OneOf(__List_reverse(errors)));
+    }
 
     case __1_FAIL:
       return __Result_Err(A2(__Json_Failure, decoder.__msg, _Json_wrap(value)));

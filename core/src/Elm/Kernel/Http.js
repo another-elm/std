@@ -109,7 +109,7 @@ function _Http_parseHeaders(rawHeaders) {
         key,
         (mOldValue) => {
           const oldValue = __Basics_unwrapMaybe(mOldValue);
-          __Maybe_Just(oldValue === null ? value : oldValue + ", " + value);
+          return __Maybe_Just(oldValue === null ? value : oldValue + ", " + value);
         },
         headers
       );

@@ -49,6 +49,7 @@
         "Unstable": [
             "Platform.Unstable.Impure",
             "Platform.Unstable.Effect",
+            "Platform.Unstable.Iterable",
             "Platform.Unstable.SubManager"
         ]
     },

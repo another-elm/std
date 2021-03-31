@@ -44,16 +44,18 @@ const _List_fromArray = (array) =>
     __List_Nil_elm_builtin
   );
 
-function* _List_iterate(xs) {
-  for (;;) {
-    if (xs.$ === _List_nilKey) {
-      return;
-    }
+const _List_iterate = (xs) => ({
+  *[Symbol.iterator]() {
+    for (;;) {
+      if (xs.$ === _List_nilKey) {
+        return;
+      }
 
-    yield xs.a;
-    xs = xs.b;
-  }
-}
+      yield xs.a;
+      xs = xs.b;
+    }
+  },
+});
 
 const _List_toArray = (xs) => {
   return [..._List_iterate(xs)];

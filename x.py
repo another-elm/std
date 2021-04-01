@@ -248,7 +248,7 @@ def tidy():
 
     def elm_format():
         print("Running elm-format...")
-        code = run(['elm-format', "./core/src", "--yes"])
+        code = run(['elm-format', "./core/src", "./json/src", "--yes"])
 
         return bool(code)
 

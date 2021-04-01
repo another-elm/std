@@ -1,35 +1,42 @@
 module Json.Encode exposing
-  ( Value(..)
-  , encode
-  , string, int, float, bool, null
-  , list, array, set
-  , object, dict
-  )
+    ( encode, Value(..)
+    , string, int, float, bool, null
+    , list, array, set
+    , object, dict
+    )
 
 {-| Library for turning Elm values into Json values.
 
+
 # Encoding
+
 @docs encode, Value
 
+
 # Primitives
+
 @docs string, int, float, bool, null
 
+
 # Arrays
+
 @docs list, array, set
 
-# Objects
-@docs object, dict
--}
 
+# Objects
+
+@docs object, dict
+
+-}
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Set exposing (Set)
+import Elm.Kernel.Basics
 import Elm.Kernel.Json
+import Json.Internal
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Iterable as Iterable
-import Json.Internal
-import Elm.Kernel.Basics
+import Set exposing (Set)
 
 
 
@@ -38,7 +45,8 @@ import Elm.Kernel.Basics
 
 {-| Represents a JavaScript value.
 -}
-type Value
+type
+    Value
     -- MUST BE A TYPE
     = Value Json.Internal.Value
 
@@ -55,14 +63,20 @@ the amount of indentation in the resulting string.
             , ( "age", Encode.int 42 )
             ]
 
-    compact = Encode.encode 0 tom
-    -- {"name":"Tom","age":42}
+    compact =
+        Encode.encode 0 tom
 
-    readable = Encode.encode 4 tom
+    -- {"name":"Tom","age":42}
+    readable =
+        Encode.encode 4 tom
+
     -- {
     --     "name": "Tom",
     --     "age": 42
     -- }
+
+todo(harry): fix formatting
+
 -}
 encode : Int -> Value -> String
 encode indent (Value (Json.Internal.Value raw)) =
@@ -77,9 +91,11 @@ encode indent (Value (Json.Internal.Value raw)) =
 
     import Json.Encode exposing (encode, string)
 
+
     -- encode 0 (string "")      == "\"\""
     -- encode 0 (string "abc")   == "\"abc\""
     -- encode 0 (string "hello") == "\"hello\""
+
 -}
 string : String -> Value
 string s =
@@ -95,9 +111,11 @@ string s =
 
     import Json.Encode exposing (encode, int)
 
+
     -- encode 0 (int 42) == "42"
     -- encode 0 (int -7) == "-7"
     -- encode 0 (int 0)  == "0"
+
 -}
 int : Int -> Value
 int i =
@@ -113,6 +131,7 @@ int i =
 
     import Json.Encode exposing (encode, float)
 
+
     -- encode 0 (float 3.14)     == "3.14"
     -- encode 0 (float 1.618)    == "1.618"
     -- encode 0 (float -42)      == "-42"
@@ -126,6 +145,7 @@ both as `null`.
 
 [ieee]: https://en.wikipedia.org/wiki/IEEE_754
 [json]: https://www.json.org/
+
 -}
 float : Float -> Value
 float f =
@@ -139,10 +159,12 @@ float f =
 
 {-| Turn a `Bool` into a JSON boolean.
 
-    import Json.Encode exposing (encode, bool)
+    import Json.Encode exposing (bool, encode)
+
 
     -- encode 0 (bool True)  == "true"
     -- encode 0 (bool False) == "false"
+
 -}
 bool : Bool -> Value
 bool b =
@@ -162,7 +184,9 @@ bool b =
 
     import Json.Encode exposing (encode, null)
 
+
     -- encode 0 null == "null"
+
 -}
 null : Value
 null =
@@ -176,6 +200,7 @@ null =
 {-| Turn a `List` into a JSON array.
 
     import Json.Encode as Encode exposing (bool, encode, int, list, string)
+
 
     -- encode 0 (list int [1,3,4])       == "[1,3,4]"
     -- encode 0 (list bool [True,False]) == "[true,false]"
@@ -202,7 +227,6 @@ set func entries =
 
 
 
-
 -- OBJECTS
 
 
@@ -218,8 +242,9 @@ set func entries =
             ]
 
     -- Encode.encode 0 tom == """{"name":"Tom","age":42}"""
+
 -}
-object : List (String, Value) -> Value
+object : List ( String, Value ) -> Value
 object pairs =
     iterableObj (\x -> x) (\x -> x) (Iterable.list pairs)
 
@@ -231,10 +256,11 @@ object pairs =
 
     people : Dict String Int
     people =
-      Dict.fromList [ ("Tom",42), ("Sue", 38) ]
+        Dict.fromList [ ( "Tom", 42 ), ( "Sue", 38 ) ]
 
     -- Encode.encode 0 (Encode.dict identity Encode.int people)
     --   == """{"Tom":42,"Sue":38}"""
+
 -}
 dict : (k -> String) -> (v -> Value) -> Dict k v -> Value
 dict toKey toValue dictionary =
@@ -246,25 +272,30 @@ iterableArray func entries =
     let
         unwrappedFunc v =
             let
-                (Value (Json.Internal.Value wrapped)) = func v
+                (Value (Json.Internal.Value wrapped)) =
+                    func v
             in
             wrapped
     in
     Value (Json.Internal.Value (arrayFrom unwrappedFunc entries))
 
 
-iterableObj : (k -> String) -> (v -> Value) -> Iterable.Iterable (k, v) -> Value
+iterableObj : (k -> String) -> (v -> Value) -> Iterable.Iterable ( k, v ) -> Value
 iterableObj keyFunc valueFunc entries =
     let
         unwrappedValueFunc v =
             let
-                (Value (Json.Internal.Value wrapped)) = valueFunc v
+                (Value (Json.Internal.Value wrapped)) =
+                    valueFunc v
             in
             wrapped
     in
     Value (Json.Internal.Value (objectFrom keyFunc unwrappedValueFunc entries))
 
+
+
 -- Kernel interop
+
 
 unwrap : Value -> Json.Internal.Value
 unwrap (Value val) =
@@ -286,7 +317,6 @@ arrayFrom =
     Elm.Kernel.Json.arrayFrom
 
 
-objectFrom : (k -> String) -> (v -> Effect.RawJsObject) -> Iterable.Iterable (k, v) -> Effect.RawJsObject
+objectFrom : (k -> String) -> (v -> Effect.RawJsObject) -> Iterable.Iterable ( k, v ) -> Effect.RawJsObject
 objectFrom =
     Elm.Kernel.Json.objectFrom
-

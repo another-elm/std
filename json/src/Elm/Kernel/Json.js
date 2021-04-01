@@ -71,11 +71,11 @@ const _Json_decodeArray = (value) => {
   return __Maybe_Nothing;
 };
 
-const _Json_decodeObject = (obj) => {
-  if (_Json_isObject(obj) && !_Json_isArray(obj)) {
+const _Json_decodeObject = (object) => {
+  if (_Json_isObject(object) && !_Json_isArray(object)) {
     const keyValues = {
       *[Symbol.iterator]() {
-        for (const [key, value] of Object.entries(obj)) {
+        for (const [key, value] of Object.entries(object)) {
           yield __Utils_Tuple2(key, value);
         }
       },

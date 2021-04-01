@@ -212,9 +212,23 @@ async function processJsFile(file, importedDefs, kernelDefinitions) {
       continue;
     } else if (inImport) {
       if (importMatch !== null) {
+        const hasAlias = importMatch[3] !== undefined;
+
         // Use alias if it is there, otherwise use last part of import.
-        const moduleAlias = importMatch[3] === undefined ? importMatch[2] : importMatch[3];
+        const moduleAlias = hasAlias ? importMatch[3] : importMatch[2];
         const importedModulePath = importMatch[1];
+        const isKernel = importedModulePath.startsWith("Elm.Kernel");
+
+        if (hasAlias && isKernel) {
+          errors.push(
+            `Kernel import ${importedModulePath} cannot have alias at ${file}:${number}.`
+          );
+        } else if (!hasAlias && !isKernel && importedModulePath.includes(".")) {
+          errors.push(
+            `Qualified import ${importedModulePath} needs an alias at ${file}:${number}.`
+          );
+        }
+
         for (const defName of importMatch[4].split(",").map((s) => s.trim())) {
           imports.set(`__${moduleAlias}_${defName}`, { lineNumber: number, used: false });
 

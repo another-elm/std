@@ -37,12 +37,18 @@ const _List_Nil = { $: _List_nilKey };
 
 const _List_Cons = (hd, tl) => A2(__List_Cons_elm_builtin, hd, tl);
 
-const _List_fromArray = (array) =>
+// TODO(harry): rename
+const _List_fromArray = (array) => {
+  if (!Array.isArray(array)) {
+    array = [...array];
+  }
+
   // eslint-disable-next-line unicorn/no-array-reduce
-  array.reduceRight(
+  return array.reduceRight(
     (out, value) => A2(__List_Cons_elm_builtin, value, out),
     __List_Nil_elm_builtin
   );
+};
 
 const _List_iterate = (xs) => ({
   *[Symbol.iterator]() {

@@ -60,7 +60,7 @@ to process the content. Or you can send the file along to someone else with the
 -}
 decoder : Decode.Decoder File
 decoder =
-    Elm.Kernel.File.decoder
+    Elm.Kernel.File.decoder ()
 
 
 

@@ -1,7 +1,8 @@
 /*
 
 import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
-import Elm.Kernel.Json exposing (run, wrap, unwrap)
+import Elm.Kernel.Json exposing (wrap, unwrap)
+import Json.Decode as Decode exposing (decodeValue)
 import Elm.Kernel.List exposing (iterate, fromArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
@@ -130,7 +131,7 @@ function _Platform_incomingPort(name, converter) {
 
   _Platform_registerPort(name, (runtimeId) => {
     function send(incomingValue) {
-      const result = A2(__Json_run, converter, __Json_wrap(incomingValue));
+      const result = __Decode_decodeValue(converter)(__Json_wrap(incomingValue));
 
       if (!__Result_isOk(result)) {
         __Debug_crash(4, name, result.a);
@@ -363,7 +364,8 @@ const _Platform_markSyncUpdateAsUsed = __Effect2_SyncUpdate;
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Platform_.*" }] */
 
 /* global __Debug_crash, __Debug_runtimeCrashReason */
-/* global __Json_run, __Json_wrap, __Json_unwrap */
+/* global __Json_wrap, __Json_unwrap */
+/* global __Decode_decodeValue */
 /* global __List_iterate, __List_fromArray */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */

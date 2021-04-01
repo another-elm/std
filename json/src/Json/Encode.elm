@@ -1,5 +1,5 @@
 module Json.Encode exposing
-  ( Value
+  ( Value(..)
   , encode
   , string, int, float, bool, null
   , list, array, set
@@ -26,6 +26,10 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Set exposing (Set)
 import Elm.Kernel.Json
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Iterable as Iterable
+import Json.Internal
+import Elm.Kernel.Basics
 
 
 
@@ -34,7 +38,9 @@ import Elm.Kernel.Json
 
 {-| Represents a JavaScript value.
 -}
-type Value = Value
+type Value
+    -- MUST BE A TYPE
+    = Value Json.Internal.Value
 
 
 {-| Convert a `Value` into a prettified string. The first argument specifies
@@ -59,8 +65,8 @@ the amount of indentation in the resulting string.
     -- }
 -}
 encode : Int -> Value -> String
-encode =
-    Elm.Kernel.Json.encode
+encode indent (Value (Json.Internal.Value raw)) =
+    Elm.Kernel.Json.encode indent raw
 
 
 
@@ -76,8 +82,13 @@ encode =
     -- encode 0 (string "hello") == "\"hello\""
 -}
 string : String -> Value
-string =
-    Elm.Kernel.Json.wrap
+string s =
+    let
+        raw : Effect.RawJsObject
+        raw =
+            Elm.Kernel.Basics.fudgeType s
+    in
+    Value (Json.Internal.Value raw)
 
 
 {-| Turn an `Int` into a JSON number.
@@ -89,8 +100,13 @@ string =
     -- encode 0 (int 0)  == "0"
 -}
 int : Int -> Value
-int =
-    Elm.Kernel.Json.wrap
+int i =
+    let
+        raw : Effect.RawJsObject
+        raw =
+            Elm.Kernel.Basics.fudgeType i
+    in
+    Value (Json.Internal.Value raw)
 
 
 {-| Turn a `Float` into a JSON number.
@@ -112,8 +128,13 @@ both as `null`.
 [json]: https://www.json.org/
 -}
 float : Float -> Value
-float =
-    Elm.Kernel.Json.wrap
+float f =
+    let
+        raw : Effect.RawJsObject
+        raw =
+            Elm.Kernel.Basics.fudgeType f
+    in
+    Value (Json.Internal.Value raw)
 
 
 {-| Turn a `Bool` into a JSON boolean.
@@ -124,8 +145,13 @@ float =
     -- encode 0 (bool False) == "false"
 -}
 bool : Bool -> Value
-bool =
-    Elm.Kernel.Json.wrap
+bool b =
+    let
+        raw : Effect.RawJsObject
+        raw =
+            Elm.Kernel.Basics.fudgeType b
+    in
+    Value (Json.Internal.Value raw)
 
 
 
@@ -140,7 +166,12 @@ bool =
 -}
 null : Value
 null =
-    Elm.Kernel.Json.encodeNull
+    let
+        raw : Effect.RawJsObject
+        raw =
+            Elm.Kernel.Json.null
+    in
+    Value (Json.Internal.Value raw)
 
 
 
@@ -158,24 +189,22 @@ null =
 -}
 list : (a -> Value) -> List a -> Value
 list func entries =
-    Elm.Kernel.Json.wrap
-        (List.foldl (Elm.Kernel.Json.addEntry func) (Elm.Kernel.Json.emptyArray ()) entries)
+    iterableArray func (Iterable.list entries)
 
 
 {-| Turn an `Array` into a JSON array.
 -}
 array : (a -> Value) -> Array a -> Value
 array func entries =
-    Elm.Kernel.Json.wrap
-        (Array.foldl (Elm.Kernel.Json.addEntry func) (Elm.Kernel.Json.emptyArray ()) entries)
+    iterableArray func (Iterable.array entries)
 
 
 {-| Turn an `Set` into a JSON array.
 -}
 set : (a -> Value) -> Set a -> Value
 set func entries =
-    Elm.Kernel.Json.wrap
-        (Set.foldl (Elm.Kernel.Json.addEntry func) (Elm.Kernel.Json.emptyArray ()) entries)
+    iterableArray func (Iterable.set entries)
+
 
 
 
@@ -197,12 +226,7 @@ set func entries =
 -}
 object : List (String, Value) -> Value
 object pairs =
-    Elm.Kernel.Json.wrap (
-        List.foldl
-            (\(k,v) obj -> Elm.Kernel.Json.addField k v obj)
-            (Elm.Kernel.Json.emptyObject ())
-            pairs
-    )
+    iterableObj (\x -> x) (\x -> x) (Iterable.list pairs)
 
 
 {-| Turn a `Dict` into a JSON object.
@@ -219,9 +243,34 @@ object pairs =
 -}
 dict : (k -> String) -> (v -> Value) -> Dict k v -> Value
 dict toKey toValue dictionary =
-    Elm.Kernel.Json.wrap (
-        Dict.foldl
-            (\key value obj -> Elm.Kernel.Json.addField (toKey key) (toValue value) obj)
-            (Elm.Kernel.Json.emptyObject ())
-            dictionary
-    )
+    iterableObj toKey toValue (Iterable.dict dictionary)
+
+
+iterableArray : (a -> Value) -> Iterable.Iterable a -> Value
+iterableArray func entries =
+    let
+        unwrappedFunc v =
+            let
+                (Value (Json.Internal.Value wrapped)) = func v
+            in
+            wrapped
+    in
+    Value (Json.Internal.Value (Elm.Kernel.Json.arrayFrom unwrappedFunc entries))
+
+
+iterableObj : (k -> String) -> (v -> Value) -> Iterable.Iterable (k, v) -> Value
+iterableObj keyFunc valueFunc entries =
+    let
+        unwrappedValueFunc v =
+            let
+                (Value (Json.Internal.Value wrapped))= valueFunc v
+            in
+            wrapped
+    in
+    Value (Json.Internal.Value (Elm.Kernel.Json.objectFrom keyFunc unwrappedValueFunc entries))
+
+-- Kernel interop
+
+unwrap : Value -> Json.Internal.Value
+unwrap (Value val) =
+    val

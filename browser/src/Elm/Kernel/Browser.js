@@ -3,7 +3,8 @@
 import Browser exposing (Internal, External)
 import Elm.Kernel.Basics exposing (isDebug)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.Json exposing (runHelp)
+import Elm.Kernel.Json exposing (wrap)
+import Json.Decode as Decode exposing (decodeValue)
 import Elm.Kernel.List exposing (Nil)
 import Elm.Kernel.Platform exposing (browserifiedSendToApp)
 import Elm.Kernel.Utils exposing (Tuple0)
@@ -201,7 +202,7 @@ const _Browser_off = (effectId) => {
 };
 
 const _Browser_decodeEvent = F2((decoder, event) => {
-  const result = __Json_runHelp(decoder, event);
+  const result = __Decode_decodeValue(decoder)(__Json_wrap(event));
   return __Result_isOk(result) ? __Maybe_Just(result.a) : __Maybe_Nothing;
 });
 
@@ -389,7 +390,8 @@ function _Browser_load(url) {
 /* global __Browser_Internal, __Browser_External */
 /* global __Basics_isDebug */
 /* global __Debug_crash */
-/* global __Json_runHelp */
+/* global __Json_wrap */
+/* global __Decode_decodeValue */
 /* global __List_Nil */
 /* global __Platform_browserifiedSendToApp */
 /* global __Utils_Tuple0 */

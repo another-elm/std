@@ -1,10 +1,9 @@
 /*
 
-import Elm.Kernel.Json exposing (decodePrim, expecting)
+import Elm.Kernel.Json exposing (fileDecoder)
 import Elm.Kernel.List exposing (fromArray)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
 import Elm.Kernel.Utils exposing (Tuple2)
-import Result exposing (Ok)
 import String exposing (join)
 import Time exposing (millisToPosix)
 
@@ -12,12 +11,7 @@ import Time exposing (millisToPosix)
 
 // DECODER
 
-const _File_decoder = __Json_decodePrim((value) => {
-  // NOTE: checks if `File` exists in case this is run on node
-  return typeof File !== "undefined" && value instanceof File
-    ? __Result_Ok(value)
-    : __Json_expecting("a FILE", value);
-});
+const _File_decoder = __Json_fileDecoder;
 
 // METADATA
 
@@ -198,10 +192,9 @@ function _File_toUrl(blob) {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_File_.*" }] */
 
-/* global __Json_decodePrim, __Json_expecting */
+/* global __Json_fileDecoder */
 /* global __List_fromArray */
 /* global __Scheduler_binding, __Scheduler_succeed */
 /* global __Utils_Tuple2 */
-/* global __Result_Ok */
 /* global __String_join */
 /* global __Time_millisToPosix */

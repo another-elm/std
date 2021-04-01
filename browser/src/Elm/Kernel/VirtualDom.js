@@ -2,11 +2,11 @@
 
 import Basics exposing (identity)
 import Elm.Kernel.Debug exposing (crash)
-import Elm.Kernel.Json exposing (equality, runHelp, unwrap)
+import Elm.Kernel.Json exposing (unwrap, wrap)
+import Json.Decode as Decode exposing (decodeValue, map, map2, succeed)
 import Elm.Kernel.List exposing (Cons, Nil)
 import Elm.Kernel.Utils exposing (Tuple2)
 import Elm.Kernel.Platform exposing (export)
-import Json.Decode as Json exposing (map, map2, succeed)
 import Result exposing (isOk)
 import VirtualDom exposing (toHandlerInt)
 
@@ -339,13 +339,13 @@ function _VirtualDom_mapHandler(func, handler)
 		$: handler.$,
 		a:
 			!tag
-				? A2(__Json_map, func, handler.a)
+				? A2(__Decode_map, func, handler.a)
 				:
-			A3(__Json_map2,
+			A3(__Decode_map2,
 				tag < 3
 					? _VirtualDom_mapEventTuple
 					: _VirtualDom_mapEventRecord,
-				__Json_succeed(func),
+				__Decode_succeed(func),
 				handler.a
 			)
 	};
@@ -608,13 +608,12 @@ catch(e) {}
 
 // EVENT HANDLERS
 
-
 function _VirtualDom_makeCallback(eventNode, initialHandler)
 {
 	function callback(event)
 	{
 		var handler = callback.__handler;
-		var result = __Json_runHelp(handler.a, event);
+		var result = __Decode_decodeValue(handler.a)(__Json_wrap(event));
 
 		if (!__Result_isOk(result))
 		{
@@ -660,13 +659,6 @@ function _VirtualDom_makeCallback(eventNode, initialHandler)
 
 	return callback;
 }
-
-function _VirtualDom_equalEvents(x, y)
-{
-	return x.$ == y.$ && __Json_equality(x.a, y.a);
-}
-
-
 
 // DIFF
 
@@ -909,9 +901,12 @@ function _VirtualDom_diffFacts(x, y, category)
 		var xValue = x[xKey];
 		var yValue = y[xKey];
 
+		// TODO(harry): the official elm/virtual-dom skips equal event
+		// listeners here. We always assume event listeners change. Does this
+		// cost performance?
+
 		// reference equal, so don't worry about it
-		if (xValue === yValue && xKey !== 'value' && xKey !== 'checked'
-			|| category === 'a__1_EVENT' && _VirtualDom_equalEvents(xValue, yValue))
+		if (xValue === yValue && xKey !== 'value' && xKey !== 'checked')
 		{
 			continue;
 		}
@@ -1579,10 +1574,10 @@ function _VirtualDom_dekey(keyedNode)
 
 /* global __Basics_identity */
 /* global __Debug_crash */
-/* global __Json_equality, __Json_runHelp, __Json_unwrap */
+/* global __Json_unwrap, __Json_wrap */
+/* global __Decode_decodeValue, __Decode_map, __Decode_map2, __Decode_succeed */
 /* global __List_Cons, __List_Nil */
 /* global __Utils_Tuple2 */
 /* global __Platform_export */
-/* global __Json_map, __Json_map2, __Json_succeed */
 /* global __Result_isOk */
 /* global __VirtualDom_toHandlerInt */

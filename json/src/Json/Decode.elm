@@ -46,7 +46,12 @@ errors.
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Encode
+import Platform.Unstable.Effect as Effect
+import Platform.Unstable.Iterable as Iterable exposing (Iterable)
 import Elm.Kernel.Json
+import Elm.Kernel.List
+import Elm.Kernel.Basics
+import Json.Internal
 
 
 
@@ -59,7 +64,8 @@ There is a whole section in `guide.elm-lang.org` about decoders, so [check it
 out](https://guide.elm-lang.org/interop/json.html) for a more comprehensive
 introduction!
 -}
-type Decoder a = Decoder
+type Decoder a
+  = Decoder (Effect.RawJsObject -> Result Error a)
 
 
 {-| Decode a JSON string into an Elm `String`.
@@ -72,7 +78,7 @@ type Decoder a = Decoder
 -}
 string : Decoder String
 string =
-  Elm.Kernel.Json.decodeString
+  prim Elm.Kernel.Json.decodeString "a STRING"
 
 
 {-| Decode a JSON boolean into an Elm `Bool`.
@@ -85,7 +91,7 @@ string =
 -}
 bool : Decoder Bool
 bool =
-  Elm.Kernel.Json.decodeBool
+  prim Elm.Kernel.Json.decodeBool "a BOOL"
 
 
 {-| Decode a JSON number into an Elm `Int`.
@@ -98,7 +104,7 @@ bool =
 -}
 int : Decoder Int
 int =
-  Elm.Kernel.Json.decodeInt
+  prim Elm.Kernel.Json.decodeInt "an INT"
 
 
 {-| Decode a JSON number into an Elm `Float`.
@@ -111,7 +117,7 @@ int =
 -}
 float : Decoder Float
 float =
-  Elm.Kernel.Json.decodeFloat
+  prim Elm.Kernel.Json.decodeFloat "a FLOAT"
 
 
 
@@ -139,8 +145,14 @@ nullable decoder =
     decodeString (list bool) "[true,false]" == Ok [True,False]
 -}
 list : Decoder a -> Decoder (List a)
-list =
-  Elm.Kernel.Json.decodeList
+list (Decoder decoder) =
+  Decoder
+    (\raw ->
+      decodeArray raw
+        |> Result.fromMaybe (Failure "Expecting a LIST" (Json.Encode.Value (Json.Internal.Value raw)))
+        |> Result.andThen (Iterable.tryMap decoder)
+        |> Result.map Iterable.toList
+    )
 
 
 {-| Decode a JSON array into an Elm `Array`.
@@ -149,8 +161,14 @@ list =
     decodeString (array bool) "[true,false]" == Ok (Array.fromList [True,False])
 -}
 array : Decoder a -> Decoder (Array a)
-array =
-  Elm.Kernel.Json.decodeArray
+array (Decoder decoder) =
+  Decoder
+    (\raw ->
+      decodeArray raw
+        |> Result.fromMaybe (Failure "Expecting an ARRAY" (Json.Encode.Value (Json.Internal.Value raw)))
+        |> Result.andThen (Iterable.tryMap decoder)
+        |> Result.map Iterable.toArray
+    )
 
 
 {-| Decode a JSON object into an Elm `Dict`.
@@ -198,7 +216,7 @@ you need that.
 -}
 dict : Decoder a -> Decoder (Dict String a)
 dict decoder =
-  map Dict.fromList (keyValuePairs decoder)
+  Decoder (keyValueHelper decoder >> Result.map (Iterable.toDict))
 
 
 {-| Decode a JSON object into an Elm `List` of pairs.
@@ -207,8 +225,8 @@ dict decoder =
       == Ok [("alice", 42), ("bob", 99)]
 -}
 keyValuePairs : Decoder a -> Decoder (List (String, a))
-keyValuePairs =
-  Elm.Kernel.Json.decodeKeyValuePairs
+keyValuePairs decoder =
+  Decoder (keyValueHelper decoder >> Result.map (Iterable.toList))
 
 
 {-| Decode a JSON array that has one or more elements. This comes up if you
@@ -262,8 +280,17 @@ cares about is if `x` is present and that the value there is an `Int`.
 Check out [`map2`](#map2) to see how to decode multiple fields!
 -}
 field : String -> Decoder a -> Decoder a
-field =
-    Elm.Kernel.Json.decodeField
+field name (Decoder decoder) =
+  Decoder
+    (\raw ->
+      Elm.Kernel.Json.getField name raw
+        |> Result.fromMaybe
+          (Failure
+            ("Expecting an OBJECT with a field named `" ++ name ++ "`")
+            (Json.Encode.Value (Json.Internal.Value raw))
+          )
+        |> Result.andThen (decoder >> Result.mapError (Field name))
+    )
 
 
 {-| Decode a nested JSON object, requiring certain fields.
@@ -292,8 +319,32 @@ at fields decoder =
     decodeString (index 3 string) json  == Err ...
 -}
 index : Int -> Decoder a -> Decoder a
-index =
-    Elm.Kernel.Json.decodeIndex
+index i (Decoder decoder) =
+  Decoder
+    (\raw ->
+      Elm.Kernel.Json.getArrayLength raw
+        |> Result.fromMaybe (Failure "Expecting an ARRAY" (Json.Encode.Value (Json.Internal.Value raw)))
+        |> Result.andThen
+          (\length ->
+            if i < 0 then
+              Err
+                (Failure
+                  ("Cannot access index " ++ String.fromInt i ++ " as it is negative")
+                  (Json.Encode.Value (Json.Internal.Value raw))
+                )
+            else if i >= length then
+              Err
+                (Failure
+                  ( "Expecting a LONGER array. Need index " ++ String.fromInt i
+                    ++ " but only see " ++ String.fromInt length ++ " entries"
+                  )
+                  (Json.Encode.Value (Json.Internal.Value raw))
+                )
+            else
+              decoder (Elm.Kernel.Json.uncheckedArrayGet i raw)
+                |> Result.mapError (Index i)
+          )
+    )
 
 
 
@@ -348,8 +399,8 @@ then a few older ones that you still support. You could use `andThen` to be
 even more particular if you wanted.
 -}
 oneOf : List (Decoder a) -> Decoder a
-oneOf =
-    Elm.Kernel.Json.oneOf
+oneOf decoders =
+  Decoder (oneOfHelp decoders [] >> Result.mapError OneOf)
 
 
 
@@ -374,8 +425,9 @@ It is often helpful to use `map` with `oneOf`, like when defining `nullable`:
         ]
 -}
 map : (a -> value) -> Decoder a -> Decoder value
-map =
-    Elm.Kernel.Json.map1
+map mapper (Decoder decoder) =
+  Decoder
+    (decoder >> Result.map mapper)
 
 
 {-| Try two decoders and then combine the result. We can use this to decode
@@ -395,8 +447,14 @@ It tries each individual decoder and puts the result together with the `Point`
 constructor.
 -}
 map2 : (a -> b -> value) -> Decoder a -> Decoder b -> Decoder value
-map2 =
-    Elm.Kernel.Json.map2
+map2 mapper (Decoder decoderA) (Decoder decoderB) =
+  Decoder
+    (\raw ->
+      Result.map2
+        mapper
+        (decoderA raw)
+        (decoderB raw)
+    )
 
 
 {-| Try three decoders and then combine the result. We can use this to decode
@@ -418,38 +476,74 @@ Like `map2` it tries each decoder in order and then give the results to the
 `Person` constructor. That can be any function though!
 -}
 map3 : (a -> b -> c -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder value
-map3 =
-    Elm.Kernel.Json.map3
+map3 mapper (Decoder decoderA) (Decoder decoderB) (Decoder decoderC) =
+  Decoder
+    (\raw ->
+      Result.map3
+        mapper
+        (decoderA raw)
+        (decoderB raw)
+        (decoderC raw)
+    )
 
 
 {-|-}
 map4 : (a -> b -> c -> d -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder value
-map4 =
-    Elm.Kernel.Json.map4
+map4 mapper (Decoder decoderA) (Decoder decoderB) (Decoder decoderC)  (Decoder decoderD) =
+  Decoder
+    (\raw ->
+      Result.map4
+        mapper
+        (decoderA raw)
+        (decoderB raw)
+        (decoderC raw)
+        (decoderD raw)
+    )
 
 
 {-|-}
 map5 : (a -> b -> c -> d -> e -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder value
-map5 =
-    Elm.Kernel.Json.map5
+map5 mapper  (Decoder decoderA) (Decoder decoderB) (Decoder decoderC)  (Decoder decoderD) (Decoder decoderE) =
+  Decoder
+    (\raw ->
+      Result.map5
+        mapper
+        (decoderA raw)
+        (decoderB raw)
+        (decoderC raw)
+        (decoderD raw)
+        (decoderE raw)
+    )
 
 
 {-|-}
 map6 : (a -> b -> c -> d -> e -> f -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder value
-map6 =
-    Elm.Kernel.Json.map6
+map6 mapper decoderA decoderB decoderC decoderD decoderE decoderF =
+  map2
+    (\partiallyAppliedMapper -> partiallyAppliedMapper)
+    (map5 mapper decoderA decoderB decoderC decoderD decoderE)
+    decoderF
 
 
 {-|-}
 map7 : (a -> b -> c -> d -> e -> f -> g -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder g -> Decoder value
-map7 =
-    Elm.Kernel.Json.map7
+map7 mapper decoderA decoderB decoderC decoderD decoderE decoderF decoderG =
+  map3
+    (\partiallyAppliedMapper -> partiallyAppliedMapper)
+    (map5 mapper decoderA decoderB decoderC decoderD decoderE)
+    decoderF
+    decoderG
 
 
 {-|-}
 map8 : (a -> b -> c -> d -> e -> f -> g -> h -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder g -> Decoder h -> Decoder value
-map8 =
-    Elm.Kernel.Json.map8
+map8 mapper decoderA decoderB decoderC decoderD decoderE decoderF decoderG decoderH =
+  map4
+    (\partiallyAppliedMapper -> partiallyAppliedMapper)
+    (map5 mapper decoderA decoderB decoderC decoderD decoderE)
+    decoderF
+    decoderG
+    decoderH
 
 
 
@@ -464,16 +558,20 @@ fails for some reason.
     decodeString int "1 + 2" == Err ...
 -}
 decodeString : Decoder a -> String -> Result Error a
-decodeString =
-  Elm.Kernel.Json.runOnString
+decodeString (Decoder decoder) string_ =
+  case rawParse string_ of
+    Ok raw -> decoder raw
+
+    Err msg -> Err (Failure ("This is not valid JSON! " ++ msg) (Json.Encode.string string_))
+
 
 
 {-| Run a `Decoder` on some JSON `Value`. You can send these JSON values
 through ports, so that is probably the main time you would use this function.
 -}
 decodeValue : Decoder a -> Value -> Result Error a
-decodeValue =
-  Elm.Kernel.Json.run
+decodeValue (Decoder decoder) (Json.Encode.Value (Json.Internal.Value raw)) =
+  decoder raw
 
 
 {-| Represents a JavaScript value.
@@ -601,8 +699,8 @@ indent str =
 This is handy when used with `oneOf` or `andThen`.
 -}
 succeed : a -> Decoder a
-succeed =
-  Elm.Kernel.Json.succeed
+succeed val =
+  Decoder (\_ -> Ok val)
 
 
 {-| Ignore the JSON and make the decoder fail. This is handy when used with
@@ -612,8 +710,8 @@ case.
 See the [`andThen`](#andThen) docs for an example.
 -}
 fail : String -> Decoder a
-fail =
-  Elm.Kernel.Json.fail
+fail msg =
+  Decoder (\raw -> Err (Failure msg (Json.Encode.Value (Json.Internal.Value raw))))
 
 
 {-| Create decoders that depend on previous results. If you are creating
@@ -642,8 +740,18 @@ versioned data, you might do something like this:
     -- infoDecoder3 : Decoder Info
 -}
 andThen : (a -> Decoder b) -> Decoder a -> Decoder b
-andThen =
-  Elm.Kernel.Json.andThen
+andThen func (Decoder decoder) =
+  Decoder
+    (\raw ->
+      decoder raw
+        |> Result.andThen
+          (\a ->
+            let
+              (Decoder newDecoder) = func a
+            in
+            newDecoder raw
+          )
+    )
 
 
 {-| Sometimes you have JSON with recursive structure, like nested comments.
@@ -684,7 +792,7 @@ about its structure.
 -}
 value : Decoder Value
 value =
-  Elm.Kernel.Json.decodeValue
+  Decoder (Json.Internal.Value >> Json.Encode.Value >> Ok)
 
 
 {-| Decode a `null` value into some Elm value.
@@ -697,5 +805,77 @@ value =
 So if you ever see a `null`, this will return whatever value you specified.
 -}
 null : a -> Decoder a
-null =
-  Elm.Kernel.Json.decodeNull
+null val =
+  Decoder
+    (\raw ->
+      if Elm.Kernel.Json.isNull raw then
+        Ok val
+      else
+        Err (Failure "Expecting null" (Json.Encode.Value (Json.Internal.Value raw)))
+    )
+
+
+keyValueDecodeHelper : Decoder a -> List (String, a) -> List (String, Value) -> Result Error (List (String, a))
+keyValueDecodeHelper decoder processed reversedRaw  =
+  case reversedRaw of
+    [] -> Ok processed
+
+    (key, fieldValue) :: rest ->
+      case
+          decodeValue decoder fieldValue
+      of
+        Ok decodedFieldValue -> keyValueDecodeHelper decoder ((key, decodedFieldValue) :: processed) rest
+
+        Err e -> Err (Field key e)
+
+
+oneOfHelp : List (Decoder a) -> List (Error) -> Effect.RawJsObject -> Result (List Error) a
+oneOfHelp decoders errors raw =
+  case decoders of
+    [] -> Err (List.reverse errors)
+    (Decoder first) :: rest ->
+      case first raw of
+        Ok decoded -> Ok decoded
+        Err e ->
+          oneOfHelp rest (e :: errors) raw
+
+
+prim : (Effect.RawJsObject -> Maybe a) -> String -> Decoder a
+prim func expecting =
+  Decoder
+    (\raw ->
+      func raw
+        |> Result.fromMaybe (Failure ("Expecting " ++ expecting) (Json.Encode.Value (Json.Internal.Value raw)))
+    )
+
+
+keyValueHelper : Decoder a -> Effect.RawJsObject -> Result Error (Iterable (String, a))
+keyValueHelper (Decoder decoder) raw =
+  decodeObject raw
+    |> Result.fromMaybe (Failure "Expecting an OBJECT" (Json.Encode.Value (Json.Internal.Value raw)))
+    |> Result.andThen
+      (Iterable.tryMap
+        (\(name, rawFieldValue) ->
+          case decoder raw of
+            Ok fieldValue -> Ok (name, fieldValue)
+            Err e -> Err (Field name e)
+        )
+      )
+
+
+-- Kernel interop
+
+rawParse : String -> Result String Effect.RawJsObject
+rawParse =
+  Elm.Kernel.Json.rawParse
+
+
+decodeArray : Effect.RawJsObject -> Maybe (Iterable Effect.RawJsObject)
+decodeArray =
+  Elm.Kernel.Json.decodeArray
+
+
+decodeObject : Effect.RawJsObject -> Maybe (Iterable (String, Effect.RawJsObject))
+decodeObject =
+  Elm.Kernel.Json.decodeObject
+

@@ -78,7 +78,7 @@ type Decoder a
 -}
 string : Decoder String
 string =
-  prim Elm.Kernel.Json.decodeString "a STRING"
+  prim decodeStringRaw "a STRING"
 
 
 {-| Decode a JSON boolean into an Elm `Bool`.
@@ -91,7 +91,7 @@ string =
 -}
 bool : Decoder Bool
 bool =
-  prim Elm.Kernel.Json.decodeBool "a BOOL"
+  prim decodeBool "a BOOL"
 
 
 {-| Decode a JSON number into an Elm `Int`.
@@ -104,7 +104,7 @@ bool =
 -}
 int : Decoder Int
 int =
-  prim Elm.Kernel.Json.decodeInt "an INT"
+  prim decodeInt "an INT"
 
 
 {-| Decode a JSON number into an Elm `Float`.
@@ -117,7 +117,7 @@ int =
 -}
 float : Decoder Float
 float =
-  prim Elm.Kernel.Json.decodeFloat "a FLOAT"
+  prim decodeFloat "a FLOAT"
 
 
 
@@ -283,7 +283,7 @@ field : String -> Decoder a -> Decoder a
 field name (Decoder decoder) =
   Decoder
     (\raw ->
-      Elm.Kernel.Json.getField name raw
+      getField name raw
         |> Result.fromMaybe
           (Failure
             ("Expecting an OBJECT with a field named `" ++ name ++ "`")
@@ -322,7 +322,7 @@ index : Int -> Decoder a -> Decoder a
 index i (Decoder decoder) =
   Decoder
     (\raw ->
-      Elm.Kernel.Json.getArrayLength raw
+      getArrayLength raw
         |> Result.fromMaybe (Failure "Expecting an ARRAY" (Json.Encode.Value (Json.Internal.Value raw)))
         |> Result.andThen
           (\length ->
@@ -341,7 +341,7 @@ index i (Decoder decoder) =
                   (Json.Encode.Value (Json.Internal.Value raw))
                 )
             else
-              decoder (Elm.Kernel.Json.uncheckedArrayGet i raw)
+              decoder (uncheckedArrayGet i raw)
                 |> Result.mapError (Index i)
           )
     )
@@ -808,7 +808,7 @@ null : a -> Decoder a
 null val =
   Decoder
     (\raw ->
-      if Elm.Kernel.Json.isNull raw then
+      if isNull raw then
         Ok val
       else
         Err (Failure "Expecting null" (Json.Encode.Value (Json.Internal.Value raw)))
@@ -865,6 +865,41 @@ keyValueHelper (Decoder decoder) raw =
 
 -- Kernel interop
 
+decodeStringRaw : Effect.RawJsObject -> Maybe String
+decodeStringRaw =
+  Elm.Kernel.Json.decodeString
+
+
+decodeBool : Effect.RawJsObject -> Maybe Bool
+decodeBool =
+  Elm.Kernel.Json.decodeBool
+
+
+decodeInt : Effect.RawJsObject -> Maybe Int
+decodeInt =
+  Elm.Kernel.Json.decodeInt
+
+
+decodeFloat : Effect.RawJsObject -> Maybe Float
+decodeFloat =
+  Elm.Kernel.Json.decodeFloat
+
+
+getField : String -> Effect.RawJsObject -> Maybe Effect.RawJsObject
+getField =
+  Elm.Kernel.Json.getField
+
+
+getArrayLength : Effect.RawJsObject -> Maybe Int
+getArrayLength =
+  Elm.Kernel.Json.getArrayLength
+
+
+uncheckedArrayGet : Int -> Effect.RawJsObject -> Effect.RawJsObject
+uncheckedArrayGet =
+  Elm.Kernel.Json.uncheckedArrayGet
+
+
 rawParse : String -> Result String Effect.RawJsObject
 rawParse =
   Elm.Kernel.Json.rawParse
@@ -878,4 +913,9 @@ decodeArray =
 decodeObject : Effect.RawJsObject -> Maybe (Iterable (String, Effect.RawJsObject))
 decodeObject =
   Elm.Kernel.Json.decodeObject
+
+
+isNull : Effect.RawJsObject -> Bool
+isNull =
+  Elm.Kernel.Json.isNull
 

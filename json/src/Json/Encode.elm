@@ -66,7 +66,7 @@ the amount of indentation in the resulting string.
 -}
 encode : Int -> Value -> String
 encode indent (Value (Json.Internal.Value raw)) =
-    Elm.Kernel.Json.encode indent raw
+    encodeRaw indent raw
 
 
 
@@ -166,12 +166,7 @@ bool b =
 -}
 null : Value
 null =
-    let
-        raw : Effect.RawJsObject
-        raw =
-            Elm.Kernel.Json.null
-    in
-    Value (Json.Internal.Value raw)
+    Value (Json.Internal.Value nullRaw)
 
 
 
@@ -255,7 +250,7 @@ iterableArray func entries =
             in
             wrapped
     in
-    Value (Json.Internal.Value (Elm.Kernel.Json.arrayFrom unwrappedFunc entries))
+    Value (Json.Internal.Value (arrayFrom unwrappedFunc entries))
 
 
 iterableObj : (k -> String) -> (v -> Value) -> Iterable.Iterable (k, v) -> Value
@@ -263,14 +258,35 @@ iterableObj keyFunc valueFunc entries =
     let
         unwrappedValueFunc v =
             let
-                (Value (Json.Internal.Value wrapped))= valueFunc v
+                (Value (Json.Internal.Value wrapped)) = valueFunc v
             in
             wrapped
     in
-    Value (Json.Internal.Value (Elm.Kernel.Json.objectFrom keyFunc unwrappedValueFunc entries))
+    Value (Json.Internal.Value (objectFrom keyFunc unwrappedValueFunc entries))
 
 -- Kernel interop
 
 unwrap : Value -> Json.Internal.Value
 unwrap (Value val) =
     val
+
+
+encodeRaw : Int -> Effect.RawJsObject -> String
+encodeRaw =
+    Elm.Kernel.Json.encode
+
+
+nullRaw : Effect.RawJsObject
+nullRaw =
+    Elm.Kernel.Json.null
+
+
+arrayFrom : (a -> Effect.RawJsObject) -> Iterable.Iterable a -> Effect.RawJsObject
+arrayFrom =
+    Elm.Kernel.Json.arrayFrom
+
+
+objectFrom : (k -> String) -> (v -> Effect.RawJsObject) -> Iterable.Iterable (k, v) -> Effect.RawJsObject
+objectFrom =
+    Elm.Kernel.Json.objectFrom
+

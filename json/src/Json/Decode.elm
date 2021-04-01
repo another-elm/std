@@ -49,8 +49,6 @@ import Json.Encode
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Iterable as Iterable exposing (Iterable)
 import Elm.Kernel.Json
-import Elm.Kernel.List
-import Elm.Kernel.Basics
 import Json.Internal
 
 

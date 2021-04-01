@@ -47,6 +47,17 @@ def elm_make_json(run):
     return bool(code)
 
 
+def elm_make_test(run):
+    print("Running elm make in test...")
+
+    code = run(['../make-pkg.sh'], subdir='test')
+
+    if code != 0:
+        print("There are issues with elm make in test")
+
+    return bool(code)
+
+
 def check_kernel_imports(run):
     print("Running check-kernel-imports...")
     code = run([
@@ -247,6 +258,7 @@ def tidy():
     code |= elm_make_core(run)
     code |= elm_make_browser(run)
     code |= elm_make_json(run)
+    code |= elm_make_test(run)
     code |= generate_globals()
     code |= xo()
     code |= yapf()
@@ -289,6 +301,7 @@ def check():
     code |= (fail_fast and code) or elm_make_core(run)
     code |= (fail_fast and code) or elm_make_browser(run)
     code |= (fail_fast and code) or elm_make_json(run)
+    code |= (fail_fast and code) or elm_make_test(run)
     code |= (fail_fast and code) or xo()
     code |= (fail_fast and code) or yapf()
     code |= (fail_fast and code) or flake8(run)

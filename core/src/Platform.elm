@@ -406,19 +406,6 @@ nullStepperBuilder _ _ _ =
 -- Kernel interop TYPES
 
 
-{-| Kernel code relies on this this type alias. Must be kept consistant with
-code in Elm/Kernel/Platform.js.
--}
-type alias InitializeHelperFunctions state x msg =
-    { subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
-    , valueStoreHelper :
-        RawTask.Task Never state
-        -> (state -> RawTask.Task Never ( x, state ))
-        -> ( RawTask.Task Never x, RawTask.Task Never state )
-    , createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
-    }
-
-
 type alias MainLoopArgs a msg =
     { a
         | receiver : Channel.Receiver ( msg, Effect.UpdateMetadata )
@@ -442,21 +429,7 @@ type alias DebugMetadata =
 
 
 
--- Kernel interop EXPORTS --
-
-
-{-| Kernel code relies on this definitions type and on the behaviour of these functions.
--}
-initializeHelperFunctions : InitializeHelperFunctions state x msg
-initializeHelperFunctions =
-    { subListenerProcess = subListenerProcess
-    , valueStoreHelper = valueStoreHelper
-    , createCmd = createCmd
-    }
-
-
-
--- Kernel interop IMPORTS --
+-- Kernel interop --
 
 
 initialize :

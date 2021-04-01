@@ -9,7 +9,7 @@ import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug, unwrapMaybe)
 import Result exposing (isOk)
 import Maybe exposing (Nothing, Just)
-import Platform exposing (initializeHelperFunctions)
+import Platform exposing (createCmd, valueStoreHelper)
 import Platform.Unstable.Effect2 as Effect2 exposing (AsyncUpdate, SyncUpdate)
 import Platform.Unstable.Effect as Effect exposing (AsyncUpdate, SyncUpdate)
 import Platform.Unstable.Task as RawTask exposing (execImpure, syncBinding)
@@ -304,7 +304,7 @@ const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) =
 
 // command : (RuntimeId -> Platform.Task Never (Maybe msg)) -> Cmd msg
 const _Platform_command = (createTask) => {
-  return __Platform_initializeHelperFunctions.__$createCmd(createTask);
+  return __Platform_createCmd(createTask);
 };
 
 // valueStore :
@@ -314,7 +314,7 @@ const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
     __RawTask_syncBinding(() => {
-      const tuple = A2(__Platform_initializeHelperFunctions.__$valueStoreHelper, task, stepper);
+      const tuple = A2(__Platform_valueStoreHelper, task, stepper);
       task = tuple.b;
       return tuple.a;
     });
@@ -371,7 +371,7 @@ const _Platform_markSyncUpdateAsUsed = __Effect2_SyncUpdate;
 /* global __Basics_isDebug, __Basics_unwrapMaybe */
 /* global __Result_isOk */
 /* global __Maybe_Nothing, __Maybe_Just */
-/* global __Platform_initializeHelperFunctions */
+/* global __Platform_createCmd, __Platform_valueStoreHelper */
 /* global __Effect2_AsyncUpdate, __Effect2_SyncUpdate */
 /* global __Effect_AsyncUpdate, __Effect_SyncUpdate */
 /* global __RawTask_execImpure, __RawTask_syncBinding */

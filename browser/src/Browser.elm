@@ -34,8 +34,6 @@ import Browser.Navigation as Navigation
 -- import Debugger.Main
 import Dict
 import Elm.Kernel.Browser
-import Elm.Kernel.Basics
-import Elm.Kernel.Platform
 import Platform.Unstable.Impure as Impure
 import Platform.Unstable.Effect as Effect
 import Html exposing (Html)

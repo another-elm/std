@@ -27,7 +27,6 @@ module Platform.Cmd exposing
 -}
 
 import Basics exposing (..)
-import Elm.Kernel.Platform
 import List
 import Maybe exposing (Maybe)
 import Platform.Unstable.Effect as Effect

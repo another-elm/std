@@ -194,7 +194,6 @@ const _Platform_registerEventSubscriptionListener = (onSubEffects) => {
   return subManagerId;
 };
 
-// TODO(harry): what is this param?
 const _Platform_registerRuntimeSubscriptionHandler = () => {
   _Platform_assertNotLoaded();
   const subManagerId = {

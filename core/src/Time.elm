@@ -185,7 +185,10 @@ cannot do it myself unfortunately.
 -}
 here : Task x Zone
 here =
-    Elm.Kernel.Time.here ()
+    Impure.fromFunction getTimezoneOffset ()
+        |> Impure.map (\offset -> customZone -offset [])
+        |> RawTask.execImpure
+        |> Scheduler.wrapTask
 
 
 
@@ -639,7 +642,10 @@ IANA data you loaded yourself.
 -}
 getZoneName : Task x ZoneName
 getZoneName =
-    Elm.Kernel.Time.getZoneName ()
+    Impure.fromFunction getZoneNameRaw ()
+        |> Impure.map Name
+        |> RawTask.execImpure
+        |> Scheduler.wrapTask
 
 
 {-| **Intended for package authors.**
@@ -664,3 +670,17 @@ in minutes, just like what `here` uses to make zones like `customZone -60 []`.
 type ZoneName
     = Name String
     | Offset Int
+
+
+
+-- Kernel interop
+
+
+getTimezoneOffset : Impure.Function () Int
+getTimezoneOffset =
+    Elm.Kernel.Time.getTimezoneOffset
+
+
+getZoneNameRaw : Impure.Function () String
+getZoneNameRaw =
+    Elm.Kernel.Time.getZoneName

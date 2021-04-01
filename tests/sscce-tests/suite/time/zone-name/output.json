@@ -1,0 +1,9 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "good - zone is as expected"
+        ]
+    ]
+}

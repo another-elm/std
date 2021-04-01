@@ -1,8 +1,5 @@
 /*
 
-import Time exposing (customZone, Name)
-import Elm.Kernel.List exposing (Nil)
-import Platform.Unstable.Task as RawTask exposing (execImpure)
 import Elm.Kernel.Utils exposing (Tuple0)
 
 */
@@ -22,16 +19,9 @@ const _Time_clearInterval = (key) => {
   return __Utils_Tuple0;
 };
 
-// TODO(harry): make this an impure function rather than a task.
-function _Time_here() {
-  return __RawTask_execImpure(() =>
-    A2(__Time_customZone, -new Date().getTimezoneOffset(), __List_Nil)
-  );
-}
+const _Time_getTimezoneOffset = () => new Date().getTimezoneOffset();
 
-function _Time_getZoneName() {
-  return __RawTask_execImpure(() => __Time_Name(Intl.DateTimeFormat().resolvedOptions().timeZone));
-}
+const _Time_getZoneName = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 /* ESLINT GLOBAL VARIABLES
  *
@@ -40,7 +30,4 @@ function _Time_getZoneName() {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Time_.*" }] */
 
-/* global __Time_customZone, __Time_Name */
-/* global __List_Nil */
-/* global __RawTask_execImpure */
 /* global __Utils_Tuple0 */

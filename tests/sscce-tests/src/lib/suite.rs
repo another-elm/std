@@ -520,9 +520,13 @@ harness(generated, expectedOutput);
         })
         .map_err(RunError::WritingHarness)?;
 
+    // We pick a timezone **without** changes in offset for consistent testing.
+    let tz = "Asia/Bahrain";
+
     let mut runner_child = Command::new(node_exe)
         .arg("--unhandled-rejections=strict")
         .arg(&main_file)
+        .env("TZ", tz)
         .stdout(Stdio::piped())
         .stdin(Stdio::null())
         .stderr(Stdio::piped())

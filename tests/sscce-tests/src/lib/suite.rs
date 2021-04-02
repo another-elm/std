@@ -8,6 +8,7 @@ use apply::{Also, Apply};
 use config::OptimizationLevel;
 use core::fmt;
 use io::{Read, Write};
+use json_comments::StripComments;
 use log::debug;
 use rayon::prelude::*;
 use serde::Deserialize;
@@ -153,14 +154,15 @@ pub struct Flags<Readiness>(
     PhantomData<Readiness>,
 );
 
-#[serde(rename_all = "kebab-case")]
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone, Copy, Hash)]
+#[serde(rename_all = "kebab-case")]
 pub enum StdlibVariant {
     Official,
     Another,
 }
-#[serde(rename_all = "lowercase")]
+
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq, Clone, Copy, Hash)]
+#[serde(rename_all = "lowercase")]
 pub enum Platform {
     Linux,
     MacOs,
@@ -455,9 +457,11 @@ fn compile(
 
 fn get_suite_config(suite: impl AsRef<Path>) -> Result<Config<Raw>, GetSuiteConfigError> {
     let expected_output_path = suite.as_ref().join("output.json");
-    serde_json::from_slice(
-        &fs::read(expected_output_path).map_err(GetSuiteConfigError::CannotRead)?,
-    )
+    serde_json::from_reader(StripComments::new(
+        fs::read(expected_output_path)
+            .map_err(GetSuiteConfigError::CannotRead)?
+            .as_slice(),
+    ))
     .map_err(GetSuiteConfigError::Parse)
 }
 

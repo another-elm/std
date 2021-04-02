@@ -5,5 +5,9 @@
             "write",
             "good - zone is as expected"
         ]
-    ]
+    ],
+    "skip-run-if": {
+        // TZ environment variable only works with posix.
+        "platform": ["windows"]
+    }
 }

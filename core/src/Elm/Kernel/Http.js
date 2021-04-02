@@ -2,11 +2,10 @@
 
 import Dict exposing (empty, update)
 import Http exposing (BadUrl_, Timeout_, NetworkError_, BadStatus_, GoodStatus_, Sending, Receiving, unpackHeader, unpackPart)
-import Maybe exposing (Just, Nothing)
-import Elm.Kernel.Basics exposing (unwrapMaybe)
+import Maybe exposing (Just, Nothing, destruct, map)
 import Elm.Kernel.Platform exposing (handleMessageForRuntime)
 import Elm.Kernel.List exposing (iterate)
-import Elm.Kernel.Utils exposing (tuple2iter)
+import Elm.Kernel.Utils exposing (Tuple0, tuple2iter)
 
 */
 
@@ -34,11 +33,11 @@ const _Http_makeRequest = (request) => {
     request.__$onCancel();
   };
 
-  const tracker = __Basics_unwrapMaybe(request.__$tracker);
-  if (tracker !== null) {
+  __Maybe_map((tracker) => {
     const [runtimeId, trackerId] = __Utils_tuple2iter(tracker);
     _Http_trackRequest(runtimeId, trackerId, request.__$managerId, xhr, cancel);
-  }
+    return __Utils_Tuple0;
+  })(request.__$tracker);
 
   try {
     xhr.open(request.__$method, request.__$url, true);
@@ -46,10 +45,10 @@ const _Http_makeRequest = (request) => {
     return done(__Http_BadUrl_(request.__$url));
   }
 
-  const contentType = __Basics_unwrapMaybe(request.__$contentType);
-  if (contentType !== null) {
+  __Maybe_map((contentType) => {
     xhr.setRequestHeader("Content-Type", contentType);
-  }
+    return __Utils_Tuple0;
+  })(request.__$contentType);
 
   _Http_configureRequest(xhr, request.__$config);
 
@@ -110,10 +109,8 @@ function _Http_parseHeaders(rawHeaders) {
       headers = A3(
         __Dict_update,
         key,
-        (mOldValue) => {
-          const oldValue = __Basics_unwrapMaybe(mOldValue);
-          return __Maybe_Just(oldValue === null ? value : oldValue + ", " + value);
-        },
+        (maybe) =>
+          __Maybe_Just(__Maybe_destruct(value)((oldValue) => oldValue + ", " + value)(maybe)),
         headers
       );
     }
@@ -216,8 +213,7 @@ const _Http_cancel = (runtimeId) => (trackingId) => {
 
 /* global __Dict_empty, __Dict_update */
 /* global __Http_BadUrl_, __Http_Timeout_, __Http_NetworkError_, __Http_BadStatus_, __Http_GoodStatus_, __Http_Sending, __Http_Receiving, __Http_unpackHeader, __Http_unpackPart */
-/* global __Maybe_Just, __Maybe_Nothing */
-/* global __Basics_unwrapMaybe */
+/* global __Maybe_Just, __Maybe_Nothing, __Maybe_destruct, __Maybe_map */
 /* global __Platform_handleMessageForRuntime */
 /* global __List_iterate */
-/* global __Utils_tuple2iter */
+/* global __Utils_Tuple0, __Utils_tuple2iter */

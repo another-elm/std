@@ -6,9 +6,9 @@ import Json.Decode as Decode exposing (decodeValue)
 import Elm.Kernel.List exposing (iterate, fromArray)
 import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
-import Elm.Kernel.Basics exposing (isDebug, unwrapMaybe)
+import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
-import Maybe exposing (Nothing, Just)
+import Maybe exposing (Nothing, Just, map)
 import Platform exposing (createCmd, valueStoreHelper)
 import Platform.Unstable.Effect2 as Effect2 exposing (AsyncUpdate, SyncUpdate)
 import Platform.Unstable.Effect as Effect exposing (AsyncUpdate, SyncUpdate)
@@ -247,14 +247,18 @@ const _Platform_resetSubscriptions = (runtime) => (newSubs) => {
       );
       const effect = _Platform_mapGetOrInit(managerState, newSub.__$subId, () => {
         const taggers = [];
-        const effectId = eventListener.__$new(newSub.__$effectData)((payload) => {
+
+        const eventHandler = (payload) => {
           for (const tagger of taggers) {
-            const mMessage = __Basics_unwrapMaybe(tagger(payload));
-            if (mMessage !== null) {
-              _Platform_sendToApp(runtime)(__Utils_Tuple2(mMessage, __Effect_AsyncUpdate));
-            }
+            __Maybe_map((message) => {
+              _Platform_sendToApp(runtime)(__Utils_Tuple2(message, __Effect_AsyncUpdate));
+              return __Utils_Tuple0;
+            })(tagger(payload));
           }
-        });
+        };
+
+        const effectId = eventListener.__$new(newSub.__$effectData)(eventHandler);
+
         return {
           __taggers: taggers,
           __effectId: effectId,
@@ -294,10 +298,10 @@ const _Platform_handleMessageForRuntime = (runtimeId, managerId, subId, value) =
 
   if (taggers !== undefined) {
     for (const tagger of taggers) {
-      const mMessage = __Basics_unwrapMaybe(tagger(subId)(value));
-      if (mMessage !== null) {
-        _Platform_sendToApp(runtimeId)(__Utils_Tuple2(mMessage, __Effect_AsyncUpdate));
-      }
+      __Maybe_map((message) => {
+        _Platform_sendToApp(runtimeId)(__Utils_Tuple2(message, __Effect_AsyncUpdate));
+        return __Utils_Tuple0;
+      })(tagger(subId)(value));
     }
   }
 };
@@ -368,9 +372,9 @@ const _Platform_markSyncUpdateAsUsed = __Effect2_SyncUpdate;
 /* global __List_iterate, __List_fromArray */
 /* global __Utils_Tuple0, __Utils_Tuple2 */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
-/* global __Basics_isDebug, __Basics_unwrapMaybe */
+/* global __Basics_isDebug */
 /* global __Result_isOk */
-/* global __Maybe_Nothing, __Maybe_Just */
+/* global __Maybe_Nothing, __Maybe_Just, __Maybe_map */
 /* global __Platform_createCmd, __Platform_valueStoreHelper */
 /* global __Effect2_AsyncUpdate, __Effect2_SyncUpdate */
 /* global __Effect_AsyncUpdate, __Effect_SyncUpdate */

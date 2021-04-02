@@ -111,9 +111,12 @@ def install():
 
         if code != 0:
             exit(code)
-        print(
-            f"Found xo: {subprocess.run(['npx', 'xo', '--version'], check=True).stdout}"
-        )
+
+        xo_version = subprocess.run(
+            ['npx', 'xo', '--version'],
+            check=True,
+        ).stdout
+        print(f"Found xo: {xo_version}")
 
     def elm_test_rs():
         print("Checkinf for elm-test-rs...")

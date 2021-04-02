@@ -8,7 +8,10 @@ set -u
 # $ELM_HOME we get strange compiler ICE (that does not go away until we delete
 # $ELM_HOME). This probably happens because elm/json has a circular dependancy
 # on itself via elm/core which must confuse the compiler.
-(cd ~/repo/std/tests/sscce-tests/suite/hello-world && another-elm make Main.elm --output /dev/null)
+(
+    cd "$(git rev-parse --show-toplevel)/tests/sscce-tests/suite/hello-world"
+    another-elm make Main.elm --output /dev/null 1>/dev/null 2>/dev/null || true
+)
 
 ## Make package
 

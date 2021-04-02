@@ -16,7 +16,7 @@ function _JsArray_length(array) {
 }
 
 const _JsArray_initialize = F3((size, offset, func) => {
-  const result = new Array(size);
+  const result = Array.from({ length: size });
 
   for (let i = 0; i < size; i++) {
     result[i] = func(offset + i);
@@ -26,7 +26,7 @@ const _JsArray_initialize = F3((size, offset, func) => {
 });
 
 const _JsArray_initializeFromList = F2((max, ls) => {
-  const result = new Array(max);
+  const result = Array.from({ length: max });
   let i = 0;
   for (; i < max; i++) {
     if (ls.$ === __List_nilKey) {
@@ -47,7 +47,7 @@ const _JsArray_unsafeGet = F2((index, array) => {
 
 const _JsArray_unsafeSet = F3((index, value, array) => {
   const length = array.length;
-  const result = new Array(length);
+  const result = Array.from({ length });
 
   for (let i = 0; i < length; i++) {
     result[i] = array[i];
@@ -59,7 +59,7 @@ const _JsArray_unsafeSet = F3((index, value, array) => {
 
 const _JsArray_push = F2((value, array) => {
   const length = array.length;
-  const result = new Array(length + 1);
+  const result = Array.from({ length: length + 1 });
 
   for (let i = 0; i < length; i++) {
     result[i] = array[i];
@@ -89,7 +89,7 @@ const _JsArray_foldr = F3((func, acc, array) => {
 
 const _JsArray_map = F2((func, array) => {
   const length = array.length;
-  const result = new Array(length);
+  const result = Array.from({ length });
 
   for (let i = 0; i < length; i++) {
     result[i] = func(array[i]);
@@ -100,7 +100,7 @@ const _JsArray_map = F2((func, array) => {
 
 const _JsArray_indexedMap = F3((func, offset, array) => {
   const length = array.length;
-  const result = new Array(length);
+  const result = Array.from({ length });
 
   for (let i = 0; i < length; i++) {
     result[i] = A2(func, offset + i, array[i]);
@@ -122,7 +122,7 @@ const _JsArray_appendN = F3((n, dest, source) => {
   }
 
   const size = destLength + itemsToCopy;
-  const result = new Array(size);
+  const result = Array.from({ length: size });
 
   for (let i = 0; i < destLength; i++) {
     result[i] = dest[i];

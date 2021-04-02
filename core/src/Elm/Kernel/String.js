@@ -30,7 +30,7 @@ function _String_length(string) {
 
 const _String_map = F2((func, string) => {
   const length = string.length;
-  const array = new Array(length);
+  const array = Array.from({ length });
   let i = 0;
   while (i < length) {
     const word = string.charCodeAt(i);
@@ -70,7 +70,7 @@ const _String_filter = F2((isGood, string) => {
 
 function _String_reverse(string) {
   const length = string.length;
-  const array = new Array(length);
+  const array = Array.from({ length });
   let i = 0;
   while (i < length) {
     const word = string.charCodeAt(i);

@@ -1548,8 +1548,7 @@ function _VirtualDom_virtualize(node)
 function _VirtualDom_dekey(keyedNode)
 {
 	var keyedKids = keyedNode.__kids;
-	var len = keyedKids.length;
-	var kids = new Array(len);
+	var kids = Array.from({length: keyedKids.length});
 	for (var i = 0; i < len; i++)
 	{
 		kids[i] = keyedKids[i].b;

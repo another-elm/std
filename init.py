@@ -9,6 +9,8 @@ import sys
 from fileinput import FileInput
 from pathlib import Path
 
+version = 0
+
 elm_std_dir = Path(__file__).resolve().parent
 binary_path = Path.home() / ".local" / "bin" / "another-elm"
 xdg_data_home = os.environ.get(
@@ -18,11 +20,14 @@ xdg_data_home = os.environ.get(
 customised_dir = xdg_data_home / "another-elm" / "packages"
 
 
-def copy_file_with_replacement(src, dest, random_suffix):
+def copy_file_with_replacement(src, dest, random_suffix, another_elm_version):
     def on_line(line):
         return line.replace(
             "Platform.Unstable.",
             f"Platform.Unstable{random_suffix}.",
+        ).replace(
+            'ANOTHER-ELM-VERSION',
+            another_elm_version,
         )
 
     with dest.open(mode='w') as dest_file:
@@ -31,7 +36,7 @@ def copy_file_with_replacement(src, dest, random_suffix):
                 print(on_line(line), end='', file=dest_file)
 
 
-def copy_dir_with_replacement(src, dest, random_suffix):
+def copy_dir_with_replacement(src, dest, random_suffix, another_elm_version):
     dest.mkdir(exist_ok=True)
     for entry in os.scandir(src):
         file_suffix = random_suffix if entry.name == 'Unstable' else ''
@@ -41,16 +46,24 @@ def copy_dir_with_replacement(src, dest, random_suffix):
                 src / entry.name,
                 dest_name,
                 random_suffix,
+                another_elm_version,
             )
         else:
             copy_file_with_replacement(
                 src / entry.name,
                 dest_name,
                 random_suffix,
+                another_elm_version,
             )
 
 
-def reset_package(packages_roots, author, package, random):
+def reset_package(
+    packages_roots,
+    author,
+    package,
+    random,
+    another_elm_version,
+):
     local_package_dir = elm_std_dir / package
     local_src_dir = local_package_dir / "src"
     local_json_file = local_package_dir / "elm.json"
@@ -64,11 +77,13 @@ def reset_package(packages_roots, author, package, random):
         local_src_dir,
         custom_src_dir,
         random,
+        another_elm_version,
     )
     copy_file_with_replacement(
         local_json_file,
         custom_json_file,
         random,
+        another_elm_version,
     )
     with open(custom_package_dir / 'custom', 'w'):
         pass
@@ -96,13 +111,19 @@ def create_executable(path):
     return os.fdopen(raw_fd, "w")
 
 
-def install_exe(binary, random_suffix):
-    bin_dir = binary.parent
+def version_string():
+    try:
+        hash = subprocess.run(["git", "rev-parse", "HEAD"],
+                              stderr=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              check=True).stdout.decode("utf-8").strip()
+        return f"git-{hash}"
+    except subprocess.CalledProcessError:
+        return f"v{version}"
 
-    hash = subprocess.run(["git", "rev-parse", "HEAD"],
-                          stderr=subprocess.PIPE,
-                          stdout=subprocess.PIPE,
-                          check=True).stdout.decode("utf-8").strip()
+
+def install_exe(binary, random_suffix, another_elm_version):
+    bin_dir = binary.parent
 
     if bin_dir not in map(Path, os.getenv("PATH").split(":")):
         print("WARNING: {} is not in PATH. Please add it!".format(bin_dir),
@@ -117,12 +138,14 @@ def install_exe(binary, random_suffix):
             if line == "random_suffix = None  # REPLACE ME\n":
                 print_to_file(f'random_suffix = "{random_suffix}"\n')
             elif line == "another_elm_version = None  # REPLACE ME\n":
-                print_to_file(f'another_elm_version = "git-{hash}"\n')
+                print_to_file(
+                    f'another_elm_version = "{another_elm_version}"\n',
+                )
             else:
                 print_to_file(line)
 
 
-def update_packages(random):
+def update_packages(random, another_elm_version):
     elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
     another_elm_home = elm_home_dir / 'another'
 
@@ -142,15 +165,16 @@ def update_packages(random):
     for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
                           ('elm-explorations', 'test'),
                           ('elm-explorations', 'markdown')]:
-        reset_package(packages_roots, author, pkg, random)
+        reset_package(packages_roots, author, pkg, random, another_elm_version)
 
 
 def main():
     r = f"{random.SystemRandom().getrandbits(64):08X}"
-    update_packages(r)
+    another_elm_version = version_string()
+    update_packages(r, another_elm_version)
 
     exists = binary_path.exists()
-    install_exe(binary_path, r)
+    install_exe(binary_path, r, another_elm_version)
 
     print("Success!", end=' ')
     if exists:

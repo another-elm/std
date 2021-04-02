@@ -92,6 +92,10 @@ def customize(packages_root, author, package):
     custom_src_dir = custom_package_dir / "src"
     custom_json_file = custom_package_dir / "elm.json"
 
+    return customize_help(versions_dir, custom_src_dir, custom_json_file)
+
+
+def customize_help(versions_dir, custom_src_dir, custom_json_file):
     try:
         dirs = os.listdir(versions_dir)
     except FileNotFoundError:
@@ -112,20 +116,6 @@ def customize(packages_root, author, package):
 
             with open(package_root / 'custom', 'w'):
                 pass
-
-            if author == "elm" and package == "core":
-                platform_file = (package_root / "src" / "Elm" / "Kernel" /
-                                 "Platform.js")
-                with open(platform_file, 'r') as file:
-                    filedata = file.read()
-
-                filedata = filedata.replace(
-                    'ANOTHER-ELM-VERSION',
-                    another_elm_version,
-                )
-
-                with open(platform_file, 'w') as file:
-                    file.write(filedata)
 
     return any_modified
 
@@ -250,6 +240,8 @@ def run_elm(elm, args):
                               ('elm-explorations', 'markdown')]:
             if customize(packages_root, author, pkg):
                 elm_stuff.clear()
+                (packages_root / "registry.dat").unlink(missing_ok=True)
+
                 run_compiler(stderr=subprocess.DEVNULL,
                              stdout=subprocess.DEVNULL)
                 for author in os.scandir(packages_root):

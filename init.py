@@ -145,7 +145,7 @@ def install_exe(binary, random_suffix, another_elm_version):
 
 
 def update_packages(random, another_elm_version):
-    elm_home_dir = os.getenv('ELM_HOME', default=Path.home() / '.elm')
+    elm_home_dir = Path(os.getenv('ELM_HOME', default=Path.home() / '.elm'))
     another_elm_home = elm_home_dir / 'another'
 
     try:

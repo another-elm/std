@@ -114,7 +114,7 @@ function _Utils_cmp(x, y) {
       return ordA;
     }
 
-    const ordB = _Utils_cmp(x.a, y.a);
+    const ordB = _Utils_cmp(x.b, y.b);
     if (ordB !== 0) {
       return ordB;
     }

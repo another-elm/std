@@ -4,8 +4,8 @@ import argparse
 import os
 import subprocess
 
-YAPF_VERSION = '0.30.'
-FLAKE8_VERSION = '3.8.'
+YAPF_VERSION = '0.31.'
+FLAKE8_VERSION = '3.9.'
 ELM_VERSION = '0.19.1'
 ELM_FORMAT_VERSION = '0.8.'
 ELM_TEST_RS_VERSION = '1.'
@@ -111,6 +111,7 @@ def install():
 
         if code != 0:
             exit(code)
+        print(f"Found xo: {subprocess.run(['npx', 'xo', '--version'], check=True).stdout}")
 
     def elm_test_rs():
         print("Checkinf for elm-test-rs...")
@@ -129,6 +130,7 @@ def install():
             print("** elm-test-rs version {}x required, found: {}".format(
                 ELM_TEST_RS_VERSION, elm_test_rs_version))
             exit(1)
+        print(f"Found elm-test-rs: {output.stdout}")
 
     def yapf():
         print("Checking for yapf")
@@ -146,6 +148,7 @@ def install():
             print("** yapf version {}x required, found: {}".format(
                 YAPF_VERSION, yapf_version))
             exit(1)
+        print(f"Found yapf: {output.stdout}")
 
     def flake8():
         print("Checking for flake8")
@@ -159,11 +162,11 @@ def install():
                 "** https://flake8.pycqa.org/en/latest/index.html#installation"
             )
             exit(output.returncode)
-
         if not output.stdout.startswith(FLAKE8_VERSION):
             print("** flake8 version {}x required found: {}".format(
                 FLAKE8_VERSION, output.stdout))
             exit(1)
+        print(f"Found flake8: {output.stdout}")
 
     def git():
         print("Checking for git")
@@ -178,6 +181,7 @@ def install():
             )
 
             exit(output.returncode)
+        print(f"Found git: {output.stdout}")
 
     def elm():
         print("Checking for elm")
@@ -193,6 +197,7 @@ def install():
             print("** elm version {} required found: {}".format(
                 ELM_VERSION, output.stdout))
             exit(1)
+        print(f"Found elm: {output.stdout}")
 
     def elm_format():
         print("Checking for elm-format")
@@ -204,12 +209,13 @@ def install():
             print("** Please install elm-format")
             exit(output.returncode)
 
-        elm_format_version = remove_prefix(
-            output.stdout.split('\n')[0], "elm-format").strip()
+        first_line = output.stdout.split('\n')[0]
+        elm_format_version = remove_prefix(first_line, "elm-format").strip()
         if not elm_format_version.startswith(ELM_FORMAT_VERSION):
             print("** elm-format version {} required found: {}".format(
-                ELM_FORMAT_VERSION, output.stdout))
+                ELM_FORMAT_VERSION, first_line))
             exit(1)
+        print(f"Found elm-format: {first_line}")
 
     xo()
     elm_test_rs()

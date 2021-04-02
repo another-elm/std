@@ -139,8 +139,7 @@ def install_exe(binary, random_suffix, another_elm_version):
                 print_to_file(f'random_suffix = "{random_suffix}"\n')
             elif line == "another_elm_version = None  # REPLACE ME\n":
                 print_to_file(
-                    f'another_elm_version = "{another_elm_version}"\n',
-                )
+                    f'another_elm_version = "{another_elm_version}"\n', )
             else:
                 print_to_file(line)
 

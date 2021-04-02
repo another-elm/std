@@ -53,6 +53,7 @@ function _Scheduler_tryAbortProcess(id) {
 }
 
 const _Scheduler_rawEnqueue = (procId) => (rootTask) => {
+  // todo(harry): abstract this into elm somehow.
   if (__Basics_isDebug && _Scheduler_queue.some((p) => p[0].a.__$id === procId.a.__$id)) {
     __Debug_crash(
       12,

@@ -1,6 +1,7 @@
 /*
 
 import Elm.Kernel.VirtualDom exposing (custom, doc)
+import Elm.Kernel.Basics exposing (unwrapMaybe)
 import Maybe exposing (isJust)
 
 */
@@ -80,7 +81,7 @@ function _Markdown_formatOptions(options)
 	{
 		if (!lang && __Maybe_isJust(options.__$defaultHighlighting))
 		{
-			lang = options.__$defaultHighlighting.a;
+			lang = __Basics_unwrapMaybe(options.__$defaultHighlighting);
 		}
 
 		if (typeof hljs !== 'undefined' && lang && hljs.listLanguages().indexOf(lang) >= 0)
@@ -91,13 +92,14 @@ function _Markdown_formatOptions(options)
 		return code;
 	}
 
-	var gfm = options.__$githubFlavored.a;
+	const gfm = __Basics_unwrapMaybe(options.__$githubFlavored);
 
+	// TODO(harry): make use of elm `Bool` explicit here.
 	return {
 		highlight: toHighlight,
-		gfm: gfm,
-		tables: gfm && gfm.__$tables,
-		breaks: gfm && gfm.__$breaks,
+		gfm: !!gfm,
+		tables: !!gfm && gfm.__$tables,
+		breaks: !!gfm && gfm.__$breaks,
 		sanitize: options.__$sanitize,
 		smartypants: options.__$smartypants
 	};

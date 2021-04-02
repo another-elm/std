@@ -90,7 +90,7 @@ const _Utils_notEqual = F2((a, b) => {
 // COMPARISONS
 
 // Code in Generate/JavaScript/Expression.hs and Basics.elm depends on the
-// oarticular integer values assigned to LT, EQ, and GT. Comparable types are:
+// particular integer values assigned to LT, EQ, and GT. Comparable types are:
 // numbers, characters, strings, lists of comparable things, and tuples of
 // comparable things.
 function _Utils_cmp(x, y) {
@@ -161,6 +161,8 @@ const _Utils_Tuple2__DEBUG = (a, b) => ({ $: "#2", a, b });
 
 const _Utils_Tuple3__PROD = (a, b, c) => ({ a, b, c });
 const _Utils_Tuple3__DEBUG = (a, b, c) => ({ $: "#3", a, b, c });
+
+const _Utils_tuple2iter = (tup) => [tup.a, tup.b];
 
 const _Utils_chr__PROD = (c) => c;
 const _Utils_chr__DEBUG = (c) => new Object(c);

@@ -1130,6 +1130,20 @@ bytesBodyInterpretter toValue =
 
 
 
+-- kernel helpers
+
+
+unpackHeader : Header -> { name : String, value : String }
+unpackHeader (Header name value) =
+    { name = name, value = value }
+
+
+unpackPart : Part -> { name : String, value : PartContents }
+unpackPart (Part name value) =
+    { name = name, value = value }
+
+
+
 -- kernel interop
 
 

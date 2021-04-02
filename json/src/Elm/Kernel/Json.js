@@ -3,7 +3,7 @@
 import Array exposing (initialize)
 import Result exposing (Ok, Err)
 import Maybe exposing (Just, Nothing)
-import Elm.Kernel.Utils exposing (Tuple2)
+import Elm.Kernel.Utils exposing (Tuple2, tuple2iter)
 import Json.Internal as Internal exposing (Value, unwrap)
 import Json.Decode as Decode exposing (Decoder, Failure)
 import Json.Encode as Encode exposing (Value, unwrap)
@@ -120,8 +120,7 @@ const _Json_arrayFrom = (func) => (iterable) => {
 const _Json_objectFrom = (keyFunc) => (valueFunc) => (iterable) => {
   const object = {};
   for (const pair of iterable) {
-    const key = pair.a;
-    const value = pair.b;
+    const [key, value] = __Utils_tuple2iter(pair);
     object[keyFunc(key)] = valueFunc(value);
   }
 
@@ -151,7 +150,7 @@ const _Json_unwrap = (v) => __Encode_unwrap(__Internal_unwrap(v));
 /* global __Array_initialize */
 /* global __Result_Ok, __Result_Err */
 /* global __Maybe_Just, __Maybe_Nothing */
-/* global __Utils_Tuple2 */
+/* global __Utils_Tuple2, __Utils_tuple2iter */
 /* global __Internal_Value, __Internal_unwrap */
 /* global __Decode_Decoder, __Decode_Failure */
 /* global __Encode_Value, __Encode_unwrap */

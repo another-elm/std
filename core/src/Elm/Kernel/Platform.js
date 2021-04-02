@@ -4,7 +4,7 @@ import Elm.Kernel.Debug exposing (crash, runtimeCrashReason)
 import Elm.Kernel.Json exposing (wrap, unwrap)
 import Json.Decode as Decode exposing (decodeValue)
 import Elm.Kernel.List exposing (iterate, fromArray)
-import Elm.Kernel.Utils exposing (Tuple0, Tuple2)
+import Elm.Kernel.Utils exposing (Tuple0, Tuple2, tuple2iter)
 import Elm.Kernel.Channel exposing (rawUnbounded, rawSend)
 import Elm.Kernel.Basics exposing (isDebug)
 import Result exposing (isOk)
@@ -318,9 +318,9 @@ const _Platform_valueStore = (init) => {
   let task = init;
   return (stepper) =>
     __RawTask_syncBinding(() => {
-      const tuple = A2(__Platform_valueStoreHelper, task, stepper);
-      task = tuple.b;
-      return tuple.a;
+      const [value, newTask] = __Utils_tuple2iter(A2(__Platform_valueStoreHelper, task, stepper));
+      task = newTask;
+      return value;
     });
 };
 
@@ -370,7 +370,7 @@ const _Platform_markSyncUpdateAsUsed = __Effect2_SyncUpdate;
 /* global __Json_wrap, __Json_unwrap */
 /* global __Decode_decodeValue */
 /* global __List_iterate, __List_fromArray */
-/* global __Utils_Tuple0, __Utils_Tuple2 */
+/* global __Utils_Tuple0, __Utils_Tuple2, __Utils_tuple2iter */
 /* global __Channel_rawUnbounded, __Channel_rawSend */
 /* global __Basics_isDebug */
 /* global __Result_isOk */

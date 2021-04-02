@@ -1,7 +1,6 @@
 /*
 
 import Elm.Kernel.Debug exposing (crash)
-import Maybe exposing (withDefault)
 
 */
 
@@ -38,4 +37,3 @@ const _Basics_isDebug__PROD = false;
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_Basics_.*" }] */
 
 /* global __Debug_crash */
-/* global __Maybe_withDefault */

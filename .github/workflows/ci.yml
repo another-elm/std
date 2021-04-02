@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install python dependencies
-        run: python -m pip install --upgrade yapf~=0.31.0 flake8~=3.8.4
+        run: python -m pip install --upgrade yapf~=0.31.0 flake8~=3.9.0
 
       - uses: mpizenberg/elm-tooling-action@b6665b9d55111b51d09574b4338883ab572d100f
         with:

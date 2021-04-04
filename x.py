@@ -25,48 +25,14 @@ def elm_make_core(run):
     return code
 
 
-def elm_make_browser(run):
-    print("Running elm make in browser...")
-
-    code = run(['../make-pkg.sh'], subdir='browser')
-
-    if code != 0:
-        print("There are issues with elm make in browser")
-
-    return bool(code)
-
-
-def elm_make_html(run):
-    print("Running elm make in html...")
-
-    code = run(['../make-pkg.sh'], subdir='html')
+def elm_make(dir, run):
+    print(f"Running elm make in {dir}...")
+    code = run(['../make-pkg.sh'], subdir=dir)
 
     if code != 0:
-        print("There are issues with elm make in html")
+        print(f"There are issues with elm make in {dir}")
 
-    return bool(code)
-
-
-def elm_make_json(run):
-    print("Running elm make in json...")
-
-    code = run(['../make-pkg.sh'], subdir='json')
-
-    if code != 0:
-        print("There are issues with elm make in json")
-
-    return bool(code)
-
-
-def elm_make_test(run):
-    print("Running elm make in test...")
-
-    code = run(['../make-pkg.sh'], subdir='test')
-
-    if code != 0:
-        print("There are issues with elm make in test")
-
-    return bool(code)
+    return code
 
 
 def check_kernel_imports(run):
@@ -281,9 +247,10 @@ def tidy():
     # generate_globals runs.
     code = False
     code |= elm_make_core(run)
-    code |= elm_make_browser(run)
-    code |= elm_make_json(run)
-    code |= elm_make_test(run)
+    code |= elm_make("browser", run)
+    code |= elm_make("json", run)
+    code |= elm_make("test", run)
+    code |= elm_make("markdown", run)
     code |= generate_globals()
     code |= xo()
     code |= yapf()
@@ -324,9 +291,10 @@ def check():
     fail_fast = args.fail_fast
     code = False
     code |= (fail_fast and code) or elm_make_core(run)
-    code |= (fail_fast and code) or elm_make_browser(run)
-    code |= (fail_fast and code) or elm_make_json(run)
-    code |= (fail_fast and code) or elm_make_test(run)
+    code |= (fail_fast and code) or elm_make("browser", run)
+    code |= (fail_fast and code) or elm_make("json", run)
+    code |= (fail_fast and code) or elm_make("test", run)
+    code |= (fail_fast and code) or elm_make("markdown", run)
     code |= (fail_fast and code) or xo()
     code |= (fail_fast and code) or yapf()
     code |= (fail_fast and code) or flake8(run)

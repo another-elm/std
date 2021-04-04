@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+import argparse
 import fileinput
 import os
 import random
@@ -11,8 +12,17 @@ from pathlib import Path
 
 version = 0
 
+parser = argparse.ArgumentParser(description='Initialise/install another-elm')
+
+parser.add_argument('--dir',
+                    type=Path,
+                    help="Directory to install another-elm into",
+                    default=Path.home() / ".local" / "bin")
+
+args = parser.parse_args()
+
 elm_std_dir = Path(__file__).resolve().parent
-binary_path = Path.home() / ".local" / "bin" / "another-elm"
+binary_path = args.dir / "another-elm"
 xdg_data_home = os.environ.get(
     "XDG_DATA_HOME",
     Path.home() / ".local" / "share",

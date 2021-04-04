@@ -10,6 +10,10 @@ ELM_VERSION = '0.19.1'
 ELM_FORMAT_VERSION = '0.8.'
 ELM_TEST_RS_VERSION = '1.'
 
+NON_CORE_PACKAGES = ["browser", "json", "test", "markdown", "html", "svg"]
+
+PACKAGES = ["core", *NON_CORE_PACKAGES]
+
 
 def remove_prefix(text, prefix):
     return text[text.startswith(prefix) and len(prefix):]
@@ -37,10 +41,7 @@ def elm_make(dir, run):
 
 def check_kernel_imports(run):
     print("Running check-kernel-imports...")
-    code = run([
-        './tests/check-kernel-imports.js', "core", "browser", "html", "json",
-        "test", "markdown"
-    ])
+    code = run(['./tests/check-kernel-imports.js', *PACKAGES])
 
     if code != 0:
         print("There are kernel import issues")
@@ -229,10 +230,7 @@ def tidy():
         print("Running generate-globals...")
         code = run([
             './tests/generate-globals.py',
-            "./core/src/**/*.js",
-            "./json/src/**/*.js",
-            "./browser/src/**/*.js",
-            "./html/src/**/*.js",
+            *map(lambda p: f"./{p}/src/**/*.js", PACKAGES)
         ])
 
         return bool(code)
@@ -247,10 +245,10 @@ def tidy():
     # generate_globals runs.
     code = False
     code |= elm_make_core(run)
-    code |= elm_make("browser", run)
-    code |= elm_make("json", run)
-    code |= elm_make("test", run)
-    code |= elm_make("markdown", run)
+
+    for ncp in NON_CORE_PACKAGES:
+        code |= elm_make(ncp, run)
+
     code |= generate_globals()
     code |= xo()
     code |= yapf()
@@ -291,10 +289,10 @@ def check():
     fail_fast = args.fail_fast
     code = False
     code |= (fail_fast and code) or elm_make_core(run)
-    code |= (fail_fast and code) or elm_make("browser", run)
-    code |= (fail_fast and code) or elm_make("json", run)
-    code |= (fail_fast and code) or elm_make("test", run)
-    code |= (fail_fast and code) or elm_make("markdown", run)
+
+    for ncp in NON_CORE_PACKAGES:
+        code |= (fail_fast and code) or elm_make(ncp, run)
+
     code |= (fail_fast and code) or xo()
     code |= (fail_fast and code) or yapf()
     code |= (fail_fast and code) or flake8(run)

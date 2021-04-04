@@ -20,45 +20,6 @@ This order works well because important concepts and techniques are introduced a
 
 This order also works well because it mirrors how most people introduce Elm at work. Start small. Try using Elm in a single element in an existing JavaScript project. If that goes well, try doing a bit more. Etc.
 
-## Virtual DOM for Elm
-
-A virtual DOM implementation that backs Elm's core libraries for [HTML](https://package.elm-lang.org/packages/elm/html/latest/) and [SVG](https://package.elm-lang.org/packages/elm/svg/latest/). You should almost certainly use those higher-level libraries directly.
-
-It is pretty fast! You can read about that [here](https://elm-lang.org/blog/blazing-fast-html-round-two).
-
-## HTML
-
-Quickly render HTML in Elm. The HTML part of an Elm program looks something like this:
-
-```elm
-import Html exposing (Html, button, div, text)
-import Html.Events exposing (onClick)
-
-type Msg = Increment | Decrement
-
-view : Int -> Html Msg
-view count =
-  div []
-    [ button [ onClick Decrement ] [ text "-" ]
-    , div [] [ text (String.fromInt count) ]
-    , button [ onClick Increment ] [ text "+" ]
-    ]
-```
-
-If you call `view 42` you get something like this:
-
-```html
-<div>
-  <button>-</button>
-  <div>42</div>
-  <button>+</button>
-</div>
-```
-
-This snippet comes from a complete example. You can play with it online [here](https://elm-lang.org/examples/buttons) and read how it works [here](https://guide.elm-lang.org/architecture/user_input/buttons.html).
-
-You can play with a bunch of other examples [here](https://elm-lang.org/examples).
-
 ## Work with URLs
 
 This package helps you (1) build new URLs and (2) parse existing URLs into nice Elm data structures.

@@ -36,6 +36,17 @@ def elm_make_browser(run):
     return bool(code)
 
 
+def elm_make_html(run):
+    print("Running elm make in html...")
+
+    code = run(['../make-pkg.sh'], subdir='html')
+
+    if code != 0:
+        print("There are issues with elm make in html")
+
+    return bool(code)
+
+
 def elm_make_json(run):
     print("Running elm make in json...")
 
@@ -61,8 +72,8 @@ def elm_make_test(run):
 def check_kernel_imports(run):
     print("Running check-kernel-imports...")
     code = run([
-        './tests/check-kernel-imports.js', "core", "browser", "json", "test",
-        "markdown"
+        './tests/check-kernel-imports.js', "core", "browser", "html", "json",
+        "test", "markdown"
     ])
 
     if code != 0:
@@ -251,8 +262,11 @@ def tidy():
     def generate_globals():
         print("Running generate-globals...")
         code = run([
-            './tests/generate-globals.py', "./core/src/**/*.js",
-            "./json/src/**/*.js", "./browser/src/**/*.js"
+            './tests/generate-globals.py',
+            "./core/src/**/*.js",
+            "./json/src/**/*.js",
+            "./browser/src/**/*.js",
+            "./html/src/**/*.js",
         ])
 
         return bool(code)

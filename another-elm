@@ -25,7 +25,6 @@ customised_dir = xdg_data_home / "another-elm" / "packages"
 stub_packages = {
     'bytes',
     'file',
-    'html',
     'http',
     'parser',
     'random',
@@ -236,7 +235,8 @@ def run_elm(elm, args):
 
         any_customized = False
         for (author, pkg) in [('elm', 'core'), ('elm', 'json'),
-                              ('elm', 'browser'), ('elm-explorations', 'test'),
+                              ('elm', 'browser'), ('elm', 'html'),
+                              ('elm-explorations', 'test'),
                               ('elm-explorations', 'markdown')]:
             if customize(packages_root, author, pkg):
                 elm_stuff.clear()

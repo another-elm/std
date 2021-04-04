@@ -1,13 +1,11 @@
 module Platform.Unstable.Channel exposing (Receiver, recv)
 
 import Basics exposing (..)
-import Debug
 import Elm.Kernel.Channel
 import Maybe exposing (Maybe(..))
 import Platform.Unstable.Impure as Impure
-import Platform.Unstable.Scheduler as RawScheduler
 import Platform.Unstable.Task as RawTask
-import Tuple
+import Result exposing (Result(..))
 
 
 type Receiver msg
@@ -15,15 +13,15 @@ type Receiver msg
 
 
 {-| -}
-recv : (msg -> RawTask.Task err val) -> Receiver msg -> RawTask.Task err val
-recv tagger chl =
+recv : Receiver msg -> RawTask.Task never msg
+recv chl =
     RawTask.AsyncAction
         { then_ =
             \doneCallback ->
                 let
                     onMsg : msg -> Impure.Action ()
                     onMsg msg =
-                        doneCallback (tagger msg)
+                        doneCallback (msg |> Ok |> RawTask.Value)
                 in
                 Impure.fromFunction (rawRecv chl) (Impure.toFunction onMsg)
         }

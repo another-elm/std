@@ -26,7 +26,6 @@ import Platform.Unstable.Impure as Impure
 import Platform.Unstable.Task as RawTask
 import Result exposing (Result(..))
 import Task exposing (Task)
-import Tuple
 
 
 

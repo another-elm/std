@@ -59,7 +59,6 @@ import Elm.Kernel.Platform
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform
 import Platform.Cmd exposing (Cmd)
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Impure as Impure

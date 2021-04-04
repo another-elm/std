@@ -75,17 +75,14 @@ import Elm.Kernel.Platform
 import File exposing (File)
 import Json.Decode as Decode
 import Json.Encode as Encode
-import List
 import Maybe exposing (Maybe(..))
-import Platform
 import Platform.Cmd exposing (Cmd)
 import Platform.Scheduler
-import Platform.Sub as Sub exposing (Sub)
+import Platform.Sub exposing (Sub)
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Impure as Impure
 import Platform.Unstable.SubManager as SubManager
 import Platform.Unstable.Task as RawTask
-import Process
 import Result exposing (Result(..))
 import String exposing (String)
 import Task exposing (Task)

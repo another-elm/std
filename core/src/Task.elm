@@ -327,10 +327,6 @@ mapError convert task =
 -- COMMANDS
 
 
-type MyCmd msg
-    = Perform (Task Never msg)
-
-
 {-| Like I was saying in the [`Task`](#Task) documentation, just having a
 `Task` does not mean it is done. We must command Elm to `perform` the task:
 

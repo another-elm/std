@@ -6,7 +6,6 @@ run in order by the runtime.
 -}
 
 import Basics exposing (..)
-import Debug
 import Elm.Kernel.Scheduler
 import Maybe exposing (Maybe(..))
 import Platform.Unstable.Impure as Impure

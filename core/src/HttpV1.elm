@@ -64,7 +64,7 @@ import HttpV1.Internal
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Maybe exposing (Maybe(..))
-import Platform.Cmd as Cmd exposing (Cmd)
+import Platform.Cmd exposing (Cmd)
 import Result exposing (Result(..))
 import String exposing (String)
 import Task exposing (Task)

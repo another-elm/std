@@ -224,11 +224,13 @@ mainLoop :
     -> Impure.Action ()
 mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime } =
     let
+        flags : flags
         flags =
             Json.Decode.decodeValue decoder encodedFlags
                 |> Result.mapError (Json.Decode.errorToString >> invalidFlags)
                 |> assertResultIsOk
 
+        stepperBuilder : Effect.StepperBuilder model msg
         stepperBuilder =
             combineStepperBuilders
                 (effectsStepperBuilder impl.subscriptions)
@@ -247,9 +249,10 @@ mainLoop extraStepperBuilder decoder args impl { receiver, encodedFlags, runtime
                 |> Impure.andThen (\() -> stepper newModel meta)
                 |> Impure.map (\() -> newModel)
 
+        loop : Effect.Stepper model -> model -> RawTask.Task never1 never2
         loop stepper model =
-            receiver
-                |> Channel.recv (receiveMsg stepper model >> RawTask.execImpure)
+            Channel.recv receiver
+                |> andThenOk (receiveMsg stepper model >> RawTask.execImpure)
                 |> andThenOk (loop stepper)
     in
     stepperBuilder runtime args initialModel
@@ -290,21 +293,6 @@ valueStoreHelper oldTask stepper =
 createCmd : (Effect.RuntimeId -> RawTask.Task Never (Maybe msg)) -> Cmd msg
 createCmd createTask =
     Cmd.Cmd (Effect.Cmd [ createTask ])
-
-
-subListenerHelper : Channel.Receiver (Impure.Function () ()) -> RawTask.Task err never
-subListenerHelper channel =
-    Channel.recv RawTask.execImpure channel
-        |> andThenOk (\() -> subListenerHelper channel)
-
-
-subListenerProcess : Impure.Function (Channel.Receiver (Impure.Function () ())) ()
-subListenerProcess =
-    Impure.toFunction
-        (subListenerHelper
-            >> RawScheduler.spawn
-            >> Impure.map assertProcessId
-        )
 
 
 sendToAppAction : Effect.Runtime msg -> ( msg, Effect.UpdateMetadata ) -> Impure.Action ()

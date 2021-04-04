@@ -31,7 +31,7 @@ import List
 import Maybe exposing (Maybe)
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Task as RawTask
-import Result exposing (Result)
+import Result
 
 
 

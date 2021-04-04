@@ -965,16 +965,6 @@ type alias Builder a =
     }
 
 
-{-| The empty builder.
--}
-emptyBuilder : Builder a
-emptyBuilder =
-    { tail = JsArray.empty
-    , nodeList = []
-    , nodeListSize = 0
-    }
-
-
 {-| Converts an array to a builder.
 -}
 builderFromArray : Array a -> Builder a

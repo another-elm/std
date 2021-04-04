@@ -73,7 +73,6 @@ import Parser.Advanced as A exposing ((|.), (|=))
 import Result exposing (Result(..))
 import Set
 import String exposing (String)
-import Tuple
 
 
 
@@ -201,7 +200,7 @@ _thinks_ is happening can be really helpful!
 
 -}
 deadEndsToString : List DeadEnd -> String
-deadEndsToString deadEnds =
+deadEndsToString _ =
     "TODO deadEndsToString"
 
 

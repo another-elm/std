@@ -39,7 +39,6 @@ import Basics exposing (..)
 import Elm.Kernel.Time
 import List exposing ((::))
 import Maybe exposing (Maybe(..))
-import Platform
 import Platform.Scheduler as Scheduler
 import Platform.Sub exposing (Sub)
 import Platform.Unstable.Effect as Effect

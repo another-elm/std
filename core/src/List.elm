@@ -653,7 +653,7 @@ because it gives you `(x :: xs)` and you can work with both subparts.
 head : List a -> Maybe a
 head list =
     case list of
-        x :: xs ->
+        x :: _ ->
             Just x
 
         [] ->
@@ -673,7 +673,7 @@ because it gives you `(x :: xs)` and you can work with both subparts.
 tail : List a -> Maybe (List a)
 tail list =
     case list of
-        x :: xs ->
+        _ :: xs ->
             Just xs
 
         [] ->
@@ -754,7 +754,7 @@ drop n list =
             [] ->
                 list
 
-            x :: xs ->
+            _ :: xs ->
                 drop (n - 1) xs
 
 

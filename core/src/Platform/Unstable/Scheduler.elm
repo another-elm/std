@@ -5,7 +5,6 @@ unique id used to execute tasks.
 -}
 
 import Basics exposing (..)
-import Debug
 import Elm.Kernel.Scheduler
 import List
 import Maybe exposing (Maybe(..))
@@ -88,7 +87,7 @@ enqueue id =
 {-| Steps a process as far as possible and then enqueues any asyncronous
 actions that the process needs to perform.
 
-Kernel interop: this function is used by the sheduler.
+Kernel interop: this function is used by the scheduler.
 
 -}
 stepper : ProcessId -> Impure.Function (RawTask.Task Never state) RawTask.TryAbortAction

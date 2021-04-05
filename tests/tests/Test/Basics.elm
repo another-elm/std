@@ -230,6 +230,7 @@ tests =
             , trigTests
             , basicMathTests
             , booleanTests
+            , conversionTests
             , miscTests
             , higherOrderTests
             , operatorTests

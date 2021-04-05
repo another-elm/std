@@ -172,7 +172,8 @@ def update_packages(random, another_elm_version):
     except FileNotFoundError:
         pass
     for (author, pkg) in [('elm', 'core'), ('elm', 'json'), ('elm', 'browser'),
-                          ('elm', 'html'), ('elm-explorations', 'test'),
+                          ('elm', 'html'), ('elm', 'svg'),
+                          ('elm-explorations', 'test'),
                           ('elm-explorations', 'markdown')]:
         reset_package(packages_roots, author, pkg, random, another_elm_version)
 

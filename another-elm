@@ -29,7 +29,6 @@ stub_packages = {
     'parser',
     'random',
     'regex',
-    'svg',
     'time',
     'url',
     'virtual-dom',
@@ -236,7 +235,7 @@ def run_elm(elm, args):
         any_customized = False
         for (author, pkg) in [('elm', 'core'), ('elm', 'json'),
                               ('elm', 'browser'), ('elm', 'html'),
-                              ('elm-explorations', 'test'),
+                              ('elm', 'svg'), ('elm-explorations', 'test'),
                               ('elm-explorations', 'markdown')]:
             if customize(packages_root, author, pkg):
                 elm_stuff.clear()

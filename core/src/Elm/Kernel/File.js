@@ -1,17 +1,22 @@
 /*
 
-import Elm.Kernel.Json exposing (fileDecoder)
 import Elm.Kernel.List exposing (fromArray)
 import Elm.Kernel.Scheduler exposing (binding, succeed)
 import Elm.Kernel.Utils exposing (Tuple2)
 import String exposing (join)
 import Time exposing (millisToPosix)
+import Maybe exposing (Just, Nothing)
+import Json.Decode as Decode exposing (prim)
 
 */
 
 // DECODER
 
-const _File_decoder = __Json_fileDecoder;
+const _File_decodeHelp = (value) =>
+  // NOTE: checks if `File` exists in case this is run on node
+  typeof File !== "undefined" && value instanceof File ? __Maybe_Just(value) : __Maybe_Nothing;
+
+const _File_decoder = () => __Decode_prim(_File_decodeHelp)("a FILE");
 
 // METADATA
 
@@ -192,9 +197,10 @@ function _File_toUrl(blob) {
 
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "_File_.*" }] */
 
-/* global __Json_fileDecoder */
 /* global __List_fromArray */
 /* global __Scheduler_binding, __Scheduler_succeed */
 /* global __Utils_Tuple2 */
 /* global __String_join */
 /* global __Time_millisToPosix */
+/* global __Maybe_Just, __Maybe_Nothing */
+/* global __Decode_prim */

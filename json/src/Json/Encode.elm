@@ -32,7 +32,9 @@ module Json.Encode exposing
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Elm.Kernel.Basics
+import Elm.Kernel.File
 import Elm.Kernel.Json
+import File exposing (File)
 import Json.Internal
 import Platform.Unstable.Effect as Effect
 import Platform.Unstable.Iterable as Iterable
@@ -269,28 +271,21 @@ dict toKey toValue dictionary =
 
 iterableArray : (a -> Value) -> Iterable.Iterable a -> Value
 iterableArray func entries =
-    let
-        unwrappedFunc v =
-            let
-                (Value (Json.Internal.Value wrapped)) =
-                    func v
-            in
-            wrapped
-    in
-    Value (Json.Internal.Value (arrayFrom unwrappedFunc entries))
+    Value (Json.Internal.Value (arrayFrom (unwrapValueFunc func) entries))
 
 
 iterableObj : (k -> String) -> (v -> Value) -> Iterable.Iterable ( k, v ) -> Value
 iterableObj keyFunc valueFunc entries =
+    Value (Json.Internal.Value (objectFrom keyFunc (unwrapValueFunc valueFunc) entries))
+
+
+unwrapValueFunc : (a -> Value) -> a -> Effect.RawJsObject
+unwrapValueFunc f v =
     let
-        unwrappedValueFunc v =
-            let
-                (Value (Json.Internal.Value wrapped)) =
-                    valueFunc v
-            in
-            wrapped
+        (Value (Json.Internal.Value wrapped)) =
+            f v
     in
-    Value (Json.Internal.Value (objectFrom keyFunc unwrappedValueFunc entries))
+    wrapped
 
 
 

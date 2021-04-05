@@ -5,7 +5,6 @@ import Result exposing (Ok, Err)
 import Maybe exposing (Just, Nothing)
 import Elm.Kernel.Utils exposing (Tuple2, tuple2iter)
 import Json.Internal as Internal exposing (Value, unwrap)
-import Json.Decode as Decode exposing (Decoder, Failure)
 import Json.Encode as Encode exposing (Value, unwrap)
 
 */
@@ -127,14 +126,6 @@ const _Json_objectFrom = (keyFunc) => (valueFunc) => (iterable) => {
   return object;
 };
 
-const _Json_fileDecoder = () =>
-  __Decode_Decoder((value) => {
-    // NOTE: checks if `File` exists in case this is run on node
-    return typeof File !== "undefined" && value instanceof File
-      ? __Result_Ok(value)
-      : __Result_Err(__Decode_Failure("Expecting a FILE")(_Json_wrap(value)));
-  });
-
 const _Json_null = null;
 
 const _Json_wrap = (o) => __Encode_Value(__Internal_Value(o));
@@ -152,5 +143,4 @@ const _Json_unwrap = (v) => __Encode_unwrap(__Internal_unwrap(v));
 /* global __Maybe_Just, __Maybe_Nothing */
 /* global __Utils_Tuple2, __Utils_tuple2iter */
 /* global __Internal_Value, __Internal_unwrap */
-/* global __Decode_Decoder, __Decode_Failure */
 /* global __Encode_Value, __Encode_unwrap */

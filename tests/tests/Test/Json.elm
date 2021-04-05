@@ -3,7 +3,9 @@ module Test.Json exposing (tests)
 import Basics exposing (..)
 import Result exposing (..)
 import Json.Decode as Json
+import Json.Encode
 import String
+import File
 import Test exposing (..)
 import Expect
 
@@ -13,6 +15,7 @@ tests =
     describe "Json decode"
         [ intTests
         , customTests
+        , fileTests
         ]
 
 
@@ -89,3 +92,17 @@ customTests =
                                 ++ message
     in
         test "customDecoder preserves user error messages" <| \() -> assertion
+
+
+fileTests : Test
+fileTests =
+    describe "Json decode file"
+        [ test "error" <|
+            \() ->
+                "\"string\""
+                    |> Json.decodeString File.decoder
+                    |> Expect.equal
+                        (Err
+                            (Json.Failure "Expecting a FILE" (Json.Encode.string "string"))
+                        )
+        ]

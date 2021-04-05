@@ -58,7 +58,9 @@ errors.
 
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Elm.Kernel.File
 import Elm.Kernel.Json
+import File exposing (File)
 import Json.Encode
 import Json.Internal
 import Platform.Unstable.Effect as Effect
@@ -946,6 +948,11 @@ keyValueHelper (Decoder decoder) raw =
 -- Kernel interop
 
 
+fileDecoder : Decoder File
+fileDecoder =
+    prim decodeFileHelp "a FILE"
+
+
 decodeStringRaw : Effect.RawJsObject -> Maybe String
 decodeStringRaw =
     Elm.Kernel.Json.decodeString
@@ -999,3 +1006,8 @@ decodeObject =
 isNull : Effect.RawJsObject -> Bool
 isNull =
     Elm.Kernel.Json.isNull
+
+
+decodeFileHelp : Effect.RawJsObject -> Maybe File
+decodeFileHelp =
+    Elm.Kernel.File.decodeHelp

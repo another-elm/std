@@ -2,11 +2,11 @@ module Test.Char exposing (tests)
 
 import Basics exposing (..)
 import Char exposing (..)
-import List
-import Test exposing (..)
 import Expect
 import FromElmTest.Fuzz
 import Fuzz
+import List
+import Test exposing (..)
 
 
 lower =
@@ -58,78 +58,76 @@ tests : Test
 tests =
     describe "Char"
         [ describe "toCode"
-            [ test "a-z" <| \() -> Expect.equal (lowerCodes) (List.map toCode lower)
-            , test "A-Z" <| \() -> Expect.equal (upperCodes) (List.map toCode upper)
-            , test "0-9" <| \() -> Expect.equal (decCodes) (List.map toCode dec)
-            , test "UTF-16" <| \() -> Expect.equal 0x1D306 (Char.toCode '𝌆')
-            , test "replacement" <| \() -> Expect.equal 0xFFFD (Char.toCode '\u{FFFD}')
+            [ test "a-z" <| \() -> Expect.equal lowerCodes (List.map toCode lower)
+            , test "A-Z" <| \() -> Expect.equal upperCodes (List.map toCode upper)
+            , test "0-9" <| \() -> Expect.equal decCodes (List.map toCode dec)
+            , test "UTF-16" <| \() -> Expect.equal 0x0001D306 (Char.toCode '𝌆')
+            , test "replacement" <| \() -> Expect.equal 0xFFFD (Char.toCode '�')
             ]
         , describe "fromCode"
-            [ test "a-z" <| \() -> Expect.equal (lower) (List.map fromCode lowerCodes)
-            , test "A-Z" <| \() -> Expect.equal (upper) (List.map fromCode upperCodes)
-            , test "0-9" <| \() -> Expect.equal (dec) (List.map fromCode decCodes)
-            , test "UTF-16" <| \() -> Expect.equal '𝌆' (Char.fromCode 0x1D306)
-            , test "replacement" <| \() -> Expect.equal '\u{FFFD}' (Char.fromCode 0xFFFD)
+            [ test "a-z" <| \() -> Expect.equal lower (List.map fromCode lowerCodes)
+            , test "A-Z" <| \() -> Expect.equal upper (List.map fromCode upperCodes)
+            , test "0-9" <| \() -> Expect.equal dec (List.map fromCode decCodes)
+            , test "UTF-16" <| \() -> Expect.equal '𝌆' (Char.fromCode 0x0001D306)
+            , test "replacement" <| \() -> Expect.equal '�' (Char.fromCode 0xFFFD)
             ]
         , describe "toCode/fromCode round trip"
-            [fuzz (Fuzz.intRange 0 0x10FFFF) "random code point" <|
+            [ fuzz (Fuzz.intRange 0 0x0010FFFF) "random code point" <|
                 \i ->
                     fromCode i
                         |> toCode
                         |> Expect.equal i
-            , fuzz (FromElmTest.Fuzz.string) "random unicode string" <|
+            , fuzz FromElmTest.Fuzz.string "random unicode string" <|
                 \str ->
                     String.toList str
-                        |>List.map toCode
+                        |> List.map toCode
                         |> List.map fromCode
                         |> String.fromList
                         |> Expect.equal str
-
             ]
-
         , describe "toLocaleLower"
-            [ test "a-z" <| \() -> Expect.equal (lower) (List.map toLocaleLower lower)
-            , test "A-Z" <| \() -> Expect.equal (lower) (List.map toLocaleLower upper)
-            , test "0-9" <| \() -> Expect.equal (dec) (List.map toLocaleLower dec)
+            [ test "a-z" <| \() -> Expect.equal lower (List.map toLocaleLower lower)
+            , test "A-Z" <| \() -> Expect.equal lower (List.map toLocaleLower upper)
+            , test "0-9" <| \() -> Expect.equal dec (List.map toLocaleLower dec)
             ]
         , describe "toLocaleUpper"
-            [ test "a-z" <| \() -> Expect.equal (upper) (List.map toLocaleUpper lower)
-            , test "A-Z" <| \() -> Expect.equal (upper) (List.map toLocaleUpper upper)
-            , test "0-9" <| \() -> Expect.equal (dec) (List.map toLocaleUpper dec)
+            [ test "a-z" <| \() -> Expect.equal upper (List.map toLocaleUpper lower)
+            , test "A-Z" <| \() -> Expect.equal upper (List.map toLocaleUpper upper)
+            , test "0-9" <| \() -> Expect.equal dec (List.map toLocaleUpper dec)
             ]
         , describe "toLower"
-            [ test "a-z" <| \() -> Expect.equal (lower) (List.map toLower lower)
-            , test "A-Z" <| \() -> Expect.equal (lower) (List.map toLower upper)
-            , test "0-9" <| \() -> Expect.equal (dec) (List.map toLower dec)
+            [ test "a-z" <| \() -> Expect.equal lower (List.map toLower lower)
+            , test "A-Z" <| \() -> Expect.equal lower (List.map toLower upper)
+            , test "0-9" <| \() -> Expect.equal dec (List.map toLower dec)
             ]
         , describe "toUpper"
-            [ test "a-z" <| \() -> Expect.equal (upper) (List.map toUpper lower)
-            , test "A-Z" <| \() -> Expect.equal (upper) (List.map toUpper upper)
-            , test "0-9" <| \() -> Expect.equal (dec) (List.map toUpper dec)
+            [ test "a-z" <| \() -> Expect.equal upper (List.map toUpper lower)
+            , test "A-Z" <| \() -> Expect.equal upper (List.map toUpper upper)
+            , test "0-9" <| \() -> Expect.equal dec (List.map toUpper dec)
             ]
         , describe "isLower"
-            [ test "a-z" <| \() -> Expect.equal (True) (List.all isLower lower)
-            , test "A-Z" <| \() -> Expect.equal (False) (List.any isLower upper)
-            , test "0-9" <| \() -> Expect.equal (False) (List.any isLower dec)
+            [ test "a-z" <| \() -> Expect.equal True (List.all isLower lower)
+            , test "A-Z" <| \() -> Expect.equal False (List.any isLower upper)
+            , test "0-9" <| \() -> Expect.equal False (List.any isLower dec)
             ]
         , describe "isUpper"
-            [ test "a-z" <| \() -> Expect.equal (False) (List.any isUpper lower)
-            , test "A-Z" <| \() -> Expect.equal (True) (List.all isUpper upper)
-            , test "0-9" <| \() -> Expect.equal (False) (List.any isUpper dec)
+            [ test "a-z" <| \() -> Expect.equal False (List.any isUpper lower)
+            , test "A-Z" <| \() -> Expect.equal True (List.all isUpper upper)
+            , test "0-9" <| \() -> Expect.equal False (List.any isUpper dec)
             ]
         , describe "isDigit"
-            [ test "a-z" <| \() -> Expect.equal (False) (List.any isDigit lower)
-            , test "A-Z" <| \() -> Expect.equal (False) (List.any isDigit upper)
-            , test "0-9" <| \() -> Expect.equal (True) (List.all isDigit dec)
+            [ test "a-z" <| \() -> Expect.equal False (List.any isDigit lower)
+            , test "A-Z" <| \() -> Expect.equal False (List.any isDigit upper)
+            , test "0-9" <| \() -> Expect.equal True (List.all isDigit dec)
             ]
         , describe "isHexDigit"
             [ test "a-z" <| \() -> Expect.equal (List.map (oneOf hex) lower) (List.map isHexDigit lower)
             , test "A-Z" <| \() -> Expect.equal (List.map (oneOf hex) upper) (List.map isHexDigit upper)
-            , test "0-9" <| \() -> Expect.equal (True) (List.all isHexDigit dec)
+            , test "0-9" <| \() -> Expect.equal True (List.all isHexDigit dec)
             ]
         , describe "isOctDigit"
-            [ test "a-z" <| \() -> Expect.equal (False) (List.any isOctDigit lower)
-            , test "A-Z" <| \() -> Expect.equal (False) (List.any isOctDigit upper)
+            [ test "a-z" <| \() -> Expect.equal False (List.any isOctDigit lower)
+            , test "A-Z" <| \() -> Expect.equal False (List.any isOctDigit upper)
             , test "0-9" <| \() -> Expect.equal (List.map (oneOf oct) dec) (List.map isOctDigit dec)
             ]
         ]

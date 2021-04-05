@@ -1,10 +1,10 @@
 module Test.Tuple exposing (tests)
 
 import Basics exposing (..)
-import Tuple exposing (..)
-import Test exposing (..)
 import Expect
 import Fuzz
+import Test exposing (..)
+import Tuple exposing (..)
 
 
 tests : Test
@@ -32,45 +32,45 @@ tests =
                     Expect.equal () ()
             , describe "2 tuple"
                 [ test "equal" <|
-                    \() -> Expect.equal (0, 0) (0, 0)
+                    \() -> Expect.equal ( 0, 0 ) ( 0, 0 )
                 , fuzz Fuzz.int "not equal 1" <|
-                    \a -> Expect.notEqual (-1, a) (0, a)
+                    \a -> Expect.notEqual ( -1, a ) ( 0, a )
                 , fuzz Fuzz.int "not equal 2" <|
-                    \a -> Expect.notEqual (a, 0) (a, 1)
+                    \a -> Expect.notEqual ( a, 0 ) ( a, 1 )
                 ]
             , describe "3 tuple"
                 [ test "equal" <|
-                    \() -> Expect.equal (0, 0, 0) (0, 0, 0)
+                    \() -> Expect.equal ( 0, 0, 0 ) ( 0, 0, 0 )
                 , fuzz2 Fuzz.int Fuzz.int "not equal 1" <|
-                    \a b -> Expect.notEqual (-1, a, b) (0, a, b)
+                    \a b -> Expect.notEqual ( -1, a, b ) ( 0, a, b )
                 , fuzz2 Fuzz.int Fuzz.int "not equal 2" <|
-                    \a b -> Expect.notEqual (a, 0, b) (a, 1, b)
+                    \a b -> Expect.notEqual ( a, 0, b ) ( a, 1, b )
                 , fuzz2 Fuzz.int Fuzz.int "not equal 3" <|
-                    \a b -> Expect.notEqual (a, b, "h") (a, b, "g")
+                    \a b -> Expect.notEqual ( a, b, "h" ) ( a, b, "g" )
                 ]
             ]
         , describe "ordering"
             [ describe "2 tuple"
                 [ test "eq" <|
-                    \() -> Expect.equal EQ (compare (0, 0) (0, 0))
+                    \() -> Expect.equal EQ (compare ( 0, 0 ) ( 0, 0 ))
                 , fuzz2 Fuzz.float Fuzz.float "lt 1" <|
-                    \a b -> Expect.equal LT (compare (-1, a) (0, b))
+                    \a b -> Expect.equal LT (compare ( -1, a ) ( 0, b ))
                 , test "lt 2" <|
-                    \() -> Expect.equal LT (compare (0, -1) (0, 0))
+                    \() -> Expect.equal LT (compare ( 0, -1 ) ( 0, 0 ))
                 , fuzz2 Fuzz.float Fuzz.float "gt 1" <|
-                    \a b -> Expect.equal GT (compare (1, a) (0, b))
+                    \a b -> Expect.equal GT (compare ( 1, a ) ( 0, b ))
                 , test "gt 2" <|
-                    \() -> Expect.equal GT (compare (0, 1) (0, 0))
+                    \() -> Expect.equal GT (compare ( 0, 1 ) ( 0, 0 ))
                 ]
             , describe "3 tuple"
                 [ test "eq" <|
-                    \() -> Expect.equal EQ (compare (0, 0) (0, 0))
-                , fuzz3 Fuzz.float Fuzz.float (Fuzz.tuple (Fuzz.char, Fuzz.char)) "lt 1" <|
-                    \a b (c, d) -> Expect.equal LT (compare (-1, a, c) (0, b, d))
+                    \() -> Expect.equal EQ (compare ( 0, 0 ) ( 0, 0 ))
+                , fuzz3 Fuzz.float Fuzz.float (Fuzz.tuple ( Fuzz.char, Fuzz.char )) "lt 1" <|
+                    \a b ( c, d ) -> Expect.equal LT (compare ( -1, a, c ) ( 0, b, d ))
                 , fuzz2 Fuzz.float Fuzz.float "lt 2" <|
-                    \a b -> Expect.equal LT (compare (0, -1, a) (0, 0, b))
+                    \a b -> Expect.equal LT (compare ( 0, -1, a ) ( 0, 0, b ))
                 , test "lt 3" <|
-                    \() -> Expect.equal LT (compare (0, 0, -1) (0, 0, 0))
+                    \() -> Expect.equal LT (compare ( 0, 0, -1 ) ( 0, 0, 0 ))
                 ]
             ]
         ]

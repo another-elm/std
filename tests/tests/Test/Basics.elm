@@ -1,16 +1,16 @@
 module Test.Basics exposing (tests)
 
 import Array
-import Tuple exposing (first, second)
 import Basics exposing (..)
-import Set
-import Dict
-import Test exposing (..)
-import Expect exposing (FloatingPointTolerance(..))
-import List
-import String
 import Debug exposing (toString)
+import Dict
+import Expect exposing (FloatingPointTolerance(..))
 import Fuzz
+import List
+import Set
+import String
+import Test exposing (..)
+import Tuple exposing (first, second)
 
 
 tests : Test
@@ -54,8 +54,9 @@ tests =
                 , test "toString String single quote" <| \() -> Expect.equal "\"not 'escaped'\"" (toString "not 'escaped'")
                 , test "toString String double quote" <| \() -> Expect.equal "\"are \\\"escaped\\\"\"" (toString "are \"escaped\"")
                 , test "toString record" <| \() -> Expect.equal "{ field = [0] }" (toString { field = [ 0 ] })
-                  -- TODO
-                  --, test "toString record, special case" <| \() -> Expect.equal "{ ctor = [0] }" (toString { ctor = [ 0 ] })
+
+                -- TODO
+                --, test "toString record, special case" <| \() -> Expect.equal "{ ctor = [0] }" (toString { ctor = [ 0 ] })
                 ]
 
         trigTests =
@@ -65,14 +66,18 @@ tests =
                 , test "radians negative" <| \() -> Expect.equal -5 (radians -5)
                 , test "degrees 0" <| \() -> Expect.equal 0 (degrees 0)
                 , test "degrees 90" <| \() -> Expect.lessThan 0.01 (abs (1.57 - degrees 90))
-                  -- This should test to enough precision to know if anything's breaking
+
+                -- This should test to enough precision to know if anything's breaking
                 , test "degrees -145" <| \() -> Expect.lessThan 0.01 (abs (-2.53 - degrees -145))
-                  -- This should test to enough precision to know if anything's breaking
+
+                -- This should test to enough precision to know if anything's breaking
                 , test "turns 0" <| \() -> Expect.equal 0 (turns 0)
                 , test "turns 8" <| \() -> Expect.lessThan 0.01 (abs (50.26 - turns 8))
-                  -- This should test to enough precision to know if anything's breaking
+
+                -- This should test to enough precision to know if anything's breaking
                 , test "turns -133" <| \() -> Expect.lessThan 0.01 (abs (-835.66 - turns -133))
-                  -- This should test to enough precision to know if anything's breaking
+
+                -- This should test to enough precision to know if anything's breaking
                 , test "fromPolar (0, 0)" <| \() -> Expect.equal ( 0, 0 ) (fromPolar ( 0, 0 ))
                 , test "fromPolar (1, 0)" <| \() -> Expect.equal ( 1, 0 ) (fromPolar ( 1, 0 ))
                 , test "fromPolar (0, 1)" <| \() -> Expect.equal ( 0, 0 ) (fromPolar ( 0, 1 ))
@@ -83,7 +88,7 @@ tests =
                                 ( x, y ) =
                                     fromPolar ( 1, 1 )
                              in
-                                0.54 - x < 0.01 && 0.84 - y < 0.01
+                             0.54 - x < 0.01 && 0.84 - y < 0.01
                             )
                 , test "toPolar (0, 0)" <| \() -> Expect.equal ( 0, 0 ) (toPolar ( 0, 0 ))
                 , test "toPolar (1, 0)" <| \() -> Expect.equal ( 1, 0 ) (toPolar ( 1, 0 ))
@@ -94,7 +99,7 @@ tests =
                                 ( r, theta ) =
                                     toPolar ( 0, 1 )
                              in
-                                r == 1 && abs (1.57 - theta) < 0.01
+                             r == 1 && abs (1.57 - theta) < 0.01
                             )
                 , test "toPolar (1, 1)" <|
                     \() ->
@@ -103,7 +108,7 @@ tests =
                                 ( r, theta ) =
                                     toPolar ( 1, 1 )
                              in
-                                abs (1.41 - r) < 0.01 && abs (0.78 - theta) < 0.01
+                             abs (1.41 - r) < 0.01 && abs (0.78 - theta) < 0.01
                             )
                 , test "cos" <| \() -> Expect.equal 1 (cos 0)
                 , test "sin" <| \() -> Expect.equal 0 (sin 0)
@@ -118,11 +123,11 @@ tests =
         basicMathTests =
             describe "Basic Math Tests"
                 [ test "add float" <| \() -> Expect.equal 159 (155.6 + 3.4)
-                , test "add int" <| \() -> Expect.equal 17 ((round 10) + (round 7))
+                , test "add int" <| \() -> Expect.equal 17 (round 10 + round 7)
                 , test "subtract float" <| \() -> Expect.within (Absolute 0.00000001) -6.3 (1 - 7.3)
-                , test "subtract int" <| \() -> Expect.equal 1130 ((round 9432) - (round 8302))
+                , test "subtract int" <| \() -> Expect.equal 1130 (round 9432 - round 8302)
                 , test "multiply float" <| \() -> Expect.within (Relative 0.00000001) 432 (96 * 4.5)
-                , test "multiply int" <| \() -> Expect.equal 90 ((round 10) * (round 9))
+                , test "multiply int" <| \() -> Expect.equal 90 (round 10 * round 9)
                 , test "divide float" <| \() -> Expect.within (Relative 0.00000001) 13.175 (527 / 40)
                 , test "divide int" <| \() -> Expect.equal 23 (70 // 3)
                 , test "7 |> remainderBy 2" <| \() -> Expect.equal 1 (7 |> remainderBy 2)
@@ -210,28 +215,29 @@ tests =
             describe "Operators"
                 [ describe "Comutivity"
                     [ fuzz2 Fuzz.int Fuzz.int "Int + Int" <| \a b -> Expect.equal (a + b) (b + a)
-                    , fuzz2 Fuzz.float Fuzz.float "Float + Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a + b) (b + a)
-                    , fuzz2 Fuzz.int Fuzz.int "Int - Int" <| \a b -> Expect.equal (a - b) (-(b - a))
-                    , fuzz2 Fuzz.float Fuzz.float "Float - Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a - b) (-(b - a))
+                    , fuzz2 Fuzz.float Fuzz.float "Float + Float" <| \a b -> Expect.within (AbsoluteOrRelative 1.0e-10 1.0e-10) (a + b) (b + a)
+                    , fuzz2 Fuzz.int Fuzz.int "Int - Int" <| \a b -> Expect.equal (a - b) -(b - a)
+                    , fuzz2 Fuzz.float Fuzz.float "Float - Float" <| \a b -> Expect.within (AbsoluteOrRelative 1.0e-10 1.0e-10) (a - b) -(b - a)
                     , fuzz2 Fuzz.int Fuzz.int "Int * Int" <| \a b -> Expect.equal (a * b) (b * a)
-                    , fuzz2 Fuzz.float Fuzz.float "Float * Float" <| \a b -> Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a * b) (b * a)
+                    , fuzz2 Fuzz.float Fuzz.float "Float * Float" <| \a b -> Expect.within (AbsoluteOrRelative 1.0e-10 1.0e-10) (a * b) (b * a)
                     , fuzz2 Fuzz.float Fuzz.float "Float / Float" <|
                         \a b ->
                             if b == 0 then
                                 Expect.pass
+
                             else
-                                Expect.within (AbsoluteOrRelative 1e-10 1e-10) (a / b)  (1 / (b / a))
+                                Expect.within (AbsoluteOrRelative 1.0e-10 1.0e-10) (a / b) (1 / (b / a))
                     ]
                 ]
     in
-        describe "Basics"
-            [ comparison
-            , toStringTests
-            , trigTests
-            , basicMathTests
-            , booleanTests
-            , conversionTests
-            , miscTests
-            , higherOrderTests
-            , operatorTests
-            ]
+    describe "Basics"
+        [ comparison
+        , toStringTests
+        , trigTests
+        , basicMathTests
+        , booleanTests
+        , conversionTests
+        , miscTests
+        , higherOrderTests
+        , operatorTests
+        ]

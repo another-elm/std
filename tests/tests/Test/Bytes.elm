@@ -275,16 +275,15 @@ tree i =
 
 
 codecSequenceFuzzer :
-        Fuzzer
-            { names : List String
-            , width : Int
-            , hash : Hash
-            , encoder : Encode.Encoder
-            , decoder : Decode.Decoder Hash
-            }
+    Fuzzer
+        { names : List String
+        , width : Int
+        , hash : Hash
+        , encoder : Encode.Encoder
+        , decoder : Decode.Decoder Hash
+        }
 codecSequenceFuzzer =
     codecSequenceFuzzerDepth 3
-
 
 
 codecSequenceFuzzerDepth :
@@ -314,10 +313,11 @@ codecSequenceFuzzerDepth maxDepth =
     Fuzz.list
         (if maxDepth <= 0 then
             singleCodec
-        else
+
+         else
             Fuzz.frequency
-                [ (9, singleCodec)
-                , (1, codecSequenceFuzzerDepth (maxDepth - 1))
+                [ ( 9, singleCodec )
+                , ( 1, codecSequenceFuzzerDepth (maxDepth - 1) )
                 ]
         )
         |> Fuzz.map

@@ -1,13 +1,13 @@
 module Test.Json exposing (tests)
 
 import Basics exposing (..)
-import Result exposing (..)
+import Expect
+import File
 import Json.Decode as Json
 import Json.Encode
+import Result exposing (..)
 import String
-import File
 import Test exposing (..)
-import Expect
 
 
 tests : Test
@@ -30,34 +30,34 @@ intTests =
                 Err _ ->
                     Expect.equal val False
     in
-        describe "Json decode int"
-            [ test "whole int" <| \() -> testInt True "4"
-            , test "-whole int" <| \() -> testInt True "-4"
-            , test "whole float" <| \() -> testInt True "4.0"
-            , test "-whole float" <| \() -> testInt True "-4.0"
-            , test "large int" <| \() -> testInt True "1801439850948"
-            , test "-large int" <| \() -> testInt True "-1801439850948"
-            , test "float" <| \() -> testInt False "4.2"
-            , test "-float" <| \() -> testInt False "-4.2"
-            , test "Infinity" <| \() -> testInt False "Infinity"
-            , test "-Infinity" <| \() -> testInt False "-Infinity"
-            , test "NaN" <| \() -> testInt False "NaN"
-            , test "-NaN" <| \() -> testInt False "-NaN"
-            , test "true" <| \() -> testInt False "true"
-            , test "false" <| \() -> testInt False "false"
-            , test "string" <| \() -> testInt False "\"string\""
-            , test "object" <| \() -> testInt False "{}"
-            , test "null" <| \() -> testInt False "null"
-            , test "undefined" <| \() -> testInt False "undefined"
-            , test "Decoder expects object finds array, was crashing runtime." <|
-                \() ->
-                    Expect.equal
-                        (Err "Problem with the given value:\n\n[]\n\nExpecting an OBJECT")
-                        (Result.mapError
-                            Json.errorToString
-                            (Json.decodeString (Json.dict Json.float) "[]")
-                        )
-            ]
+    describe "Json decode int"
+        [ test "whole int" <| \() -> testInt True "4"
+        , test "-whole int" <| \() -> testInt True "-4"
+        , test "whole float" <| \() -> testInt True "4.0"
+        , test "-whole float" <| \() -> testInt True "-4.0"
+        , test "large int" <| \() -> testInt True "1801439850948"
+        , test "-large int" <| \() -> testInt True "-1801439850948"
+        , test "float" <| \() -> testInt False "4.2"
+        , test "-float" <| \() -> testInt False "-4.2"
+        , test "Infinity" <| \() -> testInt False "Infinity"
+        , test "-Infinity" <| \() -> testInt False "-Infinity"
+        , test "NaN" <| \() -> testInt False "NaN"
+        , test "-NaN" <| \() -> testInt False "-NaN"
+        , test "true" <| \() -> testInt False "true"
+        , test "false" <| \() -> testInt False "false"
+        , test "string" <| \() -> testInt False "\"string\""
+        , test "object" <| \() -> testInt False "{}"
+        , test "null" <| \() -> testInt False "null"
+        , test "undefined" <| \() -> testInt False "undefined"
+        , test "Decoder expects object finds array, was crashing runtime." <|
+            \() ->
+                Expect.equal
+                    (Err "Problem with the given value:\n\n[]\n\nExpecting an OBJECT")
+                    (Result.mapError
+                        Json.errorToString
+                        (Json.decodeString (Json.dict Json.float) "[]")
+                    )
+        ]
 
 
 customTests : Test
@@ -84,6 +84,7 @@ customTests =
                     in
                     if String.contains customErrorMessage message then
                         Expect.pass
+
                     else
                         Expect.fail <|
                             "expected `customDecoder` to preserve user's error message '"
@@ -91,7 +92,7 @@ customTests =
                                 ++ "', but instead got: "
                                 ++ message
     in
-        test "customDecoder preserves user error messages" <| \() -> assertion
+    test "customDecoder preserves user error messages" <| \() -> assertion
 
 
 fileTests : Test

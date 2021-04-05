@@ -3,8 +3,8 @@ module FromElmTest.Fuzz.Internal exposing (Fuzzer, Valid, ValidFuzzer, combineVa
 import FromElmTest.Lazy
 import FromElmTest.Lazy.List exposing (LazyList)
 import FromElmTest.MicroRandomExtra as MicroRandomExtra
-import Random exposing (Generator)
 import FromElmTest.RoseTree as RoseTree exposing (RoseTree(..))
+import Random exposing (Generator)
 
 
 type alias Fuzzer a =

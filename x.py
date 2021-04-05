@@ -71,13 +71,13 @@ def get_runner():
 
     root_dir = output.stdout.strip()
 
-    def run(args, subdir=None):
+    def run(args, *, subdir=None, env=None):
         if subdir is not None:
             cwd = os.path.join(root_dir, subdir)
         else:
             cwd = root_dir
 
-        return subprocess.run(args, cwd=cwd).returncode
+        return subprocess.run(args, cwd=cwd, env=env).returncode
 
     return run
 
@@ -95,6 +95,15 @@ def install():
             check=True,
         ).stdout
         print(f"Found xo: {xo_version}")
+
+    def vdom_test_infra(run):
+        print("Installing vdom test infra...")
+        code = run(['npm', 'install'], subdir="tests/vdom-tests")
+
+        if code != 0:
+            exit(code)
+
+        print("Done vdom test infra...")
 
     def elm_test_rs():
         print("Checkinf for elm-test-rs...")
@@ -207,6 +216,11 @@ def install():
     git()
     elm()
     elm_format()
+
+    # Do this _after_ git install
+    run = get_runner()
+
+    vdom_test_infra(run)
 
     exit(0)
 
@@ -333,6 +347,20 @@ def test():
             'dev,optimize'
         ],
                    subdir="tests/sscce-tests")
+
+        if code != 0:
+            print("Running sscce tests failed!")
+
+        return bool(code)
+
+    def vdom_tests():
+        print("Running sscce tests")
+        code = run(['npx', 'jest'],
+                   subdir="tests/vdom-tests",
+                   env={
+                       "TEST_OFFICIAL_VDOM": True,
+                       "ELM_COMPILER": "another-elm",
+                   })
 
         if code != 0:
             print("Running sscce tests failed!")

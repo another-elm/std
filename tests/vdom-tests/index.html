@@ -71,6 +71,12 @@
         );
       };
 
+      new MutationObserver(console.log).observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+      });
+
       customElements.define(
         "custom-element",
         class extends HTMLElement {
@@ -85,11 +91,16 @@
       );
 
       if (Elm.Main) {
-        Elm.Main.init();
+        Elm.Main.init({
+          virtualize: (node) => node === document.body,
+        });
       } else if (Elm.Sandbox) {
         Elm.Sandbox.init({ node: document.getElementById("main") });
       } else if (Elm.KeyList) {
-        Elm.KeyList.init({ node: document.getElementById("main") });
+        Elm.KeyList.init({
+          node: document.getElementById("main"),
+          time: "render",
+        });
       } else if (Elm.ElmUi) {
         Elm.ElmUi.init({ node: document.getElementById("main") });
       } else {

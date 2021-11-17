@@ -15,16 +15,20 @@ const {
 expect.addSnapshotSerializer(domSnapshotSerializer);
 
 const TEST_OFFICIAL_VDOM = !!process.env.TEST_OFFICIAL_VDOM;
-const ELM_COMPILER = process.env.ELM_COMPILER || "elm";
+const ELM_COMPILER = process.env.ELM_COMPILER;
 
 beforeAll(() => {
   const baseDir = path.dirname(__dirname);
   const elmDir = path.join(baseDir, "tests", "elm");
   const files = fs.readdirSync(elmDir).map((file) => path.join(elmDir, file));
   const output = path.join(baseDir, "tests", "elm.js");
+
+  const exe = ELM_COMPILER || "npx";
+  const pre_args = ELM_COMPILER === undefined ? ["elm"] : [];
+
   const result = childProcess.spawnSync(
-    "npx",
-    [ELM_COMPILER, "make", ...files, "--output", output],
+    exe,
+    [...pre_args, "make", ...files, "--output", output],
     {
       shell: true,
       cwd: baseDir,

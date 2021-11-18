@@ -348,7 +348,7 @@ def test():
             'config.json', '--elm-compilers', 'another-elm', '--opt-levels',
             'dev,optimize'
         ],
-                   subdir="tests/sscce-tests")
+                   subdir="tests/sscce-tests",)
 
         if code != 0:
             print("Running sscce tests failed!")
@@ -356,16 +356,34 @@ def test():
         return bool(code)
 
     def vdom_tests():
-        print("Running sscce tests")
-        code = run(['npx', 'jest'],
-                   subdir="tests/vdom-tests",
-                   env={
-                       "TEST_OFFICIAL_VDOM": True,
-                       "ELM_COMPILER": "another-elm",
-                   })
+        print("Running vdom tests")
+        code = run(
+            ['npx', 'jest'],
+            subdir="tests/vdom-tests",
+            env={
+                "TEST_OFFICIAL_VDOM": "1",
+                "ELM_COMPILER": "another-elm",
+                **os.environ
+            },
+        )
 
         if code != 0:
-            print("Running sscce tests failed!")
+            print("Running vdom tests failed!")
+
+        return bool(code)
+
+    def browser_tests():
+        print("Running browser tests")
+        code = run(
+            ['npx', 'jest', 'tests/browser-tests/'],
+            env={
+                "ELM_COMPILER": "another-elm",
+                **os.environ
+            },
+        )
+
+        if code != 0:
+            print("Running browser tests failed!")
 
         return bool(code)
 
@@ -375,6 +393,8 @@ def test():
     code = False
     code |= (fail_fast and code) or elm_test()
     code |= (fail_fast and code) or elm_test_rs()
+    code |= (fail_fast and code) or vdom_tests()
+    code |= (fail_fast and code) or browser_tests()
     code |= (fail_fast and code) or sscce_tests()
 
     exit(code)

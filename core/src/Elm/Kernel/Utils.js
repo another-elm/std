@@ -31,6 +31,8 @@ function _Utils_eqHelp(x, y, depth, stack) {
   }
 
   if (x === y) {
+    // Only do equal object in debug mode to catch nested functions and provide
+    // helpful errors to devs.
     if (!(__Basics_isDebug && typeof x === "object")) {
       return true;
     }

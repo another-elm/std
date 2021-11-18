@@ -1,0 +1,13 @@
+{
+    "ports": [
+        [
+            "command",
+            "write",
+            "True"
+        ]
+    ],
+    "run-fails-if": {
+        "stdlib-variant": ["another"],
+        "opt-level": ["debug", "dev"]
+    }
+}

@@ -26,15 +26,17 @@ const _Utils_eq = (x, y) => {
 };
 
 function _Utils_eqHelp(x, y, depth, stack) {
+  if (typeof x === "function") {
+    __Debug_crash(5);
+  }
+
   if (x === y) {
-    return true;
+    if (!(__Basics_isDebug && typeof x === "object")) {
+      return true;
+    }
   }
 
   if (typeof x !== "object" || x === null || y === null) {
-    if (typeof x === "function") {
-      __Debug_crash(5);
-    }
-
     return false;
   }
 

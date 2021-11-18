@@ -343,12 +343,14 @@ def test():
 
     def sscce_tests():
         print("Running sscce tests")
-        code = run([
-            'cargo', 'run', '--', '--suites', 'suite', '--config',
-            'config.json', '--elm-compilers', 'another-elm', '--opt-levels',
-            'dev,optimize'
-        ],
-                   subdir="tests/sscce-tests",)
+        code = run(
+            [
+                'cargo', 'run', '--', '--suites', 'suite', '--config',
+                'config.json', '--elm-compilers', 'another-elm',
+                '--opt-levels', 'dev,optimize'
+            ],
+            subdir="tests/sscce-tests",
+        )
 
         if code != 0:
             print("Running sscce tests failed!")
